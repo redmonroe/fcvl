@@ -1,0 +1,97 @@
+
+def simple_batch_update(service, sheet_id, wrange, data, dim):
+    print(f"Updating {sheet_id} with batch call to {wrange}...")
+    # sheet = service.spreadsheets()
+    #range_ = wrange
+    body_request = {
+                    'value_input_option': 'RAW',
+                    'data': [
+                            {'range': wrange,
+                            'majorDimension': dim, #'row' or 'column'
+                             'values': [data]
+                             }
+                    ],
+                    }
+
+    request = service.spreadsheets().values().batchUpdate(spreadsheetId=sheet_id, body=body_request)
+    response = request.execute()
+    print(response)
+
+def update(service, sheet_choice, data, write_range):
+    sheet = service.spreadsheets()
+    print(sheet_choice)
+    spreadsheet_id = sheet_choice
+
+    range_ = write_range  # TODO: Update placeholder value.
+
+    value_input_option = 'RAW'  #
+
+    value_range_body = {"range": write_range,
+                        "majorDimension": "COLUMNS",
+                        "values": [data]
+    }
+
+    request = service.spreadsheets().values().update(spreadsheetId=spreadsheet_id, range=range_, valueInputOption=value_input_option, body=value_range_body)
+    response = request.execute()
+
+    print(response)
+
+def write_formula_column(service, sheet_choice, data, write_range):
+    print(f"Writing {data} to {write_range}  . . .")
+    sheet = service.spreadsheets()
+    spreadsheet_id = sheet_choice
+    range_ = write_range  # TODO: Update placeholder value.
+    # How the input data should be interpreted.
+    value_input_option = 'USER_ENTERED'
+    value_range_body = {
+                        "values": [data]
+    }
+
+    request = service.spreadsheets().values().update(spreadsheetId=spreadsheet_id, range=range_, valueInputOption=value_input_option, body=value_range_body)
+    response = request.execute()
+
+def format_row(service, sheet_choice, write_range, r_or_c, name_list): # and writing strings to ranges passed
+    print(f"Formatting {r_or_c} . . .")
+    sheet = service.spreadsheets()
+    spreadsheet_id = sheet_choice
+
+    range_ = write_range  # TODO: Update placeholder value.
+
+    # How the input data should be interpreted.
+    value_input_option = 'USER_ENTERED'  #
+
+    value_range_body = {"range": write_range,
+                        "majorDimension": r_or_c,
+                        "values": [name_list]
+        # TODO: Add desired entries to the request body. All existing entries
+        # will be replaced.
+    }
+
+    request = service.spreadsheets().values().update(spreadsheetId=spreadsheet_id, range=range_, valueInputOption=value_input_option, body=value_range_body)
+    response = request.execute()
+
+def clear_sheet(service, sheet_choice, clear_range):
+    service = service
+    spreadsheet_id = sheet_choice
+
+    batch_clear_values_request_body = {
+                                    'ranges': [clear_range],
+
+                                    }
+        # 'ranges': [],
+
+        # TODO: Add desired entries to the request body.
+
+    request = service.spreadsheets().values().batchClear(spreadsheetId=spreadsheet_id, body=batch_clear_values_request_body)
+    response = request.execute()
+
+def broad_get(service, spreadsheet_id, range):
+    sheet = service.spreadsheets()
+    result = sheet.values().get(spreadsheetId=spreadsheet_id,
+                                range=range).execute()
+    values = []
+    values_ = result.get('values', [])
+    for value in values_:
+        values.append(value)
+    return values
+

@@ -1,0 +1,23 @@
+# .gitignore
+__pycache__
+/migrations
+venv
+env
+.pytest_cache
+.coverage
+*.csv
+*.txt
+*.json
+*.pdf
+*.swp
+*.swo
+config.py
+
+# secrets
+/credentials
+__init__.py
+
+# working data
+/data
+/node_modules
+/appScript
