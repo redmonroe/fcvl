@@ -1,6 +1,7 @@
 from config import Config, my_scopes
 from auth_work import oauth
 from utils import Utils
+from db_utils import DBUtils
 from google_api_calls_abstract import GoogleApiCalls
 import pathlib
 import pandas as pd
@@ -26,6 +27,7 @@ class MonthSheet:
         self.test_message = 'hi'
         self.full_sheet = full_sheet
         self.service = oauth(my_scopes, 'sheet')
+        self.db = Config.db_rs
         self.user_choice = None
         self.text_snippet = ''
         self.file_input_path = path
@@ -124,16 +126,28 @@ class MonthSheet:
         # gc.write_formula_column(self.G_SUM_ACTRENT, f'{sheet_choice}!H69:H69')#
 
     def export_to_sqlite(self):
-        import dataset
+        # import dataset
         print(Config.db_rs)
 
         db = Config.db_rs
-        table = db['user']
-        table.insert(dict(name='John Doe', age=46, country='China'))
+        # table = db['user']
+        # table.insert(dict(name='John Doe', age=46, country='China'))
+        users = db['user'].all()
+        for u in users:
+            print(u)
+    
+    def get_tables(self):
+        DBUtils.get_tables(self, self.db)
+
+    def delete_table(self):
+        db = Config
+        DBUtils.delete_table(self, self.db)
 
 
 ms = MonthSheet(full_sheet=Config.TEST_RS, path=Config.RS_DL_FILE_PATH)
-ms.export_to_sqlite()
+ms.delete_table()
+# ms.export_to_sqlite()
+
 # ms.set_user_choice()
 # ms.control()
 
