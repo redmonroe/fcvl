@@ -54,7 +54,7 @@ class MonthSheet:
             sheet_choice, selection = self.show_current_sheets(interactive=True)
             self.set_user_choice_push(sheet=sheet_choice)
             if self.user_choice == 1:
-                self.month_format(sheet_choice)
+                self.export_month_format(sheet_choice)
 
     def set_user_choice(self):
         self.user_choice = int(input(self.user_text))
@@ -118,12 +118,12 @@ class MonthSheet:
         col4 = format.batch_get(4) #actual rent charged #
         format.update_int(col4, f'{sheet_choice}!H1:H68')
 
-    def month_format(self, sheet_choice):
+    def export_month_format(self, sheet_choice):
         gc = GoogleApiCalls()
         gc.format_row(self.service, self.full_sheet, f'{sheet_choice}!A1:M1', "ROWS", self.HEADER_NAMES)
-        # gc.write_formula_column(self.G_SUM_KRENT, f'{sheet_choice}!E69:E69')#ok
-        # gc.write_formula_column(self.G_SUM_ACTSUBSIDY, f'{sheet_choice}!F69:F69')#
-        # gc.write_formula_column(self.G_SUM_ACTRENT, f'{sheet_choice}!H69:H69')#
+        gc.write_formula_column(self.service, self.full_sheet, self.G_SUM_KRENT, f'{sheet_choice}!E69:E69')#ok
+        gc.write_formula_column(self.service, self.full_sheet, self.G_SUM_ACTSUBSIDY, f'{sheet_choice}!F69:F69')#
+        gc.write_formula_column(self.service, self.full_sheet, self.G_SUM_ACTRENT, f'{sheet_choice}!H69:H69')#
 
     def export_to_sqlite(self):
         # import dataset
