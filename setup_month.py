@@ -123,9 +123,19 @@ class MonthSheet:
         # gc.write_formula_column(self.G_SUM_ACTSUBSIDY, f'{sheet_choice}!F69:F69')#
         # gc.write_formula_column(self.G_SUM_ACTRENT, f'{sheet_choice}!H69:H69')#
 
+    def export_to_sqlite(self):
+        import dataset
+        print(Config.db_rs)
+
+        db = Config.db_rs
+        table = db['user']
+        table.insert(dict(name='John Doe', age=46, country='China'))
+
+
 ms = MonthSheet(full_sheet=Config.TEST_RS, path=Config.RS_DL_FILE_PATH)
-ms.set_user_choice()
-ms.control()
+ms.export_to_sqlite()
+# ms.set_user_choice()
+# ms.control()
 
 # the PRESS 1 IS READY GUARD IS FUCKING UP
 # set up testing, sheet clearing
