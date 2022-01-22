@@ -701,7 +701,6 @@ def annual_formatting():
     'tenant rent collected', 'total', '0.08']
     DEPOSIT_BOX_VERTICAL = ['rr', 'hap', 'ten', 'ten', 'ten', 'ten', 'ten', 'ten', 'ten','ten']
     DEPOSIT_BOX_HORIZONTAL = ['month', 'date']
-    # files
 
     service = oauth(my_scopes, 'sheet')
     ui = UI()
