@@ -20,6 +20,7 @@ class MonthSheet:
     wrange_k_rent1 = f'{ui_sheet}!c{range1}:c{range2}'
     wrange_subsidy1 = f'{ui_sheet}!d{range1}:d{range2}'
     wrange_t_rent1 = f'{ui_sheet}!e{range1}:e{range2}'
+    user_text2 = f'\n Please make sure you have run option 3 in the previous menu that formats Intake for the rent sheet. \n Please PRESS 1 when ready . . .'
 
     def __init__(self, full_sheet, path):
         self.test_message = 'hi'
@@ -29,7 +30,6 @@ class MonthSheet:
         self.text_snippet = ''
         self.file_input_path = path
         self.user_text = f'Options:\n PRESS 1 to show current sheets in RENT SHEETS \n PRESS 2 TO VIEW ITEMS IN {self.file_input_path} \n PRESS 3 for MONTHLY FORMATTING, PART ONE (that is, update intake sheet in {self.file_input_path} (xlsx) \n PRESS 4 for MONTHLY FORMATTING, PART TWO: format rent roll & subsidy by month and sheet\n >>>'
-        self.user_text2 = f'\n Please make sure you have run option 3 in the previous menu that formats Intake for the rent sheet. \n Please PRESS 1 when ready . . .'
         self.wrange_unit = self.wrange_unit1
         self.wrange_t_name = self.wrange_t_name1
         self.wrange_k_rent = self.wrange_k_rent1 
@@ -49,9 +49,10 @@ class MonthSheet:
         elif self.user_choice == 3:
             self.push_to_intake()
         elif self.user_choice == 4:
-            sheet = self.show_current_sheets(interactive=True)
-            # print(self.user_text2)
-            self.set_user_choice_push(sheet=sheet[0])
+            sheet_choice, selection = self.show_current_sheets(interactive=True)
+            self.set_user_choice_push(sheet=sheet_choice)
+            if self.user_choice == 1:
+                self.month_format(sheet_choice)
 
     def set_user_choice(self):
         self.user_choice = int(input(self.user_text))
@@ -59,7 +60,6 @@ class MonthSheet:
     def set_user_choice_push(self, sheet):
         print(f'\n You have chosen to work with: {sheet}')
         self.user_choice = int(input(self.user_text2))
-        print(self.user_choice)
 
     def show_current_sheets(self, interactive=False):
         print('showing current sheets')
@@ -104,6 +104,24 @@ class MonthSheet:
         self.file_input_path = Utils.sheet_finder(path=self.file_input_path, function='month setup')
         self.t_name, self.unit, self.k_rent, self.subsidy, self.t_rent = self.read_excel(verbose=False)
         self.write_to_rs()
+
+    def month_write_col(self, sheet_choice):
+        gc = GoogleApiCalls()
+        col2 = gc.batch_get(1) #tenant names #
+        format.update(col2, f'{sheet_choice}!B1:B69')
+        col3 = gc.batch_get(2) # market rate #
+        format.update_int(col3, f'{sheet_choice}!E1:E68')
+        col5 = format.batch_get(3) #actual subsidy #
+        format.update_int(col5, f'{sheet_choice}!F1:F68')
+        col4 = format.batch_get(4) #actual rent charged #
+        format.update_int(col4, f'{sheet_choice}!H1:H68')
+
+    def month_format(self, sheet_choice):
+        gc = GoogleApiCalls()
+        gc.format_row(self.service, self.full_sheet, f'{sheet_choice}!A1:M1', "ROWS", self.HEADER_NAMES)
+        # gc.write_formula_column(self.G_SUM_KRENT, f'{sheet_choice}!E69:E69')#ok
+        # gc.write_formula_column(self.G_SUM_ACTSUBSIDY, f'{sheet_choice}!F69:F69')#
+        # gc.write_formula_column(self.G_SUM_ACTRENT, f'{sheet_choice}!H69:H69')#
 
 ms = MonthSheet(full_sheet=Config.TEST_RS, path=Config.RS_DL_FILE_PATH)
 ms.set_user_choice()

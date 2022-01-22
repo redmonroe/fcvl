@@ -17,6 +17,19 @@ class GoogleApiCalls:
         response = request.execute()
         print(response)
 
+    def batch_get(self, service, sheet_id, range, col_num): #
+        result = sheet.values().get(spreadsheetId=sheet_id,
+                                    range=range, majorDimension="ROWS").execute()
+
+        values = result.get('values', [])
+        col = []
+        if not values:
+            print('No data found.')
+        else:
+            for COLUMN in values:
+                col.append(COLUMN[col_num])
+        return col
+
     def update(self, service, sheet_choice, data, write_range):
         sheet = service.spreadsheets()
         print(sheet_choice)
@@ -52,8 +65,6 @@ class GoogleApiCalls:
     def format_row(self, service, sheet_choice, write_range, r_or_c, name_list): # and writing strings to ranges passed
         print(f"Formatting {r_or_c} . . .")
         sheet = service.spreadsheets()
-        spreadsheet_id = sheet_choice
-
         range_ = write_range  # TODO: Update placeholder value.
 
         value_input_option = 'USER_ENTERED'  #
@@ -63,7 +74,7 @@ class GoogleApiCalls:
                             "values": [name_list]
         }
 
-        request = service.spreadsheets().values().update(spreadsheetId=spreadsheet_id, range=range_, valueInputOption=value_input_option, body=value_range_body)
+        request = service.spreadsheets().values().update(spreadsheetId=sheet_choice, range=range_, valueInputOption=value_input_option, body=value_range_body)
         response = request.execute()
 
     def clear_sheet(self, service, sheet_choice, clear_range):
