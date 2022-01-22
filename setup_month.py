@@ -10,17 +10,23 @@ class MonthSheet:
     G_SUM_KRENT = ["=sum(E2:E68)"]
     G_SUM_ACTSUBSIDY = ["=sum(F2:F68)"]
     G_SUM_ACTRENT = ["=sum(H2:H68)"]
-    user_text ='Options\n PRESS 1 to show current sheets in RENT SHEETS \n PRESS 2 for MONTHLY FORMATTING, PART ONE (that is, update intake sheet from /download_here (xlsx) \n PRESS 3 for MONTHLY FORMATTING, PART TWO: format rent roll & subsidy by month and sheet\n >>>'
+    user_text = f'Options\n PRESS 1 to show current sheets in RENT SHEETS \n PRESS 2 TO VIEW ITEMS IN {Config.RS_DL_FILE_PATH} \n PRESS 3 for MONTHLY FORMATTING, PART ONE (that is, update intake sheet from /download_here (xlsx) \n PRESS 3 for MONTHLY FORMATTING, PART TWO: format rent roll & subsidy by month and sheet\n >>>'
 
-    def __init__(self, full_sheet):
+    def __init__(self, full_sheet, path):
         self.test_message = 'hi'
         self.full_sheet = full_sheet
         self.service = oauth(my_scopes, 'sheet')
         self.user_choice = None
+        self.file_input_path = path
 
     def control(self):
+        Utils.autoconvert_xls_to_xlsx(path=self.file_input_path)
         if self.user_choice == 1:
             self.show_current_sheets()
+        elif self.user_choice == 2:
+            self.walk_download_folder()
+        elif self.user_choice == 3:
+            self.push_to_intake()
 
     def set_user_choice(self):
         self.user_choice = int(input(self.user_text))
@@ -30,13 +36,20 @@ class MonthSheet:
         titles_dict = Utils.get_existing_sheets(self.service, self.full_sheet)
         Utils.show_files_as_choices(titles_dict, interactive=False)
 
+    def walk_download_folder(self):
+        print('showing items in download folder')
+        Utils.walk_download_folder(self.file_input_path, interactive=False)
+
+    def push_to_intake(self):
+        print('pushing selected excel to intake', '| Path:', self.file_input_path)
+
     def show_utils(self):
         for k, item in Utils.__dict__.items():
             print(k, item)
 
-ms = MonthSheet(full_sheet=Config.TEST_RS)
+
+ms = MonthSheet(full_sheet=Config.TEST_RS, path=Config.RS_DL_FILE_PATH)
 ms.set_user_choice()
 ms.control()
-print(ms.user_choice)
 
 # set input

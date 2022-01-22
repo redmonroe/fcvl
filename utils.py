@@ -73,26 +73,27 @@ class Utils:
             return path
 
     @staticmethod
-    def walk_download_folder(path):
+    def walk_download_folder(path, interactive=True):
         choice = []
         files = []
         choice_file = {}
-
-        # path = ''
 
         for count, file in enumerate(path.iterdir()):
             print('\n', count, "******", file.name)
             choice.append(count)
             files.append(file)
 
-        selection = int(input("Please select an item to work with:"))
+        # print('\n')
 
-        choice_file = dict(zip(choice, files))
+        if interactive:
+            selection = int(input("Please select an item to work with:"))
 
-        for k, v in choice_file.items():
-            if selection == k:
-                path = v
-        return path
+            choice_file = dict(zip(choice, files))
+
+            for k, v in choice_file.items():
+                if selection == k:
+                    path = v
+            return path
 
     @staticmethod
     def get_letter_by_choice(choice, offset):
@@ -254,27 +255,6 @@ class Utils:
         time, file_path = max((file.stat().st_mtime, file) for file in dir.iterdir())
         # print(datetime.fromtimestamp(time), file_path.name)
         return file_path
-
-    def walk_download_folder(path):
-        choice = []
-        files = []
-        choice_file = {}
-
-        # path = ''
-
-        for count, file in enumerate(path.iterdir()):
-            print('\n', count, "******", file.name)
-            choice.append(count)
-            files.append(file)
-
-        selection = int(input("Please select an item to work with:"))
-
-        choice_file = dict(zip(choice, files))
-
-        for k, v in choice_file.items():
-            if selection == k:
-                path = v
-        return path
 
     def load_activate_workbook(path):
         workbook = load_workbook(path)

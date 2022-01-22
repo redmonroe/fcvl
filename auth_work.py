@@ -5,7 +5,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from oauth2client.service_account import ServiceAccountCredentials
 
-from config import YTD_DEPOSIT_BOOK, RENT_SHEETS2022, DL_FILE_PATH, READ_RANGE_HAP, READ_RANGE_PAY_PRE, R_RANGE_INTAKE_UNITS
+from config import YTD_DEPOSIT_BOOK, RENT_SHEETS2022, READ_RANGE_HAP, READ_RANGE_PAY_PRE, R_RANGE_INTAKE_UNITS
 from config import my_token, my_oauth_credentials_json, my_scopes, SCOPES_API, my_token_api
 
 import gspread
