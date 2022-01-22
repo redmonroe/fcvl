@@ -2,7 +2,7 @@ from config import Config, my_scopes
 from auth_work import oauth
 from utils import Utils
 import pathlib
-
+import pandas as pd
 
 class MonthSheet:
 
@@ -48,11 +48,13 @@ class MonthSheet:
     def push_to_intake(self):
         print('pushing selected excel to intake', '| Path:', self.file_input_path)
         path = Utils.sheet_finder(path=self.file_input_path, function='month setup')
+        df = pd.read_excel(path, header=16)
+        print(df.head(100))
 
         # select xlrd(xls) or openpyxl(xlsx)
 
-        sheet = Utils.load_activate_workbook(path)
-        print(sheet)
+        # sheet = Utils.load_activate_workbook(path)
+        # print(sheet)
 
     def show_utils(self):
         for k, item in Utils.__dict__.items():
