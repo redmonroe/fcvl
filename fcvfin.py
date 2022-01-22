@@ -54,7 +54,6 @@ class TemplateFormatSheet(object):
 
     def batch_get(self, col_num): #
         service = self.service
-        print(type(service))
         sheet = service.spreadsheets()
         read_range = self.read_range
         result = sheet.values().get(spreadsheetId=self.spreadsheet_id,
@@ -183,7 +182,7 @@ class TemplateFormatSheet(object):
 
         request = service.spreadsheets().values().update(spreadsheetId=spreadsheet_id, range=range_, valueInputOption=value_input_option, body=value_range_body)
         response = request.execute()
-        print(response)
+
     def date_stamp(self, range):
         service = self.service
         sheet = service.spreadsheets()

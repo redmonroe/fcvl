@@ -16,6 +16,25 @@ from liltilities import Liltilities, get_existing_sheets
 def cli():
     pass
 
+@click.command()
+def rent_receipts():
+    click.echo('Generate rent receipts')
+    # rr1()
+
+@click.command()
+def rebuild_runtime():
+    click.echo('Generate runtime(v2)')
+    
+@click.command()
+def rebuild_setup():
+    click.echo('Setup the sheet for the month(v2)')
+    # ms()
+
+
+@click.command()
+def setup():
+    click.echo('Setup the sheet for the month')
+    ms()
 
 @click.command()
 def merchants():
@@ -180,10 +199,6 @@ def runtime():
     click.echo('Running reconciliation runtime')
     rr()
 
-@click.command()
-def setup():
-    click.echo('Setup the sheet for the month')
-    ms()
 
 @click.command()
 def setupyear():
@@ -195,18 +210,15 @@ def pgdump():
     click.echo('Dumping current tables to pg_backup folder.')
     pg_dump_one()
 
-@click.command()
-def rent_receipts():
-    click.echo('Generate rent receipts')
-    # rr1()
 
 @click.command()
 def workorders_todo():
     click.echo('you have most of this just tie it into fcvfin.py or something')
 
 cli.add_command(runtime)
+cli.add_command(rebuild_runtime)
+cli.add_command(rebuild_setup)
 cli.add_command(rent_receipts)
-cli.add_command(setup)
 cli.add_command(setupyear)
 cli.add_command(pgdump)
 cli.add_command(merchants)
