@@ -234,7 +234,6 @@ class Utils:
 
         return output
 
-
     def non_secure_random_number():
         import random
         random.seed(version=2)
