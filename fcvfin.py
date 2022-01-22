@@ -867,7 +867,6 @@ def month_setup():
 
         print("You've chosen to work with: " + sheet_choice)
         print('\nPlease make sure you have run option 2 in the previous menu that formats Intake for the rent sheet.')
-        sleep(3)
 
         choice = int(input("Please PRESS 1 when ready . . ."))
 

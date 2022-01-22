@@ -26,8 +26,10 @@ class MonthSheet:
         self.full_sheet = full_sheet
         self.service = oauth(my_scopes, 'sheet')
         self.user_choice = None
+        self.text_snippet = ''
         self.file_input_path = path
         self.user_text = f'Options:\n PRESS 1 to show current sheets in RENT SHEETS \n PRESS 2 TO VIEW ITEMS IN {self.file_input_path} \n PRESS 3 for MONTHLY FORMATTING, PART ONE (that is, update intake sheet in {self.file_input_path} (xlsx) \n PRESS 4 for MONTHLY FORMATTING, PART TWO: format rent roll & subsidy by month and sheet\n >>>'
+        self.user_text2 = f'\n Please make sure you have run option 3 in the previous menu that formats Intake for the rent sheet. \n Please PRESS 1 when ready . . .'
         self.wrange_unit = self.wrange_unit1
         self.wrange_t_name = self.wrange_t_name1
         self.wrange_k_rent = self.wrange_k_rent1 
@@ -41,21 +43,30 @@ class MonthSheet:
 
     def control(self):
         if self.user_choice == 1:
-            self.show_current_sheets()
+            self.show_current_sheets(interactive=False)
         elif self.user_choice == 2:
             self.walk_download_folder()
         elif self.user_choice == 3:
             self.push_to_intake()
         elif self.user_choice == 4:
-            print('set up push to sheet from intake')
+            sheet = self.show_current_sheets(interactive=True)
+            # print(self.user_text2)
+            self.set_user_choice_push(sheet=sheet[0])
 
     def set_user_choice(self):
         self.user_choice = int(input(self.user_text))
 
-    def show_current_sheets(self):
+    def set_user_choice_push(self, sheet):
+        print(f'\n You have chosen to work with: {sheet}')
+        self.user_choice = int(input(self.user_text2))
+        print(self.user_choice)
+
+    def show_current_sheets(self, interactive=False):
         print('showing current sheets')
         titles_dict = Utils.get_existing_sheets(self.service, self.full_sheet)
-        Utils.show_files_as_choices(titles_dict, interactive=False)
+        path = Utils.show_files_as_choices(titles_dict, interactive=interactive)
+        if interactive == True:
+            return path
 
     def walk_download_folder(self):
         print('showing ALL items in download folder')
@@ -94,16 +105,11 @@ class MonthSheet:
         self.t_name, self.unit, self.k_rent, self.subsidy, self.t_rent = self.read_excel(verbose=False)
         self.write_to_rs()
 
-
-    def show_utils(self):
-        for k, item in Utils.__dict__.items():
-            print(k, item)
-
-
 ms = MonthSheet(full_sheet=Config.TEST_RS, path=Config.RS_DL_FILE_PATH)
 ms.set_user_choice()
 ms.control()
 
+# the PRESS 1 IS READY GUARD IS FUCKING UP
 # set up testing, sheet clearing
 # formatting of intake, what else can I do with this data, setup sqlite and
     # rent potential
