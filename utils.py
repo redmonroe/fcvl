@@ -56,20 +56,25 @@ class Utils:
 
         return service, sheet_choice, selection
 
+    def find_last_modified(dir):
+        time, file_path = max((file.stat().st_mtime, file) for file in dir.iterdir())
+        # print(datetime.fromtimestamp(time), file_path.name)
+        return file_path
+
     @staticmethod
     def sheet_finder(path, function):
         print('\nHelping you find a sheet!!!!!\n')
         print(f'for {function}.')
 
-        file_path = find_last_modified(path)
-        print(f'\nThis is most recent active file: {file_path.name}\n\n')
+        time, file_path = max((file.stat().st_mtime, file) for file in path.iterdir())
+        print(f'\nThis is most recent active file: {file_path.name} {time}\n\n')
 
         choice = int(input('If you want to use most recent active file PRESS 1 \n or PRESS another key to keep searching'))
 
         if choice == 1:
             return file_path
         else:
-            path = Liltilities.walk_download_folder(path)
+            path = Utils.walk_download_folder(path)
             return path
 
     @staticmethod
@@ -83,7 +88,7 @@ class Utils:
             choice.append(count)
             files.append(file)
 
-        # print('\n')
+        print('\n')
 
         if interactive:
             selection = int(input("Please select an item to work with:"))
@@ -235,29 +240,3 @@ class Utils:
         random.seed(version=2)
         random_id = random.randrange(100000)
         return random_id
-
-    def sheet_finder(function, path):
-        print('\nHelping you find a sheet!!!!!\n')
-        print(f'for {function}.')
-
-        file_path = find_last_modified(path)
-        print(f'\nThis is most recent active file: {file_path.name}\n\n')
-
-        choice = int(input('If you want to use most recent active file PRESS 1 \n or PRESS another key to keep searching'))
-
-        if choice == 1:
-            return file_path
-        else:
-            path1 = walk_download_folder(path)
-            return path1
-
-    def find_last_modified(dir):
-        time, file_path = max((file.stat().st_mtime, file) for file in dir.iterdir())
-        # print(datetime.fromtimestamp(time), file_path.name)
-        return file_path
-
-    def load_activate_workbook(path):
-        workbook = load_workbook(path)
-        sheet = workbook.active
-        print(f"Opening {sheet} from book {workbook} . . .  ")
-        return sheet
