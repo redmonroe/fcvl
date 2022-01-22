@@ -847,14 +847,14 @@ def annual_formatting():
 
 def month_setup():
     # CONSTANT FORMULAS
-    HEADER_NAMES = ['Unit', 'Tenant Name', 'Notes', 'Balance Start', 'Contract Rent', 'Subsity Entitlement',
-    'Hap received', 'Tenant Rent', 'Charge Type', 'Charge Amount', 'Payment Made', 'Balance Current', 'Payment Plan/Action']
-    G_SUM_KRENT = ["=sum(E2:E68)"]
-    G_SUM_ACTSUBSIDY = ["=sum(F2:F68)"]
-    G_SUM_ACTRENT = ["=sum(H2:H68)"]
+    # HEADER_NAMES = ['Unit', 'Tenant Name', 'Notes', 'Balance Start', 'Contract Rent', 'Subsity Entitlement',
+    # 'Hap received', 'Tenant Rent', 'Charge Type', 'Charge Amount', 'Payment Made', 'Balance Current', 'Payment Plan/Action']
+    # G_SUM_KRENT = ["=sum(E2:E68)"]
+    # G_SUM_ACTSUBSIDY = ["=sum(F2:F68)"]
+    # G_SUM_ACTRENT = ["=sum(H2:H68)"]
 
     # files
-    service = oauth(my_scopes, 'sheet')
+    # service = oauth(my_scopes, 'sheet')
     format = TemplateFormatSheet()
     format.set_id(service, CURRENT_YEAR_RS, READ_RANGE_PAY_PRE)
 
@@ -891,7 +891,7 @@ def month_setup():
         else:
             layout_month_from_intake()
 
-    choice = int(input('Options\n PRESS 1 to show current sheets in RENT SHEETS \n PRESS 2 for MONTHLY FORMATTING, PART ONE (that is, update intake sheet from /download_here (xlsx) \n PRESS 3 for MONTHLY FORMATTING, PART TWO: format rent roll & subsidy by month and sheet\n >>>'))
+    # choice = int(input('Options\n PRESS 1 to show current sheets in RENT SHEETS \n PRESS 2 for MONTHLY FORMATTING, PART ONE (that is, update intake sheet from /download_here (xlsx) \n PRESS 3 for MONTHLY FORMATTING, PART TWO: format rent roll & subsidy by month and sheet\n >>>'))
 
 
     if choice == 1:
