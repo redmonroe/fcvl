@@ -21,7 +21,7 @@ from pathlib import Path
 from openpyxl import Workbook, load_workbook
 import gspread
 from gspread_dataframe import get_as_dataframe, set_with_dataframe
-# from app.models import db, Unit, BasicBitchPayment
+from app.models import db, Unit, BasicBitchPayment
 
 class UI(object):
 
@@ -567,16 +567,25 @@ class DBIntake(object):
         '''
         service = oauth(my_scopes, 'sheet')        
         units =  broad_get(service, CURRENT_YEAR_RS, range=f'jan {Config.current_year}!A2:A68') 
-
-
-        '''unit loader if db loss '''
-        # for unit_no in units:
-        #     unit_no = unit_no.pop()
-        #     print(unit_no)
-        #     print(type(unit_no))
-        #     u = Unit(unit_no=unit_no)
-        #     db.session.add(u)
-        #     db.session.commit()
+        
+        unit_check = Unit.query.all()
+        if len(unit_check) == 67:
+            print(f'unit db has length {len(unit_check)}')
+        else:
+            try:
+            # '''unit loader if db loss '''
+                db.metadata.drop_all(db.engine, tables=[Unit.__table__,])
+                db.create_all()
+                for unit_no in units:
+                    print('loading units into units db')
+                    unit_no = unit_no.pop()
+                    print(unit_no)
+                    print(type(unit_no))
+                    u = Unit(unit_no=unit_no)
+                    db.session.add(u)
+                    db.session.commit()
+            except Error as e:
+                print('issue is probably with an empty unit database', e)
        
     @staticmethod
     def DB2RS():
@@ -645,6 +654,7 @@ class DBIntake(object):
         df[['Unit', 'Payment', 'Date Code']] = pd.DataFrame(df['Other'].tolist(), index=df.index)
         df = df.drop(labels='Other', axis=1)
         df1 = df.groupby(['Name', 'Unit'])['Payment'].sum()
+    
       
         # unit_idx is just a list of unit names as strings ie CD-A
         unit_idx = list(conv(Unit.query.all(), type='str'))
