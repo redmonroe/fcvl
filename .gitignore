@@ -21,3 +21,4 @@ __init__.py
 /data
 /node_modules
 /appScript
+/sqlite
