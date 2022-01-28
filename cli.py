@@ -215,6 +215,11 @@ def pgdump():
 def workorders_todo():
     click.echo('you have most of this just tie it into fcvfin.py or something')
 
+@click.command()
+def placeholder():
+    click.echo('put whatever you need to here')
+
+
 cli.add_command(runtime)
 cli.add_command(rebuild_runtime)
 cli.add_command(rebuild_setup)
@@ -223,6 +228,7 @@ cli.add_command(setupyear)
 cli.add_command(pgdump)
 cli.add_command(merchants)
 cli.add_command(nbofi)
+cli.add_command(placeholder)
 cli.add_command(workorders_todo)
 
 if __name__ == '__main__':
