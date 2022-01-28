@@ -4,7 +4,7 @@ from liltilities import Liltilities
 from receipts import RentReceipts
 from pprint import pprint
 from datetime import datetime, timedelta, date
-from config import RENT_SHEETS2022, CURRENT_YEAR_RS, DL_FILE_PATH, READ_RANGE_HAP, READ_RANGE_PAY_PRE, R_RANGE_INTAKE_UNITS, my_scopes
+from config import RENT_SHEETS2022, CURRENT_YEAR_RS, READ_RANGE_HAP, READ_RANGE_PAY_PRE, R_RANGE_INTAKE_UNITS, my_scopes
 from config import Config
 from auth_work import oauth
 from oauth2client.service_account import ServiceAccountCredentials
@@ -397,7 +397,7 @@ class BookFormat(object):
 class DBIntake(object):
 
     def __init__(self):
-        self.path = DL_FILE_PATH
+        self.path = Config.RS_DL_FILE_PATH
         # self.dir_hrig =  Path('C:/Users/V/Google Drive/pythonwork/projects/fcv_fin/download_here')
         self.dir = None
         self.ytd_dep_book = '1vBtGLAYOIIraEiWGE-RxxnarSRSpTJr7DdsmfLXTxQs'
@@ -540,12 +540,13 @@ class DBIntake(object):
     def Import2YTD_Deposits():
         """This function takes excel file in temp_path and pushes it formatted
         to YTD_DEPOSIT_BOOK 2020!"""
+        path2 = Config.RS_DL_FILE_PATH
 
         pprint("Importing payments, be sure you have target read path aligned . . .")
         intake = DBIntake()
-        Liltilities.autoconvert_xls_to_xlsx(path=DL_FILE_PATH)
+        Liltilities.autoconvert_xls_to_xlsx(path=path2)
         
-        path = sheet_finder('find deposit detail report for upload', DL_FILE_PATH)
+        path = sheet_finder('find deposit detail report for upload', path2)
         sheet = Liltilities.load_activate_workbook(path)
 
         bde, unit, name, date, pay, pay_float, dt_code = intake.keetchen_saink(sheet) # where the magic happens
