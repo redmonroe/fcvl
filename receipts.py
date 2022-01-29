@@ -101,8 +101,9 @@ class RentReceipts(object):
         }
 
         print(parameters)
+        choice = str(input("send these results to google script & make receipts? y/n"))
 
-    
-        RentReceipts.run_script(service=service_scripts, deploy_id=deploy_id, function_name="test1", parameters=parameters) 
+        if choice == 'y':
+            RentReceipts.run_script(service=service_scripts, deploy_id=deploy_id, function_name="test1", parameters=parameters) 
     
 
