@@ -210,6 +210,10 @@ def pgdump():
     click.echo('Dumping current tables to pg_backup folder.')
     pg_dump_one()
 
+@click.command()
+def rent_receipts():
+    click.echo('Generate rent receipts')
+    RentReceipts.rent_receipts()
 
 @click.command()
 def workorders_todo():

@@ -2,6 +2,7 @@
 from auth_work import oauth
 from config import my_scopes, Config   
 
+
 class RentReceipts(object):
 
     def get_doc_title(self, doc, service_docs): #doc is DOCS_FILE_ID
@@ -53,7 +54,8 @@ class RentReceipts(object):
         result = service_docs.documents().batchUpdate(
             documentId=doc_id, body={'requests': requests}).execute()
 
-    def run_script(self, service, deploy_id, function_name, parameters):
+    @staticmethod
+    def run_script(service, deploy_id, function_name, parameters):
 
         request = {
         "function": function_name, 
@@ -66,9 +68,13 @@ class RentReceipts(object):
                         scriptId=deploy_id
                         ).execute()
         print(request, 'response:', response)
-    
+
+    @staticmethod 
     def rent_receipts():
         from fcvfin import FileHandler, BookFormat, UI
+        from liltilities import get_existing_sheets
+        from config import CURRENT_YEAR_RS
+        from datetime import datetime
         
         fh = FileHandler()
         bf = BookFormat()
@@ -80,7 +86,7 @@ class RentReceipts(object):
     
         titles_dict = get_existing_sheets(service, CURRENT_YEAR_RS)
         idx_list = bf.existing_ids(titles_dict)
-        choice = ui.prompt("Please select an index number to delete:")
+        choice = ui.prompt("Please select a sheet to make receipts from:")
         sheet_choice = idx_list[choice]
         display_month = str(input("type display month you wish to appear?"))
 
@@ -95,7 +101,8 @@ class RentReceipts(object):
         }
 
         print(parameters)
+
     
-        # rr.run_script(service=service_scripts, deploy_id=deploy_id, function_name="test1", parameters=parameters) 
+        RentReceipts.run_script(service=service_scripts, deploy_id=deploy_id, function_name="test1", parameters=parameters) 
     
 
