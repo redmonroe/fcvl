@@ -12,7 +12,6 @@ from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.support.wait import WebDriverWait
-<<<<<<< HEAD
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 import time
@@ -21,7 +20,6 @@ import time
 driver = Service("/home/joe/chromedriver/stable/chromedriver")
 vars = {}
 driver.get('https://vistula.onesite.realpage.com/')
-=======
 
 def test_untitled(self):
     self.driver.get("https://vistula.onesite.realpage.com/")
@@ -76,7 +74,6 @@ report.setup_driver()
 report.make_request()
   
 
->>>>>>> a992b36... setup get_reports.py
 # driver.set_window_size(1587, 942)
 # driver.find_element(By.ID, "txtLogin").click()
 # driver.find_element(By.ID, "txtLogin").send_keys("JWalsh4")
