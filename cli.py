@@ -198,7 +198,7 @@ def pgdump():
 @click.command()
 def rent_receipts():
     click.echo('Generate rent receipts')
-    # rr1()
+    RentReceipts.rent_receipts()
 
 @click.command()
 def workorders_todo():
