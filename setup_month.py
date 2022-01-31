@@ -142,18 +142,3 @@ class MonthSheet:
     def delete_table(self):
         db = Config
         DBUtils.delete_table(self, self.db)
-
-
-ms = MonthSheet(full_sheet=Config.TEST_RS, path=Config.RS_DL_FILE_PATH)
-# ms.delete_table()
-# ms.export_to_sqlite()
-
-ms.set_user_choice()
-ms.control()
-
-# the PRESS 1 IS READY GUARD IS FUCKING UP
-# set up testing, sheet clearing
-# formatting of intake, what else can I do with this data
-# I have dataset ready to go: what can I do with it? 
-    # rent potential
-# I HAVE A PROBLEM GETTING THE FILE INTO WSL FOLDER: i CAN DO IT WITH LINUX OR VSCODE, BUT NOT WINDOWS EXPLORER

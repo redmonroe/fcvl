@@ -1,21 +1,55 @@
 # from google_api_calls_abstract import simple_batch_update#cli.py
 import click
-from fcvfin import reconciliation_runtime as rr, month_setup as ms, annual_formatting as af
 from receipts import RentReceipts
 from db_utils import pg_dump_one
+from setup_month import MonthSheet
+
 from file_manager import path_to_statements, write_hap
 from pdf import merchants_pdf_extract, nbofi_pdf_extract_hap, qb_extract_p_and_l, qb_extract_security_deposit, qb_extract_deposit_detail
 import click
 from auth_work import oauth
 from config import my_scopes, Config
-from google_api_calls_abstract import broad_get
-from liltilities import Liltilities, get_existing_sheets
+# from google_api_calls_abstract import broad_get
+# from liltilities import Liltilities, get_existing_sheets
+
+# from fcvfin import reconciliation_runtime as rr, month_setup as ms, annual_formatting as af
+
+
+
+# core functionalit:
+# []start with setup_month formatting
 
 
 @click.group()
 def cli():
     pass
 
+@click.command()
+@click.argument('mode')
+def month_setup(mode=None):
+    click.echo('month_setup()=>Make sure to explicitly set mode')
+    if mode == 'production':        
+        click.echo('month_setup(): PRODUCTION')
+        # ms = MonthSheet(full_sheet=FIX SHEET, path=FIX PATH)
+        ms.set_user_choice()
+        ms.control()
+    elif mode == 'dev':
+        click.echo('testing and dev mode')
+        ms = MonthSheet(full_sheet=Config.TEST_RS, path=Config.RS_DL_FILE_PATH)
+        ms.set_user_choice()
+        ms.control()
+    else:
+        print('must set a mode at cl')
+
+    # the PRESS 1 IS READY GUARD IS FUCKING UP
+# set up testing, sheet clearing
+# formatting of intake, what else can I do with this data
+# I have dataset ready to go: what can I do with it? 
+    # rent potential
+# I HAVE A PROBLEM GETTING THE FILE INTO WSL FOLDER: i CAN DO IT WITH LINUX OR VSCODE, BUT NOT WINDOWS EXPLORER
+
+
+'''
 @click.command()
 def rent_receipts():
     click.echo('Generate rent receipts')
@@ -25,10 +59,6 @@ def rent_receipts():
 def rebuild_runtime():
     click.echo('Generate runtime(v2)')
 
-@click.command()
-def setup():
-    click.echo('Setup the sheet for the month')
-    ms()
 
 @click.command()
 def merchants():
@@ -167,7 +197,7 @@ def nbofi():
     else:
         print('sec_dp does not balance between rs and qb.  Have I adjusted on rs.')
         print('sd rs=', sec_dep_rs, '|', type(sec_dep_rs), 'sd qb=', sec_dep_qb, '|', type(sec_dep_qb))
-    '''
+
     ## rr from qbo
     rr_qbo = extraction_wrapper_for_transaction_detail(choice, func=qb_extract_security_deposit, path=Config.rr_2021, keyword='rr')
     ## rr from rent_sheets (see above)
@@ -185,7 +215,7 @@ def nbofi():
 
     data = extraction_wrapper_for_transaction_detail(choice, func=qb_extract_deposit_detail, path=Config.deposit_detail_2021, keyword='deposit')
     print(data)
-    '''
+
     print('joe')
 
 @click.command()
@@ -220,7 +250,6 @@ def placeholder():
 
 cli.add_command(runtime)
 cli.add_command(rebuild_runtime)
-cli.add_command(rebuild_setup)
 cli.add_command(rent_receipts)
 cli.add_command(setupyear)
 cli.add_command(pgdump)
@@ -228,6 +257,8 @@ cli.add_command(merchants)
 cli.add_command(nbofi)
 cli.add_command(placeholder)
 cli.add_command(workorders_todo)
+'''
+cli.add_command(month_setup)
 
 if __name__ == '__main__':
     cli()
