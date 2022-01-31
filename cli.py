@@ -42,11 +42,12 @@ def month_setup(mode=None):
         print('must set a mode at cl')
 
     # the PRESS 1 IS READY GUARD IS FUCKING UP
-# set up testing, sheet clearing
-# formatting of intake, what else can I do with this data
-# I have dataset ready to go: what can I do with it? 
+    # set up testing, sheet clearing
+    # formatting of intake, what else can I do with this data
+    # I have dataset ready to go: what can I do with it? 
+    
     # rent potential
-# I HAVE A PROBLEM GETTING THE FILE INTO WSL FOLDER: i CAN DO IT WITH LINUX OR VSCODE, BUT NOT WINDOWS EXPLORER
+    # I HAVE A PROBLEM GETTING THE FILE INTO WSL FOLDER: i CAN DO IT WITH LINUX OR VSCODE, BUT NOT WINDOWS EXPLORER
 
 
 '''
