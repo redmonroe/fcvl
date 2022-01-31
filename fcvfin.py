@@ -1,6 +1,6 @@
 from __future__ import print_function
-from liltilities import get_existing_sheets, show_files_as_choices, sheet_finder
-from liltilities import Liltilities
+# from utils import get_existing_sheets, show_files_as_choices, sheet_finder
+from utils import Utils
 from receipts import RentReceipts
 from pprint import pprint
 from datetime import datetime, timedelta, date
@@ -8,7 +8,6 @@ from config import RENT_SHEETS2022, CURRENT_YEAR_RS, READ_RANGE_HAP, READ_RANGE_
 from config import Config
 from auth_work import oauth
 from oauth2client.service_account import ServiceAccountCredentials
-from google_api_calls_abstract import broad_get
 import sys
 import os
 import pickle
@@ -865,7 +864,7 @@ def month_setup():
     # G_SUM_ACTRENT = ["=sum(H2:H68)"]
 
     # files
-    # service = oauth(my_scopes, 'sheet')
+    service = oauth(my_scopes, 'sheet')
     format = TemplateFormatSheet()
     format.set_id(service, CURRENT_YEAR_RS, READ_RANGE_PAY_PRE)
 
@@ -901,7 +900,7 @@ def month_setup():
         else:
             layout_month_from_intake()
 
-    # choice = int(input('Options\n PRESS 1 to show current sheets in RENT SHEETS \n PRESS 2 for MONTHLY FORMATTING, PART ONE (that is, update intake sheet from /download_here (xlsx) \n PRESS 3 for MONTHLY FORMATTING, PART TWO: format rent roll & subsidy by month and sheet\n >>>'))
+    choice = int(input('Options\n PRESS 1 to show current sheets in RENT SHEETS \n PRESS 2 for MONTHLY FORMATTING, PART ONE (that is, update intake sheet from /download_here (xlsx) \n PRESS 3 for MONTHLY FORMATTING, PART TWO: format rent roll & subsidy by month and sheet\n >>>'))
 
 
     if choice == 1:

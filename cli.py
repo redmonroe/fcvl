@@ -1,8 +1,8 @@
-from google_api_calls_abstract import simple_batch_update#cli.py
+# from google_api_calls_abstract import simple_batch_update#cli.py
 import click
 from fcvfin import reconciliation_runtime as rr, month_setup as ms, annual_formatting as af
 from receipts import RentReceipts
-from pg_utils import pg_dump_one
+from db_utils import pg_dump_one
 from file_manager import path_to_statements, write_hap
 from pdf import merchants_pdf_extract, nbofi_pdf_extract_hap, qb_extract_p_and_l, qb_extract_security_deposit, qb_extract_deposit_detail
 import click
@@ -24,12 +24,6 @@ def rent_receipts():
 @click.command()
 def rebuild_runtime():
     click.echo('Generate runtime(v2)')
-    
-@click.command()
-def rebuild_setup():
-    click.echo('Setup the sheet for the month(v2)')
-    # ms()
-
 
 @click.command()
 def setup():

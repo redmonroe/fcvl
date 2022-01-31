@@ -10,6 +10,10 @@
 
 - start again when I have an actual bank statement from Jan?
 
+### tests
+
+- start with month setup
+
 ### rent sheets flow:
 
 - what we know: master imported rent roll & deposits correctly, master also generated rent receipts correctly
