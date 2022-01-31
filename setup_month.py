@@ -27,7 +27,7 @@ class MonthSheet:
         self.test_message = 'hi'
         self.full_sheet = full_sheet
         if mode == 'testing':
-            self.service = None
+            self.service = oauth(my_scopes, 'sheet', mode='testing')
         else:
             self.service = oauth(my_scopes, 'sheet')
         self.db = Config.db_rs
@@ -106,7 +106,7 @@ class MonthSheet:
 
     def push_to_intake(self):
         print('pushing selected excel to intake', '| Path:', self.file_input_path)
-        self.file_input_path = Utils.sheet_finder(path=self.file_input_path, function='month setup')
+        self.file_input_path = Utils.sheet_finder(path=self.file_input_path, function='mformat')
         self.t_name, self.unit, self.k_rent, self.subsidy, self.t_rent = self.read_excel(verbose=False)
         self.write_to_rs()
 
