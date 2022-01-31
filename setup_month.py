@@ -23,10 +23,13 @@ class MonthSheet:
     wrange_t_rent1 = f'{ui_sheet}!e{range1}:e{range2}'
     user_text2 = f'\n Please make sure you have run option 3 in the previous menu that formats Intake for the rent sheet. \n Please PRESS 1 when ready . . .'
 
-    def __init__(self, full_sheet, path):
+    def __init__(self, full_sheet, path, mode=None):
         self.test_message = 'hi'
         self.full_sheet = full_sheet
-        self.service = oauth(my_scopes, 'sheet')
+        if mode == 'testing':
+            self.service = None
+        else:
+            self.service = oauth(my_scopes, 'sheet')
         self.db = Config.db_rs
         self.user_choice = None
         self.text_snippet = ''
