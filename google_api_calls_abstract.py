@@ -17,7 +17,8 @@ class GoogleApiCalls:
         response = request.execute()
         print(response)
 
-    def batch_get(self, service, sheet_id, range, col_num): #
+    def batch_get(self, service, sheet_id, range, col_num): 
+        sheet = service.spreadsheets()
         result = sheet.values().get(spreadsheetId=sheet_id,
                                     range=range, majorDimension="ROWS").execute()
 
@@ -30,9 +31,9 @@ class GoogleApiCalls:
                 col.append(COLUMN[col_num])
         return col
 
-    def update(self, service, sheet_choice, data, write_range):
+    def update(self, service, sheet_choice, data, write_range, value_input_option='RAW'):
         sheet = service.spreadsheets()
-        print(sheet_choice)
+    
         spreadsheet_id = sheet_choice
 
         range_ = write_range  # TODO: Update placeholder value.

@@ -33,7 +33,14 @@ class TestMonthSheet():
         ms.push_to_intake()
         result = calls.broad_get(service, Config.TEST_RS, f'{ms.ui_sheet}!A1:A1')
         print(result)
-        assert result[0][0] == 'CD-A'        
+        assert result[0][0] == 'CD-A'      
+
+    def test_export_month_format(self, monkeypatch):  
+        service = oauth(Config.my_scopes, 'sheet', mode='testing')
+
+        ms = MonthSheet(full_sheet=Config.TEST_RS, path=Config.TEST_RS_PATH, mode='testing', test_service=service)
+        
+        calls = GoogleApiCalls()
 
 if __name__ == '__main__':
     test_ms = TestMonthSheet()

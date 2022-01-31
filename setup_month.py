@@ -58,6 +58,7 @@ class MonthSheet:
             self.set_user_choice_push(sheet=sheet_choice)
             if self.user_choice == 1:
                 self.export_month_format(sheet_choice)
+                self.month_write_col(sheet_choice)
 
     def set_user_choice(self):
         self.user_choice = int(input(self.user_text))
@@ -112,14 +113,21 @@ class MonthSheet:
 
     def month_write_col(self, sheet_choice):
         gc = GoogleApiCalls()
-        col2 = gc.batch_get(1) #tenant names #
-        format.update(col2, f'{sheet_choice}!B1:B69')
-        col3 = gc.batch_get(2) # market rate #
-        format.update_int(col3, f'{sheet_choice}!E1:E68')
-        col5 = format.batch_get(3) #actual subsidy #
-        format.update_int(col5, f'{sheet_choice}!F1:F68')
-        col4 = format.batch_get(4) #actual rent charged #
-        format.update_int(col4, f'{sheet_choice}!H1:H68')
+        unit = gc.batch_get(self.service, self.full_sheet, f'{self.ui_sheet}!A1:Z100', 0)
+        gc.update(self.service, self.full_sheet, unit, f'{sheet_choice}!A2:A68')
+        
+        tenant_names = gc.batch_get(self.service, self.full_sheet, f'{self.ui_sheet}!A1:Z100', 1) #tenant names #
+        gc.update(self.service, self.full_sheet, tenant_names, f'{sheet_choice}!B2:B68')
+       
+
+        contract_rent = gc.batch_get(self.service, self.full_sheet, f'{self.ui_sheet}!A1:Z100', 2)
+        gc.update(self.service, self.full_sheet, contract_rent, f'{sheet_choice}!E2:E68', value_input_option='USER_ENTERED')
+        
+        subsidy = gc.batch_get(self.service, self.full_sheet, f'{self.ui_sheet}!A1:Z100', 3)
+        gc.update(self.service, self.full_sheet,subsidy, f'{sheet_choice}!F2:F68', value_input_option='USER_ENTERED')
+        
+        tenant_rent = gc.batch_get(self.service, self.full_sheet, f'{self.ui_sheet}!A1:Z100', 4)
+        gc.update(self.service, self.full_sheet, tenant_rent, f'{sheet_choice}!H2:H68', value_input_option='USER_ENTERED')
 
     def export_month_format(self, sheet_choice):
         gc = GoogleApiCalls()
