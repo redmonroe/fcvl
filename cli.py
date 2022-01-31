@@ -14,7 +14,9 @@ from config import my_scopes, Config
 
 # from fcvfin import reconciliation_runtime as rr, month_setup as ms, annual_formatting as af
 
-
+'''
+MAKE MODE EXPLICIT: DEV PROD TESTING
+'''
 
 # core functionalit:
 # []start with setup_month formatting
@@ -26,16 +28,16 @@ def cli():
 
 @click.command()
 @click.argument('mode')
-def month_setup(mode=None):
-    click.echo('month_setup()=>Make sure to explicitly set mode')
+def mformat(mode=None):
+    click.echo('mformat()=>Make sure to explicitly set mode')
     if mode == 'production':        
-        click.echo('month_setup(): PRODUCTION')
+        click.echo('mformat(): PRODUCTION')
         # ms = MonthSheet(full_sheet=FIX SHEET, path=FIX PATH)
         ms.set_user_choice()
         ms.control()
     elif mode == 'dev':
         click.echo('testing and dev mode')
-        ms = MonthSheet(full_sheet=Config.TEST_RS, path=Config.RS_DL_FILE_PATH)
+        ms = MonthSheet(full_sheet=Config.TEST_RS, path=Config.TEST_RS_PATH)
         ms.set_user_choice()
         ms.control()
     else:
@@ -45,7 +47,7 @@ def month_setup(mode=None):
     # set up testing, sheet clearing
     # formatting of intake, what else can I do with this data
     # I have dataset ready to go: what can I do with it? 
-    
+
     # rent potential
     # I HAVE A PROBLEM GETTING THE FILE INTO WSL FOLDER: i CAN DO IT WITH LINUX OR VSCODE, BUT NOT WINDOWS EXPLORER
 
@@ -259,7 +261,7 @@ cli.add_command(nbofi)
 cli.add_command(placeholder)
 cli.add_command(workorders_todo)
 '''
-cli.add_command(month_setup)
+cli.add_command(mformat)
 
 if __name__ == '__main__':
     cli()
