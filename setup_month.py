@@ -117,8 +117,7 @@ class MonthSheet:
         gc.update(self.service, self.full_sheet, unit, f'{sheet_choice}!A2:A68')
         
         tenant_names = gc.batch_get(self.service, self.full_sheet, f'{self.ui_sheet}!A1:Z100', 1) #tenant names #
-        gc.update(self.service, self.full_sheet, tenant_names, f'{sheet_choice}!B2:B68')
-       
+        gc.update(self.service, self.full_sheet, tenant_names, f'{sheet_choice}!B2:B68')       
 
         contract_rent = gc.batch_get(self.service, self.full_sheet, f'{self.ui_sheet}!A1:Z100', 2)
         gc.update(self.service, self.full_sheet, contract_rent, f'{sheet_choice}!E2:E68', value_input_option='USER_ENTERED')
