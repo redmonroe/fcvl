@@ -42,10 +42,10 @@ class TestMonthSheet():
         ms = MonthSheet(full_sheet=Config.TEST_RS, path=Config.TEST_RS_PATH, mode='testing', test_service=service)
         
         calls = GoogleApiCalls()
-        calls.clear_sheet(service, Config.TEST_RS, f'testjan 22!A1:ZZ100')
+        calls.clear_sheet(service, Config.TEST_RS, f'testjan22 2022!A1:ZZ100')
 
         choice1 = 4
-        choice2 = 0
+        choice2 = 1
         choice3 = 1
         answers = iter([choice1, choice2, choice3])
          # using lambda statement for mocking
@@ -54,8 +54,8 @@ class TestMonthSheet():
         ms.set_user_choice()
         ms.control()
         
-        result = calls.broad_get(service, Config.TEST_RS, 'testjan 22!A1:A1')
-        result2 = calls.broad_get(service, Config.TEST_RS, 'testjan 22!h68:h68') #test formatting  
+        result = calls.broad_get(service, Config.TEST_RS, 'testjan22 2022!A1:A1')
+        result2 = calls.broad_get(service, Config.TEST_RS, 'testjan22 2022!h68:h68') #test formatting  
         assert result[0][0] == 'Unit' #test 
         assert result2[0][0] == '160.00' #test 
 

@@ -32,7 +32,7 @@ class YearSheet:
         self.full_sheet = full_sheet
 
         if mode == 'testing':
-            self.mode = 'testing'
+            self.mode = mode
             self.sleep = 0
             self.service = test_service
             self.shmonths = ['testjan22', 'feb', 'mar']
