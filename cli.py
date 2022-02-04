@@ -9,17 +9,15 @@ from pdf import merchants_pdf_extract, nbofi_pdf_extract_hap, qb_extract_p_and_l
 import click
 from auth_work import oauth
 from config import my_scopes, Config
-# from google_api_calls_abstract import broad_get
-# from liltilities import Liltilities, get_existing_sheets
 
-# from fcvfin import reconciliation_runtime as rr, month_setup as ms, annual_formatting as af
 
 '''
 MAKE MODE EXPLICIT: DEV PROD TESTING
 '''
 
 # core functionalit:
-# []start with setup_month formatting
+# [ ] year formatting
+# [x]start with setup_month formatting
 
 
 @click.group()
@@ -41,15 +39,7 @@ def mformat(mode=None):
         ms.set_user_choice()
         ms.control()
     else:
-        print('must set a mode at cl')
-
-    # the PRESS 1 IS READY GUARD IS FUCKING UP
-    # set up testing, sheet clearing
-    # formatting of intake, what else can I do with this data
-    # I have dataset ready to go: what can I do with it? 
-
-    # rent potential
-    # I HAVE A PROBLEM GETTING THE FILE INTO WSL FOLDER: i CAN DO IT WITH LINUX OR VSCODE, BUT NOT WINDOWS EXPLORER
+        print('must set a mode in cl')
 
 
 '''
