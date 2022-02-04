@@ -3,6 +3,7 @@ import click
 from receipts import RentReceipts
 from db_utils import pg_dump_one
 from setup_month import MonthSheet
+from setup_year import YearSheet
 
 from file_manager import path_to_statements, write_hap
 from pdf import merchants_pdf_extract, nbofi_pdf_extract_hap, qb_extract_p_and_l, qb_extract_security_deposit, qb_extract_deposit_detail
