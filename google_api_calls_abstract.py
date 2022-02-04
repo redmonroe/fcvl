@@ -122,3 +122,16 @@ class GoogleApiCalls:
             body=data
         ).execute()
 
+    def del_one_sheet(self, service, spreadsheet_id, id):
+        f"Deleting sheet {id} . . . "
+        sh_id = spreadsheet_id
+
+        data = {"requests": [
+                {"deleteSheet": {"sheetId": f'{id}'}
+                } ]  }
+        response = service.spreadsheets().batchUpdate(
+            spreadsheetId=sh_id,
+            body=data
+        ).execute()
+        print(response)
+

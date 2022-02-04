@@ -328,20 +328,6 @@ class BookFormat(object):
             self.make_one_sheet(item)
         return shnames
 
-    def del_one_sheet(self, id):
-        f"Deleting sheet {id} . . . "
-        service = self.service
-        sh_id = self.spreadsheet_id
-
-        data = {"requests": [
-                {"deleteSheet": {"sheetId": f'{id}'}
-                } ]  }
-        response = service.spreadsheets().batchUpdate(
-            spreadsheetId=sh_id,
-            body=data
-        ).execute()
-        print(response)
-
     def make_title_list(self, shnames, titles_dict):
         print("Making clean titles list . . . ")
         titles2 = []
