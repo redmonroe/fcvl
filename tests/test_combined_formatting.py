@@ -20,25 +20,24 @@ class TestSheetFormat:
         titles_dict = Utils.get_existing_sheets(service, test_workbook)
         calls = GoogleApiCalls()
 
-        # removal all sheets but 1
-        while len(titles_dict) > 1:
-            print(titles_dict)
-            for name, id2 in titles_dict.items():
-                calls.del_one_sheet(service, test_workbook, id2)
+        intake_ok = False
+        for name, id2 in titles_dict.items():
+            if name == 'intake':
+                intake_ok = True
+                break
+
+        if intake_ok == False:
+            calls.make_one_sheet(service, test_workbook, 'intake')
         
+        # removal all sheets but intake
+        for name, id2, in titles_dict.items():
+            if name != 'intake':
+                calls.del_one_sheet(service, test_workbook, id2)
+       
         titles_dict = Utils.get_existing_sheets(service, test_workbook)
 
-        if list(titles_dict.keys())[0] == 'intake':
-            print('only remaining sheet is named intake')
-        else:
-            calls.make_one_sheet(service, test_workbook, 'intake')
-            calls.del_one_sheet(service, test_workbook, list(titles_dict.values())[0])
-
-        # rename existing to intake
-        # print(titles_dict.values())
-            
-
         assert len(titles_dict) == 1
+        assert list(titles_dict.keys())[0] == 'intake'
         ## if workbook has entries delete them: BE CAREFUL
 
 if __name__ == '__main__':
