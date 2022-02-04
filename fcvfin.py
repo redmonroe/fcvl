@@ -691,25 +691,25 @@ def reconciliation_runtime():
         DBIntake.DB2RS()
 
 def annual_formatting():
-    import time
-    # CONSTANT FORMULAS
-    G_SHEETS_HAP_COLLECTED = ["=D81"]
-    G_SHEETS_TENANT_COLLECTED = ["=K69"]
-    G_SUM_STARTBAL = ["=sum(D2:D68)"]
-    G_SUM_ENDBAL = ["=sum(L2:L68)"]
-    G_SHEETS_SUM_PAYMENT = ["=sum(K2:K68)"]
-    G_SHEETS_GRAND_TOTAL = ["=sum(K71:K76)"]
-    MF_SUM_FORMULA = ["=sum(H81:H84)"]
-    MF_PERCENT_FORMULA = ["=product(H85, .08)"]
-    MF_FORMULA = ["=H86"]
-    CURRENT_BALANCE = ["=sum(D2,H2,J2,-K2)"]
-    # UI header names and formatting
-    HEADER_NAMES = ['Unit', 'Tenant Name', 'Notes', 'Balance Start', 'Contract Rent', 'Actual Subsidy',
-    'Hap received', 'Tenant Rent', 'Charge Type', 'Charge Amount', 'Payment Made', 'Balance Current', 'Payment Plan/Action']
-    MF_FORMATTING_TEXT = ['managment fee>', 'hap collected>', 'positive adj', 'damages',
-    'tenant rent collected', 'total', '0.08']
-    DEPOSIT_BOX_VERTICAL = ['rr', 'hap', 'ten', 'ten', 'ten', 'ten', 'ten', 'ten', 'ten','ten']
-    DEPOSIT_BOX_HORIZONTAL = ['month', 'date']
+    # import time
+    # # CONSTANT FORMULAS
+    # G_SHEETS_HAP_COLLECTED = ["=D81"]
+    # G_SHEETS_TENANT_COLLECTED = ["=K69"]
+    # G_SUM_STARTBAL = ["=sum(D2:D68)"]
+    # G_SUM_ENDBAL = ["=sum(L2:L68)"]
+    # G_SHEETS_SUM_PAYMENT = ["=sum(K2:K68)"]
+    # G_SHEETS_GRAND_TOTAL = ["=sum(K71:K76)"]
+    # MF_SUM_FORMULA = ["=sum(H81:H84)"]
+    # MF_PERCENT_FORMULA = ["=product(H85, .08)"]
+    # MF_FORMULA = ["=H86"]
+    # CURRENT_BALANCE = ["=sum(D2,H2,J2,-K2)"]
+    # # UI header names and formatting
+    # HEADER_NAMES = ['Unit', 'Tenant Name', 'Notes', 'Balance Start', 'Contract Rent', 'Actual Subsidy',
+    # 'Hap received', 'Tenant Rent', 'Charge Type', 'Charge Amount', 'Payment Made', 'Balance Current', 'Payment Plan/Action']
+    # MF_FORMATTING_TEXT = ['managment fee>', 'hap collected>', 'positive adj', 'damages',
+    # 'tenant rent collected', 'total', '0.08']
+    # DEPOSIT_BOX_VERTICAL = ['rr', 'hap', 'ten', 'ten', 'ten', 'ten', 'ten', 'ten', 'ten','ten']
+    # DEPOSIT_BOX_HORIZONTAL = ['month', 'date']
 
     service = oauth(my_scopes, 'sheet')
     ui = UI()
