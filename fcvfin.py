@@ -711,7 +711,7 @@ def annual_formatting():
     # DEPOSIT_BOX_VERTICAL = ['rr', 'hap', 'ten', 'ten', 'ten', 'ten', 'ten', 'ten', 'ten','ten']
     # DEPOSIT_BOX_HORIZONTAL = ['month', 'date']
 
-    service = oauth(my_scopes, 'sheet')
+    # service = oauth(my_scopes, 'sheet')
     ui = UI()
     bookformat = BookFormat()
     bookformat.set_id(service, CURRENT_YEAR_RS, R_RANGE_INTAKE_UNITS)

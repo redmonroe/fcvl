@@ -33,9 +33,26 @@ class YearSheet:
             self.service = test_service
         else:
             self.service = oauth(my_scopes, 'sheet')
+        self.user_text = f'Options:\n PRESS 1 to show all current sheets in {CURRENT_YEAR_RS} \n PRESS 2 to delete sheets from list sheet id \n PRESS 3 to create list of sheet NAMES \n PRESS 4 to deploy monthly formatting tools. *****YOU NEED TO MANUALLY MAKE AN INTAKE SHEET AFTER RUNNING OPTION 3(this is the full year auto option; takes 45 min) \n >>>'
+        self.user_choice = None
 
+    def control(self):
+        if self.user_choice == 1:
+            print('opetion 1')
+            # self.show_current_sheets(interactive=False)
+        # elif self.user_choice == 2:
+        #     self.walk_download_folder()
+        # elif self.user_choice == 3:
+        #     self.push_to_intake()
+        # elif self.user_choice == 4:
+        #     sheet_choice, selection = self.show_current_sheets(interactive=True)
+        #     self.set_user_choice_push(sheet=sheet_choice)
+        #     if self.user_choice == 1:
+        #         self.export_month_format(sheet_choice)
+        #         self.month_write_col(sheet_choice)
 
-
+    def set_user_choice(self):
+        self.user_choice = int(input(self.user_text))
 
     '''
 
