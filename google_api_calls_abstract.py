@@ -98,4 +98,27 @@ class GoogleApiCalls:
         for value in values_:
             values.append(value)
         return values
+    
+    def make_one_sheet(self, service, spreadsheet_id, sheet_title):
+        sh_id = spreadsheet_id
+
+        data = {
+            'requests': [{
+                'addSheet': {
+                    'properties': {
+                        'title': sheet_title,
+                        'tabColor': {
+                            'red': 0.44,
+                            'green': 0.99,
+                            'blue': 0.50
+                        }
+                    }
+                }
+            }]
+        }
+
+        response = service.spreadsheets().batchUpdate(
+            spreadsheetId=sh_id,
+            body=data
+        ).execute()
 

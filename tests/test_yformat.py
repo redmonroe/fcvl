@@ -18,5 +18,27 @@ class TestYearSheet():
         ys = YearSheet(full_sheet=Config.TEST_RS, mode='testing', test_service=service)
         assert ys.test_message == 'hi_from_year_sheets!'
 
+    def test_control(self):
+        service = oauth(Config.my_scopes, 'sheet', mode='testing')
+        ys = YearSheet(full_sheet=Config.TEST_RS, mode='testing', test_service=service)
+
+        choice1 = 1
+        answers = iter([choice1])
+         # using lambda statement for mocking
+        monkeypatch.setattr('builtins.input', lambda name: next(answers))
+        ys.set_user_choice()
+        assert ys.user_choice == 1
+
+    def test_make_sheets(self):
+        service = oauth(Config.my_scopes, 'sheet', mode='testing')
+        ys = YearSheet(full_sheet=Config.TEST_RS, mode='testing', test_service=service)
+
+        choice1 = 1
+        answers = iter([choice1])
+         # using lambda statement for mocking
+        monkeypatch.setattr('builtins.input', lambda name: next(answers))
+        ys.set_user_choice()
+        assert ys.user_choice == 1
+
 if __name__ == '__main__':
     test_ys = TestYearSheet()

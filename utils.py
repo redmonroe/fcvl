@@ -7,6 +7,7 @@ from openpyxl import load_workbook
 from decimal import Decimal
 import xlrd
 import pandas as pd
+from google_api_calls_abstract import GoogleApiCalls
 
 class Utils:
 
@@ -129,6 +130,15 @@ class Utils:
         sheet = workbook.active
         print(f"Opening {sheet} from book {workbook} . . .  ")
         return sheet
+    
+    @staticmethod
+    def make_sheet_names(months, year):
+        shnames = [] # is list okay
+        for i in range(len(months)):
+            shname = months[i] + " " + year[0]
+            shnames.append(shname)
+        return shnames
+
         
     def get_book_name(service, sh_id):
         response = service.spreadsheets().get(

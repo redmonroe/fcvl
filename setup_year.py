@@ -5,6 +5,7 @@ from db_utils import DBUtils
 from google_api_calls_abstract import GoogleApiCalls
 import pathlib
 import time
+from time import sleep
 
 class YearSheet:
 
@@ -29,19 +30,26 @@ class YearSheet:
     def __init__(self, full_sheet=None, mode=None, test_service=None):
         self.test_message = 'hi_from_year_sheets!'
         self.full_sheet = full_sheet
+
         if mode == 'testing':
+            self.mode = 'testing'
+            self.sleep = 0
             self.service = test_service
+            self.shmonths = ['testjan22', 'feb', 'mar']
         else:
+            self.sleep = 30
             self.service = oauth(my_scopes, 'sheet')
-        self.user_text = f'Options:\n PRESS 1 to show all current sheets in {CURRENT_YEAR_RS} \n PRESS 2 to delete sheets from list sheet id \n PRESS 3 to create list of sheet NAMES \n PRESS 4 to deploy monthly formatting tools. *****YOU NEED TO MANUALLY MAKE AN INTAKE SHEET AFTER RUNNING OPTION 3(this is the full year auto option; takes 45 min) \n >>>'
+            self.shmonths = ['jan', 'feb', 'mar', 'apr', 'may', 'june', 'july', 'aug', 'sep', 'oct', 'nov', 'dec']
+
+        self.user_text = f'Options:\n PRESS 1 to show all current sheets in {self.full_sheet} \n PRESS 2 to create list of sheet NAMES \n PRESS 3 to format all months. *****YOU NEED TO MANUALLY MAKE AN INTAKE SHEET AFTER RUNNING OPTION 3(this is the full year auto option; takes 45 min) \n >>>'
         self.user_choice = None
+        self.shyear = [f'{Config.current_year}']
 
     def control(self):
         if self.user_choice == 1:
-            print('opetion 1')
-            # self.show_current_sheets(interactive=False)
-        # elif self.user_choice == 2:
-        #     self.walk_download_folder()
+            self.show_current_sheets(interactive=False)
+        elif self.user_choice == 2:
+            self.make_sheets()
         # elif self.user_choice == 3:
         #     self.push_to_intake()
         # elif self.user_choice == 4:
@@ -54,22 +62,30 @@ class YearSheet:
     def set_user_choice(self):
         self.user_choice = int(input(self.user_text))
 
-    '''
+    def show_current_sheets(self, interactive=False):
+        print('showing current sheets')
+        titles_dict = Utils.get_existing_sheets(self.service, self.full_sheet)
+        path = Utils.show_files_as_choices(titles_dict, interactive=interactive)
+        if interactive == True:
+            return path
 
-    HEADER_NAMES = ['Unit', 'Tenant Name', 'Notes', 'Balance Start', 'Contract Rent', 'Subsity Entitlement',
-    'Hap received', 'Tenant Rent', 'Charge Type', 'Charge Amount', 'Payment Made', 'Balance Current', 'Payment Plan/Action']
-    G_SUM_KRENT = ["=sum(E2:E68)"]
-    G_SUM_ACTSUBSIDY = ["=sum(F2:F68)"]
-    G_SUM_ACTRENT = ["=sum(H2:H68)"]
-    ui_sheet = 'intake'
-    range1 = '1'
-    range2 = '100'
-    wrange_unit1 = f'{ui_sheet}!A{range1}:A{range2}'
-    wrange_t_name1 = f'{ui_sheet}!B{range1}:B{range2}'
-    wrange_k_rent1 = f'{ui_sheet}!c{range1}:c{range2}'
-    wrange_subsidy1 = f'{ui_sheet}!d{range1}:d{range2}'
-    wrange_t_rent1 = f'{ui_sheet}!e{range1}:e{range2}'
-    user_text2 = f'\n Please make sure you have run option 3 in the previous menu that formats Intake for the rent sheet. \n Please PRESS 1 when ready . . .'
+    def make_sheets(self):
+        titles_dict = Utils.get_existing_sheets(self.service, self.full_sheet)
+        sheet_names = Utils.make_sheet_names(self.shmonths, self.shyear)
+        # Utils.make_sheets_from_sheet_names
+        calls = GoogleApiCalls()
+
+        for sheet_title in sheet_names:
+            print(f'writing {sheet_title}')
+            calls.make_one_sheet(self.service, self.full_sheet, sheet_title)
+            sleep(self.sleep)
+            print(f'taking {self.sleep} second nap to preserve writes. zzz...')
+
+    
+    
+    
+    
+    '''
 
     def __init__(self, full_sheet, path, mode=None, test_service=None):
         self.test_message = 'hi'
@@ -114,13 +130,6 @@ class YearSheet:
     def set_user_choice_push(self, sheet):
         print(f'\n You have chosen to work with: {sheet}')
         self.user_choice = int(input(self.user_text2))
-
-    def show_current_sheets(self, interactive=False):
-        print('showing current sheets')
-        titles_dict = Utils.get_existing_sheets(self.service, self.full_sheet)
-        path = Utils.show_files_as_choices(titles_dict, interactive=interactive)
-        if interactive == True:
-            return path
 
     def walk_download_folder(self):
         print('showing ALL items in download folder')

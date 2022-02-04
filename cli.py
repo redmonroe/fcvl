@@ -42,6 +42,26 @@ def mformat(mode=None):
     else:
         print('must set a mode in cl')
 
+@click.command()
+@click.argument('mode')
+def yformat(mode=None):
+    click.echo('yformat()=>Make sure to explicitly set mode')
+    if mode == 'production':
+        click.echo('yformat(): PRODUCTION')
+        # ys = YearSheet(FIXXXXXXXXXXXXXXXXXXXXXXXXXXX)
+        ys.set_user_choice()
+        ys.control()
+    elif mode == 'dev':
+        click.echo('testing and dev mode')
+        service = oauth(my_scopes, 'sheet')
+        ys = YearSheet(full_sheet=Config.TEST_RS, mode='testing', test_service=service)
+        ys.set_user_choice()
+        ys.control()
+    else:
+        print('must set mode in cl')
+
+    # MAKE INTAKE, make exception if already exists
+
 
 '''
 @click.command()
@@ -217,12 +237,6 @@ def runtime():
     click.echo('Running reconciliation runtime')
     rr()
 
-
-@click.command()
-def setupyear():
-    click.echo('Setup the sheet for the year & a lot of sheet utilities')
-    af()
-
 @click.command()
 def pgdump():
     click.echo('Dumping current tables to pg_backup folder.')
@@ -245,7 +259,6 @@ def placeholder():
 cli.add_command(runtime)
 cli.add_command(rebuild_runtime)
 cli.add_command(rent_receipts)
-cli.add_command(setupyear)
 cli.add_command(pgdump)
 cli.add_command(merchants)
 cli.add_command(nbofi)
@@ -253,6 +266,7 @@ cli.add_command(placeholder)
 cli.add_command(workorders_todo)
 '''
 cli.add_command(mformat)
+cli.add_command(yformat)
 
 if __name__ == '__main__':
     cli()
