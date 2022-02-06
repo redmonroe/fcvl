@@ -4,6 +4,7 @@ from receipts import RentReceipts
 from db_utils import pg_dump_one
 from setup_month import MonthSheet
 from setup_year import YearSheet
+from build_rs import BuildRS
 
 from file_manager import path_to_statements, write_hap
 from pdf import merchants_pdf_extract, nbofi_pdf_extract_hap, qb_extract_p_and_l, qb_extract_security_deposit, qb_extract_deposit_detail
@@ -60,7 +61,23 @@ def yformat(mode=None):
     else:
         print('must set mode in cl')
 
-    # MAKE INTAKE, make exception if already exists
+@click.command()
+@click.argument('mode')
+def buildrs(mode=None):
+    click.echo('buildrs()=> Make sure to explicitly set mode')
+    if mode == 'production':
+        click.echo('buildrs(): PRODUCTION')
+        # ys = BuildRSFIXXXXXXXXXXXXXXXXXXXXXXXXXXX)
+        ys.set_user_choice()
+        ys.control()
+    elif mode == 'dev':
+        click.echo('testing and dev mode')
+        service = oauth(my_scopes, 'sheet')
+        ys = BuildRS(full_sheet=Config.TEST_RS, mode='testing', test_service=service)
+        ys.set_user_choice()
+        ys.control()
+    else:
+        print('must set mode in cl')
 
 
 '''
@@ -256,8 +273,6 @@ def placeholder():
     click.echo('put whatever you need to here')
 
 
-cli.add_command(runtime)
-cli.add_command(rebuild_runtime)
 cli.add_command(rent_receipts)
 cli.add_command(pgdump)
 cli.add_command(merchants)
@@ -265,6 +280,7 @@ cli.add_command(nbofi)
 cli.add_command(placeholder)
 cli.add_command(workorders_todo)
 '''
+cli.add_command(buildrs)
 cli.add_command(mformat)
 cli.add_command(yformat)
 
