@@ -20,6 +20,6 @@ class BuildRS:
         target_dir = os.listdir(self.path)
         for item in target_dir:
             td = os.path.join(self.path, item)
-            file_stat = os.stat(td.st_ctime)
+            file_stat = os.stat(dir(td)
             print(file_stat)
         
