@@ -68,14 +68,14 @@ def buildrs(mode=None):
     if mode == 'production':
         click.echo('buildrs(): PRODUCTION')
         # ys = BuildRSFIXXXXXXXXXXXXXXXXXXXXXXXXXXX)
-        ys.set_user_choice()
-        ys.control()
+        # ys.set_user_choice()
+        # ys.control()
     elif mode == 'dev':
         click.echo('testing and dev mode')
-        service = oauth(my_scopes, 'sheet')
-        ys = BuildRS(full_sheet=Config.TEST_RS, mode='testing', test_service=service)
-        ys.set_user_choice()
-        ys.control()
+        # service = oauth(my_scopes, 'sheet')
+        ys = BuildRS(path=Config.TEST_RS_PATH)
+        ys.to_xlsx()
+        # ys.control()
     else:
         print('must set mode in cl')
 

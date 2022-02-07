@@ -43,9 +43,10 @@ class Utils:
                 xls_list.append(items)
                 xls_name.append(file_name_no_ext)
 
-        for items, names in zip(xls_list, xls_name):       
-            df = pd.read_excel(items)
-            df.to_excel(f'{names}.xlsx', index = False)
+        print(xls_list)
+        # for items, names in zip(xls_list, xls_name):       
+            # df = pd.read_excel(items)
+            # df.to_excel(f'{names}.xlsx', index = False)
 
     @staticmethod
     def pick_rent_sheet(service, workbook_id): # ie RENT_SHEETS2020
