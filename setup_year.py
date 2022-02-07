@@ -44,6 +44,7 @@ class YearSheet:
         self.user_text = f'Options:\n PRESS 1 to show all current sheets in {self.full_sheet} \n PRESS 2 to create list of sheet NAMES \n PRESS 3 to format all months. *****YOU NEED TO MANUALLY MAKE AN INTAKE SHEET AFTER RUNNING OPTION 3(this is the full year auto option; takes 45 min) \n >>>'
         self.user_choice = None
         self.shyear = [f'{Config.current_year}']
+        self.calls = GoogleApiCalls()
 
     def control(self):
         if self.user_choice == 1:
@@ -81,9 +82,15 @@ class YearSheet:
             sleep(self.sleep)
             print(f'taking {self.sleep} second nap to preserve writes. zzz...')
 
+    def formatting_runner(self):
+        self.formatting_runner()
+        time.sleep(self.sleep)
     
-    
-    
+
+    def format_units(self):
+        print(self.calls)
+
+
     
     '''
 

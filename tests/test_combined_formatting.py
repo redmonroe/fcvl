@@ -55,6 +55,16 @@ class TestSheetFormat:
         ys.control()
         titles_dict = Utils().get_existing_sheets(service,test_workbook)
         assert len(titles_dict) == 4
+    
+    def test_year_format(self):
+        ys = YearSheet(full_sheet=test_workbook, mode='testing', test_service=service)
+        choice1 = 3
+        answers = iter([choice1])
+        monkeypatch.setattr('builtins.input', lambda name: next(answers))
+        ys.set_user_choice()
+        ys.control()
+        assert ys.calls == 1
+
 
     def test_teardown_month_sheets(self):
         ys = YearSheet(full_sheet=test_workbook, mode='testing', test_service=service)
