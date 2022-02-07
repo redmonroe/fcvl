@@ -17,11 +17,12 @@ monkeypatch = MonkeyPatch()
 
 # removal all but intake
 # then make month sheets from partial test list
+service = oauth(Config.my_scopes, 'sheet', mode='testing')
+calls = GoogleApiCalls()
 
 class TestSheetFormat:
     
     def test_setup_intake(self):
-        service = oauth(Config.my_scopes, 'sheet', mode='testing')
         titles_dict = Utils.get_existing_sheets(service, test_workbook)
         calls = GoogleApiCalls()
 
@@ -45,7 +46,6 @@ class TestSheetFormat:
         assert list(titles_dict.keys())[0] == 'intake'
 
     def test_setup_make_month_sheets(self, monkeypatch):
-        service = oauth(Config.my_scopes, 'sheet', mode='testing')
         ys = YearSheet(full_sheet=test_workbook, mode='testing', test_service=service)
 
         choice1 = 2
@@ -53,10 +53,19 @@ class TestSheetFormat:
         monkeypatch.setattr('builtins.input', lambda name: next(answers))
         ys.set_user_choice()
         ys.control()
-        assert ys.user_choice == 2
+        titles_dict = Utils().get_existing_sheets(service,test_workbook)
+        assert len(titles_dict) == 4
 
     def test_teardown_month_sheets(self):
-        pass
+        ys = YearSheet(full_sheet=test_workbook, mode='testing', test_service=service)
+        titles_dict = Utils().get_existing_sheets(service,test_workbook)
+        for name, id2, in titles_dict.items():
+            if name != 'intake':
+                calls.del_one_sheet(service, test_workbook, id2)
+
+        titles_dict1 = Utils().get_existing_sheets(service,test_workbook)        
+        
+        assert len(titles_dict1) == 1
 
 
         # assert dir(ys) == 1
