@@ -1,5 +1,6 @@
 import sys
 import os
+import time
 current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
 sys.path.append(parent)
@@ -63,12 +64,18 @@ class TestSheetFormat:
         monkeypatch.setattr('builtins.input', lambda name: next(answers))
         ys.set_user_choice()
         ys.control()
-        assert ys.calls == 1
+
+        result = calls.broad_get(service, Config.TEST_RS, 'testjan22 2022!A2:A2')
+        time.sleep(1)
+        # result2 = calls.broad_get(service, Config.TEST_RS, 'testjan22 2022!h68:h68') #test formatting  
+        assert result[0][0] == 'CD-A' #test 
 
 
     def test_teardown_month_sheets(self):
         ys = YearSheet(full_sheet=test_workbook, mode='testing', test_service=service)
         titles_dict = Utils().get_existing_sheets(service,test_workbook)
+
+        calls.clear_sheet(service, test_workbook, 'intake!A1:ZZ100')
         for name, id2, in titles_dict.items():
             if name != 'intake':
                 calls.del_one_sheet(service, test_workbook, id2)

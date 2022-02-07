@@ -144,58 +144,6 @@ class TemplateFormatSheet(object):
         response = request.execute()
         print(response)
 
-    def write_formula_column(self, data, write_range):
-        pprint(f"Writing {data} to {write_range}  . . .")
-        service = self.service
-        sheet = service.spreadsheets()
-        spreadsheet_id = self.spreadsheet_id
-        range_ = write_range  # TODO: Update placeholder value.
-        # How the input data should be interpreted.
-        value_input_option = 'USER_ENTERED'
-        value_range_body = {
-                            "values": [data]
-        }
-
-        request = service.spreadsheets().values().update(spreadsheetId=spreadsheet_id, range=range_, valueInputOption=value_input_option, body=value_range_body)
-        response = request.execute()
-
-    def format_row(self, write_range, r_or_c, name_list): # and writing strings to ranges passed
-        pprint("Formatting row . . .")
-        service = self.service
-        sheet = service.spreadsheets()
-        spreadsheet_id = self.spreadsheet_id
-        pprint(service)
-        pprint(sheet)
-
-        range_ = write_range  # TODO: Update placeholder value.
-
-        # How the input data should be interpreted.
-        value_input_option = 'USER_ENTERED'  #
-
-        value_range_body = {"range": write_range,
-                            "majorDimension": r_or_c,
-                            "values": [name_list]
-            # TODO: Add desired entries to the request body. All existing entries
-            # will be replaced.
-        }
-
-        request = service.spreadsheets().values().update(spreadsheetId=spreadsheet_id, range=range_, valueInputOption=value_input_option, body=value_range_body)
-        response = request.execute()
-
-    def date_stamp(self, range):
-        service = self.service
-        sheet = service.spreadsheets()
-        spreadsheet_id = self.spreadsheet_id
-        d = ["Generated on:"]
-        d.append(str(datetime.now()))
-
-        range_ = range
-        value_input_option = 'USER_ENTERED'
-        value_range_body = {"range": range,
-                        "values": [d]
-                        }
-        request = service.spreadsheets().values().update(spreadsheetId=spreadsheet_id, range=range_, valueInputOption=value_input_option, body=value_range_body)
-        response = request.execute()
     # bolds 1 row, freezes num of rows
     def bold_freeze(self, sheet_id, num):
         service = self.service
@@ -722,26 +670,31 @@ def annual_formatting():
             """writes the unit numbers programmatically with batchUpdate"""
             wrange_unit = f'{item}!A1:A68'
             sheet_id = CURRENT_YEAR_RS
-            format.simple_batch_update(service, sheet_id, wrange_unit, units, "COLUMNS")
+            # format.simple_batch_update(service, sheet_id, wrange_unit, units, "COLUMNS")
 
             pprint("Updating formulas . . . ")
             pprint("Please be sure to fill down formulas or write script that does so.")
             # writes one cell with tenant balance last month formula
             # writes formula for tenant balance (does not change every month)
-            format.write_formula_column(CURRENT_BALANCE, f'{item}!L2:L2')#
+            # format.write_formula_column(CURRENT_BALANCE, f'{item}!L2:L2')#
             # writes sum formula in cell D69, user must extend manually
-            format.write_formula_column(G_SUM_STARTBAL, f'{item}!D69:D69')#
+            # format.write_formula_column(G_SUM_STARTBAL, f'{item}!D69:D69')
             # # writes sum formula in cell L2, user must extend manually
-            format.write_formula_column(G_SHEETS_SUM_PAYMENT, f'{item}!K69:K69')#
-            format.write_formula_column(G_SUM_ENDBAL, f'{item}!l69:l69')#
+            # format.write_formula_column(G_SHEETS_SUM_PAYMENT, f'{item}!K69:K69')
+            # format.write_formula_column(G_SUM_ENDBAL, f'{item}!l69:l69')
 
             pprint("Placing data stamp, formatting management fee box . . .")
-            format.date_stamp(f"{item}!A70:B70")
-            format.format_row(f"{item}!H81:H81", "ROWS", G_SHEETS_HAP_COLLECTED)
-            format.format_row(f"{item}!H84:H84", "ROWS", G_SHEETS_TENANT_COLLECTED)
-            format.write_formula_column(MF_SUM_FORMULA, f'{item}!H85:H85')
-            format.write_formula_column(MF_PERCENT_FORMULA, f'{item}!H86:H86')
-            format.write_formula_column(MF_PERCENT_FORMULA, f'{item}!H80:H80')
+            # format.date_stamp(f"{item}!A70:B70")
+
+
+            # format.format_row(f"{item}!H81:H81", "ROWS", G_SHEETS_HAP_COLLECTED)
+
+
+            # format.format_row(f"{item}!H84:H84", "ROWS", G_SHEETS_TENANT_COLLECTED)
+
+            # format.write_formula_column(MF_SUM_FORMULA, f'{item}!H85:H85')
+            # format.write_formula_column(MF_PERCENT_FORMULA, f'{item}!H86:H86')
+            # format.write_formula_column(MF_PERCENT_FORMULA, f'{item}!H80:H80')
 
             def grand_total(range_1, range_2, range_3, range_4):
                 # added sd_total later, may have included some bug, although it worked at the time: 07/05/2020

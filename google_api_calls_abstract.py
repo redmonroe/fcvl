@@ -135,3 +135,37 @@ class GoogleApiCalls:
         ).execute()
         print(response)
 
+    def write_formula_column(self, service, sheet_id, data, write_range):
+        value_input_option = 'USER_ENTERED'
+        value_range_body = {
+                            "values": [data]
+        }
+
+        request = service.spreadsheets().values().update(spreadsheetId=sheet_id, range=write_range, valueInputOption=value_input_option, body=value_range_body)
+        response = request.execute()
+
+    def format_row(self, service, sheet_id, write_range, r_or_c, name_list):
+        range_ = write_range 
+        value_input_option = 'USER_ENTERED'  #
+        value_range_body = {"range": write_range,
+                            "majorDimension": r_or_c,
+                            "values": [name_list]
+        }
+
+        request = service.spreadsheets().values().update(spreadsheetId=sheet_id, range=write_range, valueInputOption=value_input_option, body=value_range_body)
+        response = request.execute()
+
+    def date_stamp(self, service, sheet_id, wrange):
+        from datetime import datetime
+
+        d = ["Generated on:"]
+        d.append(datetime.now().strftime('%Y-%m-%d'))
+        d = ''.join(d)
+
+        value_input_option = 'USER_ENTERED'
+        value_range_body = {"range": wrange,
+                        "values": [[d]]
+                        }
+        request = service.spreadsheets().values().update(spreadsheetId=sheet_id, range=wrange, valueInputOption=value_input_option, body=value_range_body)
+        response = request.execute()
+

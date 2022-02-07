@@ -45,14 +45,16 @@ class YearSheet:
         self.user_choice = None
         self.shyear = [f'{Config.current_year}']
         self.calls = GoogleApiCalls()
+        self.units = Config.units
+        self.wrange_unit = '!A2:A68'
 
     def control(self):
         if self.user_choice == 1:
             self.show_current_sheets(interactive=False)
         elif self.user_choice == 2:
             self.make_sheets()
-        # elif self.user_choice == 3:
-        #     self.push_to_intake()
+        elif self.user_choice == 3:
+            self.formatting_runner()
         # elif self.user_choice == 4:
         #     sheet_choice, selection = self.show_current_sheets(interactive=True)
         #     self.set_user_choice_push(sheet=sheet_choice)
@@ -83,12 +85,34 @@ class YearSheet:
             print(f'taking {self.sleep} second nap to preserve writes. zzz...')
 
     def formatting_runner(self):
-        self.formatting_runner()
-        time.sleep(self.sleep)
-    
 
-    def format_units(self):
-        print(self.calls)
+        titles_list = list(Utils.get_existing_sheets(self.service, self.full_sheet))
+        titles_list.remove('intake')
+
+        for sheet in titles_list:
+            self.format_units(sheet)
+            self.calls.write_formula_column(self.service, self.full_sheet, self.CURRENT_BALANCE, f'{sheet}!L2:L2')
+            self.calls.write_formula_column(self.service, self.full_sheet, self.G_SUM_STARTBAL, f'{sheet}!D69:D69')
+            self.calls.write_formula_column(self.service, self.full_sheet, self.G_SUM_ENDBAL, f'{sheet}!K69:K69')
+            self.calls.write_formula_column(self.service, self.full_sheet, self.MF_SUM_FORMULA, f'{sheet}!H85:H85')
+            self.calls.write_formula_column(self.service, self.full_sheet, self.MF_PERCENT_FORMULA, f'{sheet}!H86:H86')
+            self.calls.write_formula_column(self.service, self.full_sheet, self.MF_PERCENT_FORMULA, f'{sheet}!H80:H80')
+
+            self.calls.format_row(self.service, self.full_sheet, f'{sheet}!H81:H81', 'ROWS', self.G_SHEETS_HAP_COLLECTED)
+            self.calls.format_row(self.service, self.full_sheet, f'{sheet}!H84:H84', 'ROWS', self.G_SHEETS_TENANT_COLLECTED)
+
+            self.calls.date_stamp(self.service, self.full_sheet, f'{sheet}!A70:A70')
+
+
+
+            # self.calls.date_stamp(range)
+
+    
+            time.sleep(self.sleep)
+
+    def format_units(self, sheet):
+        self.calls.simple_batch_update(self.service, self.full_sheet, f'{sheet}{self.wrange_unit}', self.units, 'COLUMNS')
+
 
 
     
