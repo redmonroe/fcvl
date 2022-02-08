@@ -55,6 +55,7 @@ class YearSheet:
         self.calls = GoogleApiCalls()
         self.units = Config.units
         self.wrange_unit = '!A2:A68'
+        self.sheet_id_list = None
 
     def control(self):
         if self.user_choice == 1:
@@ -95,10 +96,12 @@ class YearSheet:
     def formatting_runner(self):
 
         titles_dict = Utils.get_existing_sheets(self.service, self.full_sheet)
+        titles_dict = {name:id2 for name, id2 in titles_dict.items() if name != 'intake'}
         titles_list = list(titles_dict)
-        titles_list.remove('intake')
 
-        for sheet in titles_list:
+        self.make_sheet_id(titles_dict)
+        
+        for sheet, sheet_id in titles_dict.items():
             self.format_units(sheet)
             self.calls.write_formula_column(self.service, self.full_sheet, self.CURRENT_BALANCE, f'{sheet}!L2:L2')
             self.calls.write_formula_column(self.service, self.full_sheet, self.G_SUM_STARTBAL, f'{sheet}!D69:D69')
@@ -116,20 +119,26 @@ class YearSheet:
             self.calls.format_row(self.service, self.full_sheet, f'{sheet}!M73:M74', 'ROWS', self.sd_total)
 
             self.calls.format_row(self.service, self.full_sheet, f'{sheet}!A1:M1', 'ROWS', self.HEADER_NAMES)
-            self.calls.format_row(self.service, self.full_sheet, f'{sheet}!G80:G86', 'ROWS', self.MF_FORMATTING_TEXT)
+            self.calls.format_row(self.service, self.full_sheet, f'{sheet}!G80:G86', 'COLUMNS', self.MF_FORMATTING_TEXT)
             self.calls.format_row(self.service, self.full_sheet, f'{sheet}!E80:E89', 'COLUMNS', self.DEPOSIT_BOX_VERTICAL)
-            self.calls.format_row(self.service, self.full_sheet, f'{sheet}!B80:C80', 'COLUMNS', self.DEPOSIT_BOX_HORIZONTAL)
+            self.calls.format_row(self.service, self.full_sheet, f'{sheet}!B80:C80', 'ROWS', self.DEPOSIT_BOX_HORIZONTAL)
             
             self.calls.write_formula_column(self.service, self.full_sheet, self.G_SHEETS_SD_TOTAL, f'{sheet}!N73:N73')
             self.calls.write_formula_column(self.service, self.full_sheet, self.G_SHEETS_GRAND_TOTAL, f'{sheet}!K77')
             self.calls.write_formula_column(self.service, self.full_sheet, self.G_SHEETS_LAUNDRY_STOTAL, f'{sheet}!N71:N71')
             
             self.calls.date_stamp(self.service, self.full_sheet, f'{sheet}!A70:A70')
+
+            self.calls.bold_freeze(self.service, self.full_sheet, sheet_id, 1)
+            self.calls.bold_range(self.service, self.full_sheet, sheet_id, 1, 5, 79, 90)
+            self.calls.bold_range(self.service, self.full_sheet, sheet_id, 0, 100, 68, 69)
     
+            time.sleep(30)
             time.sleep(self.sleep)
 
     def format_units(self, sheet):
         self.calls.simple_batch_update(self.service, self.full_sheet, f'{sheet}{self.wrange_unit}', self.units, 'COLUMNS')
 
-    def qol_formatting(self, sheet_id, num1=None, num2=None, num3=None, num4=None):
-        self.calls.bold_freeze(self.service, self.full_sheet, sheet_id, num1)
+    def make_sheet_id(self, titles_dict):
+        self.sheet_id_list = list(titles_dict.values())
+        print(self.sheet_id_list)

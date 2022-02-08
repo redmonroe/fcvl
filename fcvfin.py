@@ -88,39 +88,6 @@ class TemplateFormatSheet(object):
 
         print(response)
 
-    # bolds 1 row, freezes num of rows
-
-    def bold_range(self, sheet_id, start_col, end_col, start_row, end_row):
-        service = self.service
-        sheet = service.spreadsheets()
-        spreadsheet_id = self.spreadsheet_id
-
-        data = {"requests":
-                {'repeatCell':
-                 {
-                'range':
-                {   'sheetId': sheet_id,
-                    'startColumnIndex': start_col,
-                    'endColumnIndex': end_col,
-                    'startRowIndex': start_row,
-                    'endRowIndex': end_row
-                },
-                'cell':
-                {'userEnteredFormat':
-                    {'backgroundColor': {'red': .9,
-                                         'green': .9,
-                                         'blue': .9,
-                                         'alpha': .1 }
-                }
-                },
-                'fields': 'userEnteredFormat.backgroundColor.red',
-                }
-                }
-                }
-
-        service.spreadsheets().batchUpdate(
-            spreadsheetId=spreadsheet_id, body=data).execute()
-
 class BookFormat(object):
     def __init__(self):
 
@@ -593,10 +560,6 @@ def annual_formatting():
                     pprint(f"Writing to {k} the value {v} . . .  ")
                 else:
                     pprint("Noddamach!")
-
-            pprint("Even more formatting . . .")
-            # formats header from HEADER_NAMES
-            # run this last as it gets overwritten by col calls to intake
 
             # format.format_row(f"{item}!A1:M1", "ROWS", HEADER_NAMES)
             # # formats management fee box strings

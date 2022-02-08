@@ -66,9 +66,10 @@ class TestSheetFormat:
         ys.control()
 
         result = calls.broad_get(service, Config.TEST_RS, 'testjan22 2022!A2:A2')
-        time.sleep(5)
+        # time.sleep(5)
         # result2 = calls.broad_get(service, Config.TEST_RS, 'testjan22 2022!h68:h68') #test formatting  
-        assert result[0][0] == 'CD-A' #test 
+        # assert result[0][0] == 'CD-A' #test 
+        # assert len(ys.sheet_id_list) == 3
 
 
     def test_teardown_month_sheets(self):
