@@ -51,24 +51,6 @@ class TemplateFormatSheet(object):
         self.spreadsheet_id = spreadsheet_id
         self.read_range = read_range
 
-    def batch_get(self, col_num): #
-        service = self.service
-        sheet = service.spreadsheets()
-        read_range = self.read_range
-        result = sheet.values().get(spreadsheetId=self.spreadsheet_id,
-                                    range=self.read_range, majorDimension="ROWS").execute()
-
-        values = result.get('values', [])
-        col = []
-        if not values:
-            print('No data found.')
-        else:
-            for COLUMN in values:
-                col.append(COLUMN[col_num])
-                # print(COLUMN[col_num]) # this is just a view, not the complete object
-        #print(col)
-        return col
-
     # alt get implementation: you can pass in service and sheet (add majDim)
     def alt_batch_get(self, service, sheet_id, range):
         sheet = service.spreadsheets()
@@ -106,75 +88,7 @@ class TemplateFormatSheet(object):
 
         print(response)
 
-    def update(self, data, write_range):
-        service = self.service
-        sheet = service.spreadsheets()
-        spreadsheet_id = self.spreadsheet_id
-
-        range_ = write_range  # TODO: Update placeholder value.
-
-        value_input_option = 'RAW'  #
-
-        value_range_body = {"range": write_range,
-                            "majorDimension": "COLUMNS",
-                            "values": [data]
-        }
-
-        request = service.spreadsheets().values().update(spreadsheetId=spreadsheet_id, range=range_, valueInputOption=value_input_option, body=value_range_body)
-        response = request.execute()
-
-        # TODO: Change code below to process the `response` dict:
-        print(response)
-
-    def simple_batch_update(self, service, sheet_id, wrange, data, dim):
-        pprint(f"Updating {sheet_id} with batch call to {wrange}...")
-        sheet = service.spreadsheets()
-        #range_ = wrange
-        body_request = {
-                        'value_input_option': 'RAW',
-                        'data': [
-                                {'range': wrange,
-                                'majorDimension': dim,
-                                 'values': [data]
-                                 }
-                        ],
-                        }
-
-        request = service.spreadsheets().values().batchUpdate(spreadsheetId=sheet_id, body=body_request)
-        response = request.execute()
-        print(response)
-
     # bolds 1 row, freezes num of rows
-    def bold_freeze(self, sheet_id, num):
-        service = self.service
-        sheet = service.spreadsheets()
-        spreadsheet_id = self.spreadsheet_id
-
-        data = {"requests":
-                [ {"repeatCell":
-                    {"range": {
-                        "sheetId": sheet_id,
-                        "startRowIndex": 0,
-                        "endRowIndex": 1},
-                    "cell":  {
-                        "userEnteredFormat": {
-                            "textFormat": { "bold": True }}
-                            },
-                        "fields": "userEnteredFormat.textFormat.bold"}
-                    },
-                    {'updateSheetProperties': {
-                        'properties': {
-                            'sheetId': sheet_id,
-                            'gridProperties': {'frozenRowCount': 1}
-                                    },
-                        'fields': 'gridProperties.frozenRowCount',
-                                                }
-                    },
-                ]
-                }
-
-        service.spreadsheets().batchUpdate(
-            spreadsheetId=spreadsheet_id, body=data).execute()
 
     def bold_range(self, sheet_id, start_col, end_col, start_row, end_row):
         service = self.service
@@ -600,18 +514,6 @@ def reconciliation_runtime():
         DBIntake.DB2RS()
 
 def annual_formatting():
-    ui = UI()
-    bookformat = BookFormat()
-    bookformat.set_id(service, CURRENT_YEAR_RS, R_RANGE_INTAKE_UNITS)
-    shnames = bookformat.make_sheet_names()
-    input = ui.prompt(
-                "Working with formatting tools.",
-                f"----------> Press 1 to show all current sheets in {CURRENT_YEAR_RS}",
-                f"----------> Press 2 to delete sheets from list sheet id.",
-                f"----------> Press 3 to create list of sheet NAMES.",
-                f"****Must be done prior to running option 4******",
-                f"----------> Press 4 to deploy monthly formatting tools. *****YOU NEED TO MANUALLY MAKE AN INTAKE SHEET AFTER RUNNING OPTION 3(this is the full year auto option; takes 45 min.)",
-                "Please make a selection.")
     if input == 1:
         pprint(f"Showing all current sheets in {CURRENT_YEAR_RS}")
         titles_dict = get_existing_sheets(service, CURRENT_YEAR_RS, verbose=True) # show all current sheets
@@ -635,9 +537,6 @@ def annual_formatting():
         titles_dict = get_existing_sheets(service, CURRENT_YEAR_RS)
         pprint(titles_dict) # create sheet names list: MUST BE DONE B4 running all
     elif input == 4:
-        pprint(f"Formatting all month sheets . . . ")
-        format = TemplateFormatSheet()
-        format.set_id(service, CURRENT_YEAR_RS, R_RANGE_INTAKE_UNITS)
         titles_dict = get_existing_sheets(service, CURRENT_YEAR_RS)
         pprint(titles_dict)
         titles = bookformat.make_title_list(shnames, titles_dict) # keep titles as list, used quite a lot
@@ -667,54 +566,24 @@ def annual_formatting():
 
         for item in titles:
             time.sleep(5)
-            """writes the unit numbers programmatically with batchUpdate"""
-            wrange_unit = f'{item}!A1:A68'
-            sheet_id = CURRENT_YEAR_RS
-            # format.simple_batch_update(service, sheet_id, wrange_unit, units, "COLUMNS")
-
-            pprint("Updating formulas . . . ")
-            pprint("Please be sure to fill down formulas or write script that does so.")
-            # writes one cell with tenant balance last month formula
-            # writes formula for tenant balance (does not change every month)
-            # format.write_formula_column(CURRENT_BALANCE, f'{item}!L2:L2')#
-            # writes sum formula in cell D69, user must extend manually
-            # format.write_formula_column(G_SUM_STARTBAL, f'{item}!D69:D69')
-            # # writes sum formula in cell L2, user must extend manually
-            # format.write_formula_column(G_SHEETS_SUM_PAYMENT, f'{item}!K69:K69')
-            # format.write_formula_column(G_SUM_ENDBAL, f'{item}!l69:l69')
-
-            pprint("Placing data stamp, formatting management fee box . . .")
-            # format.date_stamp(f"{item}!A70:B70")
-
-
-            # format.format_row(f"{item}!H81:H81", "ROWS", G_SHEETS_HAP_COLLECTED)
-
-
-            # format.format_row(f"{item}!H84:H84", "ROWS", G_SHEETS_TENANT_COLLECTED)
-
-            # format.write_formula_column(MF_SUM_FORMULA, f'{item}!H85:H85')
-            # format.write_formula_column(MF_PERCENT_FORMULA, f'{item}!H86:H86')
-            # format.write_formula_column(MF_PERCENT_FORMULA, f'{item}!H80:H80')
 
             def grand_total(range_1, range_2, range_3, range_4):
                 # added sd_total later, may have included some bug, although it worked at the time: 07/05/2020
                 pprint("Formatting laundry and csc box . . .")
-                G_SHEETS_GRAND_TOTAL = ["=sum(K69:K76)"]
-                G_SHEETS_LAUNDRY_STOTAL = ["=sum(K71:K72)"]
-                G_SHEETS_SD_TOTAL = ['total by hand']
-                sd_total = ["sd_total"]
-                csc = ["type:", "csc", "csc", "other", "other","other"]
-                laundry_income = ["laundry income"]
-                grand_total = ["GRAND TOTAL"]
-                format.format_row(range_1, "COLUMNS", csc)
-                format.format_row(range_2, "ROWS", laundry_income)
-                format.format_row(range_3, "ROWS", grand_total)
-                format.format_row(range_4, "ROWS", sd_total)
-                format.write_formula_column(G_SHEETS_SD_TOTAL, f'{item}!N73:N73')
-                format.write_formula_column(G_SHEETS_GRAND_TOTAL, f'{item}!k77')
-                format.write_formula_column(G_SHEETS_LAUNDRY_STOTAL, f'{item}!N71:N71')
+             
+                # format.format_row(range_1, "COLUMNS", csc)
+                # format.format_row(range_2, "ROWS", laundry_income)
+                # format.format_row(range_3, "ROWS", grand_total)
+                # format.format_row(range_4, "ROWS", sd_total)
+                # format.write_formula_column(G_SHEETS_SD_TOTAL, f'{item}!N73:N73')
+                # format.write_formula_column(G_SHEETS_GRAND_TOTAL, f'{item}!k77')
+                # format.write_formula_column(G_SHEETS_LAUNDRY_STOTAL, f'{item}!N71:N71')
 
-            grand_total(f'{item}!J70:J75', f'{item}!M71:M71', f'{item}!J77:J77', f'{item}!M73:M74') #this is funky but justifiable
+            # grand_total(
+                # f'{item}!J70:J75',
+                #  f'{item}!M71:M71', 
+                #  f'{item}!J77:J77',
+                #   f'{item}!M73:M74') #this is funky but justifiable
 
             pprint("Generating previous balance formula . . . ")
             for k, v in prev_bal_dict.items():
@@ -728,12 +597,14 @@ def annual_formatting():
             pprint("Even more formatting . . .")
             # formats header from HEADER_NAMES
             # run this last as it gets overwritten by col calls to intake
-            format.format_row(f"{item}!A1:M1", "ROWS", HEADER_NAMES)
+
+            # format.format_row(f"{item}!A1:M1", "ROWS", HEADER_NAMES)
             # # formats management fee box strings
-            format.format_row(f"{item}!G80:G86", "COLUMNS", MF_FORMATTING_TEXT)
+
+            # format.format_row(f"{item}!G80:G86", "COLUMNS", MF_FORMATTING_TEXT)
             # # deposit box: writing strings next couple functions,
-            format.format_row(f"{item}!E80:E89", "COLUMNS", DEPOSIT_BOX_VERTICAL)
-            format.format_row(f"{item}!b80:c80", "ROWS", DEPOSIT_BOX_HORIZONTAL)
+            # format.format_row(f"{item}!E80:E89", "COLUMNS", DEPOSIT_BOX_VERTICAL)
+            # format.format_row(f"{item}!b80:c80", "ROWS", DEPOSIT_BOX_HORIZONTAL)
 
             pprint("Taking a 101 second nap to preserve writes.  zzz....")
             sleep(101) # was 101

@@ -169,3 +169,30 @@ class GoogleApiCalls:
         request = service.spreadsheets().values().update(spreadsheetId=sheet_id, range=wrange, valueInputOption=value_input_option, body=value_range_body)
         response = request.execute()
 
+    def bold_freeze(self, service, full_spreadsheet_id, sheet_id, num):
+
+        data = {"requests":
+                [ {"repeatCell":
+                    {"range": {
+                        "sheetId": sheet_id,
+                        "startRowIndex": 0,
+                        "endRowIndex": 1},
+                    "cell":  {
+                        "userEnteredFormat": {
+                            "textFormat": { "bold": True }}
+                            },
+                        "fields": "userEnteredFormat.textFormat.bold"}
+                    },
+                    {'updateSheetProperties': {
+                        'properties': {
+                            'sheetId': sheet_id,
+                            'gridProperties': {'frozenRowCount': 1}
+                                    },
+                        'fields': 'gridProperties.frozenRowCount',
+                                                }
+                    },
+                ]
+                }
+
+        service.spreadsheets().batchUpdate(
+            spreadsheetId=spreadsheet_id, body=data).execute()
