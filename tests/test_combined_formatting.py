@@ -1,6 +1,7 @@
 import sys
 import os
 import time
+import pytest
 current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
 sys.path.append(parent)
@@ -15,14 +16,13 @@ from _pytest.monkeypatch import MonkeyPatch
 test_workbook = Config.TEST_RS
 test_path = Config.TEST_RS_PATH
 monkeypatch = MonkeyPatch()
-
-# removal all but intake
-# then make month sheets from partial test list
 service = oauth(Config.my_scopes, 'sheet', mode='testing')
 calls = GoogleApiCalls()
 
 class TestSheetFormat:
     
+    @pytest.mark.unit_test
+    @pytest.mark.unit_test_plus
     def test_setup_intake(self):
         titles_dict = Utils.get_existing_sheets(service, test_workbook)
         calls = GoogleApiCalls()
@@ -46,6 +46,8 @@ class TestSheetFormat:
         assert len(titles_dict) == 1
         assert list(titles_dict.keys())[0] == 'intake'
 
+    @pytest.mark.unit_test
+    @pytest.mark.unit_test_plus
     def test_setup_make_month_sheets(self, monkeypatch):
         ys = YearSheet(full_sheet=test_workbook, mode='testing', test_service=service)
 
@@ -57,6 +59,7 @@ class TestSheetFormat:
         titles_dict = Utils().get_existing_sheets(service,test_workbook)
         assert len(titles_dict) == 4
     
+    @pytest.mark.unit_test_plus
     def test_year_format(self):
         ys = YearSheet(full_sheet=test_workbook, mode='testing', test_service=service)
         choice1 = 3
@@ -67,46 +70,49 @@ class TestSheetFormat:
 
         result = calls.broad_get(service, Config.TEST_RS, 'testjan22 2022!A2:A2')
         result2 = calls.broad_get(service, Config.TEST_RS, 'testjan22 2022!G85:G85')
-        time.sleep(3)
-
+        result3 = calls.broad_get(service, Config.TEST_RS, 'feb 2022!D2:D2')
        
         assert result[0][0] == 'CD-A' #test 
         assert result2[0][0] == 'total' #test 
-        assert ys.prev_bal_dict == {'testjan22 2022':'feb 2022', 'feb 2022':'mar 2022', 'mar 2022': 'testjan22 2022'}
+        assert result3[0][0] == '0' #test 
+        assert ys.prev_bal_dict == {'testjan22 2022':'feb 2022', 'feb 2022':'mar 2022'}
+    
+    def test_push_to_intake(self, monkeypatch):
 
-    # def test_teardown_month_sheets(self):
-    #     ys = YearSheet(full_sheet=test_workbook, mode='testing', test_service=service)
-    #     titles_dict = Utils().get_existing_sheets(service,test_workbook)
-
-    #     calls.clear_sheet(service, test_workbook, 'intake!A1:ZZ100')
-    #     for name, id2, in titles_dict.items():
-    #         if name != 'intake':
-    #             calls.del_one_sheet(service, test_workbook, id2)
-
-    #     titles_dict1 = Utils().get_existing_sheets(service,test_workbook)        
+        ms = MonthSheet(full_sheet=test_workbook, path=test_path, mode='testing', test_service=service)
         
-    #     assert len(titles_dict1) == 1
+        # calls.clear_sheet(service, test_workbook, f'{ms.ui_sheet}!A1:ZZ100')
+
+        choice1 = 2
+        choice2 = 1
+        answers = iter([choice1, choice2])
+        # using lambda statement for mocking
+        monkeypatch.setattr('builtins.input', lambda name: next(answers))
+        ms.push_to_intake()
+
+
+        result = calls.broad_get(service, test_workbook, f'{ms.ui_sheet}!A1:A1')
+        assert result[0][0] == 'CD-A'      
+    @pytest.mark.unit_test
+    @pytest.mark.unit_test_plus
+
+    @pytest.mark.unit_test
+    @pytest.mark.unit_test_plus
+    def test_teardown_month_sheets(self):
+        ys = YearSheet(full_sheet=test_workbook, mode='testing', test_service=service)
+        titles_dict = Utils().get_existing_sheets(service,test_workbook)
+
+        calls.clear_sheet(service, test_workbook, 'intake!A1:ZZ100')
+        for name, id2, in titles_dict.items():
+            if name != 'intake':
+                calls.del_one_sheet(service, test_workbook, id2)
+
+        titles_dict1 = Utils().get_existing_sheets(service,test_workbook)        
+        
+        assert len(titles_dict1) == 1
 
     '''MonthSheet'''
 
-    # def test_push_to_intake(self, monkeypatch):
-    #     service = oauth(Config.my_scopes, 'sheet', mode='testing')
-
-    #     ms = MonthSheet(full_sheet=test_workbook, path=test_path, mode='testing', test_service=service)
-        
-    #     calls = GoogleApiCalls()
-    #     calls.clear_sheet(service, test_workbook, f'{ms.ui_sheet}!A1:ZZ100')
-
-    #     choice1 = 2
-    #     choice2 = 1
-    #     answers = iter([choice1, choice2])
-    #     # using lambda statement for mocking
-    #     monkeypatch.setattr('builtins.input', lambda name: next(answers))
-    #     ms.push_to_intake()
-
-
-    #     result = calls.broad_get(service, test_workbook, f'{ms.ui_sheet}!A1:A1')
-    #     assert result[0][0] == 'CD-A'      
 
     # def test_export_month_format(self, monkeypatch):  
     #     service = oauth(Config.my_scopes, 'sheet', mode='testing')

@@ -42,7 +42,7 @@ class YearSheet:
 
         if mode == 'testing':
             self.mode = mode
-            self.sleep = 3
+            self.sleep = 10
             self.service = test_service
             self.shmonths = ['testjan22', 'feb', 'mar']
         else:
@@ -58,6 +58,7 @@ class YearSheet:
         self.wrange_unit = '!A2:A68'
         self.sheet_id_list = None
         self.prev_bal_dict = None
+        self.titles_dict = Utils.get_existing_sheets(self.service, self.full_sheet)
 
     def control(self):
         if self.user_choice == 1:
@@ -67,14 +68,6 @@ class YearSheet:
         elif self.user_choice == 3:
             self.formatting_runner()
             self.make_shifted_list_for_prev_bal()
-        elif self.user_choice == 4:
-            self.make_shifted_list_for_prev_bal()
-        # elif self.user_choice == 4:
-        #     sheet_choice, selection = self.show_current_sheets(interactive=True)
-        #     self.set_user_choice_push(sheet=sheet_choice)
-        #     if self.user_choice == 1:
-        #         self.export_month_format(sheet_choice)
-        #         self.month_write_col(sheet_choice)
 
     def set_user_choice(self):
         self.user_choice = int(input(self.user_text))
@@ -146,13 +139,11 @@ class YearSheet:
         self.calls.simple_batch_update(self.service, self.full_sheet, f'{sheet}{self.wrange_unit}', self.units, 'COLUMNS')
 
     def make_shifted_list_for_prev_bal(self):
-        
-        titles_dict = Utils.get_existing_sheets(self.service, self.full_sheet)
 
-        titles_dict = {name:id2 for name, id2 in titles_dict.items() if name != 'intake'}
+        titles_dict = {name:id2 for name, id2 in self.titles_dict.items() if name != 'intake'}
 
         titles_list1 = list(titles_dict)
-        titles_list1.append(titles_list1[0])
+        # titles_list1.append(titles_list1[0])
         titles_list1 = titles_list1[1:]
 
         actual_titles_list = list(titles_dict)
