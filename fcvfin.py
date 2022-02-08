@@ -527,59 +527,18 @@ def annual_formatting():
         prev_bal_dict = titles_shifted_back(titles)
         pprint(prev_bal_dict)
         pprint(titles)
-        # unit numbers
-        units = format.alt_batch_get(service, CURRENT_YEAR_RS, R_RANGE_INTAKE_UNITS) #unit numbers from INTAKE
-        pprint(units)
 
-        for item in titles:
-            time.sleep(5)
-
-            def grand_total(range_1, range_2, range_3, range_4):
-                # added sd_total later, may have included some bug, although it worked at the time: 07/05/2020
-                pprint("Formatting laundry and csc box . . .")
-             
-                # format.format_row(range_1, "COLUMNS", csc)
-                # format.format_row(range_2, "ROWS", laundry_income)
-                # format.format_row(range_3, "ROWS", grand_total)
-                # format.format_row(range_4, "ROWS", sd_total)
-                # format.write_formula_column(G_SHEETS_SD_TOTAL, f'{item}!N73:N73')
-                # format.write_formula_column(G_SHEETS_GRAND_TOTAL, f'{item}!k77')
-                # format.write_formula_column(G_SHEETS_LAUNDRY_STOTAL, f'{item}!N71:N71')
-
-            # grand_total(
-                # f'{item}!J70:J75',
-                #  f'{item}!M71:M71', 
-                #  f'{item}!J77:J77',
-                #   f'{item}!M73:M74') #this is funky but justifiable
-
-            pprint("Generating previous balance formula . . . ")
-            for k, v in prev_bal_dict.items():
-                if item == k:
-                    G_SHEETS_PREVIOUS_BALANCE = [f"='{v}'!L2"]
-                    format.write_formula_column(G_SHEETS_PREVIOUS_BALANCE, f'{k}!D2:D2')
-                    pprint(f"Writing to {k} the value {v} . . .  ")
-                else:
-                    pprint("Noddamach!")
-
-            # format.format_row(f"{item}!A1:M1", "ROWS", HEADER_NAMES)
-            # # formats management fee box strings
-
-            # format.format_row(f"{item}!G80:G86", "COLUMNS", MF_FORMATTING_TEXT)
-            # # deposit box: writing strings next couple functions,
-            # format.format_row(f"{item}!E80:E89", "COLUMNS", DEPOSIT_BOX_VERTICAL)
-            # format.format_row(f"{item}!b80:c80", "ROWS", DEPOSIT_BOX_HORIZONTAL)
+        for k, v in prev_bal_dict.items():
+            if item == k:
+                G_SHEETS_PREVIOUS_BALANCE = [f"='{v}'!L2"]
+                format.wri  te_formula_column(G_SHEETS_PREVIOUS_BALANCE, f'{k}!D2:D2')
+                pprint(f"Writing to {k} the value {v} . . .  ")
+            else:
+                pprint("Noddamach!")
 
             pprint("Taking a 101 second nap to preserve writes.  zzz....")
             sleep(101) # was 101
             pprint("Waking up . . . ")
 
-            for item in titles_dict.values():
-                time.sleep(5)
-                # qol formatting
-
-                sheet_id = item
-                format.bold_freeze(sheet_id, 1) # bolds top row, freezes top tow
-                format.bold_range(sheet_id, 1, 5, 79, 90) # formats deposit box
-                format.bold_range(sheet_id, 0, 100, 68, 69) # create sheets from month
 
 
