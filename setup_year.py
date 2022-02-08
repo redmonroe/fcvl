@@ -29,6 +29,7 @@ class YearSheet:
     G_SHEETS_GRAND_TOTAL = ["=sum(K69:K76)"]
     G_SHEETS_LAUNDRY_STOTAL = ["=sum(K71:K72)"]
     G_SHEETS_SD_TOTAL = ['total by hand']
+
     sd_total = ["sd_total"]
     csc = ["type:", "csc", "csc", "other", "other","other"]
     laundry_income = ["laundry income"]
@@ -41,7 +42,7 @@ class YearSheet:
 
         if mode == 'testing':
             self.mode = mode
-            self.sleep = 5
+            self.sleep = 3
             self.service = test_service
             self.shmonths = ['testjan22', 'feb', 'mar']
         else:
@@ -56,6 +57,7 @@ class YearSheet:
         self.units = Config.units
         self.wrange_unit = '!A2:A68'
         self.sheet_id_list = None
+        self.prev_bal_dict = None
 
     def control(self):
         if self.user_choice == 1:
@@ -64,6 +66,9 @@ class YearSheet:
             self.make_sheets()
         elif self.user_choice == 3:
             self.formatting_runner()
+            self.make_shifted_list_for_prev_bal()
+        elif self.user_choice == 4:
+            self.make_shifted_list_for_prev_bal()
         # elif self.user_choice == 4:
         #     sheet_choice, selection = self.show_current_sheets(interactive=True)
         #     self.set_user_choice_push(sheet=sheet_choice)
@@ -96,10 +101,8 @@ class YearSheet:
     def formatting_runner(self):
 
         titles_dict = Utils.get_existing_sheets(self.service, self.full_sheet)
-        titles_dict = {name:id2 for name, id2 in titles_dict.items() if name != 'intake'}
-        titles_list = list(titles_dict)
 
-        self.make_sheet_id(titles_dict)
+        titles_dict = {name:id2 for name, id2 in titles_dict.items() if name != 'intake'}
         
         for sheet, sheet_id in titles_dict.items():
             self.format_units(sheet)
@@ -127,8 +130,6 @@ class YearSheet:
             self.calls.format_row(self.service, self.full_sheet, f'{sheet}!E80:E89', 'COLUMNS', self.DEPOSIT_BOX_VERTICAL)
             self.calls.format_row(self.service, self.full_sheet, f'{sheet}!B80:C80', 'ROWS', self.DEPOSIT_BOX_HORIZONTAL)
             
-            time.sleep(self.sleep)
-            
             self.calls.write_formula_column(self.service, self.full_sheet, self.G_SHEETS_SD_TOTAL, f'{sheet}!N73:N73')
             self.calls.write_formula_column(self.service, self.full_sheet, self.G_SHEETS_GRAND_TOTAL, f'{sheet}!K77')
             self.calls.write_formula_column(self.service, self.full_sheet, self.G_SHEETS_LAUNDRY_STOTAL, f'{sheet}!N71:N71')
@@ -138,12 +139,39 @@ class YearSheet:
             self.calls.bold_freeze(self.service, self.full_sheet, sheet_id, 1)
             self.calls.bold_range(self.service, self.full_sheet, sheet_id, 1, 5, 79, 90)
             self.calls.bold_range(self.service, self.full_sheet, sheet_id, 0, 100, 68, 69)
-
+            
             time.sleep(self.sleep)
 
     def format_units(self, sheet):
         self.calls.simple_batch_update(self.service, self.full_sheet, f'{sheet}{self.wrange_unit}', self.units, 'COLUMNS')
 
-    def make_sheet_id(self, titles_dict):
-        self.sheet_id_list = list(titles_dict.values())
-        print(self.sheet_id_list)
+    def make_shifted_list_for_prev_bal(self):
+        
+        titles_dict = Utils.get_existing_sheets(self.service, self.full_sheet)
+
+        titles_dict = {name:id2 for name, id2 in titles_dict.items() if name != 'intake'}
+
+        titles_list1 = list(titles_dict)
+        titles_list1.append(titles_list1[0])
+        titles_list1 = titles_list1[1:]
+
+        actual_titles_list = list(titles_dict)
+
+        prev_bal_dict = dict(zip(actual_titles_list, titles_list1))
+
+        self.prev_bal_dict = prev_bal_dict
+
+        for prev_month, current_month in self.prev_bal_dict.items():
+            for item in titles_list1:
+                if item == current_month:
+                    G_SHEETS_PREVIOUS_BALANCE = [f"='{prev_month}'!L2"]
+                    self.calls.write_formula_column(self.service, self.full_sheet, G_SHEETS_PREVIOUS_BALANCE, f'{current_month}!D2:D2')
+
+
+
+
+
+
+
+
+

@@ -531,14 +531,10 @@ def annual_formatting():
         for k, v in prev_bal_dict.items():
             if item == k:
                 G_SHEETS_PREVIOUS_BALANCE = [f"='{v}'!L2"]
-                format.wri  te_formula_column(G_SHEETS_PREVIOUS_BALANCE, f'{k}!D2:D2')
+                format.write_formula_column(G_SHEETS_PREVIOUS_BALANCE, f'{k}!D2:D2')
                 pprint(f"Writing to {k} the value {v} . . .  ")
             else:
                 pprint("Noddamach!")
-
-            pprint("Taking a 101 second nap to preserve writes.  zzz....")
-            sleep(101) # was 101
-            pprint("Waking up . . . ")
 
 
 

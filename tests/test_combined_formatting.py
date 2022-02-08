@@ -67,26 +67,25 @@ class TestSheetFormat:
 
         result = calls.broad_get(service, Config.TEST_RS, 'testjan22 2022!A2:A2')
         result2 = calls.broad_get(service, Config.TEST_RS, 'testjan22 2022!G85:G85')
-        time.sleep(5)
+        time.sleep(3)
+
        
         assert result[0][0] == 'CD-A' #test 
         assert result2[0][0] == 'total' #test 
+        assert ys.prev_bal_dict == {'testjan22 2022':'feb 2022', 'feb 2022':'mar 2022', 'mar 2022': 'testjan22 2022'}
 
-    def test_teardown_month_sheets(self):
-        ys = YearSheet(full_sheet=test_workbook, mode='testing', test_service=service)
-        titles_dict = Utils().get_existing_sheets(service,test_workbook)
+    # def test_teardown_month_sheets(self):
+    #     ys = YearSheet(full_sheet=test_workbook, mode='testing', test_service=service)
+    #     titles_dict = Utils().get_existing_sheets(service,test_workbook)
 
-        calls.clear_sheet(service, test_workbook, 'intake!A1:ZZ100')
-        for name, id2, in titles_dict.items():
-            if name != 'intake':
-                calls.del_one_sheet(service, test_workbook, id2)
+    #     calls.clear_sheet(service, test_workbook, 'intake!A1:ZZ100')
+    #     for name, id2, in titles_dict.items():
+    #         if name != 'intake':
+    #             calls.del_one_sheet(service, test_workbook, id2)
 
-        titles_dict1 = Utils().get_existing_sheets(service,test_workbook)        
+    #     titles_dict1 = Utils().get_existing_sheets(service,test_workbook)        
         
-        assert len(titles_dict1) == 1
-
-
-        # assert dir(ys) == 1
+    #     assert len(titles_dict1) == 1
 
     '''MonthSheet'''
 
