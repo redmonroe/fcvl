@@ -77,6 +77,8 @@ class TestSheetFormat:
         assert result3[0][0] == '0' #test 
         assert ys.prev_bal_dict == {'testjan22 2022':'feb 2022', 'feb 2022':'mar 2022'}
     
+    @pytest.mark.unit_test
+    @pytest.mark.unit_test_plus
     def test_push_to_intake(self, monkeypatch):
 
         ms = MonthSheet(full_sheet=test_workbook, path=test_path, mode='testing', test_service=service)
@@ -93,8 +95,6 @@ class TestSheetFormat:
 
         result = calls.broad_get(service, test_workbook, f'{ms.ui_sheet}!A1:A1')
         assert result[0][0] == 'CD-A'      
-    @pytest.mark.unit_test
-    @pytest.mark.unit_test_plus
 
     @pytest.mark.unit_test
     @pytest.mark.unit_test_plus
