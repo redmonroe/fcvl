@@ -14,10 +14,12 @@ import shutil
 
 class FileIndexer:
 
-    def __init__(self, path=None):
+    def __init__(self, path=None, discard_pile=None):
         self.path = path
+        self.discard_pile = discard_pile
         self.directory_contents = []
         self.index_dict = {}
+        self.test_list = []
         self.xls_list = []
 
 
@@ -39,6 +41,15 @@ class FileIndexer:
             f_ext = filename.split('.')
             f_ext = f_ext[-1]
             self.index_dict[sub_item] = f_ext
+
+    def get_file_names_kw(self, dir1):
+
+        for item in dir1.iterdir():
+            sub_item = Path(item)
+            filename = sub_item.parts[-1]
+            f_ext = filename.split('.')
+            f_ext = f_ext[-1]
+            self.test_list.append(filename)
 
     def rename_by_content_xls_rroll(self):
         '''find rent roll by content'''
@@ -83,5 +94,5 @@ class FileIndexer:
             print(item, date_time)
 
 
-findex = FileIndexer(path=Config.TEST_RS_PATH)
-findex.build_index_runner()
+# findex = FileIndexer(path=Config.TEST_RS_PATH)
+# findex.build_index_runner()
