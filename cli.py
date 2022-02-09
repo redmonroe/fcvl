@@ -18,7 +18,8 @@ MAKE MODE EXPLICIT: DEV PROD TESTING
 '''
 
 # core functionalit:
-# [ ] year formatting
+# [ ] index downloaded files
+# [x] year formatting
 # [x]start with setup_month formatting
 
 
