@@ -65,16 +65,31 @@ class FileIndexer:
             df = pd.read_excel(item)
             df = df.iloc[:, 0].to_list()
             if 'Affordable Rent Roll Detail/ GPR Report' in df:
-                # print(df)
-                new_file = os.path.join(Config.TEST_RS_PATH, 'TEST_RENTROLL.xls')
+                file_path = item
+                df_date = pd.read_excel(file_path)
+                df_date = df_date.iloc[11].to_list()
+                df_date = df_date[0].split(' ')
+                period = df_date[2]
+                print(period)    
+
+
+                new_file = os.path.join(Config.TEST_RS_PATH, f'TEST_RENTROLL_{period}.xls')
                 shutil.copy2(item, new_file)
                 shutil.move(str(item), Config.TEST_MOVE_PATH)
-            
-            # print(df)
+        '''
+    
+        for item in self.xls_list:
+            df = pd.read_excel(item)
+            df = df.iloc[11].to_list()
+            df = df[0].split(' ')
+            print(df[2])    
+        '''
 
-            # print(df.columns[0])
-        # print(self.xls_list)
 
+
+
+    
+    
     def to_xlsx(self):
         import os
         import datetime
@@ -93,6 +108,6 @@ class FileIndexer:
             date_time = datetime. datetime.fromtimestamp(file_stat.st_ctime)
             print(item, date_time)
 
-
-# findex = FileIndexer(path=Config.TEST_RS_PATH)
-# findex.build_index_runner()
+if __name__ == '__main__':
+    findex = FileIndexer(path=Config.TEST_RS_PATH)
+    findex.build_index_runner()
