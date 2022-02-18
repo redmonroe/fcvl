@@ -7,11 +7,6 @@ import pandas as pd
 import numpy as np
 import shutil
 
-# list all files
-# divide by .ext (pdf, xls, xlsx)
-
-# GET TO MOST RECENT RENT ROLL 
-
 class FileIndexer:
 
     def __init__(self, path=None, discard_pile=None):
@@ -26,7 +21,8 @@ class FileIndexer:
     def build_index_runner(self):
         self.articulate_directory()
         self.sort_directory_by_extension()
-        self.rename_by_content_xls_rroll()
+        # self.find_dep_by_content()
+        self.rename_by_content_xls()
 
 
     def articulate_directory(self):
@@ -50,56 +46,72 @@ class FileIndexer:
             f_ext = filename.split('.')
             f_ext = f_ext[-1]
             self.test_list.append(filename)
+    
+    def df_date_wrapper(self, item, get_col=None, split_col=None, split_type=None, date_split=None):
+            df_date = pd.read_excel(item)
+            df_date = df_date.iloc[:, get_col].to_list()
+            df_date = df_date[split_col].split(split_type)
+            period = df_date[date_split]
+        
+            return period
 
-    def rename_by_content_xls_rroll(self):
+    def find_by_content(self, style, target_string=None, ):
+        if style == 'rr':
+            filename_sub = 'TEST_RENTROLL_'
+            filename_post = '.xls'
+            get_col = 0
+            split_col = 11
+            split_type = ' '
+            date_split = 2
+
+        if style == 'dep':
+            filename_sub = 'TEST_DEP_'
+            filename_post = '.xls'
+            get_col = 9
+            split_col = 9
+            split_type = '/'
+            date_split = 0
+
+        for item in self.xls_list:
+            df = pd.read_excel(item)
+            df = df.iloc[:, 0].to_list()
+            if target_string in df:
+                period = self.df_date_wrapper(item, get_col=get_col, split_col=split_col, split_type=split_type, date_split=date_split)
+
+                new_file = os.path.join(self.path, filename_sub + period + filename_post)
+                shutil.copy2(item, new_file)
+                shutil.move(str(item), Config.TEST_MOVE_PATH)
+
+    def rename_by_content_xls(self):
         '''find rent roll by content'''
+        ## this can be moved out to own function ie make_xls_list, make_pdf_list
         for name, extension in self.index_dict.items():
             if extension == 'xls':
                 self.xls_list.append(name)
 
+        self.find_by_content(style='rr', target_string='Affordable Rent Roll Detail/ GPR Report')
+        self.find_by_content(style='dep', target_string='BANK DEPOSIT DETAILS')
 
-        # Affordable Rent Roll Detail/ GPR Report
-        # 'Vistula of Indiana Inc - Falls Creek Village I'
-        # 'Page 1 of 2'
+    def find_dep_by_content(self):
+        for name, extension in self.index_dict.items():
+            if extension == 'xls':
+                self.xls_list.append(name)
+        target_string = 'BANK DEPOSIT DETAILS'
         for item in self.xls_list:
             df = pd.read_excel(item)
             df = df.iloc[:, 0].to_list()
-            if 'Affordable Rent Roll Detail/ GPR Report' in df:
-                file_path = item
-                df_date = pd.read_excel(file_path)
-                df_date = df_date.iloc[11].to_list()
-                df_date = df_date[0].split(' ')
-                period = df_date[2]
-                print(period)    
+            if target_string in df:
+                period = self.df_date_wrapper(item, get_col=9, split_col=9, split_type='/', date_split=0)  
 
-
-                new_file = os.path.join(Config.TEST_RS_PATH, f'TEST_RENTROLL_{period}.xls')
+                new_file = os.path.join(self.path, filename_sub + period + filename_post)
                 shutil.copy2(item, new_file)
                 shutil.move(str(item), Config.TEST_MOVE_PATH)
-        '''
-    
-        for item in self.xls_list:
-            df = pd.read_excel(item)
-            df = df.iloc[11].to_list()
-            df = df[0].split(' ')
-            print(df[2])    
-        '''
 
-
-
-
-    
-    
-    def to_xlsx(self):
-        import os
-        import datetime
-        target = 'TEST_deposits_01_2022.xls'
+    def rename_by_content_xls_deposits(self):
+        '''find deposits by content'''
+        pass
         target_file = os.path.join(self.path, target)
-        # print(target_file)
-
-
         # SO GET MOST RECENT FILE, MAKE CHANGES BUT PRESERVE TIMING FOR EVENTUAL DISPLAY
-
         target_dir = os.listdir(self.path)
         date_dict = {}
         for item in target_dir:
@@ -109,5 +121,5 @@ class FileIndexer:
             print(item, date_time)
 
 if __name__ == '__main__':
-    findex = FileIndexer(path=Config.TEST_RS_PATH)
+    findex = FileIndexer(path=Config.TEST_RS_PATH, discard_pile=Config.TEST_MOVE_PATH)
     findex.build_index_runner()
