@@ -14,29 +14,31 @@ GENERATED_RR_FILE = 'TEST_RENTROLL_012022.xls'
 
 @pytest.mark.unit_test_findexer
 class TestFileIndexer:
-    
-    def test_setup(self):
 
-        # remove generated rr file from dir
+    def remove_generated_file_from_dir(self, path=None, file=None):
         try:
-            os.remove(os.path.join(str(path), GENERATED_RR_FILE))
+            os.remove(os.path.join(str(path), file))
         except FileNotFoundError as e:
             print(e, 'TEST_RR NOT found in test_data_repository, make sure you are looking for the right name')
-
-        # move original rr file back TO path
-        findex.get_file_names_kw(discard_pile)
+    
+    def move_original_back_to_dir(self, discard_dir=None, target_file=None, target_dir=None):
+        findex.get_file_names_kw(discard_dir)
         for item in findex.test_list:
-            if item == TEST_RR_FILE:
+            if item == target_file:
                 try:
-                    shutil.move(os.path.join(str(discard_pile), item), path)
+                    shutil.move(os.path.join(str(discard_dir), item), target_dir)
                 except:
                     print('Error occurred copying file: jw')
+
+    def test_setup(self):
+        TestFileIndexer.remove_generated_file_from_dir(self, path=path, file=GENERATED_RR_FILE)
+
+        TestFileIndexer.move_original_back_to_dir(self, discard_dir=discard_pile)
 
         # check discard_pile is empty
         discard_contents = [count for count, file in enumerate(discard_pile.iterdir())]
         # check path pile is 5
         path_contents = [count for count, file in enumerate(path.iterdir())]
-
 
         assert len(discard_contents) == 0
         assert len(path_contents) == 5
@@ -54,10 +56,12 @@ class TestFileIndexer:
             path_contents.append(filename) 
 
         assert GENERATED_RR_FILE in path_contents
-        assert 1 in path_contents
 
-        # assert that 
+    def test_teardown(self):
+        TestFileIndexer.remove_generated_file_from_dir(self, path=path, file=GENERATED_RR_FILE)
 
-    # def test_sort_directory(self):
-    #     findex.build_index_runner()
-    #     assert findex.index_dict == {'op_cash_2022_01.pdf': 'pdf', 'savings_2022_01.pdf': 'pdf', 'sd_2022_01.pdf': 'pdf', 'TEST_deposits_01_2022.xls': 'xls', 'TEST_rent_roll_01_2022.xls': 'xls'}
+        TestFileIndexer.move_original_back_to_dir(self, discard_dir=discard_pile)
+        discard_contents = [count for count, file in enumerate(discard_pile.iterdir())]
+        path_contents = [count for count, file in enumerate(path.iterdir())]
+        assert len(discard_contents) == 0
+        assert len(path_contents) == 5  
