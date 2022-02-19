@@ -84,7 +84,7 @@ class FileIndexer:
                 shutil.move(str(item), Config.TEST_MOVE_PATH)
                 print('ok')
 
-            self.xls_list.remove(item)
+                self.xls_list.remove(item)
 
     def rename_by_content_xls(self):
         '''find rent roll by content'''
@@ -94,7 +94,7 @@ class FileIndexer:
                 self.xls_list.append(name)
 
         self.find_by_content(style='rr', target_string='Affordable Rent Roll Detail/ GPR Report')
-        
+
         self.find_by_content(style='dep', target_string='BANK DEPOSIT DETAILS')
 
     def rename_by_content_xls_deposits(self):

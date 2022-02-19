@@ -37,6 +37,14 @@ class TestFileIndexer:
                 except:
                     print('Error occurred copying file: jw')
 
+    def make_path_contents(self, path=None):
+        for item in path.iterdir():
+            sub_item = Path(item)
+            filename = sub_item.parts[-1]
+            f_ext = filename.split('.')
+            f_ext = f_ext[-1]
+            self.path_contents.append(filename) 
+
     def test_setup(self):
         TestFileIndexer.remove_generated_file_from_dir(self, path1=path, file1=GENERATED_RR_FILE)
         TestFileIndexer.remove_generated_file_from_dir(self, path1=path, file1=GENERATED_DEP_FILE)
@@ -53,35 +61,23 @@ class TestFileIndexer:
 
     def test_rent_roll_flow(self):
         findex.build_index_runner()
-
-        for item in path.iterdir():
-            sub_item = Path(item)
-            filename = sub_item.parts[-1]
-            f_ext = filename.split('.')
-            f_ext = f_ext[-1]
-            self.path_contents.append(filename) 
+        TestFileIndexer.make_path_contents(self, path=path)
 
         assert GENERATED_RR_FILE in self.path_contents
 
     def test_deposit_flow(self):
-        for item in path.iterdir():
-            sub_item = Path(item)
-            filename = sub_item.parts[-1]
-            f_ext = filename.split('.')
-            f_ext = f_ext[-1]
-            self.path_contents.append(filename) 
-        # assert self.test_message == 'hi'
+        TestFileIndexer.make_path_contents(self, path=path)        
         assert GENERATED_DEP_FILE in self.path_contents
 
-    # def test_teardown(self):
-    #     TestFileIndexer.remove_generated_file_from_dir(self, path1=path, file1=GENERATED_RR_FILE)
-    #     TestFileIndexer.remove_generated_file_from_dir(self, path1=path, file1=GENERATED_DEP_FILE)
+    def test_teardown(self):
+        TestFileIndexer.remove_generated_file_from_dir(self, path1=path, file1=GENERATED_RR_FILE)
+        TestFileIndexer.remove_generated_file_from_dir(self, path1=path, file1=GENERATED_DEP_FILE)
 
-    #     TestFileIndexer.move_original_back_to_dir(self, discard_dir=discard_pile, target_file=TEST_RR_FILE, target_dir=path)
-    #     TestFileIndexer.move_original_back_to_dir(self, discard_dir=discard_pile, target_file=TEST_DEP_FILE, target_dir=path)
+        TestFileIndexer.move_original_back_to_dir(self, discard_dir=discard_pile, target_file=TEST_RR_FILE, target_dir=path)
+        TestFileIndexer.move_original_back_to_dir(self, discard_dir=discard_pile, target_file=TEST_DEP_FILE, target_dir=path)
         
-    #     discard_contents = [count for count, file in enumerate(discard_pile.iterdir())]
-    #     path_contents = [count for count, file in enumerate(path.iterdir())]
+        discard_contents = [count for count, file in enumerate(discard_pile.iterdir())]
+        path_contents = [count for count, file in enumerate(path.iterdir())]
 
-    #     assert len(discard_contents) == 0
-    #     assert len(path_contents) == 5  
+        assert len(discard_contents) == 0
+        assert len(path_contents) == 5  
