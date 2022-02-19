@@ -1,14 +1,16 @@
 import os
 from config import Config
+from db_utils import DBUtils
 from pathlib import Path
 import shutil
 import pytest
 from file_indexer import FileIndexer
 import pdb
+import dataset
 
 path = Config.TEST_RS_PATH
 discard_pile = Config.TEST_MOVE_PATH
-findex = FileIndexer(path=path, discard_pile=discard_pile)
+findex = FileIndexer(path=path, discard_pile=discard_pile, db=Config.test_findex_db, table='findex')
 TEST_RR_FILE = 'TEST_rent_roll_01_2022.xls'
 TEST_DEP_FILE = 'TEST_deposits_01_2022.xls'
 GENERATED_RR_FILE = 'TEST_RENTROLL_012022.xls'
@@ -20,6 +22,7 @@ class TestFileIndexer:
 
     test_message = 'hi'
     path_contents = []
+    db = None
 
     def remove_generated_file_from_dir(self, path1=None, file1=None):
         # pdb.set_trace()
@@ -45,6 +48,30 @@ class TestFileIndexer:
             f_ext = f_ext[-1]
             self.path_contents.append(filename) 
 
+    # @pytest.mark.findex_db
+    @pytest.fixture()
+    def setup_test_db(self):
+        db = findex.db
+        tablename = findex.tablename
+        table = db[tablename]
+        table.drop()
+        check_tables = db.tables
+        assert check_tables == []
+        return db
+    
+    @pytest.mark.findex_db
+    def test_build_index_preflight(self, setup_test_db):
+        db = setup_test_db
+        findex.build_index()
+        tables = db.tables
+        # records_list = [table for table in db[tables[0]]]
+
+        assert db == 1
+
+        # assert tables == ['findex']
+        # assert len(records_list) == 5
+        # assert 'TEST_deposits_01_2022.xls' in records_list[3].values()
+
     def test_setup(self):
         TestFileIndexer.remove_generated_file_from_dir(self, path1=path, file1=GENERATED_RR_FILE)
         TestFileIndexer.remove_generated_file_from_dir(self, path1=path, file1=GENERATED_DEP_FILE)
@@ -69,8 +96,16 @@ class TestFileIndexer:
         TestFileIndexer.make_path_contents(self, path=path)        
         assert GENERATED_DEP_FILE in self.path_contents
 
-    def test_build_index(self):
-        findex.build_index()
+    @pytest.mark.findex_db
+    def test_build_index_preflight(self, setup_test_db):
+        db = setup_test_db
+        tables = db.tables
+        records_list = [table for table in findex.db[tables[0]]]
+
+        assert tables == ['findex']
+        assert len(records_list) == 5
+        assert GENERATED_DEP_FILE in records_list[3].values()
+
 
     def test_teardown(self):
         TestFileIndexer.remove_generated_file_from_dir(self, path1=path, file1=GENERATED_RR_FILE)

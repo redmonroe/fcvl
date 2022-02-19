@@ -10,15 +10,16 @@ import shutil
 
 class FileIndexer:
 
-    def __init__(self, path=None, discard_pile=None, db=None):
+    def __init__(self, path=None, discard_pile=None, db=None, table=None):
         self.path = path
         self.discard_pile = discard_pile
         self.db = db
-        self.table_name = 'findex'
+        self.tablename = table 
         self.directory_contents = []
         self.index_dict = {}
         self.test_list = []
         self.xls_list = []
+        self.check_tables = None
 
     def build_index_runner(self):
         self.articulate_directory()
@@ -114,13 +115,12 @@ class FileIndexer:
     def build_index(self):
         # why 
         db = self.db
-        tablename = self.table_name
+        tablename = self.tablename
         
         table = db[tablename]
         table.drop()
         self.articulate_directory()
         for item in self.directory_contents:
-            print(item.name)
             table.insert(dict(fn=item.name, path=str(item), status='raw'))
 
         for item in db[tablename]:
@@ -128,14 +128,14 @@ class FileIndexer:
 
         
     def get_tables(self):
-        tables = DBUtils.get_tables(self, self.db)
-        print(tables)
+        self.check_tables = DBUtils.get_tables(self, self.db)
+        print(self.check_tables)
 
     def delete_table(self):
         db = Config
         DBUtils.delete_table(self, self.db)
 
 if __name__ == '__main__':
-    findex = FileIndexer(path=Config.TEST_RS_PATH, discard_pile=Config.TEST_MOVE_PATH, db=Config.test_findex_db)
+    findex = FileIndexer(path=Config.TEST_RS_PATH, discard_pile=Config.TEST_MOVE_PATH, db=Config.test_findex_db, table='findex')
     findex.build_index()
     findex.get_tables()
