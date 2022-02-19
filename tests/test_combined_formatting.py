@@ -21,8 +21,7 @@ calls = GoogleApiCalls()
 
 class TestSheetFormat:
     
-    @pytest.mark.unit_test
-    @pytest.mark.unit_test_plus
+    @pytest.mark.setup_only
     def test_setup_intake(self):
         titles_dict = Utils.get_existing_sheets(service, test_workbook)
         calls = GoogleApiCalls()
@@ -46,8 +45,7 @@ class TestSheetFormat:
         assert len(titles_dict) == 1
         assert list(titles_dict.keys())[0] == 'intake'
 
-    @pytest.mark.unit_test
-    @pytest.mark.unit_test_plus
+    @pytest.mark.setup_only
     def test_setup_make_month_sheets(self, monkeypatch):
         ys = YearSheet(full_sheet=test_workbook, mode='testing', test_service=service)
 
@@ -59,7 +57,7 @@ class TestSheetFormat:
         titles_dict = Utils().get_existing_sheets(service,test_workbook)
         assert len(titles_dict) == 4
     
-    @pytest.mark.unit_test_plus
+    @pytest.mark.setup_only
     def test_year_format(self):
         ys = YearSheet(full_sheet=test_workbook, mode='testing', test_service=service)
         choice1 = 3
@@ -77,8 +75,6 @@ class TestSheetFormat:
         assert result3[0][0] == '0' #test 
         assert ys.prev_bal_dict == {'testjan22 2022':'feb 2022', 'feb 2022':'mar 2022'}
     
-    @pytest.mark.unit_test
-    @pytest.mark.unit_test_plus
     def test_push_to_intake(self, monkeypatch):
 
         ms = MonthSheet(full_sheet=test_workbook, path=test_path, mode='testing', test_service=service)
@@ -96,8 +92,6 @@ class TestSheetFormat:
         result = calls.broad_get(service, test_workbook, f'{ms.ui_sheet}!A1:A1')
         assert result[0][0] == 'CD-A'      
 
-    @pytest.mark.unit_test
-    @pytest.mark.unit_test_plus
     def test_teardown_month_sheets(self):
         ys = YearSheet(full_sheet=test_workbook, mode='testing', test_service=service)
         titles_dict = Utils().get_existing_sheets(service,test_workbook)

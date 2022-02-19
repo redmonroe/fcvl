@@ -1,5 +1,6 @@
 import os
 from utils import Utils
+from db_utils import DBUtils
 from config import Config
 from pathlib import Path
 import dataset
@@ -9,20 +10,20 @@ import shutil
 
 class FileIndexer:
 
-    def __init__(self, path=None, discard_pile=None):
+    def __init__(self, path=None, discard_pile=None, db=None):
         self.path = path
         self.discard_pile = discard_pile
+        self.db = db
+        self.table_name = 'findex'
         self.directory_contents = []
         self.index_dict = {}
         self.test_list = []
         self.xls_list = []
 
-
     def build_index_runner(self):
         self.articulate_directory()
         self.sort_directory_by_extension()
         self.rename_by_content_xls()
-
 
     def articulate_directory(self):
         for item in self.path.iterdir():
@@ -110,6 +111,32 @@ class FileIndexer:
             date_time = datetime. datetime.fromtimestamp(file_stat.st_ctime)
             print(item, date_time)
 
+    def build_index(self):
+        # why 
+        db = self.db
+        tablename = self.table_name
+        
+        table = db[tablename]
+        table.drop()
+        self.articulate_directory()
+        for item in self.directory_contents:
+            print(item.name)
+            table.insert(dict(fn=item.name, path=str(item), status='raw'))
+
+        for item in db[tablename]:
+            print(item)
+
+        table.drop()
+
+        
+    def get_tables(self):
+        DBUtils.get_tables(self, self.db)
+
+    def delete_table(self):
+        db = Config
+        DBUtils.delete_table(self, self.db)
+
 if __name__ == '__main__':
-    findex = FileIndexer(path=Config.TEST_RS_PATH, discard_pile=Config.TEST_MOVE_PATH)
-    findex.build_index_runner()
+    findex = FileIndexer(path=Config.TEST_RS_PATH, discard_pile=Config.TEST_MOVE_PATH, db=Config.test_findex_db)
+    findex.build_index()
+    findex.get_tables()
