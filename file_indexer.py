@@ -21,7 +21,6 @@ class FileIndexer:
     def build_index_runner(self):
         self.articulate_directory()
         self.sort_directory_by_extension()
-        # self.find_dep_by_content()
         self.rename_by_content_xls()
 
 
@@ -52,6 +51,8 @@ class FileIndexer:
             df_date = df_date.iloc[:, get_col].to_list()
             df_date = df_date[split_col].split(split_type)
             period = df_date[date_split]
+            period = period.rstrip()
+            period = period.lstrip()
         
             return period
 
@@ -81,6 +82,9 @@ class FileIndexer:
                 new_file = os.path.join(self.path, filename_sub + period + filename_post)
                 shutil.copy2(item, new_file)
                 shutil.move(str(item), Config.TEST_MOVE_PATH)
+                print('ok')
+
+            self.xls_list.remove(item)
 
     def rename_by_content_xls(self):
         '''find rent roll by content'''
@@ -90,22 +94,8 @@ class FileIndexer:
                 self.xls_list.append(name)
 
         self.find_by_content(style='rr', target_string='Affordable Rent Roll Detail/ GPR Report')
+        
         self.find_by_content(style='dep', target_string='BANK DEPOSIT DETAILS')
-
-    def find_dep_by_content(self):
-        for name, extension in self.index_dict.items():
-            if extension == 'xls':
-                self.xls_list.append(name)
-        target_string = 'BANK DEPOSIT DETAILS'
-        for item in self.xls_list:
-            df = pd.read_excel(item)
-            df = df.iloc[:, 0].to_list()
-            if target_string in df:
-                period = self.df_date_wrapper(item, get_col=9, split_col=9, split_type='/', date_split=0)  
-
-                new_file = os.path.join(self.path, filename_sub + period + filename_post)
-                shutil.copy2(item, new_file)
-                shutil.move(str(item), Config.TEST_MOVE_PATH)
 
     def rename_by_content_xls_deposits(self):
         '''find deposits by content'''
