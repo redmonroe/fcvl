@@ -69,6 +69,9 @@ class TestFileIndexer:
         TestFileIndexer.make_path_contents(self, path=path)        
         assert GENERATED_DEP_FILE in self.path_contents
 
+    def test_build_index(self):
+        findex.build_index()
+
     def test_teardown(self):
         TestFileIndexer.remove_generated_file_from_dir(self, path1=path, file1=GENERATED_RR_FILE)
         TestFileIndexer.remove_generated_file_from_dir(self, path1=path, file1=GENERATED_DEP_FILE)

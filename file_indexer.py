@@ -126,11 +126,10 @@ class FileIndexer:
         for item in db[tablename]:
             print(item)
 
-        table.drop()
-
         
     def get_tables(self):
-        DBUtils.get_tables(self, self.db)
+        tables = DBUtils.get_tables(self, self.db)
+        print(tables)
 
     def delete_table(self):
         db = Config

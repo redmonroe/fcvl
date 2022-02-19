@@ -17,7 +17,8 @@ class DBUtils:
 
     @staticmethod
     def get_tables(self, db):
-        print(db.tables)
+        # print(db.tables)
+        return db.tables
 
     @staticmethod
     def delete_table(self, db):
