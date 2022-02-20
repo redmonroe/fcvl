@@ -113,7 +113,7 @@ class TestFileIndexer:
         assert GENERATED_DEP_FILE in record_1['fn']
         assert GENERATED_DEP_FILE in proc_list
         assert GENERATED_RR_FILE in proc_list
-        assert '012022' in proc_list
+        assert '2022-01' == record_1['period']
 
     # @pytest.mark.findex_db
     def test_build_index_postflight(self, setup_test_db):

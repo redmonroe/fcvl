@@ -1,7 +1,7 @@
 from config import Config
 from file_indexer import FileIndexer
 
-class BuildRs:
+class BuildRS:
     def __init__(self, mode=None):
         if mode == 'testing':
             self.mode = 'testing'
@@ -9,7 +9,8 @@ class BuildRs:
 
 
     def index_wrapper(self):
-        print(self.findex)
+        # self.findex.do_index()
+        self.findex.normalize_dates()
 
     def build_rs_runner(self):
         self.index_wrapper()

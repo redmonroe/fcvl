@@ -3,6 +3,7 @@ from utils import Utils
 from db_utils import DBUtils
 from config import Config
 from pathlib import Path
+from datetime import datetime
 import dataset
 import pandas as pd
 import numpy as np
@@ -129,10 +130,17 @@ class FileIndexer:
     def update_index_for_processed(self):
         for item in self.db[self.tablename]:
             for proc_file in self.processed_files:
-                if item['fn'] == proc_file[0]: 
-                    data = dict(id=item['id'], status='processed', period=proc_file[1])
+                if item['fn'] == proc_file[0]:                 
+                    proc_date = self.normalize_dates(proc_file[1])
+                    data = dict(id=item['id'], status='processed', period=proc_date)
                     self.db[self.tablename].update(data, ['id'])
 
+    def normalize_dates(self, raw_date):    
+        if raw_date:
+            f_date = datetime.strptime(raw_date, '%m%Y')
+            f_date = f_date.strftime('%Y-%m')
+            return f_date
+       
 
     def do_index(self):
         processed_check_for_test = []
@@ -162,9 +170,16 @@ class FileIndexer:
         db = Config
         DBUtils.delete_table(self, self.db)
 
+    def show_table(self, table=None):
+        db = self.db
+        for results in db[table]:
+            print(results)
+
 if __name__ == '__main__':
     findex = FileIndexer(path=Config.TEST_RS_PATH, discard_pile=Config.TEST_MOVE_PATH, db=Config.test_findex_db, table='findex')
-    # findex.build_index_runner()
-    # findex.build_index()
-    # findex.update_index_for_processed()
+    findex.build_index_runner()
+    findex.build_index()
+    findex.update_index_for_processed()
     findex.do_index()
+
+    findex.show_table(table=findex.tablename)
