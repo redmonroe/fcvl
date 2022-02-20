@@ -48,7 +48,7 @@ class TestFileIndexer:
             f_ext = f_ext[-1]
             self.path_contents.append(filename) 
 
-    @pytest.mark.findex_db
+    # @pytest.mark.findex_db
     @pytest.fixture
     def setup_test_db(self):
         db = findex.db
@@ -59,17 +59,19 @@ class TestFileIndexer:
         assert check_tables == []
         return db
     
-    @pytest.mark.findex_db
+    # @pytest.mark.findex_db
     def test_build_index_preflight(self, setup_test_db):
         db = setup_test_db
+
+        findex_name_as_str = findex.tablename
         findex.build_index()
-        tables = db.tables
 
-        assert db == 1
+        index_cols = db[findex_name_as_str].columns
 
-    #     # assert tables == ['findex']
-    #     # assert len(records_list) == 5
-    #     # assert 'TEST_deposits_01_2022.xls' in records_list[3].values()
+        record_1 = db[findex_name_as_str].find_one(fn=TEST_DEP_FILE)
+        
+        assert index_cols == ['id', 'fn', 'path', 'status']
+        assert 'TEST_deposits_01_2022.xls' in record_1['fn']
 
     def test_setup(self):
         TestFileIndexer.remove_generated_file_from_dir(self, path1=path, file1=GENERATED_RR_FILE)
@@ -96,14 +98,19 @@ class TestFileIndexer:
         assert GENERATED_DEP_FILE in self.path_contents
 
     # @pytest.mark.findex_db
-    # def test_build_index_preflight(self, setup_test_db):
-    #     db = setup_test_db
-    #     tables = db.tables
-    #     records_list = [table for table in findex.db[tables[0]]]
+    def test_build_index_postflight(self, setup_test_db):
+        db = setup_test_db
 
-    #     assert tables == ['findex']
-    #     assert len(records_list) == 5
-    #     assert GENERATED_DEP_FILE in records_list[3].values()
+        findex_name_as_str = findex.tablename
+        db[findex_name_as_str].drop()
+        findex.build_index()
+
+        index_cols = db[findex_name_as_str].columns
+
+        record_1 = db[findex_name_as_str].find_one(fn=GENERATED_DEP_FILE)
+        
+        assert index_cols == ['id', 'fn', 'path', 'status']
+        assert 'HI' in record_1['fn']
 
 
     def test_teardown(self):

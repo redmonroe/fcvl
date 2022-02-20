@@ -135,7 +135,7 @@ class FileIndexer:
         db = Config
         DBUtils.delete_table(self, self.db)
 
-if __name__ == '__main__':
-    findex = FileIndexer(path=Config.TEST_RS_PATH, discard_pile=Config.TEST_MOVE_PATH, db=Config.test_findex_db, table='findex')
-    findex.build_index()
-    findex.get_tables()
+# if __name__ == '__main__':
+#     findex = FileIndexer(path=Config.TEST_RS_PATH, discard_pile=Config.TEST_MOVE_PATH, db=Config.test_findex_db, table='findex')
+#     findex.build_index()
+#     findex.get_tables()
