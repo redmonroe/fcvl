@@ -10,19 +10,32 @@ from auth_work import oauth
 from utils import Utils
 from setup_year import YearSheet
 from setup_month import MonthSheet
+from checklist import Checklist
 from google_api_calls_abstract import GoogleApiCalls
 from _pytest.monkeypatch import MonkeyPatch
 
 test_workbook = Config.TEST_RS
 test_path = Config.TEST_RS_PATH
+chck_list_db = Config.test_checklist_db
 monkeypatch = MonkeyPatch()
 service = oauth(Config.my_scopes, 'sheet', mode='testing')
 calls = GoogleApiCalls()
+ys = YearSheet(full_sheet=test_workbook, mode='testing', test_service=service)
 
-class TestSheetFormat:
+
+@pytest.mark.setup_only
+class TestChecklist:
+
+    def test_setup_checklist(self):
+        '''make checklist for current year/12 sheets'''
+        chklist = Checklist(db=chck_list_db)
+        chklist.make_checklist()
+        records = chklist.show_checklist()
+
+        assert len(records) == 12
     
-    @pytest.mark.setup_only
     def test_setup_intake(self):
+        '''test to make sure intake is present; reset intake state'''
         titles_dict = Utils.get_existing_sheets(service, test_workbook)
         calls = GoogleApiCalls()
 
@@ -45,67 +58,66 @@ class TestSheetFormat:
         assert len(titles_dict) == 1
         assert list(titles_dict.keys())[0] == 'intake'
 
-    @pytest.mark.setup_only
-    def test_setup_make_month_sheets(self, monkeypatch):
-        ys = YearSheet(full_sheet=test_workbook, mode='testing', test_service=service)
+    # @pytest.mark.setup_only
+    # def test_setup_make_month_sheets(self, monkeypatch):
 
-        choice1 = 2
-        answers = iter([choice1])
-        monkeypatch.setattr('builtins.input', lambda name: next(answers))
-        ys.set_user_choice()
-        ys.control()
-        titles_dict = Utils().get_existing_sheets(service,test_workbook)
-        assert len(titles_dict) == 4
+    #     choice1 = 2
+    #     answers = iter([choice1])
+    #     monkeypatch.setattr('builtins.input', lambda name: next(answers))
+    #     ys.set_user_choice()
+    #     ys.control()
+    #     titles_dict = Utils().get_existing_sheets(service,test_workbook)
+    #     assert len(titles_dict) == 2
     
     @pytest.mark.setup_only
-    def test_year_format(self):
-        ys = YearSheet(full_sheet=test_workbook, mode='testing', test_service=service)
-        choice1 = 3
-        answers = iter([choice1])
-        monkeypatch.setattr('builtins.input', lambda name: next(answers))
-        ys.set_user_choice()
-        ys.control()
+    def test_year_format_one_sheet(self):
+        ys.make_base_sheet()
+        ys.formatting_runner()
 
-        result = calls.broad_get(service, Config.TEST_RS, 'testjan22 2022!A2:A2')
-        result2 = calls.broad_get(service, Config.TEST_RS, 'testjan22 2022!G85:G85')
-        result3 = calls.broad_get(service, Config.TEST_RS, 'feb 2022!D2:D2')
+        result = calls.broad_get(service, Config.TEST_RS, 'base 2022!A2:A2')
+        result2 = calls.broad_get(service, Config.TEST_RS, 'base 2022!G85:G85')
        
         assert result[0][0] == 'CD-A' #test 
         assert result2[0][0] == 'total' #test 
-        assert result3[0][0] == '0' #test 
-        assert ys.prev_bal_dict == {'testjan22 2022':'feb 2022', 'feb 2022':'mar 2022'}
+
+    @pytest.mark.setup_only
+    def test_duplicate_formatted_base(self):
+        shnames, tit_id = ys.duplicate_formatted_sheets()
+        assert tit_id == 'hi'
+        assert len(shnames) == 12
+        # assert result3[0][0] == '0' #test 
+        # assert ys.prev_bal_dict == {'testjan22 2022':'feb 2022', 'feb 2022':'mar 2022'}
     
-    def test_push_to_intake(self, monkeypatch):
+#     def test_push_to_intake(self, monkeypatch):
 
-        ms = MonthSheet(full_sheet=test_workbook, path=test_path, mode='testing', test_service=service)
+#         ms = MonthSheet(full_sheet=test_workbook, path=test_path, mode='testing', test_service=service)
         
-        # calls.clear_sheet(service, test_workbook, f'{ms.ui_sheet}!A1:ZZ100')
+#         # calls.clear_sheet(service, test_workbook, f'{ms.ui_sheet}!A1:ZZ100')
 
-        choice1 = 2
-        choice2 = 1
-        answers = iter([choice1, choice2])
-        # using lambda statement for mocking
-        monkeypatch.setattr('builtins.input', lambda name: next(answers))
-        ms.push_to_intake()
+#         choice1 = 2
+#         choice2 = 1
+#         answers = iter([choice1, choice2])
+#         # using lambda statement for mocking
+#         monkeypatch.setattr('builtins.input', lambda name: next(answers))
+#         ms.push_to_intake()
 
 
-        result = calls.broad_get(service, test_workbook, f'{ms.ui_sheet}!A1:A1')
-        assert result[0][0] == 'CD-A'      
+#         result = calls.broad_get(service, test_workbook, f'{ms.ui_sheet}!A1:A1')
+#         assert result[0][0] == 'CD-A'      
 
-    def test_teardown_month_sheets(self):
-        ys = YearSheet(full_sheet=test_workbook, mode='testing', test_service=service)
-        titles_dict = Utils().get_existing_sheets(service,test_workbook)
+#     def test_teardown_month_sheets(self):
+#         ys = YearSheet(full_sheet=test_workbook, mode='testing', test_service=service)
+#         titles_dict = Utils().get_existing_sheets(service,test_workbook)
 
-        calls.clear_sheet(service, test_workbook, 'intake!A1:ZZ100')
-        for name, id2, in titles_dict.items():
-            if name != 'intake':
-                calls.del_one_sheet(service, test_workbook, id2)
+#         calls.clear_sheet(service, test_workbook, 'intake!A1:ZZ100')
+#         for name, id2, in titles_dict.items():
+#             if name != 'intake':
+#                 calls.del_one_sheet(service, test_workbook, id2)
 
-        titles_dict1 = Utils().get_existing_sheets(service,test_workbook)        
+#         titles_dict1 = Utils().get_existing_sheets(service,test_workbook)        
         
-        assert len(titles_dict1) == 1
+#         assert len(titles_dict1) == 1
 
-    '''MonthSheet'''
 
 
     # def test_export_month_format(self, monkeypatch):  

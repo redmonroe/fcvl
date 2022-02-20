@@ -39,16 +39,18 @@ class YearSheet:
     def __init__(self, full_sheet=None, mode=None, test_service=None):
         self.test_message = 'hi_from_year_sheets!'
         self.full_sheet = full_sheet
+        self.calls = GoogleApiCalls()
 
         if mode == 'testing':
             self.mode = mode
-            self.sleep = 10
+            self.sleep = 0
             self.service = test_service
-            self.shmonths = ['testjan22', 'feb', 'mar']
-        else:
-            self.sleep = 30
-            self.service = oauth(my_scopes, 'sheet')
+            self.base_month = 'base'
             self.shmonths = ['jan', 'feb', 'mar', 'apr', 'may', 'june', 'july', 'aug', 'sep', 'oct', 'nov', 'dec']
+        # else:
+        #     self.sleep = 30
+        #     self.service = oauth(my_scopes, 'sheet')
+        #     self.shmonths = ['jan', 'feb', 'mar', 'apr', 'may', 'june', 'july', 'aug', 'sep', 'oct', 'nov', 'dec']
 
         self.user_text = f'Options:\n PRESS 1 to show all current sheets in {self.full_sheet} \n PRESS 2 to create list of sheet NAMES \n PRESS 3 to format all months. *****YOU NEED TO MANUALLY MAKE AN INTAKE SHEET AFTER RUNNING OPTION 3(this is the full year auto option; takes 45 min) \n >>>'
         self.user_choice = None
@@ -79,17 +81,34 @@ class YearSheet:
         if interactive == True:
             return path
 
-    def make_sheets(self):
-        titles_dict = Utils.get_existing_sheets(self.service, self.full_sheet)
-        sheet_names = Utils.make_sheet_names(self.shmonths, self.shyear)
-        # Utils.make_sheets_from_sheet_names
-        calls = GoogleApiCalls()
+    def make_base_sheet(self):  
+        self.calls.make_one_sheet(self.service, self.full_sheet, self.base_month + ' ' + f'{Config.current_year}')
 
-        for sheet_title in sheet_names:
-            print(f'writing {sheet_title}')
-            calls.make_one_sheet(self.service, self.full_sheet, sheet_title)
-            sleep(self.sleep)
-            print(f'taking {self.sleep} second nap to preserve writes. zzz...')
+    def duplicate_formatted_sheets(self):
+        sheet_names = Utils.make_sheet_names(self.shmonths, self.shyear)
+        
+        titles_dict = Utils.get_existing_sheets(self.service, self.full_sheet)
+
+        # del titles_dict['intake']
+
+        for title, id1 in titles_dict.items():
+            if title == 'base 2022':
+                source_id = id1
+
+        insert_index = 2
+        # for title, id1 in titles_dict.items():
+        for name in sheet_names:
+        # if title != 'base 2022':
+            insert_index += 1
+            self.api_duplicate_sheet(self.full_sheet, source_id=source_id, insert_index=insert_index, title=name)
+
+        return sheet_names
+
+    #     for sheet_title in sheet_names:
+    #         print(f'writing {sheet_title}')
+    #         self.calls.make_one_sheet(self.service, self.full_sheet, sheet_title)
+    #         sleep(self.sleep)
+    #         print(f'taking {self.sleep} second nap to preserve writes. zzz...')
 
     def formatting_runner(self):
 
@@ -136,7 +155,29 @@ class YearSheet:
             time.sleep(self.sleep)
 
     def format_units(self, sheet):
+        '''use in format_runner'''
         self.calls.simple_batch_update(self.service, self.full_sheet, f'{sheet}{self.wrange_unit}', self.units, 'COLUMNS')
+
+    def api_duplicate_sheet(self, full_sheet, source_id=None, insert_index=None, title=None):
+        '''move to GoogleApiCalls'''
+        service = self.service
+        sheet = service.spreadsheets()
+        SPREADSHEET_ID = full_sheet
+        body = {
+            'requests': [
+                {
+                    'duplicateSheet': {
+                        'sourceSheetId': source_id,
+                        'insertSheetIndex': insert_index,
+                        'newSheetName': title,
+                    }
+                }
+            ]
+        }
+
+        # Using sheet.values().batchUpdate will trigger: Invalid JSON payload received. Unknown name "requests": Cannot find field.
+        result = sheet.batchUpdate(spreadsheetId=SPREADSHEET_ID,
+                                body=body).execute()
 
     def make_shifted_list_for_prev_bal(self):
 
