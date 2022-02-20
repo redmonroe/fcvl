@@ -115,7 +115,7 @@ class FileIndexer:
             print(item, date_time)
 
     def build_index(self):
-        # why 
+        
         db = self.db
         tablename = self.tablename
         
@@ -136,11 +136,14 @@ class FileIndexer:
 
     def do_index(self):
         processed_check_for_test = []
+        print('do_index')
         for item in self.db[self.tablename]:
             if item['status'] == 'processed':
+                print(item)
                 processed_check_for_test.append(item['fn'])
                 processed_check_for_test.append(item['period'])
 
+        # so now we can trigger off of processed
         return processed_check_for_test
 
     def drop_tables(self):
@@ -161,7 +164,7 @@ class FileIndexer:
 
 if __name__ == '__main__':
     findex = FileIndexer(path=Config.TEST_RS_PATH, discard_pile=Config.TEST_MOVE_PATH, db=Config.test_findex_db, table='findex')
-    findex.build_index_runner()
-    findex.build_index()
-    findex.update_index_for_processed()
+    # findex.build_index_runner()
+    # findex.build_index()
+    # findex.update_index_for_processed()
     findex.do_index()

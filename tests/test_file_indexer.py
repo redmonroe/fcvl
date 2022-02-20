@@ -5,6 +5,7 @@ from pathlib import Path
 import shutil
 import pytest
 from file_indexer import FileIndexer
+from build_rs import BuildRS
 import pdb
 import dataset
 

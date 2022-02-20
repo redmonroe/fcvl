@@ -4,7 +4,6 @@ from receipts import RentReceipts
 from db_utils import pg_dump_one
 from setup_month import MonthSheet
 from setup_year import YearSheet
-
 from file_manager import path_to_statements, write_hap
 from pdf import merchants_pdf_extract, nbofi_pdf_extract_hap, qb_extract_p_and_l, qb_extract_security_deposit, qb_extract_deposit_detail
 import click
@@ -17,7 +16,9 @@ MAKE MODE EXPLICIT: DEV PROD TESTING
 '''
 
 # core functionalit:
-# [ ] index downloaded files
+# what does UI experience look like now? 
+
+# [x] index downloaded files
 # [x] year formatting
 # [x]start with setup_month formatting
 
