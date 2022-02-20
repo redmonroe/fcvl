@@ -28,6 +28,10 @@ MAKE MODE EXPLICIT: DEV PROD TESTING
 def cli():
     pass
 
+@click.group()
+def checklist():
+    pass
+
 @click.command()
 @click.argument('mode')
 def mformat(mode=None):
@@ -282,6 +286,7 @@ cli.add_command(nbofi)
 cli.add_command(placeholder)
 cli.add_command(workorders_todo)
 '''
+cli.add_command(checklist)
 cli.add_command(buildrs)
 cli.add_command(mformat)
 cli.add_command(yformat)

@@ -18,6 +18,9 @@ class BuildRS(MonthSheet):
 
     def buildrs_control(self):
         # FIRST SELECT A MONTH:
+
+            # return applicable docs, compare to necessary docs
+
             # do I have a rent sheet?
             # do I have the rent roll?
             # do I have the deposits?
