@@ -20,6 +20,7 @@ class FileIndexer:
         self.test_list = []
         self.xls_list = []
         self.check_tables = None
+        self.processed_files = []
 
     def build_index_runner(self):
         self.articulate_directory()
@@ -81,11 +82,12 @@ class FileIndexer:
             if target_string in df:
                 period = self.df_date_wrapper(item, get_col=get_col, split_col=split_col, split_type=split_type, date_split=date_split)
 
-                new_file = os.path.join(self.path, filename_sub + period + filename_post)
+                filename = filename_sub + period + filename_post
+                new_file = os.path.join(self.path, filename )
                 shutil.copy2(item, new_file)
                 shutil.move(str(item), Config.TEST_MOVE_PATH)
                 print('ok')
-
+                self.processed_files.append(filename)
                 self.xls_list.remove(item)
 
     def rename_by_content_xls(self):
@@ -124,11 +126,22 @@ class FileIndexer:
         for item in self.directory_contents:
             table.insert(dict(fn=item.name, path=str(item), status='raw'))
 
-        for item in db[tablename]:
-            print(item)
+    def update_index_for_processed(self):
+        print([item for item in self.processed_files])
+        for item in self.db[self.tablename]:
+            for proc_file in self.processed_files:
+                if item['fn'] == proc_file: 
+                    data = dict(id=item['id'], status='processed')
+                    self.db[self.tablename].update(data, ['id'])
+
+        for item in self.db[self.tablename]:
+            print(item['fn'], item['status'])
+
+    def do_index(self):
+        pass
 
     def drop_tables(self):
-        db = self.db
+        db = self.db    
         tablename = self.tablename
         
         table = db[tablename]
@@ -145,5 +158,7 @@ class FileIndexer:
 
 if __name__ == '__main__':
     findex = FileIndexer(path=Config.TEST_RS_PATH, discard_pile=Config.TEST_MOVE_PATH, db=Config.test_findex_db, table='findex')
+    findex.build_index_runner()
     findex.build_index()
-    findex.get_tables()
+    findex.update_index_for_processed()
+    findex.do_index()
