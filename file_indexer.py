@@ -83,11 +83,11 @@ class FileIndexer:
                 period = self.df_date_wrapper(item, get_col=get_col, split_col=split_col, split_type=split_type, date_split=date_split)
 
                 filename = filename_sub + period + filename_post
-                new_file = os.path.join(self.path, filename )
+                new_file = os.path.join(self.path, filename)
                 shutil.copy2(item, new_file)
                 shutil.move(str(item), Config.TEST_MOVE_PATH)
                 print('ok')
-                self.processed_files.append(filename)
+                self.processed_files.append((filename, period))
                 self.xls_list.remove(item)
 
     def rename_by_content_xls(self):
@@ -127,18 +127,21 @@ class FileIndexer:
             table.insert(dict(fn=item.name, path=str(item), status='raw'))
 
     def update_index_for_processed(self):
-        print([item for item in self.processed_files])
         for item in self.db[self.tablename]:
             for proc_file in self.processed_files:
-                if item['fn'] == proc_file: 
-                    data = dict(id=item['id'], status='processed')
+                if item['fn'] == proc_file[0]: 
+                    data = dict(id=item['id'], status='processed', period=proc_file[1])
                     self.db[self.tablename].update(data, ['id'])
 
-        for item in self.db[self.tablename]:
-            print(item['fn'], item['status'])
 
     def do_index(self):
-        pass
+        processed_check_for_test = []
+        for item in self.db[self.tablename]:
+            if item['status'] == 'processed':
+                processed_check_for_test.append(item['fn'])
+                processed_check_for_test.append(item['period'])
+
+        return processed_check_for_test
 
     def drop_tables(self):
         db = self.db    

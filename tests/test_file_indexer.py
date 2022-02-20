@@ -98,6 +98,22 @@ class TestFileIndexer:
         TestFileIndexer.make_path_contents(self, path=path)        
         assert GENERATED_DEP_FILE in self.path_contents
 
+    def test_check_for_processed_and_period(self, setup_test_db):
+        db = setup_test_db
+        findex_name_as_str = findex.tablename
+
+        findex.build_index()
+        findex.update_index_for_processed()
+        index_cols = db[findex_name_as_str].columns
+        record_1 = db[findex_name_as_str].find_one(fn=GENERATED_DEP_FILE)
+        proc_list = findex.do_index()
+        
+        assert index_cols == ['id', 'fn', 'path', 'status', 'period']
+        assert GENERATED_DEP_FILE in record_1['fn']
+        assert GENERATED_DEP_FILE in proc_list
+        assert GENERATED_RR_FILE in proc_list
+        assert '012022' in proc_list
+
     # @pytest.mark.findex_db
     def test_build_index_postflight(self, setup_test_db):
         db = setup_test_db
@@ -105,13 +121,7 @@ class TestFileIndexer:
         findex.drop_tables()
 
         findex.build_index()
-
-        index_cols = db[findex_name_as_str].columns
-
-        record_1 = db[findex_name_as_str].find_one(fn=GENERATED_DEP_FILE)
         
-        assert index_cols == ['id', 'fn', 'path', 'status']
-        assert GENERATED_DEP_FILE in record_1['fn']
         assert len(db[findex_name_as_str]) == 5
 
 
