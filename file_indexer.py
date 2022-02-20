@@ -119,6 +119,7 @@ class FileIndexer:
         
         table = db[tablename]
         table.drop()
+        self.directory_contents = []
         self.articulate_directory()
         for item in self.directory_contents:
             table.insert(dict(fn=item.name, path=str(item), status='raw'))
@@ -126,16 +127,23 @@ class FileIndexer:
         for item in db[tablename]:
             print(item)
 
+    def drop_tables(self):
+        db = self.db
+        tablename = self.tablename
+        
+        table = db[tablename]
+        table.drop()
         
     def get_tables(self):
         self.check_tables = DBUtils.get_tables(self, self.db)
         print(self.check_tables)
+        print(len(self.db[self.tablename]))
 
     def delete_table(self):
         db = Config
         DBUtils.delete_table(self, self.db)
 
-# if __name__ == '__main__':
-#     findex = FileIndexer(path=Config.TEST_RS_PATH, discard_pile=Config.TEST_MOVE_PATH, db=Config.test_findex_db, table='findex')
-#     findex.build_index()
-#     findex.get_tables()
+if __name__ == '__main__':
+    findex = FileIndexer(path=Config.TEST_RS_PATH, discard_pile=Config.TEST_MOVE_PATH, db=Config.test_findex_db, table='findex')
+    findex.build_index()
+    findex.get_tables()

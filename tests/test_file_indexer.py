@@ -72,6 +72,7 @@ class TestFileIndexer:
         
         assert index_cols == ['id', 'fn', 'path', 'status']
         assert 'TEST_deposits_01_2022.xls' in record_1['fn']
+        assert len(db[findex_name_as_str]) == 5
 
     def test_setup(self):
         TestFileIndexer.remove_generated_file_from_dir(self, path1=path, file1=GENERATED_RR_FILE)
@@ -100,9 +101,9 @@ class TestFileIndexer:
     # @pytest.mark.findex_db
     def test_build_index_postflight(self, setup_test_db):
         db = setup_test_db
-
         findex_name_as_str = findex.tablename
-        db[findex_name_as_str].drop()
+        findex.drop_tables()
+
         findex.build_index()
 
         index_cols = db[findex_name_as_str].columns
@@ -110,10 +111,11 @@ class TestFileIndexer:
         record_1 = db[findex_name_as_str].find_one(fn=GENERATED_DEP_FILE)
         
         assert index_cols == ['id', 'fn', 'path', 'status']
-        assert 'HI' in record_1['fn']
+        assert GENERATED_DEP_FILE in record_1['fn']
+        assert len(db[findex_name_as_str]) == 5
 
 
-    def test_teardown(self):
+    def test_teardown(self, setup_test_db):
         TestFileIndexer.remove_generated_file_from_dir(self, path1=path, file1=GENERATED_RR_FILE)
         TestFileIndexer.remove_generated_file_from_dir(self, path1=path, file1=GENERATED_DEP_FILE)
 
@@ -123,5 +125,10 @@ class TestFileIndexer:
         discard_contents = [count for count, file in enumerate(discard_pile.iterdir())]
         path_contents = [count for count, file in enumerate(path.iterdir())]
 
+        db = setup_test_db
+        findex_name_as_str = findex.tablename
+        db[findex_name_as_str].drop()
+
+        assert len(db[findex_name_as_str]) == 0
         assert len(discard_contents) == 0
         assert len(path_contents) == 5  
