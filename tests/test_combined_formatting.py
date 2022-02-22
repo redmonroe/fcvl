@@ -57,42 +57,33 @@ class TestChecklist:
 
         assert len(titles_dict) == 1
         assert list(titles_dict.keys())[0] == 'intake'
-
-    # @pytest.mark.setup_only
-    # def test_setup_make_month_sheets(self, monkeypatch):
-
-    #     choice1 = 2
-    #     answers = iter([choice1])
-    #     monkeypatch.setattr('builtins.input', lambda name: next(answers))
-    #     ys.set_user_choice()
-    #     ys.control()
-    #     titles_dict = Utils().get_existing_sheets(service,test_workbook)
-    #     assert len(titles_dict) == 2
     
     @pytest.mark.setup_only
     def test_year_format_one_sheet(self):
-        ys.make_base_sheet()
-        ys.formatting_runner()
+        shnames = ys.auto_control()
+        # assert len(titles_dict) == 14
+        assert len(shnames) == 12
 
-        result = calls.broad_get(service, Config.TEST_RS, 'base 2022!A2:A2')
-        result2 = calls.broad_get(service, Config.TEST_RS, 'base 2022!G85:G85')
+        result = calls.broad_get(service, Config.TEST_RS, 'jan 2022!A2:A2')
+        result2 = calls.broad_get(service, Config.TEST_RS, 'jan 2022!G85:G85')
        
         assert result[0][0] == 'CD-A' #test 
         assert result2[0][0] == 'total' #test 
 
     @pytest.mark.setup_only
     def test_duplicate_formatted_base(self):
-        shnames = ys.duplicate_formatted_sheets()
-
-        # should be all months + base + intake
+        # should be all months  + intake
         titles_dict = Utils.get_existing_sheets(service, test_workbook)
-
-        assert len(titles_dict) == 14
-        assert len(shnames) == 12
+        assert len(titles_dict) == 13
 
     @pytest.mark.setup_only
-    def test_remove_base(self):
-        pass
+    def test_prev_balance(self):
+        ys.make_shifted_list_for_prev_bal()
+        prev_bal = ys.prev_bal_dict
+
+        assert prev_bal['apr 2022'] == 'may 2022'
+
+
 
 #     def test_push_to_intake(self, monkeypatch):
 
@@ -111,18 +102,18 @@ class TestChecklist:
 #         result = calls.broad_get(service, test_workbook, f'{ms.ui_sheet}!A1:A1')
 #         assert result[0][0] == 'CD-A'      
 
-    def test_teardown_month_sheets(self):
-        ys = YearSheet(full_sheet=test_workbook, mode='testing', test_service=service)
-        titles_dict = Utils().get_existing_sheets(service,test_workbook)
+    # def test_teardown_month_sheets(self):
+    #     ys = YearSheet(full_sheet=test_workbook, mode='testing', test_service=service)
+    #     titles_dict = Utils().get_existing_sheets(service,test_workbook)
 
-        calls.clear_sheet(service, test_workbook, 'intake!A1:ZZ100')
-        for name, id2, in titles_dict.items():
-            if name != 'intake':
-                calls.del_one_sheet(service, test_workbook, id2)
+    #     calls.clear_sheet(service, test_workbook, 'intake!A1:ZZ100')
+    #     for name, id2, in titles_dict.items():
+    #         if name != 'intake':
+    #             calls.del_one_sheet(service, test_workbook, id2)
 
-        titles_dict1 = Utils().get_existing_sheets(service,test_workbook)        
+    #     titles_dict1 = Utils().get_existing_sheets(service,test_workbook)        
         
-        assert len(titles_dict1) == 1
+    #     assert len(titles_dict1) == 1
 
 
 

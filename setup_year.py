@@ -7,6 +7,9 @@ import pathlib
 import time
 from time import sleep
 
+
+# if I have a cli component here, it should be from auto_control, not ui entered control if possible, or at least the presumption should be for auto_control
+
 class YearSheet:
 
     G_SHEETS_HAP_COLLECTED = ["=D81"]
@@ -45,13 +48,11 @@ class YearSheet:
             self.mode = mode
             self.sleep = 0
             self.service = test_service
-            self.base_month = 'base'
-            self.shmonths = ['jan', 'feb', 'mar', 'apr', 'may', 'june', 'july', 'aug', 'sep', 'oct', 'nov', 'dec']
-        # else:
-        #     self.sleep = 30
-        #     self.service = oauth(my_scopes, 'sheet')
-        #     self.shmonths = ['jan', 'feb', 'mar', 'apr', 'may', 'june', 'july', 'aug', 'sep', 'oct', 'nov', 'dec']
-
+        else:
+            self.service = oauth(my_scopes, 'sheet')
+        
+        self.base_month = 'base'
+        self.shmonths = ['jan', 'feb', 'mar', 'apr', 'may', 'june', 'july', 'aug', 'sep', 'oct', 'nov', 'dec']
         self.user_text = f'Options:\n PRESS 1 to show all current sheets in {self.full_sheet} \n PRESS 2 to create list of sheet NAMES \n PRESS 3 to format all months. *****YOU NEED TO MANUALLY MAKE AN INTAKE SHEET AFTER RUNNING OPTION 3(this is the full year auto option; takes 45 min) \n >>>'
         self.user_choice = None
         self.shyear = [f'{Config.current_year}']
@@ -60,7 +61,8 @@ class YearSheet:
         self.wrange_unit = '!A2:A68'
         self.sheet_id_list = None
         self.prev_bal_dict = None
-        self.titles_dict = Utils.get_existing_sheets(self.service, self.full_sheet)
+        self.source_id = None
+        # self.titles_dict = Utils.get_existing_sheets(self.service, self.full_sheet)
 
     def control(self):
         if self.user_choice == 1:
@@ -68,9 +70,20 @@ class YearSheet:
         elif self.user_choice == 2:
             self.make_sheets()
         elif self.user_choice == 3:
+            self.make_base_sheet()
             self.formatting_runner()
             self.duplicate_formatted_sheets()
-            self.make_shifted_list_for_prev_bal()
+            self.remove_base_sheet()
+            # self.make_shifted_list_for_prev_bal()
+
+    def auto_control(self):
+        self.make_base_sheet()
+        self.formatting_runner()
+        shnames = self.duplicate_formatted_sheets()
+        self.remove_base_sheet()
+        # self.make_shifted_list_for_prev_bal()
+
+        return shnames
 
     def set_user_choice(self):
         self.user_choice = int(input(self.user_text))
@@ -92,14 +105,12 @@ class YearSheet:
 
         for title, id1 in titles_dict.items():
             if title == 'base 2022':
-                source_id = id1
+                self.source_id = id1               
 
         insert_index = 2
-        # for title, id1 in titles_dict.items():
         for name in sheet_names:
-        # if title != 'base 2022':
             insert_index += 1
-            self.calls.api_duplicate_sheet(self.service, self.full_sheet, source_id=source_id, insert_index=insert_index, title=name)
+            self.calls.api_duplicate_sheet(self.service, self.full_sheet, source_id=self.source_id, insert_index=insert_index, title=name)
 
         return sheet_names
 
@@ -146,9 +157,14 @@ class YearSheet:
         '''use in format_runner'''
         self.calls.simple_batch_update(self.service, self.full_sheet, f'{sheet}{self.wrange_unit}', self.units, 'COLUMNS')  
 
-    def make_shifted_list_for_prev_bal(self):
+    def remove_base_sheet(self):
+        self.calls.del_one_sheet(self.service, self.full_sheet, self.source_id)
 
-        titles_dict = {name:id2 for name, id2 in self.titles_dict.items() if name != 'intake'}
+    def make_shifted_list_for_prev_bal(self):
+        
+        titles_dict = Utils.get_existing_sheets(self.service, self.full_sheet)
+
+        titles_dict = {name:id2 for name, id2 in titles_dict.items() if name != 'intake'}
 
         titles_list1 = list(titles_dict)
         # titles_list1.append(titles_list1[0])
@@ -158,7 +174,7 @@ class YearSheet:
 
         prev_bal_dict = dict(zip(actual_titles_list, titles_list1))
 
-        self.prev_bal_dict = prev_bal_dict
+        self.prev_bal_dict = prev_bal_dict        
 
         for prev_month, current_month in self.prev_bal_dict.items():
             for item in titles_list1:
@@ -167,7 +183,10 @@ class YearSheet:
                     self.calls.write_formula_column(self.service, self.full_sheet, G_SHEETS_PREVIOUS_BALANCE, f'{current_month}!D2:D2')
 
 
-
+if __name__ == '__main__':
+    ys = YearSheet(full_sheet=Config.TEST_RS, mode='dev')
+    ys.auto_control()
+    
 
 
 

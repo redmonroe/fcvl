@@ -151,8 +151,7 @@ class Utils:
 
     @staticmethod
     def get_existing_sheets(service, sh_id, verbose=None):
-        response = service.spreadsheets().get(
-            spreadsheetId=sh_id
+        response = service.spreadsheets().get(spreadsheetId=sh_id
             ).execute()
 
         if verbose:

@@ -224,8 +224,7 @@ class GoogleApiCalls:
         service.spreadsheets().batchUpdate(
             spreadsheetId=spreadsheet_id, body=data).execute()
 
-    def api_duplicate_sheet(self, full_sheet, source_id=None, insert_index=None, title=None):
-        service = self.service
+    def api_duplicate_sheet(self, service, full_sheet, source_id=None, insert_index=None, title=None):
         sheet = service.spreadsheets()
         SPREADSHEET_ID = full_sheet
         body = {
