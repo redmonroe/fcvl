@@ -69,6 +69,7 @@ class YearSheet:
             self.make_sheets()
         elif self.user_choice == 3:
             self.formatting_runner()
+            self.duplicate_formatted_sheets()
             self.make_shifted_list_for_prev_bal()
 
     def set_user_choice(self):
@@ -89,8 +90,6 @@ class YearSheet:
         
         titles_dict = Utils.get_existing_sheets(self.service, self.full_sheet)
 
-        # del titles_dict['intake']
-
         for title, id1 in titles_dict.items():
             if title == 'base 2022':
                 source_id = id1
@@ -100,15 +99,9 @@ class YearSheet:
         for name in sheet_names:
         # if title != 'base 2022':
             insert_index += 1
-            self.api_duplicate_sheet(self.full_sheet, source_id=source_id, insert_index=insert_index, title=name)
+            self.calls.api_duplicate_sheet(self.service, self.full_sheet, source_id=source_id, insert_index=insert_index, title=name)
 
         return sheet_names
-
-    #     for sheet_title in sheet_names:
-    #         print(f'writing {sheet_title}')
-    #         self.calls.make_one_sheet(self.service, self.full_sheet, sheet_title)
-    #         sleep(self.sleep)
-    #         print(f'taking {self.sleep} second nap to preserve writes. zzz...')
 
     def formatting_runner(self):
 
@@ -125,8 +118,6 @@ class YearSheet:
             self.calls.write_formula_column(self.service, self.full_sheet, self.MF_PERCENT_FORMULA, f'{sheet}!H86:H86')
             self.calls.write_formula_column(self.service, self.full_sheet, self.MF_PERCENT_FORMULA, f'{sheet}!H80:H80')
             
-            time.sleep(self.sleep)
-
             self.calls.format_row(self.service, self.full_sheet, f'{sheet}!H81:H81', 'ROWS', self.G_SHEETS_HAP_COLLECTED)
             self.calls.format_row(self.service, self.full_sheet, f'{sheet}!H84:H84', 'ROWS', self.G_SHEETS_TENANT_COLLECTED)
 
@@ -135,8 +126,6 @@ class YearSheet:
             self.calls.format_row(self.service, self.full_sheet, f'{sheet}!J77:J77', 'ROWS', self.grand_total)
             self.calls.format_row(self.service, self.full_sheet, f'{sheet}!M73:M74', 'ROWS', self.sd_total)
             
-            time.sleep(self.sleep)
-
             self.calls.format_row(self.service, self.full_sheet, f'{sheet}!A1:M1', 'ROWS', self.HEADER_NAMES)
             self.calls.format_row(self.service, self.full_sheet, f'{sheet}!G80:G86', 'COLUMNS', self.MF_FORMATTING_TEXT)
             self.calls.format_row(self.service, self.full_sheet, f'{sheet}!E80:E89', 'COLUMNS', self.DEPOSIT_BOX_VERTICAL)
@@ -152,32 +141,10 @@ class YearSheet:
             self.calls.bold_range(self.service, self.full_sheet, sheet_id, 1, 5, 79, 90)
             self.calls.bold_range(self.service, self.full_sheet, sheet_id, 0, 100, 68, 69)
             
-            time.sleep(self.sleep)
 
     def format_units(self, sheet):
         '''use in format_runner'''
-        self.calls.simple_batch_update(self.service, self.full_sheet, f'{sheet}{self.wrange_unit}', self.units, 'COLUMNS')
-
-    def api_duplicate_sheet(self, full_sheet, source_id=None, insert_index=None, title=None):
-        '''move to GoogleApiCalls'''
-        service = self.service
-        sheet = service.spreadsheets()
-        SPREADSHEET_ID = full_sheet
-        body = {
-            'requests': [
-                {
-                    'duplicateSheet': {
-                        'sourceSheetId': source_id,
-                        'insertSheetIndex': insert_index,
-                        'newSheetName': title,
-                    }
-                }
-            ]
-        }
-
-        # Using sheet.values().batchUpdate will trigger: Invalid JSON payload received. Unknown name "requests": Cannot find field.
-        result = sheet.batchUpdate(spreadsheetId=SPREADSHEET_ID,
-                                body=body).execute()
+        self.calls.simple_batch_update(self.service, self.full_sheet, f'{sheet}{self.wrange_unit}', self.units, 'COLUMNS')  
 
     def make_shifted_list_for_prev_bal(self):
 

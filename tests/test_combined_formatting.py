@@ -82,12 +82,18 @@ class TestChecklist:
 
     @pytest.mark.setup_only
     def test_duplicate_formatted_base(self):
-        shnames, tit_id = ys.duplicate_formatted_sheets()
-        assert tit_id == 'hi'
+        shnames = ys.duplicate_formatted_sheets()
+
+        # should be all months + base + intake
+        titles_dict = Utils.get_existing_sheets(service, test_workbook)
+
+        assert len(titles_dict) == 14
         assert len(shnames) == 12
-        # assert result3[0][0] == '0' #test 
-        # assert ys.prev_bal_dict == {'testjan22 2022':'feb 2022', 'feb 2022':'mar 2022'}
-    
+
+    @pytest.mark.setup_only
+    def test_remove_base(self):
+        pass
+
 #     def test_push_to_intake(self, monkeypatch):
 
 #         ms = MonthSheet(full_sheet=test_workbook, path=test_path, mode='testing', test_service=service)
@@ -105,18 +111,18 @@ class TestChecklist:
 #         result = calls.broad_get(service, test_workbook, f'{ms.ui_sheet}!A1:A1')
 #         assert result[0][0] == 'CD-A'      
 
-#     def test_teardown_month_sheets(self):
-#         ys = YearSheet(full_sheet=test_workbook, mode='testing', test_service=service)
-#         titles_dict = Utils().get_existing_sheets(service,test_workbook)
+    def test_teardown_month_sheets(self):
+        ys = YearSheet(full_sheet=test_workbook, mode='testing', test_service=service)
+        titles_dict = Utils().get_existing_sheets(service,test_workbook)
 
-#         calls.clear_sheet(service, test_workbook, 'intake!A1:ZZ100')
-#         for name, id2, in titles_dict.items():
-#             if name != 'intake':
-#                 calls.del_one_sheet(service, test_workbook, id2)
+        calls.clear_sheet(service, test_workbook, 'intake!A1:ZZ100')
+        for name, id2, in titles_dict.items():
+            if name != 'intake':
+                calls.del_one_sheet(service, test_workbook, id2)
 
-#         titles_dict1 = Utils().get_existing_sheets(service,test_workbook)        
+        titles_dict1 = Utils().get_existing_sheets(service,test_workbook)        
         
-#         assert len(titles_dict1) == 1
+        assert len(titles_dict1) == 1
 
 
 
@@ -139,7 +145,7 @@ class TestChecklist:
     #     ms.control()
         
     #     result = calls.broad_get(service, test_workbook, 'testjan22 2022!A1:A1')
-    #     result2 = calls.broad_get(service, test_workbook, 'testjan22 2022!h68:h68') #test formatting  
+    #     result2 = calls.broad_get(service, test_workbookN, 'testjan22 2022!h68:h68') #test formatting  
     #     assert result[0][0] == 'Unit' #test 
     #     assert result2[0][0] == '160.00' #test 
 
