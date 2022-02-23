@@ -53,7 +53,7 @@ class YearSheet:
             self.service = oauth(my_scopes, 'sheet')
         
         self.base_month = 'base'
-        self.shmonths = ['jan', 'feb', 'mar', 'apr', 'may', 'june', 'july', 'aug', 'sep', 'oct', 'nov', 'dec']
+        self.shmonths = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
         self.user_text = f'Options:\n PRESS 1 to show all current sheets in {self.full_sheet} \n PRESS 2 to create list of sheet NAMES \n PRESS 3 to format all months. *****YOU NEED TO MANUALLY MAKE AN INTAKE SHEET AFTER RUNNING OPTION 3(this is the full year auto option; takes 45 min) \n >>>'
         self.user_choice = None
         self.shyear = [f'{Config.current_year}']
@@ -118,7 +118,7 @@ class YearSheet:
             self.calls.api_duplicate_sheet(self.service, self.full_sheet, source_id=self.source_id, insert_index=insert_index, title=name)
             for item in checklist:
                 if item['month'] == mdate:
-                    data = dict(id=item['id'], rs_exists=True, yfor=True)
+                    data = dict(id=item['id'], rs_exist=True, yfor=True)
                     checklist.update(data, ['id'])
 
         return sheet_names
