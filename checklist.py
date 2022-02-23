@@ -34,12 +34,14 @@ class Checklist:
         return checklist
 
     def show_checklist(self):
+        yfor_list = []
+        rs_exist_list = []
         check_items = [item for item in self.db[self.tablename]]
         for item in check_items:
             print(item)
-        return check_items
-
-    
+            yfor_list.append(item['yfor'])
+            rs_exist_list.append(item['rs_exist'])
+        return check_items, yfor_list, rs_exist_list
 
 
 if __name__ == '__main__':

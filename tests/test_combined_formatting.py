@@ -32,7 +32,7 @@ class TestChecklist:
         chklist.make_checklist()
         records = chklist.show_checklist()
 
-        assert len(records) == 12
+        assert len(records[0]) == 12
     
     def test_setup_intake(self):
         '''test to make sure intake is present; reset intake state'''
@@ -83,6 +83,15 @@ class TestChecklist:
 
         result = calls.broad_get(service, Config.TEST_RS, 'feb 2022!D2:D2')
         assert result[0][0] == '0'
+
+    @pytest.mark.setup_only
+    def test_checklist_pickup_rs_exist_and_yfor(self):
+        cl = Checklist(db=chck_list_db)
+        check_item, yfor, rs_exist = cl.show_checklist()
+
+        assert all(yfor) == True
+        assert all(rs_exist) == True
+
 
 
 
