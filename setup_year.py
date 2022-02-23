@@ -1,6 +1,7 @@
 from config import Config, my_scopes
 from auth_work import oauth
 from utils import Utils
+from checklist import Checklist
 from db_utils import DBUtils
 from google_api_calls_abstract import GoogleApiCalls
 import pathlib
@@ -43,7 +44,7 @@ class YearSheet:
         self.test_message = 'hi_from_year_sheets!'
         self.full_sheet = full_sheet
         self.calls = GoogleApiCalls()
-
+        self.Checklist = Checklist(db=Config.test_checklist_db)
         if mode == 'testing':
             self.mode = mode
             self.sleep = 0
@@ -81,7 +82,7 @@ class YearSheet:
         self.formatting_runner()
         shnames = self.duplicate_formatted_sheets()
         self.remove_base_sheet()
-        # self.make_shifted_list_for_prev_bal()
+        self.make_shifted_list_for_prev_bal()
 
         return shnames
 
@@ -105,12 +106,20 @@ class YearSheet:
 
         for title, id1 in titles_dict.items():
             if title == 'base 2022':
-                self.source_id = id1               
+                self.source_id = id1      
+
+        checklist = self.get_checklist()
 
         insert_index = 2
         for name in sheet_names:
             insert_index += 1
+            mdate, ydate = name.split(' ')
+            print(checklist)
             self.calls.api_duplicate_sheet(self.service, self.full_sheet, source_id=self.source_id, insert_index=insert_index, title=name)
+            for item in checklist:
+                if item['month'] == mdate:
+                    data = dict(id=item['id'], rs_exists=True, yfor=True)
+                    checklist.update(data, ['id'])
 
         return sheet_names
 
@@ -167,7 +176,6 @@ class YearSheet:
         titles_dict = {name:id2 for name, id2 in titles_dict.items() if name != 'intake'}
 
         titles_list1 = list(titles_dict)
-        # titles_list1.append(titles_list1[0])
         titles_list1 = titles_list1[1:]
 
         actual_titles_list = list(titles_dict)
@@ -182,10 +190,17 @@ class YearSheet:
                     G_SHEETS_PREVIOUS_BALANCE = [f"='{prev_month}'!L2"]
                     self.calls.write_formula_column(self.service, self.full_sheet, G_SHEETS_PREVIOUS_BALANCE, f'{current_month}!D2:D2')
 
+    def get_checklist(self):
+        checklist = self.Checklist.get_checklist()
+        return checklist
+        
 
 if __name__ == '__main__':
     ys = YearSheet(full_sheet=Config.TEST_RS, mode='dev')
     ys.auto_control()
+
+    # ys.update_checklist_db()
+    # ys.duplicate_formatted_sheets()
     
 
 

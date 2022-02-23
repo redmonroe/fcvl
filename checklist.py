@@ -18,7 +18,7 @@ class Checklist:
         for month in month_list:  
             table.insert(dict(
                 year=f'{Config.current_year}', 
-                month=month,
+                month=month.lower(),
                 rs_exist=False,
                 yfor=False, 
                 mfor=False, 
@@ -29,10 +29,14 @@ class Checklist:
                 rs_write=False,
                 ))
 
-
+    def get_checklist(self):
+        checklist = self.db[self.tablename]
+        return checklist
 
     def show_checklist(self):
         check_items = [item for item in self.db[self.tablename]]
+        for item in check_items:
+            print(item)
         return check_items
 
     
@@ -40,5 +44,5 @@ class Checklist:
 
 if __name__ == '__main__':
     clist = Checklist(db=Config.test_checklist_db)
-    clist.sample_checklist()
+    # clist.make_checklist()
     clist.show_checklist()

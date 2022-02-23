@@ -81,7 +81,8 @@ class TestChecklist:
         ys.make_shifted_list_for_prev_bal()
         prev_bal = ys.prev_bal_dict
 
-        assert prev_bal['apr 2022'] == 'may 2022'
+        result = calls.broad_get(service, Config.TEST_RS, 'feb 2022!D2:D2')
+        assert result[0][0] == '0'
 
 
 
