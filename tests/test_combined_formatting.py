@@ -61,7 +61,6 @@ class TestChecklist:
     @pytest.mark.setup_only
     def test_year_format_one_sheet(self):
         shnames = ys.auto_control()
-        # assert len(titles_dict) == 14
         assert len(shnames) == 12
 
         result = calls.broad_get(service, Config.TEST_RS, 'jan 2022!A2:A2')
@@ -70,30 +69,30 @@ class TestChecklist:
         assert result[0][0] == 'CD-A' #test 
         assert result2[0][0] == 'total' #test 
 
-    @pytest.mark.setup_only
-    def test_duplicate_formatted_base(self):
-        # should be all months  + intake
-        titles_dict = Utils.get_existing_sheets(service, test_workbook)
-        assert len(titles_dict) == 13
+    # @pytest.mark.setup_only
+    # def test_duplicate_formatted_base(self):
+    #     # should be all months  + intake
+    #     titles_dict = Utils.get_existing_sheets(service, test_workbook)
+    #     assert len(titles_dict) == 13
 
-    @pytest.mark.setup_only
-    def test_prev_balance(self):
-        ys.make_shifted_list_for_prev_bal()
-        prev_bal = ys.prev_bal_dict
+    # @pytest.mark.setup_only
+    # def test_prev_balance(self):
+    #     ys.make_shifted_list_for_prev_bal()
+    #     prev_bal = ys.prev_bal_dict
 
-        result = calls.broad_get(service, Config.TEST_RS, 'feb 2022!D2:D2')
-        assert result[0][0] == '0'
+    #     result = calls.broad_get(service, Config.TEST_RS, 'feb 2022!D2:D2')
+    #     assert result[0][0] == '0'
 
-    @pytest.mark.setup_only
-    def test_checklist_pickup_rs_exist_and_yfor(self):
-        cl = Checklist(db=chck_list_db)
-        check_item, yfor, rs_exist = cl.show_checklist()
+    # @pytest.mark.setup_only
+    # def test_checklist_pickup_rs_exist_and_yfor(self):
+    #     cl = Checklist(db=chck_list_db)
+    #     check_item, yfor, rs_exist = cl.show_checklist()
 
-        assert all(yfor) == True
-        assert all(rs_exist) == True
+    #     assert all(yfor) == True
+    #     assert all(rs_exist) == True
 
 
-
+'''deprecated but not to destroy'''
 
 #     def test_push_to_intake(self, monkeypatch):
 
