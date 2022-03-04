@@ -160,7 +160,6 @@ def nbofi():
     ## rr from rent_sheets (see above)
     rr_rs = broad_get(service, CURRENT_YEAR_RS, target_sheet + RR_RANGE_FROM_RS)
     rr_rs = float(rr_rs[0][0])
-
     if rr_rs == rr_qbo:
         simple_batch_update(service, sheet_id, rr_wrange, rr_rs, dim)
     else:
@@ -169,7 +168,6 @@ def nbofi():
         print('WRITING PLUG PENDING JANUARY STATEMENTS AND ABILITY TO WORK ON LIVE DATA')
         simple_batch_update(service, sheet_id, rr_wrange, [100000000], dim)
     # deposit detail from qbo: need a group by swing here
-
     data = extraction_wrapper_for_transaction_detail(choice, func=qb_extract_deposit_detail, path=Config.deposit_detail_2021, keyword='deposit')
     print(data)
     '''

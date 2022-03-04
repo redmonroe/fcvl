@@ -913,12 +913,12 @@ def month_setup():
         show_files_as_choices(titles_dict)
     elif choice == 2:
         """push from excel to rent sheets:intake"""
-        from liltilities import Liltilities
-        print('Path:', DL_FILE_PATH)
-        Liltilities.autoconvert_xls_to_xlsx(path=DL_FILE_PATH)
+        # from liltilities import Liltilities
+        # print('Path:', DL_FILE_PATH)
+        # Liltilities.autoconvert_xls_to_xlsx(path=DL_FILE_PATH)
 
         db = DBIntake()
-        path = sheet_finder('generating tenant rent roll', DL_FILE_PATH)
+        path = sheet_finder('generating tenant rent roll', Config.DL_FILE_PATH)
         sheet = Liltilities.load_activate_workbook(path)
         tname, unit, krent, subsidy, trent = db.intake_saink(sheet)
 
