@@ -23,7 +23,7 @@ calls = GoogleApiCalls()
 ys = YearSheet(full_sheet=test_workbook, mode='testing', test_service=service)
 
 
-@pytest.mark.setup_only
+# @pytest.mark.setup_only
 class TestChecklist:
 
     def test_setup_checklist(self):
@@ -58,7 +58,6 @@ class TestChecklist:
         assert len(titles_dict) == 1
         assert list(titles_dict.keys())[0] == 'intake'
     
-    @pytest.mark.setup_only
     def test_year_format_one_sheet(self):
         shnames = ys.auto_control()
         assert len(shnames) == 12
@@ -69,27 +68,28 @@ class TestChecklist:
         assert result[0][0] == 'CD-A' #test 
         assert result2[0][0] == 'total' #test 
 
-    # @pytest.mark.setup_only
-    # def test_duplicate_formatted_base(self):
-    #     # should be all months  + intake
-    #     titles_dict = Utils.get_existing_sheets(service, test_workbook)
-    #     assert len(titles_dict) == 13
+    def test_duplicate_formatted_base(self):
+        # should be all months  + intake
+        titles_dict = Utils.get_existing_sheets(service, test_workbook)
+        assert len(titles_dict) == 13
 
-    # @pytest.mark.setup_only
-    # def test_prev_balance(self):
-    #     ys.make_shifted_list_for_prev_bal()
-    #     prev_bal = ys.prev_bal_dict
+    def test_prev_balance(self):
+        ys.make_shifted_list_for_prev_bal()
+        prev_bal = ys.prev_bal_dict
 
-    #     result = calls.broad_get(service, Config.TEST_RS, 'feb 2022!D2:D2')
-    #     assert result[0][0] == '0'
+        result = calls.broad_get(service, Config.TEST_RS, 'feb 2022!D2:D2')
+        assert result[0][0] == '0'
 
-    # @pytest.mark.setup_only
-    # def test_checklist_pickup_rs_exist_and_yfor(self):
-    #     cl = Checklist(db=chck_list_db)
-    #     check_item, yfor, rs_exist = cl.show_checklist()
+    def test_checklist_pickup_rs_exist_and_yfor(self):
+        cl = Checklist(db=chck_list_db)
+        check_item, yfor, rs_exist = cl.show_checklist()
 
-    #     assert all(yfor) == True
-    #     assert all(rs_exist) == True
+        assert all(yfor) == True
+        assert all(rs_exist) == True
+
+    @pytest.mark.setup_only
+    def test_what_next(self):
+        assert 1 == 1
 
 
 '''deprecated but not to destroy'''
