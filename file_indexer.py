@@ -125,7 +125,8 @@ class FileIndexer:
         self.directory_contents = []
         self.articulate_directory()
         for item in self.directory_contents:
-            table.insert(dict(fn=item.name, path=str(item), status='raw'))
+            if item.name != 'desktop.ini':
+                table.insert(dict(fn=item.name, path=str(item), status='raw'))
 
     def update_index_for_processed(self):
         for item in self.db[self.tablename]:

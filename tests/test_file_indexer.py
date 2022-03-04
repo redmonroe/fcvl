@@ -73,7 +73,7 @@ class TestFileIndexer:
         
         assert index_cols == ['id', 'fn', 'path', 'status']
         assert 'TEST_deposits_01_2022.xls' in record_1['fn']
-        assert len(db[findex_name_as_str]) == 6
+        assert len(db[findex_name_as_str]) == 5
 
     def test_setup(self):
         TestFileIndexer.remove_generated_file_from_dir(self, path1=path, file1=GENERATED_RR_FILE)
@@ -123,7 +123,7 @@ class TestFileIndexer:
 
         findex.build_index()
         
-        assert len(db[findex_name_as_str]) == 6
+        assert len(db[findex_name_as_str]) == 5
 
 
     def test_teardown(self, setup_test_db):
