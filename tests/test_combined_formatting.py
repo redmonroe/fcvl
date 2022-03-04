@@ -8,23 +8,67 @@ sys.path.append(parent)
 from config import Config
 from auth_work import oauth
 from utils import Utils
+from db_utils import DBUtils
+from pathlib import Path
 from setup_year import YearSheet
 from setup_month import MonthSheet
+from file_indexer import FileIndexer
+from build_rs import BuildRS
 from checklist import Checklist
 from google_api_calls_abstract import GoogleApiCalls
 from _pytest.monkeypatch import MonkeyPatch
+import shutil
+import pdb
+import dataset
+
+
+TEST_RR_FILE = 'TEST_rent_roll_01_2022.xls'
+TEST_DEP_FILE = 'TEST_deposits_01_2022.xls'
+GENERATED_RR_FILE = 'TEST_RENTROLL_012022.xls'
+GENERATED_DEP_FILE = 'TEST_DEP_012022.xls'
 
 test_workbook = Config.TEST_RS
+path = Config.TEST_RS_PATH
 test_path = Config.TEST_RS_PATH
+discard_pile = Config.TEST_MOVE_PATH
 chck_list_db = Config.test_checklist_db
 monkeypatch = MonkeyPatch()
 service = oauth(Config.my_scopes, 'sheet', mode='testing')
 calls = GoogleApiCalls()
+findex = FileIndexer(path=test_path, discard_pile=discard_pile, db=Config.test_findex_db, table='findex')
 ys = YearSheet(full_sheet=test_workbook, mode='testing', test_service=service)
 
 
-# @pytest.mark.setup_only
+@pytest.mark.setup_only
 class TestChecklist:
+
+    test_message = 'hi'
+    path_contents = []
+    db = None
+
+    def remove_generated_file_from_dir(self, path1=None, file1=None):
+        # pdb.set_trace()
+        try:
+            os.remove(os.path.join(str(path1), file1))
+        except FileNotFoundError as e:
+            print(e, f'{file1} NOT found in test_data_repository, make sure you are looking for the right name')
+    
+    def move_original_back_to_dir(self, discard_dir=None, target_file=None, target_dir=None):
+        findex.get_file_names_kw(discard_dir)
+        for item in findex.test_list:
+            if item == target_file:
+                try:
+                    shutil.move(os.path.join(str(discard_dir), item), target_dir)
+                except:
+                    print('Error occurred copying file: jw')
+
+    def make_path_contents(self, path=None):
+        for item in path.iterdir():
+            sub_item = Path(item)
+            filename = sub_item.parts[-1]
+            f_ext = filename.split('.')
+            f_ext = f_ext[-1]
+            self.path_contents.append(filename) 
 
     def test_setup_checklist(self):
         '''make checklist for current year/12 sheets'''
@@ -87,9 +131,104 @@ class TestChecklist:
         assert all(yfor) == True
         assert all(rs_exist) == True
 
-    @pytest.mark.setup_only
+    # @pytest.mark.setup_only
     def test_what_next(self):
+        ''' if rent roll month is processed == True, then push it to sheet'''
+
         assert 1 == 1
+
+    @pytest.fixture
+    def setup_test_db(self):
+        db = findex.db
+        tablename = findex.tablename
+        table = db[tablename]
+        table.drop()
+        check_tables = db.tables
+        assert check_tables == []
+        return db
+    
+    # @pytest.mark.findex_db
+    def test_build_index_preflight(self, setup_test_db):
+        db = setup_test_db
+
+        findex_name_as_str = findex.tablename
+        findex.build_index()
+
+        index_cols = db[findex_name_as_str].columns
+
+        record_1 = db[findex_name_as_str].find_one(fn=TEST_DEP_FILE)
+        
+        assert index_cols == ['id', 'fn', 'path', 'status', 'period']
+        assert 'TEST_deposits_01_2022.xls' in record_1['fn']
+        assert len(db[findex_name_as_str]) == 5
+
+    def test_setup_findexer(self):
+        TestChecklist.remove_generated_file_from_dir(self, path1=path, file1=GENERATED_RR_FILE)
+        TestChecklist.remove_generated_file_from_dir(self, path1=path, file1=GENERATED_DEP_FILE)
+
+        TestChecklist.move_original_back_to_dir(self, discard_dir=discard_pile, target_file=TEST_RR_FILE, target_dir=path)
+        TestChecklist.move_original_back_to_dir(self, discard_dir=discard_pile, target_file=TEST_DEP_FILE, target_dir=path)
+
+        # check discard_pile is empty
+        discard_contents = [count for count, file1 in enumerate(discard_pile.iterdir())]
+        # check path pile is 5
+        path_contents1 = [count for count, file1 in enumerate(path.iterdir())]
+        assert len(discard_contents) == 1
+        assert len(path_contents1) == 6
+
+    def test_rent_roll_flow(self):
+        findex.build_index_runner()
+        TestChecklist.make_path_contents(self, path=path)
+
+        assert GENERATED_RR_FILE in self.path_contents
+
+    def test_deposit_flow(self):
+        TestChecklist.make_path_contents(self, path=path)        
+        assert GENERATED_DEP_FILE in self.path_contents
+
+    def test_check_for_processed_and_period(self, setup_test_db):
+        db = setup_test_db
+        findex_name_as_str = findex.tablename
+
+        findex.build_index()
+        findex.update_index_for_processed()
+        index_cols = db[findex_name_as_str].columns
+        record_1 = db[findex_name_as_str].find_one(fn=GENERATED_DEP_FILE)
+        proc_list = findex.do_index()
+        
+        assert index_cols == ['id', 'fn', 'path', 'status', 'period']
+        assert GENERATED_DEP_FILE in record_1['fn']
+        assert GENERATED_DEP_FILE in proc_list
+        assert GENERATED_RR_FILE in proc_list
+        assert '2022-01' == record_1['period']
+
+    def test_build_index_postflight(self, setup_test_db):
+        db = setup_test_db
+        findex_name_as_str = findex.tablename
+        findex.drop_tables()
+
+        findex.build_index()
+        
+        assert len(db[findex_name_as_str]) == 5
+
+
+    def test_teardown(self, setup_test_db):
+        TestChecklist.remove_generated_file_from_dir(self, path1=path, file1=GENERATED_RR_FILE)
+        TestChecklist.remove_generated_file_from_dir(self, path1=path, file1=GENERATED_DEP_FILE)
+
+        TestChecklist.move_original_back_to_dir(self, discard_dir=discard_pile, target_file=TEST_RR_FILE, target_dir=path)
+        TestChecklist.move_original_back_to_dir(self, discard_dir=discard_pile, target_file=TEST_DEP_FILE, target_dir=path)
+        
+        discard_contents = [count for count, file in enumerate(discard_pile.iterdir())]
+        path_contents = [count for count, file in enumerate(path.iterdir())]
+
+        db = setup_test_db
+        findex_name_as_str = findex.tablename
+        db[findex_name_as_str].drop()
+
+        assert len(db[findex_name_as_str]) == 0
+        assert len(discard_contents) == 1
+        assert len(path_contents) == 6
 
 
 '''deprecated but not to destroy'''
