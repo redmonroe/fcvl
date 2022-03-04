@@ -1,10 +1,11 @@
 from config import Config, my_scopes
+from db_utils import DBUtils
 from auth_work import oauth
 from file_indexer import FileIndexer
 from setup_month import MonthSheet
 
 class BuildRS(MonthSheet):
-    def __init__(self, full_sheet, path, mode=None, test_service=None):
+    def __init__(self, full_sheet=None, path=None, mode=None, test_service=None):
         if mode == 'testing':
             self.mode = 'testing'
             self.findex = FileIndexer(path=Config.TEST_RS_PATH, discard_pile=Config.TEST_MOVE_PATH, db=Config.test_findex_db, table='findex')
@@ -38,6 +39,12 @@ class BuildRS(MonthSheet):
         elif self.user_choice == 2:
             pass
             # self.index_wrapper()
+    def automatic_build(self):
+        '''this is the hook into the program for the checklist routine'''
+        check_tables = DBUtils.get_tables(self, self.findex.db)
+        print(check_tables)
+        # print(len(dh['findex']))
+        return check_tables
 
     def set_user_choice(self):
         self.user_choice = int(input(self.user_text))
@@ -53,4 +60,4 @@ class BuildRS(MonthSheet):
 
 if __name__ == '__main__':
     buildrs = BuildRS(mode='testing')
-    buildrs.index_wrapper()
+    buildrs.automatic_build()

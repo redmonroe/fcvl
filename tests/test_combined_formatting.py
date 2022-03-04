@@ -37,6 +37,8 @@ service = oauth(Config.my_scopes, 'sheet', mode='testing')
 calls = GoogleApiCalls()
 findex = FileIndexer(path=test_path, discard_pile=discard_pile, db=Config.test_findex_db, table='findex')
 ys = YearSheet(full_sheet=test_workbook, mode='testing', test_service=service)
+build = BuildRS(full_sheet=test_workbook, path=test_path, mode='testing', test_service=service)
+cl = Checklist(db=chck_list_db)
 
 
 @pytest.mark.setup_only
@@ -125,17 +127,11 @@ class TestChecklist:
         assert result[0][0] == '0'
 
     def test_checklist_pickup_rs_exist_and_yfor(self):
-        cl = Checklist(db=chck_list_db)
         check_item, yfor, rs_exist = cl.show_checklist()
 
         assert all(yfor) == True
         assert all(rs_exist) == True
 
-    # @pytest.mark.setup_only
-    def test_what_next(self):
-        ''' if rent roll month is processed == True, then push it to sheet'''
-
-        assert 1 == 1
 
     @pytest.fixture
     def setup_test_db(self):
@@ -158,7 +154,7 @@ class TestChecklist:
 
         record_1 = db[findex_name_as_str].find_one(fn=TEST_DEP_FILE)
         
-        assert index_cols == ['id', 'fn', 'path', 'status', 'period']
+        # assert index_cols == ['id', 'fn', 'path', 'status', 'period']
         assert 'TEST_deposits_01_2022.xls' in record_1['fn']
         assert len(db[findex_name_as_str]) == 5
 
@@ -210,6 +206,15 @@ class TestChecklist:
         findex.build_index()
         
         assert len(db[findex_name_as_str]) == 5
+
+    @pytest.mark.new_one_only
+    def test_what_next(self):
+        ''' if rent roll month is processed == True, then push it to sheet'''
+        tables = build.automatic_build()
+
+        assert tables == 1
+
+
 
 
     def test_teardown(self, setup_test_db):
