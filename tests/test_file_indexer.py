@@ -73,7 +73,7 @@ class TestFileIndexer:
         
         assert index_cols == ['id', 'fn', 'path', 'status']
         assert 'TEST_deposits_01_2022.xls' in record_1['fn']
-        assert len(db[findex_name_as_str]) == 5
+        assert len(db[findex_name_as_str]) == 6
 
     def test_setup(self):
         TestFileIndexer.remove_generated_file_from_dir(self, path1=path, file1=GENERATED_RR_FILE)
@@ -86,8 +86,8 @@ class TestFileIndexer:
         discard_contents = [count for count, file1 in enumerate(discard_pile.iterdir())]
         # check path pile is 5
         path_contents1 = [count for count, file1 in enumerate(path.iterdir())]
-        assert len(discard_contents) == 0
-        assert len(path_contents1) == 5
+        assert len(discard_contents) == 1
+        assert len(path_contents1) == 6
 
     def test_rent_roll_flow(self):
         findex.build_index_runner()
@@ -123,7 +123,7 @@ class TestFileIndexer:
 
         findex.build_index()
         
-        assert len(db[findex_name_as_str]) == 5
+        assert len(db[findex_name_as_str]) == 6
 
 
     def test_teardown(self, setup_test_db):
@@ -141,5 +141,5 @@ class TestFileIndexer:
         db[findex_name_as_str].drop()
 
         assert len(db[findex_name_as_str]) == 0
-        assert len(discard_contents) == 0
-        assert len(path_contents) == 5  
+        assert len(discard_contents) == 1
+        assert len(path_contents) == 6

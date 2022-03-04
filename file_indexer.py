@@ -177,9 +177,9 @@ class FileIndexer:
 
 if __name__ == '__main__':
     findex = FileIndexer(path=Config.TEST_RS_PATH, discard_pile=Config.TEST_MOVE_PATH, db=Config.test_findex_db, table='findex')
-    findex.build_index_runner()
-    findex.build_index()
-    findex.update_index_for_processed()
-    findex.do_index()
+    # findex.build_index_runner()
+    # findex.build_index()
+    # findex.update_index_for_processed()
+    # findex.do_index()
 
     findex.show_table(table=findex.tablename)
