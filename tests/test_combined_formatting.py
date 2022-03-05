@@ -213,13 +213,24 @@ class TestChecklist:
 
         assert test_criteria_contains_rentroll[0] == True
 
-    @pytest.mark.new_one_only
     def test_mformat_and_push_one_to_intake(self):  
-        result = calls.broad_get(service, Config.TEST_RS, 'jan 2022!E69:E69')
-        result2 = calls.broad_get(service, Config.TEST_RS, f'intake!A1:A1')
+        result = calls.broad_get(service, test_workbook, 'jan 2022!E69:E69')
+        result2 = calls.broad_get(service, test_workbook, f'intake!A1:A1')
     
         assert result[0][0] == '0'   
         assert result2[0][0] == 'CD-A'   
+
+    def test_teardown_mformat(self):
+        # clear intake
+        calls.clear_sheet(service, test_workbook, f'intake!A1:ZZ100')
+        calls.clear_sheet(service, test_workbook, f'jan 2022!b2:b68')
+        calls.clear_sheet(service, test_workbook, f'jan 2022!e2:h68')
+        calls.clear_sheet(service, test_workbook, f'jan 2022!a69:z69')
+
+        result = calls.broad_get(service, test_workbook, 'jan 2022!E69:E69')
+        result2 = calls.broad_get(service, test_workbook, f'intake!A1:A1')
+        assert result == []   
+        assert result2 == []   
 
     @pytest.mark.skip(reason='429 from google if I do too much')
     def test_build_index_postflight(self, setup_test_db):
@@ -230,6 +241,7 @@ class TestChecklist:
         findex.build_index()
         
         assert len(db[findex_name_as_str]) == 5
+
 
 
 
@@ -258,7 +270,6 @@ class TestChecklist:
 
 #         ms = MonthSheet(full_sheet=test_workbook, path=test_path, mode='testing', test_service=service)
         
-#         # calls.clear_sheet(service, test_workbook, f'{ms.ui_sheet}!A1:ZZ100')
 
 #         choice1 = 2
 #         choice2 = 1
