@@ -213,6 +213,13 @@ class TestChecklist:
 
         assert test_criteria_contains_rentroll[0] == True
 
+    @pytest.mark.new_one_only
+    def test_mformat_and_push_one_to_intake(self):  
+        result = calls.broad_get(service, Config.TEST_RS, 'jan 2022!E69:E69')
+        assert result[0][0] == '0' #test 
+
+
+
     @pytest.mark.skip(reason='429 from google if I do too much')
     def test_build_index_postflight(self, setup_test_db):
         db = setup_test_db

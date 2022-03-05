@@ -10,8 +10,8 @@ class BuildRS(MonthSheet):
         if mode == 'testing':
             self.mode = 'testing'
             self.findex = FileIndexer(path=Config.TEST_RS_PATH, discard_pile=Config.TEST_MOVE_PATH, db=Config.test_findex_db, table='findex')
-            self.mformat = MonthSheet(full_sheet=Config.TEST_RS, path=Config.TEST_RS_PATH)
             self.service = test_service
+            self.mformat = MonthSheet(full_sheet=Config.TEST_RS, path=Config.TEST_RS_PATH, mode='testing', test_service=self.service)
         else:
             self.service = oauth(my_scopes, 'sheet')
 
@@ -50,8 +50,10 @@ class BuildRS(MonthSheet):
 
         items_true = self.get_processed_items_list()
         rentrolls_true = self.get_by_kw(key='RENTROLL', selected=items_true)
+
+        deposits_true = self.get_by_kw(key='DEP', selected=items_true)
+
         '''rentroll and monthly formatting'''
-        '''target is jan 2022'''
         for item in rentrolls_true:
             dt_object = datetime.strptime(item['period'], '%Y-%m')
             dt_object = datetime.strftime(dt_object, '%b %Y').lower()
