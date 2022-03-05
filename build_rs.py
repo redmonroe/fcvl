@@ -60,6 +60,7 @@ class BuildRS(MonthSheet):
             '''trigger formatting of dt_object named sheet'''
             self.mformat.export_month_format(dt_object)
             self.mformat.push_one_to_intake(input_file_path=item['path'])
+            self.month_write_col(dt_object)
             print(dt_object, item['path'])
 
         # print(items_true)
