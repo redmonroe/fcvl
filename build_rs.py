@@ -1,3 +1,4 @@
+from datetime import datetime
 from config import Config, my_scopes
 from db_utils import DBUtils
 from auth_work import oauth
@@ -9,6 +10,7 @@ class BuildRS(MonthSheet):
         if mode == 'testing':
             self.mode = 'testing'
             self.findex = FileIndexer(path=Config.TEST_RS_PATH, discard_pile=Config.TEST_MOVE_PATH, db=Config.test_findex_db, table='findex')
+            self.mformat = MonthSheet(full_sheet=Config.TEST_RS, path=Config.TEST_RS_PATH)
             self.service = test_service
         else:
             self.service = oauth(my_scopes, 'sheet')
@@ -41,10 +43,41 @@ class BuildRS(MonthSheet):
             # self.index_wrapper()
     def automatic_build(self):
         '''this is the hook into the program for the checklist routine'''
+        
+        '''display all'''
+        # for item in self.findex.db['findex']:
+        #     print(item)
+
+        items_true = self.get_processed_items_list()
+        rentrolls_true = self.get_by_kw(key='RENTROLL', selected=items_true)
+        '''rentroll and monthly formatting'''
+        '''target is jan 2022'''
+        for item in rentrolls_true:
+            dt_object = datetime.strptime(item['period'], '%Y-%m')
+            dt_object = datetime.strftime(dt_object, '%b %Y').lower()
+            '''trigger formatting of dt_object named sheet'''
+            self.mformat.export_month_format(dt_object)
+            print(dt_object)
+
+        # print(items_true)
+        return items_true
+
+    def get_by_kw(self, key=None, selected=None):
+        selected_items = []
+        for item in selected:
+            name = item['fn'].split('_')
+            if key in name:
+                selected_items.append(item)
+        return selected_items
+
+    def get_processed_items_list(self):
         check_tables = DBUtils.get_tables(self, self.findex.db)
-        print(check_tables)
-        # print(len(dh['findex']))
-        return check_tables
+        items_true = []
+        for item in self.findex.db['findex']:
+            if item['status'] == 'processed':
+                items_true.append(item)
+        
+        return items_true 
 
     def set_user_choice(self):
         self.user_choice = int(input(self.user_text))
