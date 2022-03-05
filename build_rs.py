@@ -57,7 +57,8 @@ class BuildRS(MonthSheet):
             dt_object = datetime.strftime(dt_object, '%b %Y').lower()
             '''trigger formatting of dt_object named sheet'''
             self.mformat.export_month_format(dt_object)
-            print(dt_object)
+            self.mformat.push_one_to_intake(input_file_path=item['path'])
+            print(dt_object, item['path'])
 
         # print(items_true)
         return items_true

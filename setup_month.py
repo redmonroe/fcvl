@@ -3,7 +3,7 @@ from auth_work import oauth
 from utils import Utils
 from db_utils import DBUtils
 from google_api_calls_abstract import GoogleApiCalls
-import pathlib
+from pathlib import Path
 import pandas as pd
 
 class MonthSheet:
@@ -109,6 +109,13 @@ class MonthSheet:
         print('pushing selected excel to intake', '| Path:', self.file_input_path)
         self.file_input_path = Utils.sheet_finder(path=self.file_input_path, function='mformat')
         self.t_name, self.unit, self.k_rent, self.subsidy, self.t_rent = self.read_excel(verbose=False)
+        self.write_to_rs()
+
+    def push_one_to_intake(self, input_file_path=None):
+        self.file_input_path = input_file_path
+        print('pushing selected excel to intake', '| Path:', self.file_input_path) 
+        self.t_name, self.unit, self.k_rent, self.subsidy, self.t_rent = self.read_excel(verbose=False)
+        assert len(self.unit) == 67, 'fcvl: rentroll has too many entries, you will need to manually edit your rent roll file or find a programming solution.'
         self.write_to_rs()
 
     def month_write_col(self, sheet_choice):
