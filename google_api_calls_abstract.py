@@ -19,6 +19,7 @@ class GoogleApiCalls:
 
     def batch_get(self, service, sheet_id, range, col_num): 
         sheet = service.spreadsheets()
+        print(sheet_id, 'here')
         result = sheet.values().get(spreadsheetId=sheet_id,
                                     range=range, majorDimension="ROWS").execute()
 

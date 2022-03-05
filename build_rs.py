@@ -5,17 +5,18 @@ from auth_work import oauth
 from file_indexer import FileIndexer
 from setup_month import MonthSheet
 
+
 class BuildRS(MonthSheet):
     def __init__(self, full_sheet=None, path=None, mode=None, test_service=None):
         if mode == 'testing':
             self.mode = 'testing'
+            self.full_sheet=Config.TEST_RS
             self.findex = FileIndexer(path=Config.TEST_RS_PATH, discard_pile=Config.TEST_MOVE_PATH, db=Config.test_findex_db, table='findex')
             self.service = test_service
             self.mformat = MonthSheet(full_sheet=Config.TEST_RS, path=Config.TEST_RS_PATH, mode='testing', test_service=self.service)
         else:
             self.service = oauth(my_scopes, 'sheet')
 
-        self.full_sheet = full_sheet
         self.file_input_path = path
         self.user_text = f'Options:\n PRESS 1 to show current sheets in RENT SHEETS \n PRESS 2 TO VIEW ITEMS IN {self.file_input_path} \n PRESS 3 for MONTHLY FORMATTING, PART ONE (that is, update intake sheet in {self.file_input_path} (xlsx) \n PRESS 4 for MONTHLY FORMATTING, PART TWO: format rent roll & subsidy by month and sheet\n >>>'
 
@@ -96,5 +97,6 @@ class BuildRS(MonthSheet):
 
 
 if __name__ == '__main__':
-    buildrs = BuildRS(mode='testing')
+    test_service = oauth(my_scopes, 'sheet')
+    buildrs = BuildRS(mode='testing', test_service=test_service)
     buildrs.automatic_build()
