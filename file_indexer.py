@@ -141,7 +141,6 @@ class FileIndexer:
             f_date = datetime.strptime(raw_date, '%m%Y')
             f_date = f_date.strftime('%Y-%m')
             return f_date
-       
 
     def do_index(self):
         processed_check_for_test = []

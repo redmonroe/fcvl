@@ -11,6 +11,7 @@ import pandas as pd
 class BuildRS(MonthSheet):
     def __init__(self, full_sheet=None, path=None, mode=None, test_service=None):
         if mode == 'testing':
+            self.db = Config.test_build_db
             self.mode = 'testing'
             self.full_sheet=Config.TEST_RS
             self.findex = FileIndexer(path=Config.TEST_RS_PATH, discard_pile=Config.TEST_MOVE_PATH, db=Config.test_findex_db, table='findex')
@@ -22,6 +23,7 @@ class BuildRS(MonthSheet):
         self.file_input_path = path
         self.user_text = f'Options:\n PRESS 1 to show current sheets in RENT SHEETS \n PRESS 2 TO VIEW ITEMS IN {self.file_input_path} \n PRESS 3 for MONTHLY FORMATTING, PART ONE (that is, update intake sheet in {self.file_input_path} (xlsx) \n PRESS 4 for MONTHLY FORMATTING, PART TWO: format rent roll & subsidy by month and sheet\n >>>'
         self.df = None
+        self.tablename = 'build'
 
     def buildrs_control(self):
         pass
@@ -65,7 +67,8 @@ class BuildRS(MonthSheet):
                 dt_object = datetime.strptime(item['period'], '%Y-%m')
                 dt_object = datetime.strftime(dt_object, '%b %Y').lower()
                 df = self.read_excel(path=item['path'])
-                print(df.head(5))
+                df = self.remove_nan_lines(df=df)
+                # print(df.head(70))
                 self.to_sql(df=df)
                 # print(dt_object, item['path'])
 
@@ -73,27 +76,50 @@ class BuildRS(MonthSheet):
 
     def read_excel(self, path, verbose=False):
         df = pd.read_excel(path, header=9)
+        # pd.set_option('display.max_columns', None)
+        # pd.set_option('display.max_rows', None)
         if verbose: 
             pd.set_option('display.max_columns', None)
             print(df.head(20))
 
-        columns = ['deposit_id', 'unit', 'name', 'date_posted', 'amount', 'pay_float', 'date_code']
+        columns = ['deposit_id', 'unit', 'name', 'date_posted', 'amount', 'date_code']
 
         bde = df['BDEPID'].tolist()
         unit = df['Unit'].tolist()
         name = df['Name'].tolist()
         date = df['Date Posted'].tolist()
         pay = df['Amount'].tolist()
-        pay_float = df['Amount'].tolist()
-        dt_code = [str(item)[0:2]for item in date]
+        dt_code = [datetime.strptime(item, '%m/%d/%Y') for item in date if type(item) == str]
+        dt_code = [str(datetime.strftime(item, '%m')) for item in dt_code]
 
-        zipped = zip(bde, unit, name, date, pay, pay_float, dt_code)
+        zipped = zip(bde, unit, name, date, pay, dt_code)
         self.df = pd.DataFrame(zipped, columns=columns)
 
         return self.df
 
+    def remove_nan_lines(self, df):
+        df = df.dropna(thresh=2)
+        df = df.fillna(0)
+        return df
+
     def to_sql(self, df):
-        pass
+        table = self.db[self.tablename]
+        table.drop()
+        for index, row in df.iterrows():
+            table.insert(dict(
+                deposit_id=row[0],
+                unit=row[1],
+                name=row[2],
+                date=row[3],
+                pay=row[4],
+                dt_code=row[5],                
+                ))
+
+    def show_table(self, table=None):
+
+        db = self.db
+        for results in db[self.tablename]:
+            print(results)
 
     def get_by_kw(self, key=None, selected=None):
         selected_items = []
@@ -128,3 +154,4 @@ if __name__ == '__main__':
     test_service = oauth(my_scopes, 'sheet')
     buildrs = BuildRS(mode='testing', test_service=test_service)
     buildrs.automatic_build(key='DEP')
+    buildrs.show_table()

@@ -503,56 +503,7 @@ class DBIntake(object):
         response = service.spreadsheets().batchUpdate(
             spreadsheetId=spreadsheet_id, body=body).execute()
         pprint(response)
-
-    @staticmethod
-    def Import2YTD_Deposits():
-        # """This function takes excel file in temp_path and pushes it formatted
-        # to YTD_DEPOSIT_BOOK 2020!"""
-        # path2 = Config.RS_DL_FILE_PATH
-
-        # pprint("Importing payments, be sure you have target read path aligned . . .")
-        # intake = DBIntake()
-        # Liltilities.autoconvert_xls_to_xlsx(path=path2)
-        
-        # path = sheet_finder('find deposit detail report for upload', path2)
-        # sheet = Liltilities.load_activate_workbook(path)
-
-        # bde, unit, name, date, pay, pay_float, dt_code = intake.keetchen_saink(sheet) # where the magic happens
-        
-        print("Dropping fcv_fin tables and MAKING ANEW . . . ")
-        db.metadata.drop_all(db.engine, tables=[BasicBitchPayment.__table__,])
-        db.create_all()
-        count = 0
-        for n, u, p, pf, dc in zip(name, unit, pay, pay_float, dt_code):
-            date_code = dc + "-" + str(count)
-            bbp = BasicBitchPayment(name=n, unit1=u, payment=p, pay_float=pf, date_code=date_code)
-            db.session.add(bbp)
-            db.session.commit()
-            count += 1
-
-        '''
-        '''
-        service = oauth(my_scopes, 'sheet')        
-        units =  broad_get(service, CURRENT_YEAR_RS, range=f'jan {Config.current_year}!A2:A68') 
-        
-        unit_check = Unit.query.all()
-        if len(unit_check) == 67:
-            print(f'unit db has length {len(unit_check)}')
-        else:
-            try:
-            # '''unit loader if db loss '''
-                db.metadata.drop_all(db.engine, tables=[Unit.__table__,])
-                db.create_all()
-                for unit_no in units:
-                    print('loading units into units db')
-                    unit_no = unit_no.pop()
-                    print(unit_no)
-                    print(type(unit_no))
-                    u = Unit(unit_no=unit_no)
-                    db.session.add(u)
-                    db.session.commit()
-            except Error as e:
-                print('issue is probably with an empty unit database', e)
+      
        
     @staticmethod
     def DB2RS():
@@ -650,11 +601,6 @@ class DBIntake(object):
     
 
 def reconciliation_runtime():
-
-    input1 = int(input('Press 1 for real page xlsx sheet to postgres_db\nPress 2 for db to rent sheets'))
-    
-    if input1 == 1:
-        DBIntake.Import2YTD_Deposits()
 
     elif input1 == 2:
         DBIntake.DB2RS()
