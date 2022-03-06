@@ -539,16 +539,16 @@ class DBIntake(object):
 
     @staticmethod
     def Import2YTD_Deposits():
-        """This function takes excel file in temp_path and pushes it formatted
-        to YTD_DEPOSIT_BOOK 2020!"""
-        path2 = Config.RS_DL_FILE_PATH
+        # """This function takes excel file in temp_path and pushes it formatted
+        # to YTD_DEPOSIT_BOOK 2020!"""
+        # path2 = Config.RS_DL_FILE_PATH
 
-        pprint("Importing payments, be sure you have target read path aligned . . .")
-        intake = DBIntake()
-        Liltilities.autoconvert_xls_to_xlsx(path=path2)
+        # pprint("Importing payments, be sure you have target read path aligned . . .")
+        # intake = DBIntake()
+        # Liltilities.autoconvert_xls_to_xlsx(path=path2)
         
-        path = sheet_finder('find deposit detail report for upload', path2)
-        sheet = Liltilities.load_activate_workbook(path)
+        # path = sheet_finder('find deposit detail report for upload', path2)
+        # sheet = Liltilities.load_activate_workbook(path)
 
         bde, unit, name, date, pay, pay_float, dt_code = intake.keetchen_saink(sheet) # where the magic happens
         

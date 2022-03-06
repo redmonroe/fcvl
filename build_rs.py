@@ -4,6 +4,7 @@ from db_utils import DBUtils
 from auth_work import oauth
 from file_indexer import FileIndexer
 from setup_month import MonthSheet
+import pandas as pd
 
 
 class BuildRS(MonthSheet):
@@ -71,11 +72,32 @@ class BuildRS(MonthSheet):
             for item in list_true:
                 dt_object = datetime.strptime(item['period'], '%Y-%m')
                 dt_object = datetime.strftime(dt_object, '%b %Y').lower()
-                print(item)
-                print(dt_object, item['path'])
+                self.read_excel(path=item['path'])
+                # print(dt_object, item['path'])
 
         # print(items_true)
         return items_true
+
+    def read_excel(self, path, verbose=False):
+        df = pd.read_excel(path, header=9)
+        if verbose: 
+            pd.set_option('display.max_columns', None)
+            print(df.head(20))
+
+        columns = ['deposit_id', 'unit', 'name', 'date_posted', 'amount', 'pay_float', 'date_code']
+
+        bde = df['BDEPID'].tolist()
+        unit = df['Unit'].tolist()
+        name = df['Name'].tolist()
+        date = df['Date Posted'].tolist()
+        pay = df['Amount'].tolist()
+        pay_float = df['Amount'].tolist()
+        dt_code = [str(item)[0:2]for item in date]
+
+        zipped = zip(bde, unit, name, date, pay, pay_float, dt_code)
+        df = pd.DataFrame(zipped, columns=columns)
+
+        return df
 
     def get_by_kw(self, key=None, selected=None):
         selected_items = []
