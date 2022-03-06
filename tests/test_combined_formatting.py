@@ -207,7 +207,7 @@ class TestChecklist:
     @pytest.mark.new_one_only
     def test_find_items_processed_by_findexer(self):
         ''' if rent roll month is processed == True, then push it to sheet'''
-        processed_items = build.automatic_build()
+        processed_items = build.automatic_build(key='RENTROLL')
 
         test_criteria_contains_rentroll = [True for filename in processed_items if 'RENTROLL' in filename['fn'].split('_')]
 
@@ -220,6 +220,7 @@ class TestChecklist:
         assert result[0][0] == '0'   
         assert result2[0][0] == 'CD-A'   
 
+    @pytest.mark.skip(reason='429 from google if I do too much')
     def test_teardown_mformat(self):
         # clear intake
         calls.clear_sheet(service, test_workbook, f'intake!A1:ZZ100')

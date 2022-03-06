@@ -42,27 +42,37 @@ class BuildRS(MonthSheet):
         elif self.user_choice == 2:
             pass
             # self.index_wrapper()
-    def automatic_build(self):
+    def automatic_build(self, key=None):
         '''this is the hook into the program for the checklist routine'''
         
         '''display all'''
         # for item in self.findex.db['findex']:
         #     print(item)
-
         items_true = self.get_processed_items_list()
-        rentrolls_true = self.get_by_kw(key='RENTROLL', selected=items_true)
-
-        deposits_true = self.get_by_kw(key='DEP', selected=items_true)
+        if key == 'ALL':
+            ## THIS DOES NOT WORK YET
+            rentrolls_true = self.get_by_kw(key='RENTROLL', selected=items_true)
+            deposits_true = self.get_by_kw(key='DEP', selected=items_true)
+        else:
+            list_true = self.get_by_kw(key=key, selected=items_true)
 
         '''rentroll and monthly formatting'''
-        for item in rentrolls_true:
-            dt_object = datetime.strptime(item['period'], '%Y-%m')
-            dt_object = datetime.strftime(dt_object, '%b %Y').lower()
-            '''trigger formatting of dt_object named sheet'''
-            self.mformat.export_month_format(dt_object)
-            self.mformat.push_one_to_intake(input_file_path=item['path'])
-            self.month_write_col(dt_object)
-            print(dt_object, item['path'])
+        if key == 'RENTROLL':
+            for item in list_true:
+                dt_object = datetime.strptime(item['period'], '%Y-%m')
+                dt_object = datetime.strftime(dt_object, '%b %Y').lower()
+                '''trigger formatting of dt_object named sheet'''
+                self.mformat.export_month_format(dt_object)
+                self.mformat.push_one_to_intake(input_file_path=item['path'])
+                self.month_write_col(dt_object)
+
+        '''deposits push'''
+        if key == 'DEP':
+            for item in list_true:
+                dt_object = datetime.strptime(item['period'], '%Y-%m')
+                dt_object = datetime.strftime(dt_object, '%b %Y').lower()
+                print(item)
+                print(dt_object, item['path'])
 
         # print(items_true)
         return items_true
@@ -99,4 +109,4 @@ class BuildRS(MonthSheet):
 if __name__ == '__main__':
     test_service = oauth(my_scopes, 'sheet')
     buildrs = BuildRS(mode='testing', test_service=test_service)
-    buildrs.automatic_build()
+    buildrs.automatic_build(key='DEP')
