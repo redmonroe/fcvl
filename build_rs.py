@@ -64,20 +64,22 @@ class BuildRS(MonthSheet):
         '''deposits push'''
         if key == 'DEP':
             for item in list_true:
+                '''get raw deposit items to sql'''
                 dt_object = datetime.strptime(item['period'], '%Y-%m')
                 dt_object = datetime.strftime(dt_object, '%b %Y').lower()
                 df = self.read_excel(path=item['path'])
                 df = self.remove_nan_lines(df=df)
-                # print(df.head(70))
                 self.to_sql(df=df)
-                # print(dt_object, item['path'])
+                dt_code = item['period'][-2:]
+                '''group objects by tenant name or unit: which was it?'''
+                self.push_to_sheet_by_period(dt_code=dt_code)
 
         return items_true
 
     def read_excel(self, path, verbose=False):
         df = pd.read_excel(path, header=9)
-        # pd.set_option('display.max_columns', None)
-        # pd.set_option('display.max_rows', None)
+        pd.set_option('display.max_columns', None)
+        pd.set_option('display.max_rows', None)
         if verbose: 
             pd.set_option('display.max_columns', None)
             print(df.head(20))
@@ -111,9 +113,59 @@ class BuildRS(MonthSheet):
                 unit=row[1],
                 name=row[2],
                 date=row[3],
-                pay=row[4],
+                pay=float(row[4]),
                 dt_code=row[5],                
                 ))
+
+    def push_to_sheet_by_period(self, dt_code):
+        print(dt_code)
+        db = self.db
+        tablename = self.tablename
+        results_list = []
+        for result in db[tablename]:
+            if result['dt_code'] == dt_code:
+                results_list.append(result)
+
+        df = self.lists_to_df(results_list)
+        grand_total = self.grand_total(df=df)
+        df = self.group_df(df=df)
+        unit_index = self.get_units()
+        unit_index = self.make_unit_index(unit_index)
+
+        #### NEED TO REMOVE LAUNDRY AND OTHERS!!!!
+
+        unit_index_df = pd.DataFrame(unit_index, columns= ['Rank', 'Unit'])
+
+        print(df.head(70))
+        print(grand_total)
+        print(unit_index_df.head(5))
+        # df = self.group_df(df=df)
+        
+    def lists_to_df(self, lists):
+        df = pd.DataFrame(lists)
+        return df
+
+    def grand_total(self, df):
+        grand_total = sum(df['pay'].tolist())
+        return grand_total
+    
+    def group_df(self, df):
+        df = df.groupby(['name', 'unit'])['pay'].sum()
+        return df
+
+    def get_units(self):
+        results_list = Config.units
+        return results_list
+
+    def make_unit_index(self, units):
+        final_list = []
+        idx_list = []
+        for index, unit in enumerate(units): # indexes units from sheet
+            idx_list.append(int(index))
+            final_list.append(unit)
+
+        unit_index = tuple(zip(idx_list, final_list))
+        return unit_index
 
     def show_table(self, table=None):
 
@@ -154,4 +206,4 @@ if __name__ == '__main__':
     test_service = oauth(my_scopes, 'sheet')
     buildrs = BuildRS(mode='testing', test_service=test_service)
     buildrs.automatic_build(key='DEP')
-    buildrs.show_table()
+    # buildrs.show_table()

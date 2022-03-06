@@ -574,8 +574,8 @@ class DBIntake(object):
         df1 = df.groupby(['Name', 'Unit'])['Payment'].sum()
     
       
-        # unit_idx is just a list of unit names as strings ie CD-A
-        unit_idx = list(conv(Unit.query.all(), type='str'))
+        # # unit_idx is just a list of unit names as strings ie CD-A
+        # unit_idx = list(conv(Unit.query.all(), type='str'))
 
         final_list = []
         idx_list = []
