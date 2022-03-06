@@ -220,6 +220,13 @@ class TestChecklist:
         assert result[0][0] == '0'   
         assert result2[0][0] == 'CD-A'   
 
+    def test_build_rs_to_excel(self):
+        processed_items = build.automatic_build(key='DEP')
+        test_df = build.df
+        bde = test_df['deposit_id'].tolist()
+
+        assert bde[0] == 20979.0
+
     @pytest.mark.skip(reason='429 from google if I do too much')
     def test_teardown_mformat(self):
         # clear intake

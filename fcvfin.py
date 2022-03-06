@@ -445,39 +445,6 @@ class DBIntake(object):
 
         pprint(f"Tallied {total_tally} in payments list.  Writing this to sheet . . . ")
 
-    def keetchen_saink(self, sheet): 
-        """This is a custom job; tailored to the specific format of sheet for realpage deposits"""
-
-        pprint("Using openpyxl to iterate through rows of excel sheet . . .")
-        pprint("Generating lists of transactions et al from sheet . . . ")
-
-        bde = []
-        unit=[] #1
-        name=[] #3
-        date=[] #7
-        pay=[] #13
-
-        pay_float = []
-
-        for value in sheet.iter_rows(min_row=11, min_col=1, max_col=14, values_only=True):
-
-            if value[1] != None:
-                bde.append(value[1])
-                unit.append(value[0])
-                name.append(value[2])
-                date.append(value[5])
-                pay.append(value[13])
-
-            else:
-                print(value)
-                print("******")
-
-        print("******")
-        pay_float = [float(item) for item in pay]
-        dt_code = [item[0:2]for item in date] # makes date code
-        print("******")
-
-        return bde, unit, name, date, pay, pay_float, dt_code
 
     def intake_saink(self, sheet):
         """a modification of keetchen_saink: iterates through excel sheet and writes output to rent sheets 2020/intake in g sheets"""
@@ -550,7 +517,7 @@ class DBIntake(object):
         # path = sheet_finder('find deposit detail report for upload', path2)
         # sheet = Liltilities.load_activate_workbook(path)
 
-        bde, unit, name, date, pay, pay_float, dt_code = intake.keetchen_saink(sheet) # where the magic happens
+        # bde, unit, name, date, pay, pay_float, dt_code = intake.keetchen_saink(sheet) # where the magic happens
         
         print("Dropping fcv_fin tables and MAKING ANEW . . . ")
         db.metadata.drop_all(db.engine, tables=[BasicBitchPayment.__table__,])

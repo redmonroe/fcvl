@@ -4,6 +4,7 @@ from db_utils import DBUtils
 from auth_work import oauth
 from file_indexer import FileIndexer
 from setup_month import MonthSheet
+import dataset
 import pandas as pd
 
 
@@ -20,8 +21,10 @@ class BuildRS(MonthSheet):
 
         self.file_input_path = path
         self.user_text = f'Options:\n PRESS 1 to show current sheets in RENT SHEETS \n PRESS 2 TO VIEW ITEMS IN {self.file_input_path} \n PRESS 3 for MONTHLY FORMATTING, PART ONE (that is, update intake sheet in {self.file_input_path} (xlsx) \n PRESS 4 for MONTHLY FORMATTING, PART TWO: format rent roll & subsidy by month and sheet\n >>>'
+        self.df = None
 
     def buildrs_control(self):
+        pass
         # FIRST SELECT A MONTH:
 
             # return applicable docs, compare to necessary docs
@@ -32,17 +35,6 @@ class BuildRS(MonthSheet):
             # do I have bank statements? 
             # can I forestall reconciliation issues at this stage? 
 
-
-
-
-
-
-        if self.user_choice == 1:
-            ms = MonthSheet(self.full_sheet, self.file_input_path)
-            ms.show_current_sheets()
-        elif self.user_choice == 2:
-            pass
-            # self.index_wrapper()
     def automatic_build(self, key=None):
         '''this is the hook into the program for the checklist routine'''
         
@@ -72,10 +64,11 @@ class BuildRS(MonthSheet):
             for item in list_true:
                 dt_object = datetime.strptime(item['period'], '%Y-%m')
                 dt_object = datetime.strftime(dt_object, '%b %Y').lower()
-                self.read_excel(path=item['path'])
+                df = self.read_excel(path=item['path'])
+                print(df.head(5))
+                self.to_sql(df=df)
                 # print(dt_object, item['path'])
 
-        # print(items_true)
         return items_true
 
     def read_excel(self, path, verbose=False):
@@ -95,9 +88,12 @@ class BuildRS(MonthSheet):
         dt_code = [str(item)[0:2]for item in date]
 
         zipped = zip(bde, unit, name, date, pay, pay_float, dt_code)
-        df = pd.DataFrame(zipped, columns=columns)
+        self.df = pd.DataFrame(zipped, columns=columns)
 
-        return df
+        return self.df
+
+    def to_sql(self, df):
+        pass
 
     def get_by_kw(self, key=None, selected=None):
         selected_items = []
