@@ -33,13 +33,22 @@ class GoogleApiCalls:
 
     def update(self, service, sheet_choice, data, write_range, value_input_option='RAW'):
         sheet = service.spreadsheets()
-    
         spreadsheet_id = sheet_choice
+        range_ = write_range 
+        value_input_option = 'RAW'
+        value_range_body = {"range": write_range,
+                            "majorDimension": "COLUMNS",
+                            "values": [data]
+        }
 
-        range_ = write_range  # TODO: Update placeholder value.
-
-        value_input_option = 'RAW'  #
-
+        request = service.spreadsheets().values().update(spreadsheetId=spreadsheet_id, range=range_, valueInputOption=value_input_option, body=value_range_body)
+        response = request.execute()
+    
+    def update_int(self, service, sheet_choice, data, write_range, value_input_option=None):
+        sheet = service.spreadsheets()
+        spreadsheet_id = sheet_choice
+        range_ = write_range 
+        value_input_option = value_input_option
         value_range_body = {"range": write_range,
                             "majorDimension": "COLUMNS",
                             "values": [data]

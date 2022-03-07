@@ -205,5 +205,5 @@ class BuildRS(MonthSheet):
 if __name__ == '__main__':
     test_service = oauth(my_scopes, 'sheet')
     buildrs = BuildRS(mode='testing', test_service=test_service)
-    buildrs.automatic_build(key='DEP')
+    buildrs.automatic_build(key='RENTROLL')
     # buildrs.show_table()

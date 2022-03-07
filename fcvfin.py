@@ -87,47 +87,6 @@ class TemplateFormatSheet(object):
             print(e, 'You probably need to put in the unit numbers into intake sheet.')
         return values
 
-    # an attempt to write ints for sum formulas
-    def update_int(self, data, write_range):
-        service = self.service
-        sheet = service.spreadsheets()
-        spreadsheet_id = self.spreadsheet_id
-
-        range_ = write_range  # TODO: Update placeholder value.
-
-        # How the input data should be interpreted.
-        value_input_option = 'USER_ENTERED'  #
-
-        value_range_body = {"range": write_range,
-                            "majorDimension": "COLUMNS",
-                            "values": [data]
-        }
-
-        request = service.spreadsheets().values().update(spreadsheetId=spreadsheet_id, range=range_, valueInputOption=value_input_option, body=value_range_body)
-        response = request.execute()
-
-        print(response)
-
-    def update(self, data, write_range):
-        service = self.service
-        sheet = service.spreadsheets()
-        spreadsheet_id = self.spreadsheet_id
-
-        range_ = write_range  # TODO: Update placeholder value.
-
-        value_input_option = 'RAW'  #
-
-        value_range_body = {"range": write_range,
-                            "majorDimension": "COLUMNS",
-                            "values": [data]
-        }
-
-        request = service.spreadsheets().values().update(spreadsheetId=spreadsheet_id, range=range_, valueInputOption=value_input_option, body=value_range_body)
-        response = request.execute()
-
-        # TODO: Change code below to process the `response` dict:
-        print(response)
-
     def simple_batch_update(self, service, sheet_id, wrange, data, dim):
         pprint(f"Updating {sheet_id} with batch call to {wrange}...")
         sheet = service.spreadsheets()

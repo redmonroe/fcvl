@@ -87,12 +87,17 @@ class MonthSheet:
             print(df.head(100))
         t_name = df['Name'].tolist()
         unit = df['Unit'].tolist()
-        k_rent = df['Lease Rent'].tolist()
-        t_rent = df['Actual Rent Charge'].tolist()
-        subsidy = df['Actual Subsidy Charge'].tolist()
+        k_rent = self.str_to_float(df['Lease Rent'].tolist())
+        t_rent = self.str_to_float(df['Actual Rent Charge'].tolist())
+        subsidy = self.str_to_float(df['Actual Subsidy Charge'].tolist())
 
         return self.fix_data(t_name), self.fix_data(unit), self.fix_data(k_rent), self.fix_data(subsidy), self.fix_data(t_rent)
 
+    def str_to_float(self, list1):
+        list1 = [item.replace(',', '') for item in list1]
+        list1 = [float(item) for item in list1]
+        return list1
+    
     def fix_data(self, item):
         item.pop()
         return item
@@ -127,13 +132,13 @@ class MonthSheet:
         gc.update(self.service, self.full_sheet, tenant_names, f'{sheet_choice}!B2:B68')       
 
         contract_rent = gc.batch_get(self.service, self.full_sheet, f'{self.ui_sheet}!A1:Z100', 2)
-        gc.update(self.service, self.full_sheet, contract_rent, f'{sheet_choice}!E2:E68', value_input_option='USER_ENTERED')
+        gc.update_int(self.service, self.full_sheet, contract_rent, f'{sheet_choice}!E2:E68', value_input_option='USER_ENTERED')
         
         subsidy = gc.batch_get(self.service, self.full_sheet, f'{self.ui_sheet}!A1:Z100', 3)
-        gc.update(self.service, self.full_sheet,subsidy, f'{sheet_choice}!F2:F68', value_input_option='USER_ENTERED')
+        gc.update_int(self.service, self.full_sheet,subsidy, f'{sheet_choice}!F2:F68', value_input_option='USER_ENTERED')
         
         tenant_rent = gc.batch_get(self.service, self.full_sheet, f'{self.ui_sheet}!A1:Z100', 4)
-        gc.update(self.service, self.full_sheet, tenant_rent, f'{sheet_choice}!H2:H68', value_input_option='USER_ENTERED')
+        gc.update_int(self.service, self.full_sheet, tenant_rent, f'{sheet_choice}!H2:H68', value_input_option='USER_ENTERED')
 
     def export_month_format(self, sheet_choice):
         gc = GoogleApiCalls()
