@@ -220,6 +220,10 @@ class TestChecklist:
         assert result[0][0] == '51402'   
         assert result2[0][0] == 'CD-A'   
 
+    def test_write_pay_list(self):  
+        result = calls.broad_get(service, test_workbook, 'jan 2022!K69:K69')
+        assert result[0][0] == '14975'   
+
     def test_build_rs_to_excel(self):
         processed_items = build.automatic_build(key='DEP')
         test_df = build.df
