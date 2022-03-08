@@ -1,6 +1,7 @@
 import os
 from utils import Utils
 from db_utils import DBUtils
+from pdf import StructDataExtract
 from config import Config
 from pathlib import Path
 from datetime import datetime
@@ -27,7 +28,10 @@ class FileIndexer:
     def build_index_runner(self):
         self.articulate_directory()
         self.sort_directory_by_extension()
-        # self.rename_by_content_xls()
+        try:
+            self.rename_by_content_xls()
+        except shutil.SameFileError as e:
+            print(e, 'file_indexer: files likely renamed after generation proc in test')
         self.rename_by_content_pdf()
 
     def articulate_directory(self):
@@ -93,9 +97,6 @@ class FileIndexer:
                 self.processed_files.append((filename, period))
                 self.xls_list.remove(item)
 
-    def find_by_content_pdf(self, style, target_string):
-        print('hi')
-
     def rename_by_content_xls(self):
         '''find rent roll by content'''
         ## this can be moved out to own function ie make_xls_list, make_pdf_list
@@ -103,17 +104,26 @@ class FileIndexer:
             if extension == 'xls':
                 self.xls_list.append(name)
 
-        self.find_by_content(style='rr', target_string='Affordable Rent Roll Detail/ GPR Report')
+        # self.find_by_content(style='rr', target_string='Affordable Rent Roll Detail/ GPR Report')
 
-        self.find_by_content(style='dep', target_string='BANK DEPOSIT DETAILS')
+        # self.find_by_content(style='dep', target_string='BANK DEPOSIT DETAILS')
 
     def rename_by_content_pdf(self):
+        '''index opcashes'''
+        pdf = StructDataExtract()
         for name, extension in self.index_dict.items():
             if extension == 'pdf':
-                print(name)
                 self.pdf_list.append(name)
+    
+        # paths to op cash, op cash date, op cash extract deposits, op cash mark as processed, write a test
+        op_cash_list = []
+        for item in self.pdf_list:
+            op_cash_path = pdf.select_stmt_by_str(path=item, target_str=' XXXXXXX1891')
+            if op_cash_path != None:
+                op_cash_list.append(op_cash_path)
 
-        self.find_by_content_pdf(style='opcash', target_string="IDONTKNOWYET")
+        print(op_cash_list)
+        #     pdf.nbofi_pdf_extract(item)
 
     def get_more_metadata(self):
         target_file = os.path.join(self.path, target)

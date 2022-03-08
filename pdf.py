@@ -177,13 +177,9 @@ class StructDataExtract:
         '''
         print(df.head(10)) 
     
-    def nbofi_pdf_extract_hap(self, filename, path=None):
-        db_file = 'data/bank_output.txt'
-
-        abs_file_path = os.path.join(path, filename)
-        print('path to statement:', abs_file_path)
-        
-        with open(abs_file_path, "rb") as f:
+    def select_stmt_by_str(self, path, target_str):
+        db_file = 'data/bank_output.txt'        
+        with open(path, "rb") as f:
             pdf = pdftotext.PDF(f)
 
         # Read all the text into one string
@@ -192,10 +188,30 @@ class StructDataExtract:
 
         with open(db_file, 'rb') as f:
             file1 = open(db_file, 'r')
+
+    
+        index = [(count, line) for count, line in enumerate(file1)]
+        type_test = False
+        for count, line in index:
+            if target_str in line:
+                type_test = True
+                return path
+
+    def nbofi_pdf_extract(self, path, style, target_string):
+        db_file = 'data/bank_output.txt'        
+        with open(path, "rb") as f:
+            pdf = pdftotext.PDF(f)
+
+        # Read all the text into one string
+        with open(db_file, 'w') as f:
+            f.write("\n\n".join(pdf))
+
+        with open(db_file, 'rb') as f:
+            file1 = open(db_file, 'r')
+
+        index = [(count, line) for count, line in enumerate(file1)]
         
-        # index = [(count, line) for count, line in enumerate(file1)]
-        
-        # hap_line = [(count, line) for count, line in index if 'QUADEL' in line]
+        hap_line = [(count, line) for count, line in index if 'QUADEL' in line]
         # hap_line = [line for count, line in hap_line]
         # hap_line = [line.split(' ') for line in hap_line]
         # hap_line = hap_line.pop()
