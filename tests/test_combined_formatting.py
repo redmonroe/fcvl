@@ -217,7 +217,7 @@ class TestChecklist:
         result = calls.broad_get(service, test_workbook, 'jan 2022!E69:E69')
         result2 = calls.broad_get(service, test_workbook, f'intake!A1:A1')
     
-        assert result[0][0] == '0'   
+        assert result[0][0] == '51402'   
         assert result2[0][0] == 'CD-A'   
 
     def test_build_rs_to_excel(self):

@@ -118,7 +118,7 @@ class BuildRS(MonthSheet):
                 ))
 
     def push_to_sheet_by_period(self, dt_code):
-        print(dt_code)
+        print('pushing to sheet with code:', dt_code)
         db = self.db
         tablename = self.tablename
         results_list = []
@@ -127,30 +127,49 @@ class BuildRS(MonthSheet):
                 results_list.append(result)
 
         df = self.lists_to_df(results_list)
-        grand_total = self.grand_total(df=df)
+        grand_total = self.grand_total(df=df)        
+        df, laundry_income = self.return_and_remove_ntp(df=df, col='unit', remove_str='0')        
         df = self.group_df(df=df)
+        laundry_income = self.group_df(df=laundry_income, just_return_total=True)
+
         unit_index = self.get_units()
         unit_index = self.make_unit_index(unit_index)
 
-        #### NEED TO REMOVE LAUNDRY AND OTHERS!!!!
+        unit_index_df = pd.DataFrame(unit_index, columns= ['Rank', 'unit'])
+        payment_list = self.merge_indexes(df, unit_index_df) 
 
-        unit_index_df = pd.DataFrame(unit_index, columns= ['Rank', 'Unit'])
-
-        print(df.head(70))
-        print(grand_total)
-        print(unit_index_df.head(5))
-        # df = self.group_df(df=df)
+        ntp = laundry_income
+        print(df.head(10))
+        print('grand_total:', grand_total)
+        print('tenant_payments:', sum(payment_list))
+        print('ntp:', ntp)
+        assert sum(payment_list) + ntp == grand_total, 'the total of your tenant & non-tenant payments does not match.  you probably need to catch more types of nontenant transactions'
         
+    def merge_indexes(self, df1, df2):
+        merged_df = pd.merge(df1, df2, on='unit', how='outer')
+        final_df = merged_df.sort_values(by='Rank', axis=0)
+        final_df = final_df.fillna(0)
+        payment_list = final_df['pay'].tolist()
+        return payment_list
+    
     def lists_to_df(self, lists):
         df = pd.DataFrame(lists)
         return df
+
+    def return_and_remove_ntp(self, df, col=None, remove_str=None):
+        ntp_item = df.loc[df[col] == remove_str]
+        for item in ntp_item.index:
+            df.drop(labels=item, inplace=True)
+        return df, ntp_item
 
     def grand_total(self, df):
         grand_total = sum(df['pay'].tolist())
         return grand_total
     
-    def group_df(self, df):
+    def group_df(self, df, just_return_total=False):
         df = df.groupby(['name', 'unit'])['pay'].sum()
+        if just_return_total:
+            df = df[0]
         return df
 
     def get_units(self):
@@ -205,5 +224,5 @@ class BuildRS(MonthSheet):
 if __name__ == '__main__':
     test_service = oauth(my_scopes, 'sheet')
     buildrs = BuildRS(mode='testing', test_service=test_service)
-    buildrs.automatic_build(key='RENTROLL')
+    buildrs.automatic_build(key='DEP')
     # buildrs.show_table()
