@@ -13,6 +13,8 @@ class MonthSheet:
     G_SUM_KRENT = ["=sum(E2:E68)"]
     G_SUM_ACTSUBSIDY = ["=sum(F2:F68)"]
     G_SUM_ACTRENT = ["=sum(H2:H68)"]
+    G_PAYMENT_MADE = ["=sum(K2:K68)"]
+    G_CURBAL = ["=sum(L2:L68)"]
     ui_sheet = 'intake'
     range1 = '1'
     range2 = '100'
@@ -143,20 +145,11 @@ class MonthSheet:
     def export_month_format(self, sheet_choice):
         gc = GoogleApiCalls()
         gc.format_row(self.service, self.full_sheet, f'{sheet_choice}!A1:M1', "ROWS", self.HEADER_NAMES)
-        gc.write_formula_column(self.service, self.full_sheet, self.G_SUM_KRENT, f'{sheet_choice}!E69:E69')#ok
-        gc.write_formula_column(self.service, self.full_sheet, self.G_SUM_ACTSUBSIDY, f'{sheet_choice}!F69:F69')#
-        gc.write_formula_column(self.service, self.full_sheet, self.G_SUM_ACTRENT, f'{sheet_choice}!H69:H69')#
-
-    def export_to_sqlite(self):
-        # import dataset
-        print(Config.db_rs)
-
-        db = Config.db_rs
-        # table = db['user']
-        # table.insert(dict(name='John Doe', age=46, country='China'))
-        users = db['user'].all()
-        for u in users:
-            print(u)
+        gc.write_formula_column(self.service, self.full_sheet, self.G_SUM_KRENT, f'{sheet_choice}!E69:E69')
+        gc.write_formula_column(self.service, self.full_sheet, self.G_SUM_ACTSUBSIDY, f'{sheet_choice}!F69:F69')
+        gc.write_formula_column(self.service, self.full_sheet, self.G_SUM_ACTRENT, f'{sheet_choice}!H69:H69')
+        gc.write_formula_column(self.service, self.full_sheet, self.G_PAYMENT_MADE, f'{sheet_choice}!K69:K69')
+        gc.write_formula_column(self.service, self.full_sheet, self.G_CURBAL, f'{sheet_choice}!L69:L69')
     
     def get_tables(self):
         DBUtils.get_tables(self, self.db)

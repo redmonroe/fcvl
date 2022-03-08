@@ -6,6 +6,7 @@ from file_indexer import FileIndexer
 from setup_month import MonthSheet
 import dataset
 import pandas as pd
+from google_api_calls_abstract import GoogleApiCalls
 
 
 class BuildRS(MonthSheet):
@@ -17,9 +18,11 @@ class BuildRS(MonthSheet):
             self.findex = FileIndexer(path=Config.TEST_RS_PATH, discard_pile=Config.TEST_MOVE_PATH, db=Config.test_findex_db, table='findex')
             self.service = test_service
             self.mformat = MonthSheet(full_sheet=Config.TEST_RS, path=Config.TEST_RS_PATH, mode='testing', test_service=self.service)
+            self.calls = GoogleApiCalls()
         else:
             self.service = oauth(my_scopes, 'sheet')
 
+        self.wrange_pay = '!K2:K68'
         self.file_input_path = path
         self.user_text = f'Options:\n PRESS 1 to show current sheets in RENT SHEETS \n PRESS 2 TO VIEW ITEMS IN {self.file_input_path} \n PRESS 3 for MONTHLY FORMATTING, PART ONE (that is, update intake sheet in {self.file_input_path} (xlsx) \n PRESS 4 for MONTHLY FORMATTING, PART TWO: format rent roll & subsidy by month and sheet\n >>>'
         self.df = None
@@ -72,50 +75,10 @@ class BuildRS(MonthSheet):
                 self.to_sql(df=df)
                 dt_code = item['period'][-2:]
                 '''group objects by tenant name or unit: which was it?'''
-                self.push_to_sheet_by_period(dt_code=dt_code)
+                payment_list, grand_total, ntp, df = self.push_to_sheet_by_period(dt_code=dt_code)
+                self.write_payment_list(dt_object, payment_list)
 
         return items_true
-
-    def read_excel(self, path, verbose=False):
-        df = pd.read_excel(path, header=9)
-        pd.set_option('display.max_columns', None)
-        pd.set_option('display.max_rows', None)
-        if verbose: 
-            pd.set_option('display.max_columns', None)
-            print(df.head(20))
-
-        columns = ['deposit_id', 'unit', 'name', 'date_posted', 'amount', 'date_code']
-
-        bde = df['BDEPID'].tolist()
-        unit = df['Unit'].tolist()
-        name = df['Name'].tolist()
-        date = df['Date Posted'].tolist()
-        pay = df['Amount'].tolist()
-        dt_code = [datetime.strptime(item, '%m/%d/%Y') for item in date if type(item) == str]
-        dt_code = [str(datetime.strftime(item, '%m')) for item in dt_code]
-
-        zipped = zip(bde, unit, name, date, pay, dt_code)
-        self.df = pd.DataFrame(zipped, columns=columns)
-
-        return self.df
-
-    def remove_nan_lines(self, df):
-        df = df.dropna(thresh=2)
-        df = df.fillna(0)
-        return df
-
-    def to_sql(self, df):
-        table = self.db[self.tablename]
-        table.drop()
-        for index, row in df.iterrows():
-            table.insert(dict(
-                deposit_id=row[0],
-                unit=row[1],
-                name=row[2],
-                date=row[3],
-                pay=float(row[4]),
-                dt_code=row[5],                
-                ))
 
     def push_to_sheet_by_period(self, dt_code):
         print('pushing to sheet with code:', dt_code)
@@ -130,7 +93,7 @@ class BuildRS(MonthSheet):
         grand_total = self.grand_total(df=df)        
         df, laundry_income = self.return_and_remove_ntp(df=df, col='unit', remove_str='0')        
         df = self.group_df(df=df)
-        laundry_income = self.group_df(df=laundry_income, just_return_total=True)
+        no_unit_number = self.group_df(df=laundry_income, just_return_total=True)
 
         unit_index = self.get_units()
         unit_index = self.make_unit_index(unit_index)
@@ -138,13 +101,21 @@ class BuildRS(MonthSheet):
         unit_index_df = pd.DataFrame(unit_index, columns= ['Rank', 'unit'])
         payment_list = self.merge_indexes(df, unit_index_df) 
 
-        ntp = laundry_income
-        print(df.head(10))
-        print('grand_total:', grand_total)
-        print('tenant_payments:', sum(payment_list))
-        print('ntp:', ntp)
-        assert sum(payment_list) + ntp == grand_total, 'the total of your tenant & non-tenant payments does not match.  you probably need to catch more types of nontenant transactions'
+        ntp = no_unit_number 
+        return payment_list, grand_total, ntp, df
+
+        # print(df.head(10))
+        # print('grand_total:', grand_total)
+        # print('tenant_payments:', sum(payment_list))
+        # print('ntp:', ntp)
+        # assert sum(payment_list) + ntp == grand_total, 'the total of your tenant & non-tenant payments does not match.  you probably need to catch more types of nontenant transactions'
         
+    def write_payment_list(self, sheet_choice, data_list):
+        self.calls.simple_batch_update(self.service, self.full_sheet, sheet_choice + self.wrange_pay, data_list, "COLUMNS")
+        # try:
+        # except:
+            # print('uh oh')
+
     def merge_indexes(self, df1, df2):
         merged_df = pd.merge(df1, df2, on='unit', how='outer')
         final_df = merged_df.sort_values(by='Rank', axis=0)
@@ -175,6 +146,19 @@ class BuildRS(MonthSheet):
     def get_units(self):
         results_list = Config.units
         return results_list
+
+    def to_sql(self, df):
+        table = self.db[self.tablename]
+        table.drop()
+        for index, row in df.iterrows():
+            table.insert(dict(
+                deposit_id=row[0],
+                unit=row[1],
+                name=row[2],
+                date=row[3],
+                pay=float(row[4]),
+                dt_code=row[5],                
+                ))
 
     def make_unit_index(self, units):
         final_list = []
@@ -208,6 +192,35 @@ class BuildRS(MonthSheet):
                 items_true.append(item)
         
         return items_true 
+    
+
+    def read_excel(self, path, verbose=False):
+        df = pd.read_excel(path, header=9)
+        pd.set_option('display.max_columns', None)
+        pd.set_option('display.max_rows', None)
+        if verbose: 
+            pd.set_option('display.max_columns', None)
+            print(df.head(20))
+
+        columns = ['deposit_id', 'unit', 'name', 'date_posted', 'amount', 'date_code']
+
+        bde = df['BDEPID'].tolist()
+        unit = df['Unit'].tolist()
+        name = df['Name'].tolist()
+        date = df['Date Posted'].tolist()
+        pay = df['Amount'].tolist()
+        dt_code = [datetime.strptime(item, '%m/%d/%Y') for item in date if type(item) == str]
+        dt_code = [str(datetime.strftime(item, '%m')) for item in dt_code]
+
+        zipped = zip(bde, unit, name, date, pay, dt_code)
+        self.df = pd.DataFrame(zipped, columns=columns)
+
+        return self.df
+
+    def remove_nan_lines(self, df):
+        df = df.dropna(thresh=2)
+        df = df.fillna(0)
+        return df
 
     def set_user_choice(self):
         self.user_choice = int(input(self.user_text))
@@ -224,5 +237,6 @@ class BuildRS(MonthSheet):
 if __name__ == '__main__':
     test_service = oauth(my_scopes, 'sheet')
     buildrs = BuildRS(mode='testing', test_service=test_service)
-    buildrs.automatic_build(key='DEP')
+    # buildrs.automatic_build(key='DEP')
+    buildrs.automatic_build(key='RENTROLL')
     # buildrs.show_table()
