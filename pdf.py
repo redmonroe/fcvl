@@ -197,9 +197,8 @@ class StructDataExtract:
                 type_test = True
                 return path
 
-    def nbofi_pdf_extract_hap(self, path, style=None, target_str=None):
-        print(target_str, 'here')
-        db_file = 'data/bank_output.txt'        
+    def open_pdf_and_output_txt(self, path, txtfile=None):
+        db_file = txtfile       
         with open(path, "rb") as f:
             pdf = pdftotext.PDF(f)
 
@@ -210,8 +209,29 @@ class StructDataExtract:
         with open(db_file, 'rb') as f:
             file1 = open(db_file, 'r')
 
-        index = [(count, line) for count, line in enumerate(file1)]
+        return file1
+
+    def get_stmt_date(self, indexed_lines):
+        date_line = [line for count, line in indexed_lines if 'Date' in line]
+        date_line = date_line[0]
+        date_line = date_line.split(' ')
+        date_line = [line for line in date_line if '/' in line]
+        date1 = date_line.pop()
+        date2 = dt.strptime(date1, "%m/%d/%y")
+        stmt_date = date2.strftime("%m %Y")
+
+        return stmt_date
+
+    def nbofi_pdf_extract_deposit(self, path, style=None, target_str=None):
+        print(target_str, 'target string')
+        file1 = self.open_pdf_and_output_txt(path, txtfile='data/bank_output_deposits.txt')
+        stmt_date = self.get_stmt_date(index)
         
+
+    def nbofi_pdf_extract_hap(self, path, style=None, target_str=None):
+        print(target_str, 'target string')
+        file1 = self.open_pdf_and_output_txt(path, txtfile='data/bank_output.txt')
+        index = [(count, line) for count, line in enumerate(file1)]        
         hap_line = [(count, line) for count, line in index if target_str in line]
         hap_line = [line for count, line in hap_line]
         hap_line = [line.split(' ') for line in hap_line]
@@ -224,29 +244,13 @@ class StructDataExtract:
         hap_line = [float(line)  for line in hap_line]
         hap = hap_line.pop()
 
-        date_line = [line for count, line in index if 'Date' in line]
-        date_line = date_line[0]
-        date_line = date_line.split(' ')
-        date_line = [line for line in date_line if '/' in line]
-        date1 = date_line.pop()
-        date2 = dt.strptime(date1, "%m/%d/%y")
-        date2 = date2.strftime("%m %Y")
+        date2 = self.get_stmt_date(index)
 
         return date2, hap
 
     def nbofi_pdf_extract_rr(self, path, style=None, target_str=None):
-        print(target_str, 'here rr')
-        db_file = 'data/bank_output_rr.txt'        
-        with open(path, "rb") as f:
-            pdf = pdftotext.PDF(f)
-
-        # Read all the text into one string
-        with open(db_file, 'w') as f:
-            f.write("\n\n".join(pdf))
-
-        with open(db_file, 'rb') as f:
-            file1 = open(db_file, 'r')
-        
+        print(target_str, 'target string')
+        file1 = self.open_pdf_and_output_txt(path, txtfile='data/bank_output_rr.txt')        
         line_list = []
         index = [(count, line) for count, line in enumerate(file1)]
         line = [(count, line) for count, line in index if target_str in line]
@@ -264,14 +268,6 @@ class StructDataExtract:
             rr_amount = hap_line.pop()
             line_list.append(rr_amount)
 
-            
-            date_line = [line for count, line in index if 'Date' in line]
-            date_line = date_line[0]
-            date_line = date_line.split(' ')
-            date_line = [line for line in date_line if '/' in line]
-            print(rr_amount, date_line)
-            date1 = date_line.pop()
-            date2 = dt.strptime(date1, "%m/%d/%y")
-            stmt_date = date2.strftime("%m %Y")
+            stmt_date = self.get_stmt_date(index)
 
         return stmt_date, sum(line_list)
