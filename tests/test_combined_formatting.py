@@ -151,7 +151,6 @@ class TestChecklist:
         assert all(yfor) == True
         assert all(rs_exist) == True
 
-
     @pytest.fixture
     def setup_test_db(self):
         db = findex.db
@@ -175,7 +174,6 @@ class TestChecklist:
         # assert index_cols == ['id', 'fn', 'path', 'status', 'period']
         assert 'TEST_deposits_01_2022.xls' in record_1['fn']
         assert len(db[findex_name_as_str]) == 5
-
 
     def test_rent_roll_flow(self):
         findex.build_index_runner()
@@ -203,14 +201,12 @@ class TestChecklist:
         assert GENERATED_RR_FILE in proc_list
         assert '2022-01' == record_1['period']
 
-
     @pytest.mark.new_one_only
     def test_find_items_processed_by_findexer(self):
         ''' if rent roll month is processed == True, then push it to sheet'''
         processed_items = build.automatic_build(key='RENTROLL')
 
         test_criteria_contains_rentroll = [True for filename in processed_items if 'RENTROLL' in filename['fn'].split('_')]
-
         assert test_criteria_contains_rentroll[0] == True
 
     def test_mformat_and_push_one_to_intake(self):  
@@ -220,10 +216,6 @@ class TestChecklist:
         assert result[0][0] == '51402'   
         assert result2[0][0] == 'CD-A'   
 
-    def test_write_pay_list(self):  
-        result = calls.broad_get(service, test_workbook, 'jan 2022!K69:K69')
-        assert result[0][0] == '14975'   
-
     def test_build_rs_to_excel(self):
         processed_items = build.automatic_build(key='DEP')
         test_df = build.df
@@ -231,12 +223,19 @@ class TestChecklist:
 
         assert bde[0] == 20979.0
 
+    def test_write_pay_list(self):  
+        result = calls.broad_get(service, test_workbook, 'jan 2022!K69:K69')
+        result2 = calls.broad_get(service, test_workbook, 'jan 2022!K71:K71')
+        assert result[0][0] == '14975'   
+        assert result2[0][0] == '516.71'   
+
     @pytest.mark.skip(reason='429 from google if I do too much')
     def test_teardown_mformat(self):
-        # clear intake
         calls.clear_sheet(service, test_workbook, f'intake!A1:ZZ100')
         calls.clear_sheet(service, test_workbook, f'jan 2022!b2:b68')
         calls.clear_sheet(service, test_workbook, f'jan 2022!e2:h68')
+        calls.clear_sheet(service, test_workbook, f'jan 2022!k2:k68')
+        calls.clear_sheet(service, test_workbook, f'jan 2022!k71:k71')
         calls.clear_sheet(service, test_workbook, f'jan 2022!a69:z69')
 
         result = calls.broad_get(service, test_workbook, 'jan 2022!E69:E69')

@@ -20,13 +20,15 @@ class FileIndexer:
         self.index_dict = {}
         self.test_list = []
         self.xls_list = []
+        self.pdf_list = []
         self.check_tables = None
         self.processed_files = []
 
     def build_index_runner(self):
         self.articulate_directory()
         self.sort_directory_by_extension()
-        self.rename_by_content_xls()
+        # self.rename_by_content_xls()
+        self.rename_by_content_pdf()
 
     def articulate_directory(self):
         for item in self.path.iterdir():
@@ -91,6 +93,9 @@ class FileIndexer:
                 self.processed_files.append((filename, period))
                 self.xls_list.remove(item)
 
+    def find_by_content_pdf(self, style, target_string):
+        print('hi')
+
     def rename_by_content_xls(self):
         '''find rent roll by content'''
         ## this can be moved out to own function ie make_xls_list, make_pdf_list
@@ -102,9 +107,15 @@ class FileIndexer:
 
         self.find_by_content(style='dep', target_string='BANK DEPOSIT DETAILS')
 
-    def rename_by_content_xls_deposits(self):
-        '''find deposits by content'''
-        pass
+    def rename_by_content_pdf(self):
+        for name, extension in self.index_dict.items():
+            if extension == 'pdf':
+                print(name)
+                self.pdf_list.append(name)
+
+        self.find_by_content_pdf(style='opcash', target_string="IDONTKNOWYET")
+
+    def get_more_metadata(self):
         target_file = os.path.join(self.path, target)
         # SO GET MOST RECENT FILE, MAKE CHANGES BUT PRESERVE TIMING FOR EVENTUAL DISPLAY
         target_dir = os.listdir(self.path)
@@ -116,7 +127,6 @@ class FileIndexer:
             print(item, date_time)
 
     def build_index(self):
-        
         db = self.db
         tablename = self.tablename
         
@@ -177,9 +187,9 @@ class FileIndexer:
 
 if __name__ == '__main__':
     findex = FileIndexer(path=Config.TEST_RS_PATH, discard_pile=Config.TEST_MOVE_PATH, db=Config.test_findex_db, table='findex')
-    # findex.build_index_runner()
+    findex.build_index_runner()
     # findex.build_index()
     # findex.update_index_for_processed()
     # findex.do_index()
 
-    findex.show_table(table=findex.tablename)
+    # findex.show_table(table=findex.tablename)

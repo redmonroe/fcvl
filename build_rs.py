@@ -23,6 +23,7 @@ class BuildRS(MonthSheet):
             self.service = oauth(my_scopes, 'sheet')
 
         self.wrange_pay = '!K2:K68'
+        self.wrange_ntp = '!K71:K71'
         self.file_input_path = path
         self.user_text = f'Options:\n PRESS 1 to show current sheets in RENT SHEETS \n PRESS 2 TO VIEW ITEMS IN {self.file_input_path} \n PRESS 3 for MONTHLY FORMATTING, PART ONE (that is, update intake sheet in {self.file_input_path} (xlsx) \n PRESS 4 for MONTHLY FORMATTING, PART TWO: format rent roll & subsidy by month and sheet\n >>>'
         self.df = None
@@ -77,6 +78,9 @@ class BuildRS(MonthSheet):
                 '''group objects by tenant name or unit: which was it?'''
                 payment_list, grand_total, ntp, df = self.push_to_sheet_by_period(dt_code=dt_code)
                 self.write_payment_list(dt_object, payment_list)
+                self.write_ntp(dt_object, [str(ntp)])
+                print(type)
+                self.print_summary(payment_list, grand_total, ntp, df)
 
         return items_true
 
@@ -104,17 +108,19 @@ class BuildRS(MonthSheet):
         ntp = no_unit_number 
         return payment_list, grand_total, ntp, df
 
-        # print(df.head(10))
-        # print('grand_total:', grand_total)
-        # print('tenant_payments:', sum(payment_list))
-        # print('ntp:', ntp)
-        # assert sum(payment_list) + ntp == grand_total, 'the total of your tenant & non-tenant payments does not match.  you probably need to catch more types of nontenant transactions'
+    def print_summary(self, payment_list, grand_total, ntp, df):
+        print(df.head(10))
+        print('grand_total:', grand_total)
+        print('tenant_payments:', sum(payment_list))
+        print('ntp:', ntp)
+        assert sum(payment_list) + ntp == grand_total, 'the total of your tenant & non-tenant payments does not match.  you probably need to catch more types of nontenant transactions'
+        print('payments balance=ok!')
+
+    def write_ntp(self, sheet_choice, data_string):
+        self.calls.update_int(self.service, self.full_sheet, data_string, sheet_choice + self.wrange_ntp, 'USER_ENTERED')
         
     def write_payment_list(self, sheet_choice, data_list):
         self.calls.simple_batch_update(self.service, self.full_sheet, sheet_choice + self.wrange_pay, data_list, "COLUMNS")
-        # try:
-        # except:
-            # print('uh oh')
 
     def merge_indexes(self, df1, df2):
         merged_df = pd.merge(df1, df2, on='unit', how='outer')
@@ -237,6 +243,6 @@ class BuildRS(MonthSheet):
 if __name__ == '__main__':
     test_service = oauth(my_scopes, 'sheet')
     buildrs = BuildRS(mode='testing', test_service=test_service)
-    # buildrs.automatic_build(key='DEP')
-    buildrs.automatic_build(key='RENTROLL')
+    buildrs.automatic_build(key='DEP')
+    # buildrs.automatic_build(key='RENTROLL')
     # buildrs.show_table()
