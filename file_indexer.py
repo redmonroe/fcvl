@@ -24,6 +24,7 @@ class FileIndexer:
         self.pdf_list = []
         self.check_tables = None
         self.processed_files = []
+        self.pdf = StructDataExtract()
 
     def build_index_runner(self):
         self.articulate_directory()
@@ -110,7 +111,6 @@ class FileIndexer:
 
     def rename_by_content_pdf(self):
         '''index opcashes'''
-        pdf = StructDataExtract()
         for name, extension in self.index_dict.items():
             if extension == 'pdf':
                 self.pdf_list.append(name)
@@ -118,12 +118,29 @@ class FileIndexer:
         # paths to op cash, op cash date, op cash extract deposits, op cash mark as processed, write a test
         op_cash_list = []
         for item in self.pdf_list:
-            op_cash_path = pdf.select_stmt_by_str(path=item, target_str=' XXXXXXX1891')
+            op_cash_path = self.pdf.select_stmt_by_str(path=item, target_str=' XXXXXXX1891')
             if op_cash_path != None:
                 op_cash_list.append(op_cash_path)
 
-        print(op_cash_list)
-        #     pdf.nbofi_pdf_extract(item)
+        # hap_list = self.extract_deposits_by_type_hap(op_cash_list, style='hap', target_str='QUADEL')
+        rr_list = self.extract_deposits_by_type(op_cash_list, style='rr', target_str='Incoming Wire')
+        # print(hap_list)
+        print(rr_list)
+
+
+    def extract_deposits_by_type(self, stmt_list, style=None, target_str=None):
+        return_list = []
+        for path in stmt_list:
+            kdict = {}
+            date, hap = self.pdf.nbofi_pdf_extract_rr(path, target_str=target_str)
+            kdict[str(date)] = [hap, path, style]
+            return_list.append(kdict)
+            
+        return return_list 
+
+
+
+
 
     def get_more_metadata(self):
         target_file = os.path.join(self.path, target)

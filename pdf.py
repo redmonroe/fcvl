@@ -197,7 +197,8 @@ class StructDataExtract:
                 type_test = True
                 return path
 
-    def nbofi_pdf_extract(self, path, style, target_string):
+    def nbofi_pdf_extract_hap(self, path, style=None, target_str=None):
+        print(target_str, 'here')
         db_file = 'data/bank_output.txt'        
         with open(path, "rb") as f:
             pdf = pdftotext.PDF(f)
@@ -211,24 +212,66 @@ class StructDataExtract:
 
         index = [(count, line) for count, line in enumerate(file1)]
         
-        hap_line = [(count, line) for count, line in index if 'QUADEL' in line]
-        # hap_line = [line for count, line in hap_line]
-        # hap_line = [line.split(' ') for line in hap_line]
-        # hap_line = hap_line.pop()
-        # hap_line = [line for line in hap_line if type(line) == str]
-        # hap_line = [line for line in hap_line if line.isalnum() == False]
-        # hap_line = [line for line in hap_line if '.' in line]
-        # hap_line = [line.strip() for line in hap_line]
-        # hap_line = [line.replace(',', '')  for line in hap_line]
-        # hap_line = [float(line)  for line in hap_line]
-        # hap = hap_line.pop()
+        hap_line = [(count, line) for count, line in index if target_str in line]
+        hap_line = [line for count, line in hap_line]
+        hap_line = [line.split(' ') for line in hap_line]
+        hap_line = hap_line.pop()
+        hap_line = [line for line in hap_line if type(line) == str]
+        hap_line = [line for line in hap_line if line.isalnum() == False]
+        hap_line = [line for line in hap_line if '.' in line]
+        hap_line = [line.strip() for line in hap_line]
+        hap_line = [line.replace(',', '')  for line in hap_line]
+        hap_line = [float(line)  for line in hap_line]
+        hap = hap_line.pop()
 
-        # date_line = [line for count, line in index if 'Date' in line]
-        # date_line = date_line[0]
-        # date_line = date_line.split(' ')
-        # date_line = [line for line in date_line if '/' in line]
-        # date1 = date_line.pop()
-        # date2 = dt.strptime(date1, "%m/%d/%y")
-        # date2 = date2.strftime("%m %Y")
+        date_line = [line for count, line in index if 'Date' in line]
+        date_line = date_line[0]
+        date_line = date_line.split(' ')
+        date_line = [line for line in date_line if '/' in line]
+        date1 = date_line.pop()
+        date2 = dt.strptime(date1, "%m/%d/%y")
+        date2 = date2.strftime("%m %Y")
 
-        # return date2, hap
+        return date2, hap
+
+    def nbofi_pdf_extract_rr(self, path, style=None, target_str=None):
+        print(target_str, 'here rr')
+        db_file = 'data/bank_output_rr.txt'        
+        with open(path, "rb") as f:
+            pdf = pdftotext.PDF(f)
+
+        # Read all the text into one string
+        with open(db_file, 'w') as f:
+            f.write("\n\n".join(pdf))
+
+        with open(db_file, 'rb') as f:
+            file1 = open(db_file, 'r')
+        
+        line_list = []
+        index = [(count, line) for count, line in enumerate(file1)]
+        line = [(count, line) for count, line in index if target_str in line]
+        line = [line for count, line in line]
+        lines = [line.split(' ') for line in line]
+        line = line.pop()
+        for hap_line in lines:
+            hap_line = [line for line in hap_line if type(line) == str]
+            lines = [line for line in hap_line if line.isalnum() == False]
+            dates = [line for line in lines if '/' in line]
+            rr_line = [line for line in lines if '.' in line]
+            hap_line = [line.strip() for line in rr_line]
+            hap_line = [line.replace(',', '')  for line in hap_line]
+            hap_line = [float(line)  for line in hap_line]
+            rr_amount = hap_line.pop()
+            line_list.append(rr_amount)
+
+            
+            date_line = [line for count, line in index if 'Date' in line]
+            date_line = date_line[0]
+            date_line = date_line.split(' ')
+            date_line = [line for line in date_line if '/' in line]
+            print(rr_amount, date_line)
+            date1 = date_line.pop()
+            date2 = dt.strptime(date1, "%m/%d/%y")
+            stmt_date = date2.strftime("%m %Y")
+
+        return stmt_date, sum(line_list)
