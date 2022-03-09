@@ -4,8 +4,11 @@ import pandas as pd
 
 class Checklist:
 
-    def __init__(self, db):
-        self.db = db
+    def __init__(self, db=None):
+        if db == None:
+            self.db = db
+        else:
+            self.db = Config.test_checklist_db
         self.tablename = 'checklist'
 
     def make_checklist(self):
@@ -24,7 +27,7 @@ class Checklist:
                 mfor=False, 
                 rr_proc=False,
                 depdetail_proc=False, 
-                stmt_proc=False,
+                opcash_proc=False,
                 dep_rec=False,
                 rs_write=False,
                 ))
@@ -43,8 +46,11 @@ class Checklist:
             rs_exist_list.append(item['rs_exist'])
         return check_items, yfor_list, rs_exist_list
 
+    def check_one(self, date, col):
+        print(date, 'made it')
+
 
 if __name__ == '__main__':
     clist = Checklist(db=Config.test_checklist_db)
-    # clist.make_checklist()
+    clist.make_checklist()
     clist.show_checklist()

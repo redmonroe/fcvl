@@ -2,6 +2,7 @@ import os
 from utils import Utils
 from db_utils import DBUtils
 from pdf import StructDataExtract
+from checklist import Checklist
 from config import Config
 from pathlib import Path
 from datetime import datetime
@@ -25,6 +26,7 @@ class FileIndexer:
         self.check_tables = None
         self.processed_files = []
         self.pdf = StructDataExtract()
+        self.checklist = Checklist()
 
     def build_index_runner(self):
         self.articulate_directory()
@@ -129,6 +131,10 @@ class FileIndexer:
         print(rr_list)
         print(dep_list)
         print(self.pdf.deposits_list)
+
+    def checklist_interface(self, date):
+        self.checklist.check_one('01 2022', 'a')
+
 
 
     def extract_deposits_by_type(self, stmt_list, style=None, target_str=None):

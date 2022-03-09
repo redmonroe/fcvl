@@ -2,9 +2,6 @@ import sys
 import os
 import time
 import pytest
-current = os.path.dirname(os.path.realpath(__file__))
-parent = os.path.dirname(current)
-sys.path.append(parent)
 from config import Config
 from auth_work import oauth
 from utils import Utils
@@ -26,6 +23,10 @@ TEST_RR_FILE = 'TEST_rent_roll_01_2022.xls'
 TEST_DEP_FILE = 'TEST_deposits_01_2022.xls'
 GENERATED_RR_FILE = 'TEST_RENTROLL_012022.xls'
 GENERATED_DEP_FILE = 'TEST_DEP_012022.xls'
+
+current = os.path.dirname(os.path.realpath(__file__))
+parent = os.path.dirname(current)
+sys.path.append(parent)
 
 test_workbook = Config.TEST_RS
 path = Config.TEST_RS_PATH
@@ -253,83 +254,24 @@ class TestChecklist:
         
         assert len(db[findex_name_as_str]) == 5
 
+    @pytest.mark.skip(reason='429 from google if I do too much')
+    def test_teardown(self, setup_test_db):
+        TestChecklist.remove_generated_file_from_dir(self, path1=path, file1=GENERATED_RR_FILE)
+        TestChecklist.remove_generated_file_from_dir(self, path1=path, file1=GENERATED_DEP_FILE)
 
-
-
-    # def test_teardown(self, setup_test_db):
-    #     TestChecklist.remove_generated_file_from_dir(self, path1=path, file1=GENERATED_RR_FILE)
-    #     TestChecklist.remove_generated_file_from_dir(self, path1=path, file1=GENERATED_DEP_FILE)
-
-    #     TestChecklist.move_original_back_to_dir(self, discard_dir=discard_pile, target_file=TEST_RR_FILE, target_dir=path)
-    #     TestChecklist.move_original_back_to_dir(self, discard_dir=discard_pile, target_file=TEST_DEP_FILE, target_dir=path)
+        TestChecklist.move_original_back_to_dir(self, discard_dir=discard_pile, target_file=TEST_RR_FILE, target_dir=path)
+        TestChecklist.move_original_back_to_dir(self, discard_dir=discard_pile, target_file=TEST_DEP_FILE, target_dir=path)
         
-    #     discard_contents = [count for count, file in enumerate(discard_pile.iterdir())]
-    #     path_contents = [count for count, file in enumerate(path.iterdir())]
+        discard_contents = [count for count, file in enumerate(discard_pile.iterdir())]
+        path_contents = [count for count, file in enumerate(path.iterdir())]
 
-    #     db = setup_test_db
-    #     findex_name_as_str = findex.tablename
-    #     db[findex_name_as_str].drop()
+        db = setup_test_db
+        findex_name_as_str = findex.tablename
+        db[findex_name_as_str].drop()
 
-    #     assert len(db[findex_name_as_str]) == 0
-    #     assert len(discard_contents) == 1
-    #     assert len(path_contents) == 6
-
-
-'''deprecated but not to destroy'''
-
-#     def test_push_to_intake(self, monkeypatch):
-
-#         ms = MonthSheet(full_sheet=test_workbook, path=test_path, mode='testing', test_service=service)
-        
-
-#         choice1 = 2
-#         choice2 = 1
-#         answers = iter([choice1, choice2])
-#         # using lambda statement for mocking
-#         monkeypatch.setattr('builtins.input', lambda name: next(answers))
-#         ms.push_to_intake()
-
-
-#         result = calls.broad_get(service, test_workbook, f'{ms.ui_sheet}!A1:A1')
-#         assert result[0][0] == 'CD-A'      
-
-    # def test_teardown_month_sheets(self):
-    #     ys = YearSheet(full_sheet=test_workbook, mode='testing', test_service=service)
-    #     titles_dict = Utils().get_existing_sheets(service,test_workbook)
-
-    #     calls.clear_sheet(service, test_workbook, 'intake!A1:ZZ100')
-    #     for name, id2, in titles_dict.items():
-    #         if name != 'intake':
-    #             calls.del_one_sheet(service, test_workbook, id2)
-
-    #     titles_dict1 = Utils().get_existing_sheets(service,test_workbook)        
-        
-    #     assert len(titles_dict1) == 1
-
-
-
-    # def test_export_month_format(self, monkeypatch):  
-    #     service = oauth(Config.my_scopes, 'sheet', mode='testing')
-
-    #     ms = MonthSheet(full_sheet=test_workbook, path=test_path, mode='testing', test_service=service)
-        
-    #     calls = GoogleApiCalls()
-    #     calls.clear_sheet(service, test_workbook, f'testjan22 2022!A1:ZZ100')
-
-    #     choice1 = 4
-    #     choice2 = 1
-    #     choice3 = 1
-    #     answers = iter([choice1, choice2, choice3])
-    #     # using lambda statement for mocking
-    #     monkeypatch.setattr('builtins.input', lambda name: next(answers))
-
-    #     ms.set_user_choice()
-    #     ms.control()
-        
-    #     result = calls.broad_get(service, test_workbook, 'testjan22 2022!A1:A1')
-    #     result2 = calls.broad_get(service, test_workbookN, 'testjan22 2022!h68:h68') #test formatting  
-    #     assert result[0][0] == 'Unit' #test 
-    #     assert result2[0][0] == '160.00' #test 
+        assert len(db[findex_name_as_str]) == 0
+        assert len(discard_contents) == 1
+        assert len(path_contents) == 6
 
 if __name__ == '__main__':
     test = TestSheetFormat()
