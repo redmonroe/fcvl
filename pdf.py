@@ -238,22 +238,36 @@ class StructDataExtract:
 
         return target
 
+    def get_date_from_line(self, target_line):
+        hap_line = [line for line in target_line if type(line) == str]
+        hap_line = [line for line in hap_line if line.isalnum() == False]
+        hap_line = [line for line in hap_line if '/' in line]
+        hap_line = [line.strip() for line in hap_line]
+        date = [line.replace(',', '')  for line in hap_line]
+        date = date.pop()
+
+        return date
+
     def nbofi_pdf_extract_deposit(self, path, style=None, target_str=None):
         print(target_str, 'target string')
         file1 = self.open_pdf_and_output_txt(path, txtfile='data/bank_output_deposits.txt')
 
         line_list = []
+        date_list = []
         index = [(count, line) for count, line in enumerate(file1)]
         line = [(count, line) for count, line in index if target_str in line]
         line = [line for count, line in line]
         deposit_lines = [line.split(' ') for line in line]
         for hap_line in deposit_lines:
-            target = self.get_cleaned_target_line(hap_line, no_pop=False)
+            target = self.get_cleaned_target_line(hap_line)
+            target_date = self.get_date_from_line(hap_line)
+            date_list.append(target_date)
             line_list.append(target[0])
             stmt_date = self.get_stmt_date(index)
 
         line_list.pop(0)
-        self.deposits_list = line_list 
+        date_list.pop(0)
+        self.deposits_list = list(zip(date_list, line_list)) 
         return stmt_date, sum(line_list)
 
     def nbofi_pdf_extract_hap(self, path, style=None, target_str=None):
