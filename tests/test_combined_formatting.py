@@ -237,7 +237,6 @@ class TestChecklist:
         assert findex.dep_list[0]['01 2022'][0] == 15491.71
         assert findex.deposit_and_date_list[0][0] == '1/03'
 
-
     @pytest.mark.skip(reason='429 from google if I do too much')
     def test_teardown_mformat(self):
         calls.clear_sheet(service, test_workbook, f'intake!A1:ZZ100')

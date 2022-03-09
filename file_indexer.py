@@ -137,13 +137,18 @@ class FileIndexer:
         self.rr_list = self.extract_deposits_by_type(op_cash_list, style='rr', target_str='Incoming Wire')
         self.dep_list = self.extract_deposits_by_type(op_cash_list, style='dep', target_str='Deposit')
         self.deposit_and_date_list = self.pdf.deposits_list
+        self.checklist_interface('01/2022')
         print(self.hap_list)
         print(self.rr_list)
         print(self.dep_list)
         print(self.deposit_and_date_list)
 
+        relevant_month = list(self.hap_list[0].keys())[0]
+
+        self.checklist_interface(relevant_month)
     def checklist_interface(self, date):
-        self.checklist.check_one('01 2022', 'a')
+        print('\n')
+        self.checklist.check_one(date, 'a')
 
 
 
