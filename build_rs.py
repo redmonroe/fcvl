@@ -198,7 +198,6 @@ class BuildRS(MonthSheet):
                 items_true.append(item)
         
         return items_true 
-    
 
     def read_excel(self, path, verbose=False):
         df = pd.read_excel(path, header=9)

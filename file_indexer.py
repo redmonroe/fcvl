@@ -13,7 +13,9 @@ import shutil
 
 class FileIndexer:
 
-    def __init__(self, path=None, discard_pile=None, db=None, table=None):
+    def __init__(self, path=None, discard_pile=None, db=None, mode=None, table=None):
+        
+        self.mode = None
         self.path = path
         self.discard_pile = discard_pile
         self.db = db
@@ -27,14 +29,21 @@ class FileIndexer:
         self.processed_files = []
         self.pdf = StructDataExtract()
         self.checklist = Checklist()
+        self.hap_list = None
+        self.rr_list = None
+        self.dep_list = None
+        self.deposit_and_date_list = None
 
     def build_index_runner(self):
         self.articulate_directory()
         self.sort_directory_by_extension()
-        try:
+        if self.mode != 'testing':
+            try:
+                self.rename_by_content_xls()
+            except shutil.SameFileError as e:
+                print(e, 'file_indexer: files likely renamed after generation proc in test')
+        else:
             self.rename_by_content_xls()
-        except shutil.SameFileError as e:
-            print(e, 'file_indexer: files likely renamed after generation proc in test')
         self.rename_by_content_pdf()
 
     def articulate_directory(self):
@@ -107,9 +116,9 @@ class FileIndexer:
             if extension == 'xls':
                 self.xls_list.append(name)
 
-        # self.find_by_content(style='rr', target_string='Affordable Rent Roll Detail/ GPR Report')
+        self.find_by_content(style='rr', target_string='Affordable Rent Roll Detail/ GPR Report')
 
-        # self.find_by_content(style='dep', target_string='BANK DEPOSIT DETAILS')
+        self.find_by_content(style='dep', target_string='BANK DEPOSIT DETAILS')
 
     def rename_by_content_pdf(self):
         '''index opcashes'''
@@ -124,13 +133,14 @@ class FileIndexer:
             if op_cash_path != None:
                 op_cash_list.append(op_cash_path)
 
-        hap_list = self.extract_deposits_by_type(op_cash_list, style='hap', target_str='QUADEL')
-        rr_list = self.extract_deposits_by_type(op_cash_list, style='rr', target_str='Incoming Wire')
-        dep_list = self.extract_deposits_by_type(op_cash_list, style='dep', target_str='Deposit')
-        print(hap_list)
-        print(rr_list)
-        print(dep_list)
-        print(self.pdf.deposits_list)
+        self.hap_list = self.extract_deposits_by_type(op_cash_list, style='hap', target_str='QUADEL')
+        self.rr_list = self.extract_deposits_by_type(op_cash_list, style='rr', target_str='Incoming Wire')
+        self.dep_list = self.extract_deposits_by_type(op_cash_list, style='dep', target_str='Deposit')
+        self.deposit_and_date_list = self.pdf.deposits_list
+        print(self.hap_list)
+        print(self.rr_list)
+        print(self.dep_list)
+        print(self.deposit_and_date_list)
 
     def checklist_interface(self, date):
         self.checklist.check_one('01 2022', 'a')

@@ -2,6 +2,9 @@ import sys
 import os
 import time
 import pytest
+current = os.path.dirname(os.path.realpath(__file__))
+parent = os.path.dirname(current)
+sys.path.append(parent)
 from config import Config
 from auth_work import oauth
 from utils import Utils
@@ -24,9 +27,6 @@ TEST_DEP_FILE = 'TEST_deposits_01_2022.xls'
 GENERATED_RR_FILE = 'TEST_RENTROLL_012022.xls'
 GENERATED_DEP_FILE = 'TEST_DEP_012022.xls'
 
-current = os.path.dirname(os.path.realpath(__file__))
-parent = os.path.dirname(current)
-sys.path.append(parent)
 
 test_workbook = Config.TEST_RS
 path = Config.TEST_RS_PATH
@@ -41,6 +41,7 @@ ys = YearSheet(full_sheet=test_workbook, mode='testing', test_service=service)
 build = BuildRS(full_sheet=test_workbook, path=test_path, mode='testing', test_service=service)
 cl = Checklist(db=chck_list_db)
 
+# pdb.set_trace()
 
 @pytest.mark.setup_only
 class TestChecklist:
@@ -50,7 +51,6 @@ class TestChecklist:
     db = None
 
     def remove_generated_file_from_dir(self, path1=None, file1=None):
-        # pdb.set_trace()
         try:
             os.remove(os.path.join(str(path1), file1))
         except FileNotFoundError as e:
@@ -224,11 +224,19 @@ class TestChecklist:
 
         assert bde[0] == 20979.0
 
+    @pytest.mark.skip(reason='429 from google if I do too much')
     def test_write_pay_list(self):  
         result = calls.broad_get(service, test_workbook, 'jan 2022!K69:K69')
         result2 = calls.broad_get(service, test_workbook, 'jan 2022!K71:K71')
         assert result[0][0] == '14975'   
         assert result2[0][0] == '516.71'   
+
+    def test_rename_content_by_pdf(self):
+        assert findex.hap_list[0]['01 2022'][0] == 30990.0
+        assert findex.rr_list[0]['01 2022'][0] == 15576.54
+        assert findex.dep_list[0]['01 2022'][0] == 15491.71
+        assert findex.deposit_and_date_list[0][0] == '1/03'
+
 
     @pytest.mark.skip(reason='429 from google if I do too much')
     def test_teardown_mformat(self):

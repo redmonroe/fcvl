@@ -182,7 +182,7 @@ class StructDataExtract:
         print(df.head(10)) 
 
     def open_pdf_and_output_txt(self, path, txtfile=None):
-        db_file = txtfile       
+        db_file = os.path.abspath(os.path.join(os.path.dirname( __file__ ), txtfile))
         with open(path, "rb") as f:
             pdf = pdftotext.PDF(f)
 
@@ -196,7 +196,7 @@ class StructDataExtract:
         return file1
     
     def select_stmt_by_str(self, path, target_str):
-        file1 = self.open_pdf_and_output_txt(path, txtfile='data/bank_output.txt')
+        file1 = self.open_pdf_and_output_txt(path, txtfile='temp_output.txt')
     
         index = [(count, line) for count, line in enumerate(file1)]
         type_test = False
@@ -250,7 +250,8 @@ class StructDataExtract:
 
     def nbofi_pdf_extract_deposit(self, path, style=None, target_str=None):
         print(target_str, 'target string')
-        file1 = self.open_pdf_and_output_txt(path, txtfile='data/bank_output_deposits.txt')
+        txtfile = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'temp_output.txt' ))
+        file1 = self.open_pdf_and_output_txt(path, txtfile=txtfile)
 
         line_list = []
         date_list = []
@@ -272,7 +273,7 @@ class StructDataExtract:
 
     def nbofi_pdf_extract_hap(self, path, style=None, target_str=None):
         print(target_str, 'target string')
-        file1 = self.open_pdf_and_output_txt(path, txtfile='data/bank_output.txt')
+        file1 = self.open_pdf_and_output_txt(path, txtfile='temp_output.txt')
         hap_line, index = self.get_indexed_lines_from_txtfile(file1, target_str)
         target = self.get_cleaned_target_line(hap_line)
 
@@ -282,7 +283,7 @@ class StructDataExtract:
 
     def nbofi_pdf_extract_rr(self, path, style=None, target_str=None):
         print(target_str, 'target string')
-        file1 = self.open_pdf_and_output_txt(path, txtfile='data/bank_output_rr.txt')        
+        file1 = self.open_pdf_and_output_txt(path, txtfile='temp_output.txt')        
         line_list = []
         index = [(count, line) for count, line in enumerate(file1)]
         line = [(count, line) for count, line in index if target_str in line]
