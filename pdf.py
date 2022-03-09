@@ -8,6 +8,10 @@ import math
 from collections import defaultdict
 
 class StructDataExtract:
+
+    def __init__(self):
+        self.deposits_list = None
+
     def merchants_pdf(self, file1=None, start_string=None, end_string=None, start_idx=0, end_idx=0):
         index = [(count, line) for count, line in enumerate(file1)]
 
@@ -176,26 +180,6 @@ class StructDataExtract:
             target_date_dict[dateq].append(amount)
         '''
         print(df.head(10)) 
-    
-    def select_stmt_by_str(self, path, target_str):
-        db_file = 'data/bank_output.txt'        
-        with open(path, "rb") as f:
-            pdf = pdftotext.PDF(f)
-
-        # Read all the text into one string
-        with open(db_file, 'w') as f:
-            f.write("\n\n".join(pdf))
-
-        with open(db_file, 'rb') as f:
-            file1 = open(db_file, 'r')
-
-    
-        index = [(count, line) for count, line in enumerate(file1)]
-        type_test = False
-        for count, line in index:
-            if target_str in line:
-                type_test = True
-                return path
 
     def open_pdf_and_output_txt(self, path, txtfile=None):
         db_file = txtfile       
@@ -210,6 +194,26 @@ class StructDataExtract:
             file1 = open(db_file, 'r')
 
         return file1
+    
+    def select_stmt_by_str(self, path, target_str):
+        file1 = self.open_pdf_and_output_txt(path, txtfile='data/bank_output.txt')
+    
+        index = [(count, line) for count, line in enumerate(file1)]
+        type_test = False
+        for count, line in index:
+            if target_str in line:
+                type_test = True
+                return path
+
+    def get_indexed_lines_from_txtfile(self, txtfile, target_str):
+        index = [(count, line) for count, line in enumerate(txtfile)]        
+
+        hap_line = [(count, line) for count, line in index if target_str in line]
+        hap_line = [line for count, line in hap_line]
+        hap_line = [line.split(' ') for line in hap_line]
+        target_line = hap_line.pop()
+
+        return target_line, index
 
     def get_stmt_date(self, indexed_lines):
         date_line = [line for count, line in indexed_lines if 'Date' in line]
@@ -222,31 +226,45 @@ class StructDataExtract:
 
         return stmt_date
 
-    def nbofi_pdf_extract_deposit(self, path, style=None, target_str=None):
-        print(target_str, 'target string')
-        file1 = self.open_pdf_and_output_txt(path, txtfile='data/bank_output_deposits.txt')
-        stmt_date = self.get_stmt_date(index)
-        
-
-    def nbofi_pdf_extract_hap(self, path, style=None, target_str=None):
-        print(target_str, 'target string')
-        file1 = self.open_pdf_and_output_txt(path, txtfile='data/bank_output.txt')
-        index = [(count, line) for count, line in enumerate(file1)]        
-        hap_line = [(count, line) for count, line in index if target_str in line]
-        hap_line = [line for count, line in hap_line]
-        hap_line = [line.split(' ') for line in hap_line]
-        hap_line = hap_line.pop()
-        hap_line = [line for line in hap_line if type(line) == str]
+    def get_cleaned_target_line(self, target_line, no_pop=None):
+        hap_line = [line for line in target_line if type(line) == str]
         hap_line = [line for line in hap_line if line.isalnum() == False]
         hap_line = [line for line in hap_line if '.' in line]
         hap_line = [line.strip() for line in hap_line]
         hap_line = [line.replace(',', '')  for line in hap_line]
-        hap_line = [float(line)  for line in hap_line]
-        hap = hap_line.pop()
+        target = [float(line)  for line in hap_line]
+        if no_pop:
+            target = target.pop()
+
+        return target
+
+    def nbofi_pdf_extract_deposit(self, path, style=None, target_str=None):
+        print(target_str, 'target string')
+        file1 = self.open_pdf_and_output_txt(path, txtfile='data/bank_output_deposits.txt')
+
+        line_list = []
+        index = [(count, line) for count, line in enumerate(file1)]
+        line = [(count, line) for count, line in index if target_str in line]
+        line = [line for count, line in line]
+        deposit_lines = [line.split(' ') for line in line]
+        for hap_line in deposit_lines:
+            target = self.get_cleaned_target_line(hap_line, no_pop=False)
+            line_list.append(target[0])
+            stmt_date = self.get_stmt_date(index)
+
+        line_list.pop(0)
+        self.deposits_list = line_list 
+        return stmt_date, sum(line_list)
+
+    def nbofi_pdf_extract_hap(self, path, style=None, target_str=None):
+        print(target_str, 'target string')
+        file1 = self.open_pdf_and_output_txt(path, txtfile='data/bank_output.txt')
+        hap_line, index = self.get_indexed_lines_from_txtfile(file1, target_str)
+        target = self.get_cleaned_target_line(hap_line)
 
         date2 = self.get_stmt_date(index)
 
-        return date2, hap
+        return date2, target[0]
 
     def nbofi_pdf_extract_rr(self, path, style=None, target_str=None):
         print(target_str, 'target string')
@@ -258,15 +276,8 @@ class StructDataExtract:
         lines = [line.split(' ') for line in line]
         line = line.pop()
         for hap_line in lines:
-            hap_line = [line for line in hap_line if type(line) == str]
-            lines = [line for line in hap_line if line.isalnum() == False]
-            dates = [line for line in lines if '/' in line]
-            rr_line = [line for line in lines if '.' in line]
-            hap_line = [line.strip() for line in rr_line]
-            hap_line = [line.replace(',', '')  for line in hap_line]
-            hap_line = [float(line)  for line in hap_line]
-            rr_amount = hap_line.pop()
-            line_list.append(rr_amount)
+            target = self.get_cleaned_target_line(hap_line)
+            line_list.append(target[0])
 
             stmt_date = self.get_stmt_date(index)
 

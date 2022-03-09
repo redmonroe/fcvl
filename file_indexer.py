@@ -124,8 +124,11 @@ class FileIndexer:
 
         hap_list = self.extract_deposits_by_type(op_cash_list, style='hap', target_str='QUADEL')
         rr_list = self.extract_deposits_by_type(op_cash_list, style='rr', target_str='Incoming Wire')
+        dep_list = self.extract_deposits_by_type(op_cash_list, style='dep', target_str='Deposit')
         print(hap_list)
         print(rr_list)
+        print(dep_list)
+        print(self.pdf.deposits_list)
 
 
     def extract_deposits_by_type(self, stmt_list, style=None, target_str=None):
@@ -136,7 +139,9 @@ class FileIndexer:
                 date, amount = self.pdf.nbofi_pdf_extract_rr(path, target_str=target_str)
             elif style == 'hap':
                 date, amount = self.pdf.nbofi_pdf_extract_hap(path, target_str=target_str)
-            kdict[str(date)] = [amount , path, style]
+            elif style == 'dep':
+                date, amount = self.pdf.nbofi_pdf_extract_deposit(path, target_str=target_str)
+            kdict[str(date)] = [amount, path, style]
             return_list.append(kdict)
             
         return return_list 
