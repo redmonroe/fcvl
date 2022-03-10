@@ -29,6 +29,7 @@ class Checklist:
                 yfor=False, 
                 mfor=False, 
                 rr_proc=False,
+                dep_proc=False, 
                 depdetail_proc=False, 
                 opcash_proc=False,
                 dep_rec=False,
@@ -44,15 +45,15 @@ class Checklist:
         checklist.drop()
         print('checklist dropped')
 
-    def show_checklist(self):
-        yfor_list = []
-        rs_exist_list = []
+    def show_checklist(self, col_str=None):
+        return_list = []
         check_items = [item for item in self.db[self.tablename]]
-        for item in check_items:
-            print(item)
-            yfor_list.append(item['yfor'])
-            rs_exist_list.append(item['rs_exist'])
-        return check_items, yfor_list, rs_exist_list
+        if col_str:
+            for item in check_items:
+                print(item)
+                return_list.append(item[col_str])
+            return check_items, return_list
+        return check_items
 
     def fix_date(self, date):
         dt_object = parse(date)
@@ -63,18 +64,50 @@ class Checklist:
 
         return year, month
 
-    def check_one(self, date=None, col1=None):
+    def check_opcash(self, date, col1=None):
+        '''for some reason I cannot update dict key to pass in argument to update by column name; very frustrating'''
+        # data[col1] = data.pop('col1')
+
         year, month = self.fix_date(date)
         check_items = [item for item in self.db[self.tablename]]
         for item in check_items:
             if item['year'] == year and item['month'] == month: 
-                data = dict(id=item['id'], col1=True)
-                data[col1] = data.pop('col1')
+                data = dict(id=item['id'], opcash_proc=True)
                 self.db[self.tablename].update(data, ['id'])
 
+    def check_mfor(self, date, col1=None):
+        year, month = self.fix_date(date)
+        check_items = [item for item in self.db[self.tablename]]
+        for item in check_items:
+            if item['year'] == year and item['month'] == month: 
+                data = dict(id=item['id'], mfor=True)
+                self.db[self.tablename].update(data, ['id'])
+
+    def check_rr_proc(self, date, col1=None):
+        year, month = self.fix_date(date)
+        check_items = [item for item in self.db[self.tablename]]
+        for item in check_items:
+            if item['year'] == year and item['month'] == month: 
+                data = dict(id=item['id'], rr_proc=True)
+                self.db[self.tablename].update(data, ['id'])
+
+    def check_dep_proc(self, date, col1=None):
+        year, month = self.fix_date(date)
+        check_items = [item for item in self.db[self.tablename]]
+        for item in check_items:
+            if item['year'] == year and item['month'] == month: 
+                data = dict(id=item['id'], dep_proc=True)
+                self.db[self.tablename].update(data, ['id'])
+  
+    def check_dep_proc(self, date, col1=None):
+        year, month = self.fix_date(date)
+        check_items = [item for item in self.db[self.tablename]]
+        for item in check_items:
+            if item['year'] == year and item['month'] == month: 
+                data = dict(id=item['id'], dep_proc=True)
+                self.db[self.tablename].update(data, ['id'])
 
 if __name__ == '__main__':
     clist = Checklist(db=Config.test_checklist_db)
-    clist.make_checklist()
-    # clist.check_one('01 2022', 'opcash_proc')
-    clist.show_checklist()
+    # clist.make_checklist()
+    return_list, list1 = clist.show_checklist(col_str='id')

@@ -15,7 +15,7 @@ class FileIndexer:
 
     def __init__(self, path=None, discard_pile=None, db=None, mode=None, table=None):
         
-        self.mode = None
+        self.mode = mode
         self.path = path
         self.discard_pile = discard_pile
         self.db = db
@@ -35,6 +35,8 @@ class FileIndexer:
         self.deposit_and_date_list = None
 
     def build_index_runner(self):
+        if self.mode == 'testing':
+            self.reset_files_for_testing()
         self.articulate_directory()
         self.sort_directory_by_extension()
         if self.mode != 'testing':
@@ -44,10 +46,11 @@ class FileIndexer:
                 print(e, 'file_indexer: files likely renamed after generation proc in test')
         else:
             self.rename_by_content_xls()
+        
+
         self.rename_by_content_pdf()
-        self.build_index()
         self.update_index_for_processed()
-        self.do_index()
+        # self.do_index()
 
     def articulate_directory(self):
         for item in self.path.iterdir():
@@ -61,25 +64,6 @@ class FileIndexer:
             f_ext = filename.split('.')
             f_ext = f_ext[-1]
             self.index_dict[sub_item] = f_ext
-
-    def get_file_names_kw(self, dir1):
-
-        for item in dir1.iterdir():
-            sub_item = Path(item)
-            filename = sub_item.parts[-1]
-            f_ext = filename.split('.')
-            f_ext = f_ext[-1]
-            self.test_list.append(filename)
-    
-    def df_date_wrapper(self, item, get_col=None, split_col=None, split_type=None, date_split=None):
-            df_date = pd.read_excel(item)
-            df_date = df_date.iloc[:, get_col].to_list()
-            df_date = df_date[split_col].split(split_type)
-            period = df_date[date_split]
-            period = period.rstrip()
-            period = period.lstrip()
-        
-            return period
 
     def find_by_content(self, style, target_string=None, ):
         if style == 'rr':
@@ -108,7 +92,6 @@ class FileIndexer:
                 new_file = os.path.join(self.path, filename)
                 shutil.copy2(item, new_file)
                 shutil.move(str(item), Config.TEST_MOVE_PATH)
-                print('ok')
                 self.processed_files.append((filename, period))
                 self.xls_list.remove(item)
 
@@ -136,23 +119,15 @@ class FileIndexer:
             if op_cash_path != None:
                 op_cash_list.append(op_cash_path)
 
-        self.hap_list = self.extract_deposits_by_type(op_cash_list, style='hap', target_str='QUADEL')
-        self.rr_list = self.extract_deposits_by_type(op_cash_list, style='rr', target_str='Incoming Wire')
-        self.dep_list = self.extract_deposits_by_type(op_cash_list, style='dep', target_str='Deposit')
+        self.hap_list, stmt_date = self.extract_deposits_by_type(op_cash_list, style='hap', target_str='QUADEL')
+        self.rr_list, stmt_date1 = self.extract_deposits_by_type(op_cash_list, style='rr', target_str='Incoming Wire')
+        self.dep_list, stmt_date2 = self.extract_deposits_by_type(op_cash_list, style='dep', target_str='Deposit')
         self.deposit_and_date_list = self.pdf.deposits_list
-        self.checklist_interface('01/2022')
-        print(self.hap_list)
-        print(self.rr_list)
-        print(self.dep_list)
-        print(self.deposit_and_date_list)
+        assert stmt_date == stmt_date1
 
-        relevant_month = list(self.hap_list[0].keys())[0]
-
-        self.checklist_interface(relevant_month, 'opcash_proc')
-        
-
-    def checklist_interface(self, date, column=None):
-        self.checklist.check_one(date, column)
+        for path in op_cash_list:
+            self.processed_files.append((path.name, ''.join(stmt_date.split(' '))))
+        self.checklist.check_opcash(date=stmt_date)
 
     def extract_deposits_by_type(self, stmt_list, style=None, target_str=None):
         return_list = []
@@ -167,7 +142,7 @@ class FileIndexer:
             kdict[str(date)] = [amount, path, style]
             return_list.append(kdict)
             
-        return return_list 
+        return return_list, date
 
     def get_more_metadata(self):
         target_file = os.path.join(self.path, target)
@@ -193,6 +168,8 @@ class FileIndexer:
                 table.insert(dict(fn=item.name, path=str(item), status='raw'))
 
     def update_index_for_processed(self):
+
+        import pdb; pdb.set_trace()
         for item in self.db[self.tablename]:
             for proc_file in self.processed_files:
                 if item['fn'] == proc_file[0]:                 
@@ -200,7 +177,7 @@ class FileIndexer:
                     data = dict(id=item['id'], status='processed', period=proc_date)
                     self.db[self.tablename].update(data, ['id'])
 
-    def normalize_dates(self, raw_date):    
+    def normalize_dates(self, raw_date=None):    
         if raw_date:
             f_date = datetime.strptime(raw_date, '%m%Y')
             f_date = f_date.strftime('%Y-%m')
@@ -239,10 +216,57 @@ class FileIndexer:
         db = self.db
         for results in db[table]:
             print(results)
+    
+    def get_file_names_kw(self, dir1):
+
+        for item in dir1.iterdir():
+            sub_item = Path(item)
+            filename = sub_item.parts[-1]
+            f_ext = filename.split('.')
+            f_ext = f_ext[-1]
+            self.test_list.append(filename)
+    
+    def df_date_wrapper(self, item, get_col=None, split_col=None, split_type=None, date_split=None):
+            df_date = pd.read_excel(item)
+            df_date = df_date.iloc[:, get_col].to_list()
+            df_date = df_date[split_col].split(split_type)
+            period = df_date[date_split]
+            period = period.rstrip()
+            period = period.lstrip()
+        
+            return period
+
+    def reset_files_for_testing(self):
+        TEST_RR_FILE = 'TEST_rent_roll_01_2022.xls'
+        TEST_DEP_FILE = 'TEST_deposits_01_2022.xls'
+        GENERATED_RR_FILE = 'TEST_RENTROLL_012022.xls'
+        GENERATED_DEP_FILE = 'TEST_DEP_012022.xls'
+        path = Config.TEST_RS_PATH
+        discard_pile = Config.TEST_MOVE_PATH
+
+        self.remove_generated_file_from_dir(path1=path, file1=GENERATED_DEP_FILE)
+        self.remove_generated_file_from_dir(path1=path, file1=GENERATED_RR_FILE)
+        self.move_original_back_to_dir(discard_dir=discard_pile, target_file=TEST_RR_FILE, target_dir=path)
+        self.move_original_back_to_dir(discard_dir=discard_pile, target_file=TEST_DEP_FILE, target_dir=path)
+
+
+    def remove_generated_file_from_dir(self, path1=None, file1=None):
+        try:
+            os.remove(os.path.join(str(path1), file1))
+        except FileNotFoundError as e:
+            print(e, f'{file1} NOT found in test_data_repository, make sure you are looking for the right name')
+    
+    def move_original_back_to_dir(self, discard_dir=None, target_file=None, target_dir=None):
+        self.get_file_names_kw(discard_dir)
+        for item in self.test_list:
+            if item == target_file:
+                try:
+                    shutil.move(os.path.join(str(discard_dir), item), target_dir)
+                except:
+                    print('Error occurred copying file: jw')
 
 if __name__ == '__main__':
     findex = FileIndexer(path=Config.TEST_RS_PATH, discard_pile=Config.TEST_MOVE_PATH, db=Config.test_findex_db, mode='testing', table='findex')
-    findex.delete_table()
+    # findex.delete_table()
     findex.build_index_runner()
-
     findex.show_table(table=findex.tablename)

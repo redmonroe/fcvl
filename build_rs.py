@@ -3,11 +3,15 @@ from config import Config, my_scopes
 from db_utils import DBUtils
 from auth_work import oauth
 from file_indexer import FileIndexer
+from checklist import Checklist
 from setup_month import MonthSheet
 import dataset
 import pandas as pd
 from google_api_calls_abstract import GoogleApiCalls
 
+production_path = Config.TEST_RS_PATH
+production_discard_pile = Config.TEST_MOVE_PATH
+production_db = Config.test_findex_db
 
 class BuildRS(MonthSheet):
     def __init__(self, full_sheet=None, path=None, mode=None, test_service=None):
@@ -21,6 +25,7 @@ class BuildRS(MonthSheet):
             self.calls = GoogleApiCalls()
         else:
             self.service = oauth(my_scopes, 'sheet')
+            self.findex = FileIndexer(path=production_path, discard_pile=production_discard_pile, db=production_db, table='findex')
 
         self.wrange_pay = '!K2:K68'
         self.wrange_ntp = '!K71:K71'
@@ -28,6 +33,11 @@ class BuildRS(MonthSheet):
         self.user_text = f'Options:\n PRESS 1 to show current sheets in RENT SHEETS \n PRESS 2 TO VIEW ITEMS IN {self.file_input_path} \n PRESS 3 for MONTHLY FORMATTING, PART ONE (that is, update intake sheet in {self.file_input_path} (xlsx) \n PRESS 4 for MONTHLY FORMATTING, PART TWO: format rent roll & subsidy by month and sheet\n >>>'
         self.df = None
         self.tablename = 'build'
+        self.checklist = Checklist()
+        self.hap_list = self.findex.hap_list
+        self.rr_list = self.findex.rr_list
+        self.dep_list = self.findex.dep_list
+        self.deposit_and_date_list = self.findex.deposit_and_date_list
 
     def buildrs_control(self):
         pass
@@ -63,7 +73,9 @@ class BuildRS(MonthSheet):
                 '''trigger formatting of dt_object named sheet'''
                 self.mformat.export_month_format(dt_object)
                 self.mformat.push_one_to_intake(input_file_path=item['path'])
+                self.checklist.check_mfor(dt_object)
                 self.month_write_col(dt_object)
+                self.checklist.check_rr_proc(dt_object)
 
         '''deposits push'''
         if key == 'DEP':
@@ -81,6 +93,11 @@ class BuildRS(MonthSheet):
                 self.write_ntp(dt_object, [str(ntp)])
                 print(type)
                 self.print_summary(payment_list, grand_total, ntp, df)
+                self.checklist.check_dep_proc(dt_object)
+
+        if key == 'DEPDETAIL':
+            # need to trigger off proc
+            print(self.rr_list, 'made it to depdetail')
 
         return items_true
 
@@ -243,5 +260,6 @@ if __name__ == '__main__':
     test_service = oauth(my_scopes, 'sheet')
     buildrs = BuildRS(mode='testing', test_service=test_service)
     buildrs.automatic_build(key='DEP')
-    # buildrs.automatic_build(key='RENTROLL')
+    buildrs.automatic_build(key='RENTROLL')
+    buildrs.automatic_build(key='DEPDETAIL')
     # buildrs.show_table()

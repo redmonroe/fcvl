@@ -47,6 +47,7 @@ class MonthSheet:
         self.k_rent = [] 
         self.subsidy = [] 
         self.t_rent = []
+       
 
     def control(self):
         if self.user_choice == 1:

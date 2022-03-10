@@ -93,9 +93,9 @@ class TestChecklist:
         '''make checklist for current year/12 sheets'''
         chklist = Checklist(db=chck_list_db)
         chklist.make_checklist()
-        records = chklist.show_checklist()
+        records, r_list = chklist.show_checklist(col_str='id')
 
-        assert len(records[0]) == 12
+        assert len(r_list) == 12
     
     def test_setup_intake(self):
         '''test to make sure intake is present; reset intake state'''
@@ -151,7 +151,8 @@ class TestChecklist:
         assert result[0][0] == '0'
 
     def test_checklist_pickup_rs_exist_and_yfor(self):
-        check_item, yfor, rs_exist = cl.show_checklist()
+        check_item, yfor = cl.show_checklist(col_str='yfor')
+        check_item, rs_exist = cl.show_checklist(col_str='rs_exist')
 
         assert yfor[0] == True
         assert yfor[1] == True
@@ -242,9 +243,9 @@ class TestChecklist:
         assert findex.deposit_and_date_list[0][0] == '1/03'
 
     def test_checklist_pickup_opcash_proc(self):
-        check_item, yfor, rs_exist = cl.show_checklist()
+        check_item, opcash_proc = cl.show_checklist(col_str='opcash_proc')
 
-        assert yfor[0] == True
+        assert opcash_proc[0] == True
 
     def test_teardown_mformat(self):
         calls.clear_sheet(service, test_workbook, f'intake!A1:ZZ100')
