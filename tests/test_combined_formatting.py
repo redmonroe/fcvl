@@ -41,9 +41,10 @@ ys = YearSheet(full_sheet=test_workbook, mode='testing', test_service=service)
 build = BuildRS(full_sheet=test_workbook, path=test_path, mode='testing', test_service=service)
 cl = Checklist(db=chck_list_db)
 
+sleep1 = 1
+
 # pdb.set_trace()
 
-@pytest.mark.setup_only
 class TestChecklist:
 
     test_message = 'hi'
@@ -74,6 +75,7 @@ class TestChecklist:
             self.path_contents.append(filename) 
     
     def test_setup_findexer(self):
+
         TestChecklist.remove_generated_file_from_dir(self, path1=path, file1=GENERATED_RR_FILE)
         TestChecklist.remove_generated_file_from_dir(self, path1=path, file1=GENERATED_DEP_FILE)
 
@@ -95,7 +97,6 @@ class TestChecklist:
 
         assert len(records[0]) == 12
     
-    @pytest.mark.skip(reason='429 from google if I do too much')
     def test_setup_intake(self):
         '''test to make sure intake is present; reset intake state'''
         titles_dict = Utils.get_existing_sheets(service, test_workbook)
@@ -105,6 +106,7 @@ class TestChecklist:
         for name, id2 in titles_dict.items():
             if name == 'intake':
                 intake_ok = True
+                calls.clear_sheet(service, test_workbook, f'intake!A1:ZZ100')
                 break
 
         if intake_ok == False:
@@ -117,13 +119,16 @@ class TestChecklist:
        
         titles_dict = Utils.get_existing_sheets(service, test_workbook)
 
+        time.sleep(sleep1)
+
         assert len(titles_dict) == 1
         assert list(titles_dict.keys())[0] == 'intake'
     
-    @pytest.mark.skip(reason='429 from google if I do too much')
     def test_year_format_one_sheet(self):
         shnames = ys.auto_control()
-        assert len(shnames) == 12
+        assert len(shnames) == 2
+
+        time.sleep(sleep1)
 
         result = calls.broad_get(service, Config.TEST_RS, 'jan 2022!A2:A2')
         result2 = calls.broad_get(service, Config.TEST_RS, 'jan 2022!G85:G85')
@@ -131,26 +136,27 @@ class TestChecklist:
         assert result[0][0] == 'CD-A' #test 
         assert result2[0][0] == 'total' #test 
 
-    @pytest.mark.skip(reason='429 from google if I do too much')
     def test_duplicate_formatted_base(self):
         # should be all months  + intake
         titles_dict = Utils.get_existing_sheets(service, test_workbook)
-        assert len(titles_dict) == 13
+        assert len(titles_dict) == 3
 
-    @pytest.mark.skip(reason='429 from google if I do too much')
     def test_prev_balance(self):
         ys.make_shifted_list_for_prev_bal()
         prev_bal = ys.prev_bal_dict
 
+        time.sleep(sleep1)        
+
         result = calls.broad_get(service, Config.TEST_RS, 'feb 2022!D2:D2')
         assert result[0][0] == '0'
 
-    @pytest.mark.skip(reason='429 from google if I do too much')
     def test_checklist_pickup_rs_exist_and_yfor(self):
         check_item, yfor, rs_exist = cl.show_checklist()
 
-        assert all(yfor) == True
-        assert all(rs_exist) == True
+        assert yfor[0] == True
+        assert yfor[1] == True
+        assert rs_exist[0] == True
+        assert rs_exist[1] == True
 
     @pytest.fixture
     def setup_test_db(self):
@@ -202,7 +208,6 @@ class TestChecklist:
         assert GENERATED_RR_FILE in proc_list
         assert '2022-01' == record_1['period']
 
-    @pytest.mark.new_one_only
     def test_find_items_processed_by_findexer(self):
         ''' if rent roll month is processed == True, then push it to sheet'''
         processed_items = build.automatic_build(key='RENTROLL')
@@ -224,7 +229,6 @@ class TestChecklist:
 
         assert bde[0] == 20979.0
 
-    @pytest.mark.skip(reason='429 from google if I do too much')
     def test_write_pay_list(self):  
         result = calls.broad_get(service, test_workbook, 'jan 2022!K69:K69')
         result2 = calls.broad_get(service, test_workbook, 'jan 2022!K71:K71')
@@ -237,7 +241,6 @@ class TestChecklist:
         assert findex.dep_list[0]['01 2022'][0] == 15491.71
         assert findex.deposit_and_date_list[0][0] == '1/03'
 
-    @pytest.mark.skip(reason='429 from google if I do too much')
     def test_teardown_mformat(self):
         calls.clear_sheet(service, test_workbook, f'intake!A1:ZZ100')
         calls.clear_sheet(service, test_workbook, f'jan 2022!b2:b68')
@@ -251,7 +254,6 @@ class TestChecklist:
         assert result == []   
         assert result2 == []   
 
-    @pytest.mark.skip(reason='429 from google if I do too much')
     def test_build_index_postflight(self, setup_test_db):
         db = setup_test_db
         findex_name_as_str = findex.tablename
@@ -261,7 +263,6 @@ class TestChecklist:
         
         assert len(db[findex_name_as_str]) == 5
 
-    @pytest.mark.skip(reason='429 from google if I do too much')
     def test_teardown(self, setup_test_db):
         TestChecklist.remove_generated_file_from_dir(self, path1=path, file1=GENERATED_RR_FILE)
         TestChecklist.remove_generated_file_from_dir(self, path1=path, file1=GENERATED_DEP_FILE)

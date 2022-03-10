@@ -49,11 +49,12 @@ class YearSheet:
             self.mode = mode
             self.sleep = 0
             self.service = test_service
+            self.shmonths = ['jan', 'feb']
         else:
             self.service = oauth(my_scopes, 'sheet')
+            self.shmonths = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
         
         self.base_month = 'base'
-        self.shmonths = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
         self.user_text = f'Options:\n PRESS 1 to show all current sheets in {self.full_sheet} \n PRESS 2 to create list of sheet NAMES \n PRESS 3 to format all months. *****YOU NEED TO MANUALLY MAKE AN INTAKE SHEET AFTER RUNNING OPTION 3(this is the full year auto option; takes 45 min) \n >>>'
         self.user_choice = None
         self.shyear = [f'{Config.current_year}']
@@ -109,7 +110,10 @@ class YearSheet:
                 self.source_id = id1      
 
         checklist = self.get_checklist()
+        self.update_checklist(checklist, sheet_names)
+        return sheet_names
 
+    def update_checklist(self, checklist, sheet_names):
         insert_index = 2
         for name in sheet_names:
             insert_index += 1
@@ -120,8 +124,6 @@ class YearSheet:
                 if item['month'] == mdate:
                     data = dict(id=item['id'], rs_exist=True, yfor=True)
                     checklist.update(data, ['id'])
-
-        return sheet_names
 
     def formatting_runner(self):
 

@@ -45,6 +45,9 @@ class FileIndexer:
         else:
             self.rename_by_content_xls()
         self.rename_by_content_pdf()
+        self.build_index()
+        self.update_index_for_processed()
+        self.do_index()
 
     def articulate_directory(self):
         for item in self.path.iterdir():
@@ -146,11 +149,10 @@ class FileIndexer:
         relevant_month = list(self.hap_list[0].keys())[0]
 
         self.checklist_interface(relevant_month)
-    def checklist_interface(self, date):
-        print('\n')
-        self.checklist.check_one(date, 'a')
+        
 
-
+    def checklist_interface(self, date, column=None):
+        self.checklist.check_one(date, column)
 
     def extract_deposits_by_type(self, stmt_list, style=None, target_str=None):
         return_list = []
@@ -166,10 +168,6 @@ class FileIndexer:
             return_list.append(kdict)
             
         return return_list 
-
-
-
-
 
     def get_more_metadata(self):
         target_file = os.path.join(self.path, target)
@@ -237,15 +235,14 @@ class FileIndexer:
         DBUtils.delete_table(self, self.db)
 
     def show_table(self, table=None):
+        print(f'\n contents of {self.db}\n')
         db = self.db
         for results in db[table]:
             print(results)
 
 if __name__ == '__main__':
-    findex = FileIndexer(path=Config.TEST_RS_PATH, discard_pile=Config.TEST_MOVE_PATH, db=Config.test_findex_db, table='findex')
+    findex = FileIndexer(path=Config.TEST_RS_PATH, discard_pile=Config.TEST_MOVE_PATH, db=Config.test_findex_db, mode='testing', table='findex')
+    findex.delete_table()
     findex.build_index_runner()
-    # findex.build_index()
-    # findex.update_index_for_processed()
-    # findex.do_index()
 
-    # findex.show_table(table=findex.tablename)
+    findex.show_table(table=findex.tablename)

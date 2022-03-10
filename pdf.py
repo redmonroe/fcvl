@@ -249,7 +249,6 @@ class StructDataExtract:
         return date
 
     def nbofi_pdf_extract_deposit(self, path, style=None, target_str=None):
-        print(target_str, 'target string')
         txtfile = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'temp_output.txt' ))
         file1 = self.open_pdf_and_output_txt(path, txtfile=txtfile)
 
@@ -272,7 +271,6 @@ class StructDataExtract:
         return stmt_date, sum(line_list)
 
     def nbofi_pdf_extract_hap(self, path, style=None, target_str=None):
-        print(target_str, 'target string')
         file1 = self.open_pdf_and_output_txt(path, txtfile='temp_output.txt')
         hap_line, index = self.get_indexed_lines_from_txtfile(file1, target_str)
         target = self.get_cleaned_target_line(hap_line)
@@ -282,7 +280,6 @@ class StructDataExtract:
         return date2, target[0]
 
     def nbofi_pdf_extract_rr(self, path, style=None, target_str=None):
-        print(target_str, 'target string')
         file1 = self.open_pdf_and_output_txt(path, txtfile='temp_output.txt')        
         line_list = []
         index = [(count, line) for count, line in enumerate(file1)]
