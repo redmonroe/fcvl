@@ -63,16 +63,18 @@ class Checklist:
 
         return year, month
 
-    def check_one(self, date, col):
+    def check_one(self, date=None, col1=None):
         year, month = self.fix_date(date)
         check_items = [item for item in self.db[self.tablename]]
         for item in check_items:
             if item['year'] == year and item['month'] == month: 
-                data = dict(id=item['id'], opcash_proc=True)
+                data = dict(id=item['id'], col1=True)
+                data[col1] = data.pop('col1')
                 self.db[self.tablename].update(data, ['id'])
 
 
 if __name__ == '__main__':
     clist = Checklist(db=Config.test_checklist_db)
     clist.make_checklist()
+    # clist.check_one('01 2022', 'opcash_proc')
     clist.show_checklist()

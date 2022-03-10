@@ -148,7 +148,7 @@ class FileIndexer:
 
         relevant_month = list(self.hap_list[0].keys())[0]
 
-        self.checklist_interface(relevant_month)
+        self.checklist_interface(relevant_month, 'opcash_proc')
         
 
     def checklist_interface(self, date, column=None):

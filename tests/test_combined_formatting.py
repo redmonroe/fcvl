@@ -241,6 +241,11 @@ class TestChecklist:
         assert findex.dep_list[0]['01 2022'][0] == 15491.71
         assert findex.deposit_and_date_list[0][0] == '1/03'
 
+    def test_checklist_pickup_opcash_proc(self):
+        check_item, yfor, rs_exist = cl.show_checklist()
+
+        assert yfor[0] == True
+
     def test_teardown_mformat(self):
         calls.clear_sheet(service, test_workbook, f'intake!A1:ZZ100')
         calls.clear_sheet(service, test_workbook, f'jan 2022!b2:b68')
