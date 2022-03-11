@@ -99,15 +99,17 @@ class BuildRS(MonthSheet):
         if key == 'cash':
             if self.mode == 'testing':
                 self.findex.build_index_runner()
+                for hap in self.findex.hap_list:
+                    print(hap)
 
-            hap_date = list(self.findex.hap_list[0].keys())[0]
-            hap_amount = list(self.findex.hap_list[0].values())[0][0]
+                    hap_date = list(hap.keys())[0]
+                    hap_amount = list(hap.values())[0][0]
              
             # for item in list_true:
             #     dt_object = self.fix_date(item['period'])
             #     print(item)
             # need to trigger off proc
-            print(hap_date, hap_amount, 'made it to depdetail')
+            # print(hap_date, hap_amount, 'made it to depdetail')
 
         return items_true
 
