@@ -37,6 +37,7 @@ class FileIndexer:
     def build_index_runner(self):
         if self.mode == 'testing':
             self.reset_files_for_testing()
+        # breakpoint()
         self.articulate_directory()
         self.sort_directory_by_extension()
         if self.mode != 'testing':
@@ -169,7 +170,6 @@ class FileIndexer:
 
     def update_index_for_processed(self):
 
-        import pdb; pdb.set_trace()
         for item in self.db[self.tablename]:
             for proc_file in self.processed_files:
                 if item['fn'] == proc_file[0]:                 
@@ -268,5 +268,5 @@ class FileIndexer:
 if __name__ == '__main__':
     findex = FileIndexer(path=Config.TEST_RS_PATH, discard_pile=Config.TEST_MOVE_PATH, db=Config.test_findex_db, mode='testing', table='findex')
     # findex.delete_table()
-    findex.build_index_runner()
+    # findex.build_index_runner()
     findex.show_table(table=findex.tablename)

@@ -19,7 +19,7 @@ class BuildRS(MonthSheet):
             self.db = Config.test_build_db
             self.mode = 'testing'
             self.full_sheet=Config.TEST_RS
-            self.findex = FileIndexer(path=Config.TEST_RS_PATH, discard_pile=Config.TEST_MOVE_PATH, db=Config.test_findex_db, table='findex')
+            self.findex = FileIndexer(path=Config.TEST_RS_PATH, discard_pile=Config.TEST_MOVE_PATH, db=Config.test_findex_db, mode='testing', table='findex')
             self.service = test_service
             self.mformat = MonthSheet(full_sheet=Config.TEST_RS, path=Config.TEST_RS_PATH, mode='testing', test_service=self.service)
             self.calls = GoogleApiCalls()
@@ -55,21 +55,24 @@ class BuildRS(MonthSheet):
         '''this is the hook into the program for the checklist routine'''
         
         '''display all'''
-        # for item in self.findex.db['findex']:
-        #     print(item)
+
+        # this would be faster in production but in this stage of testing I don't have this list in memory
+   
         items_true = self.get_processed_items_list()
+
+
         if key == 'ALL':
             ## THIS DOES NOT WORK YET
             rentrolls_true = self.get_by_kw(key='RENTROLL', selected=items_true)
             deposits_true = self.get_by_kw(key='DEP', selected=items_true)
         else:
             list_true = self.get_by_kw(key=key, selected=items_true)
+            # breakpoint()
 
         '''rentroll and monthly formatting'''
         if key == 'RENTROLL':
             for item in list_true:
-                dt_object = datetime.strptime(item['period'], '%Y-%m')
-                dt_object = datetime.strftime(dt_object, '%b %Y').lower()
+                dt_object = self.fix_date(item['period'])
                 '''trigger formatting of dt_object named sheet'''
                 self.mformat.export_month_format(dt_object)
                 self.mformat.push_one_to_intake(input_file_path=item['path'])
@@ -81,8 +84,7 @@ class BuildRS(MonthSheet):
         if key == 'DEP':
             for item in list_true:
                 '''get raw deposit items to sql'''
-                dt_object = datetime.strptime(item['period'], '%Y-%m')
-                dt_object = datetime.strftime(dt_object, '%b %Y').lower()
+                dt_object = self.fix_date(item['period'])
                 df = self.read_excel(path=item['path'])
                 df = self.remove_nan_lines(df=df)
                 self.to_sql(df=df)
@@ -91,13 +93,21 @@ class BuildRS(MonthSheet):
                 payment_list, grand_total, ntp, df = self.push_to_sheet_by_period(dt_code=dt_code)
                 self.write_payment_list(dt_object, payment_list)
                 self.write_ntp(dt_object, [str(ntp)])
-                print(type)
                 self.print_summary(payment_list, grand_total, ntp, df)
                 self.checklist.check_dep_proc(dt_object)
 
-        if key == 'DEPDETAIL':
+        if key == 'cash':
+            if self.mode == 'testing':
+                self.findex.build_index_runner()
+
+            hap_date = list(self.findex.hap_list[0].keys())[0]
+            hap_amount = list(self.findex.hap_list[0].values())[0][0]
+             
+            # for item in list_true:
+            #     dt_object = self.fix_date(item['period'])
+            #     print(item)
             # need to trigger off proc
-            print(self.rr_list, 'made it to depdetail')
+            print(hap_date, hap_amount, 'made it to depdetail')
 
         return items_true
 
@@ -155,6 +165,11 @@ class BuildRS(MonthSheet):
         for item in ntp_item.index:
             df.drop(labels=item, inplace=True)
         return df, ntp_item
+
+    def fix_date(self, date):
+        dt_object = datetime.strptime(date, '%Y-%m')
+        dt_object = datetime.strftime(dt_object, '%b %Y').lower()
+        return dt_object
 
     def grand_total(self, df):
         grand_total = sum(df['pay'].tolist())
@@ -247,19 +262,10 @@ class BuildRS(MonthSheet):
     def set_user_choice(self):
         self.user_choice = int(input(self.user_text))
 
-    def index_wrapper(self):
-        # self.findex.do_index()
-        # self.findex.normalize_dates()
-        self.findex.show_table(table=self.findex.tablename)
-
-    def build_rs_runner(self):
-        self.index_wrapper()
-
-
 if __name__ == '__main__':
     test_service = oauth(my_scopes, 'sheet')
     buildrs = BuildRS(mode='testing', test_service=test_service)
-    buildrs.automatic_build(key='DEP')
-    buildrs.automatic_build(key='RENTROLL')
-    buildrs.automatic_build(key='DEPDETAIL')
+    # buildrs.automatic_build(key='DEP')
+    # buildrs.automatic_build(key='RENTROLL')
+    buildrs.automatic_build(key='cash')
     # buildrs.show_table()

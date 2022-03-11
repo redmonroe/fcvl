@@ -51,12 +51,14 @@ class TestChecklist:
     path_contents = []
     db = None
 
+    ## this is a duplicate of a file_indexer method
     def remove_generated_file_from_dir(self, path1=None, file1=None):
         try:
             os.remove(os.path.join(str(path1), file1))
         except FileNotFoundError as e:
             print(e, f'{file1} NOT found in test_data_repository, make sure you are looking for the right name')
     
+    ## this is a duplicate of a file_indexer method
     def move_original_back_to_dir(self, discard_dir=None, target_file=None, target_dir=None):
         findex.get_file_names_kw(discard_dir)
         for item in findex.test_list:
@@ -236,6 +238,12 @@ class TestChecklist:
         assert result[0][0] == '14975'   
         assert result2[0][0] == '516.71'   
 
+    # def test_find_items_processed_by_findexer(self):
+    #     ''' if rent roll month is processed == True, then push it to sheet'''
+    #     processed_items = build.automatic_build(key='RENTROLL')
+
+    #     test_criteria_contains_rentroll = [True for filename in processed_items if 'RENTROLL' in filename['fn'].split('_')]
+    #     assert test_criteria_contains_rentroll[0] == True
     def test_rename_content_by_pdf(self):
         assert findex.hap_list[0]['01 2022'][0] == 30990.0
         assert findex.rr_list[0]['01 2022'][0] == 15576.54
