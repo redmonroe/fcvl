@@ -274,7 +274,13 @@ class TestChecklist:
     def test_write_depdetail_hap_rr(self):
         result1 = calls.broad_get(service, test_workbook, 'jan 2022!D90:D90')
 
-        assert result1[0][0] == '15491.71'   
+        assert result1[0][0] == '15491.71'
+
+    def test_that_rr_and_onesite_reconciles(self):
+        result1 = calls.broad_get(service, test_workbook, 'jan 2022!E90:E90')
+
+        assert result1[0][0][0:4] == 'bala'   
+        breakpoint()
 
     def test_teardown_mformat(self):
         calls.clear_sheet(service, test_workbook, f'intake!A1:ZZ100')

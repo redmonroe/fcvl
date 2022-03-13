@@ -1,3 +1,4 @@
+from datetime import datetime as dt
 from config import Config, my_scopes
 from auth_work import oauth
 from utils import Utils
@@ -45,6 +46,7 @@ class MonthSheet:
         self.wrange_k_rent = self.wrange_k_rent1 
         self.wrange_subsidy = self.wrange_subsidy1
         self.wrange_t_rent = self.wrange_t_rent1 
+        self.wrange_reconciled = '!E90:E90'
         self.t_name = []
         self.unit = [] 
         self.k_rent = [] 
@@ -176,6 +178,16 @@ class MonthSheet:
     def write_sum_forumula1(self):
         gc = GoogleApiCalls()
         gc.write_formula_column(self.service, self.full_sheet, self.G_DEPDETAIL, f'{self.sheet_choice}!D90:D90')
+    
+    def check_totals_reconcile(self):
+        gc = GoogleApiCalls()
+        onesite_total = gc.broad_get(self.service, self.full_sheet, f'{self.sheet_choice}!K77:K77')
+        nbofi_total = gc.broad_get(self.service, self.full_sheet, f'{self.sheet_choice}!D90:D90')
+        if onesite_total == nbofi_total:
+            message = [f'balances at {str(dt.today().date())}']
+        else:
+            message = ['does not balance']
+        gc.update(self.service, self.full_sheet, message, f'{self.sheet_choice}' + '!E90:E90')
     
     def get_tables(self):
         DBUtils.get_tables(self, self.db)

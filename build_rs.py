@@ -113,6 +113,7 @@ class BuildRS(MonthSheet):
 
                 self.export_deposit_detail(data=dict1)
                 self.write_sum_forumula1()
+                self.check_totals_reconcile()
 
         return items_true
 
