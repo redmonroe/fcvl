@@ -235,15 +235,11 @@ class TestChecklist:
     def test_write_pay_list(self):  
         result = calls.broad_get(service, test_workbook, 'jan 2022!K69:K69')
         result2 = calls.broad_get(service, test_workbook, 'jan 2022!K71:K71')
-        assert result[0][0] == '14975'   
         assert result2[0][0] == '516.71'   
 
-    # def test_find_items_processed_by_findexer(self):
-    #     ''' if rent roll month is processed == True, then push it to sheet'''
-    #     processed_items = build.automatic_build(key='RENTROLL')
+    def test_proc_depdetail(self):
+        processed_items = build.automatic_build(key='cash')
 
-    #     test_criteria_contains_rentroll = [True for filename in processed_items if 'RENTROLL' in filename['fn'].split('_')]
-    #     assert test_criteria_contains_rentroll[0] == True
     def test_rename_content_by_pdf(self):
         assert findex.hap_list[0]['01 2022'][0] == 30990.0
         assert findex.rr_list[0]['01 2022'][0] == 15576.54
@@ -254,6 +250,15 @@ class TestChecklist:
         check_item, opcash_proc = cl.show_checklist(col_str='opcash_proc')
 
         assert opcash_proc[0] == True
+
+    def test_write_depdetail_hap_rr(self):
+        result1 = calls.broad_get(service, test_workbook, 'jan 2022!D80:D80')
+        result2 = calls.broad_get(service, test_workbook, 'jan 2022!D81:D81')
+        result3 = calls.broad_get(service, test_workbook, 'jan 2022!D87:D87')
+
+        assert result1[0][0] == '15576.54'   
+        assert result2[0][0] == '30990'   
+        assert result3[0][0] == '395'   
 
     def test_teardown_mformat(self):
         calls.clear_sheet(service, test_workbook, f'intake!A1:ZZ100')

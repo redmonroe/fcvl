@@ -111,19 +111,10 @@ class BuildRS(MonthSheet):
                     dict1['deposit_date'] = list(deposit_group.keys())[0]
                     dict1['deposit_list'] = list(deposit_group.values())[0]
 
-                self.write_opcash_controller(data=dict1)
-             
-            # for item in list_true:
-            #     dt_object = self.fix_date(item['period'])
-            #     print(item)
-            # need to trigger off proc
-                # print(dict1, 'made it to depdetail')
-                # print(deposit_date, deposit_list, 'made it to depdetail')
+                self.export_deposit_detail(data=dict1)
+                self.write_sum_formula()
 
         return items_true
-
-    def write_opcash_controller(self, data=None):
-        self.export_deposit_detail(data)
 
     def push_to_sheet_by_period(self, dt_code):
         print('pushing to sheet with code:', dt_code)

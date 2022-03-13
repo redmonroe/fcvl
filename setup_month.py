@@ -15,6 +15,7 @@ class MonthSheet:
     G_SUM_ACTRENT = ["=sum(H2:H68)"]
     G_PAYMENT_MADE = ["=sum(K2:K68)"]
     G_CURBAL = ["=sum(L2:L68)"]
+    G_DEPDETAIL = ["=sum(D82:D89)"]
     ui_sheet = 'intake'
     wrange_hap_partial = '!D81:D81'
     wrange_rr_partial = '!D80:D80'
@@ -49,6 +50,8 @@ class MonthSheet:
         self.k_rent = [] 
         self.subsidy = [] 
         self.t_rent = []
+        self.sheet_choice = None
+        self.gc = GoogleApiCalls()
        
     def control(self):
         if self.user_choice == 1:
@@ -155,21 +158,23 @@ class MonthSheet:
     def export_deposit_detail(self, data):
         gc = GoogleApiCalls()
         sheet_choice = data['formatted_hap_date']
+        self.sheet_choice = sheet_choice
         hap = [data['hap_amount']]
         rr = [data['rr_amount']]
         deposit_list = data['deposit_list']
-        print(deposit_list)
-        # gc.update_int(self.service, self.full_sheet, hap, f'{sheet_choice}' + f'{self.wrange_hap_partial}', value_input_option='USER_ENTERED')
-        # gc.update_int(self.service, self.full_sheet, rr, f'{sheet_choice}' + f'{self.wrange_rr_partial}', value_input_option='USER_ENTERED')
+        gc.update_int(self.service, self.full_sheet, hap, f'{sheet_choice}' + f'{self.wrange_hap_partial}', value_input_option='USER_ENTERED')
+        gc.update_int(self.service, self.full_sheet, rr, f'{sheet_choice}' + f'{self.wrange_rr_partial}', value_input_option='USER_ENTERED')
         value = 82
         for dep_amt in deposit_list:
             sub_str0 = '!'
             sub_str1 = 'D'
             sub_str2 = ':'
             cat_str = sub_str0 + sub_str1 + str(value) + sub_str2 + sub_str1 + str(value)
-            # print(cat_str)
             gc.update_int(self.service, self.full_sheet, [dep_amt[1]], f'{sheet_choice}' + cat_str, value_input_option='USER_ENTERED')
             value += 1
+
+    def write_sum_forumula(self):
+        self.gc.write_formula_column(self.service, self.full_sheet, self.G_DEPDETAIL, f'{self.sheet_choice}!D90:D90')
     
     def get_tables(self):
         DBUtils.get_tables(self, self.db)
