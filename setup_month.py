@@ -173,8 +173,9 @@ class MonthSheet:
             gc.update_int(self.service, self.full_sheet, [dep_amt[1]], f'{sheet_choice}' + cat_str, value_input_option='USER_ENTERED')
             value += 1
 
-    def write_sum_forumula(self):
-        self.gc.write_formula_column(self.service, self.full_sheet, self.G_DEPDETAIL, f'{self.sheet_choice}!D90:D90')
+    def write_sum_forumula1(self):
+        gc = GoogleApiCalls()
+        gc.write_formula_column(self.service, self.full_sheet, self.G_DEPDETAIL, f'{self.sheet_choice}!D90:D90')
     
     def get_tables(self):
         DBUtils.get_tables(self, self.db)

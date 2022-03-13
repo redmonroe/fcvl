@@ -112,7 +112,9 @@ class BuildRS(MonthSheet):
                     dict1['deposit_list'] = list(deposit_group.values())[0]
 
                 self.export_deposit_detail(data=dict1)
-                self.write_sum_formula()
+                self.write_sum_forumula1()
+                breakpoint()    
+                # print(dir(self))
 
         return items_true
 
