@@ -140,6 +140,7 @@ class TestChecklist:
 
     def test_duplicate_formatted_base(self):
         # should be all months  + intake
+        time.sleep(sleep1)
         titles_dict = Utils.get_existing_sheets(service, test_workbook)
         assert len(titles_dict) == 3
 
@@ -153,6 +154,7 @@ class TestChecklist:
         assert result[0][0] == '0'
 
     def test_checklist_pickup_rs_exist_and_yfor(self):
+        time.sleep(sleep1)
         check_item, yfor = cl.show_checklist(col_str='yfor')
         check_item, rs_exist = cl.show_checklist(col_str='rs_exist')
 
@@ -219,6 +221,7 @@ class TestChecklist:
         assert test_criteria_contains_rentroll[0] == True
 
     def test_mformat_and_push_one_to_intake(self):  
+        time.sleep(sleep1)
         result = calls.broad_get(service, test_workbook, 'jan 2022!E69:E69')
         result2 = calls.broad_get(service, test_workbook, f'intake!A1:A1')
     
@@ -233,18 +236,24 @@ class TestChecklist:
         assert bde[0] == 20979.0
 
     def test_write_pay_list(self):  
+        time.sleep(sleep1)
         result = calls.broad_get(service, test_workbook, 'jan 2022!K69:K69')
         result2 = calls.broad_get(service, test_workbook, 'jan 2022!K71:K71')
         assert result2[0][0] == '516.71'   
 
     def test_proc_depdetail(self):
+        time.sleep(sleep1)
         processed_items = build.automatic_build(key='cash')
 
     def test_rename_content_by_pdf(self):
+        for ds in findex.deposit_and_date_list:
+            deposit_date = list(ds.keys())[0]
+
+
         assert findex.hap_list[0]['01 2022'][0] == 30990.0
         assert findex.rr_list[0]['01 2022'][0] == 15576.54
         assert findex.dep_list[0]['01 2022'][0] == 15491.71
-        assert findex.deposit_and_date_list[0][0] == '1/03'
+        assert deposit_date == '01 2022'
 
     def test_checklist_pickup_opcash_proc(self):
         check_item, opcash_proc = cl.show_checklist(col_str='opcash_proc')
@@ -252,6 +261,7 @@ class TestChecklist:
         assert opcash_proc[0] == True
 
     def test_write_depdetail_hap_rr(self):
+        time.sleep(sleep1)
         result1 = calls.broad_get(service, test_workbook, 'jan 2022!D80:D80')
         result2 = calls.broad_get(service, test_workbook, 'jan 2022!D81:D81')
         result3 = calls.broad_get(service, test_workbook, 'jan 2022!D87:D87')
@@ -259,6 +269,12 @@ class TestChecklist:
         assert result1[0][0] == '15576.54'   
         assert result2[0][0] == '30990'   
         assert result3[0][0] == '395'   
+
+
+    def test_write_depdetail_hap_rr(self):
+        result1 = calls.broad_get(service, test_workbook, 'jan 2022!D90:D90')
+
+        assert result1[0][0] == '15491.71'   
 
     def test_teardown_mformat(self):
         calls.clear_sheet(service, test_workbook, f'intake!A1:ZZ100')
