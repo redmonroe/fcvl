@@ -99,19 +99,31 @@ class BuildRS(MonthSheet):
         if key == 'cash':
             if self.mode == 'testing':
                 self.findex.build_index_runner()
-                for hap in self.findex.hap_list:
-                    print(hap)
+                for hap, rr in zip(self.findex.hap_list, self.findex.rr_list):
+                    dict1 = {}
+                    dict1['formatted_hap_date'] = self.fix_date2(list(hap.keys())[0])
+                    dict1['hap_date'] = list(hap.keys())[0]
+                    dict1['hap_amount'] = list(hap.values())[0][0]
+                    dict1['rr_date'] = list(rr.keys())[0]
+                    dict1['rr_amount'] = list(rr.values())[0][0]
 
-                    hap_date = list(hap.keys())[0]
-                    hap_amount = list(hap.values())[0][0]
+                for deposit_group in self.findex.deposit_and_date_list:
+                    dict1['deposit_date'] = list(deposit_group.keys())[0]
+                    dict1['deposit_list'] = list(deposit_group.values())[0]
+
+                self.write_opcash_controller(data=dict1)
              
             # for item in list_true:
             #     dt_object = self.fix_date(item['period'])
             #     print(item)
             # need to trigger off proc
-            # print(hap_date, hap_amount, 'made it to depdetail')
+                # print(dict1, 'made it to depdetail')
+                # print(deposit_date, deposit_list, 'made it to depdetail')
 
         return items_true
+
+    def write_opcash_controller(self, data=None):
+        self.export_deposit_detail(data)
 
     def push_to_sheet_by_period(self, dt_code):
         print('pushing to sheet with code:', dt_code)
@@ -167,6 +179,11 @@ class BuildRS(MonthSheet):
         for item in ntp_item.index:
             df.drop(labels=item, inplace=True)
         return df, ntp_item
+
+    def fix_date2(self, date):
+        dt_object = datetime.strptime(date, '%m %Y')
+        dt_object = datetime.strftime(dt_object, '%b %Y').lower()
+        return dt_object
 
     def fix_date(self, date):
         dt_object = datetime.strptime(date, '%Y-%m')

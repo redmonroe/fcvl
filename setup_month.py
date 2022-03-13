@@ -16,6 +16,8 @@ class MonthSheet:
     G_PAYMENT_MADE = ["=sum(K2:K68)"]
     G_CURBAL = ["=sum(L2:L68)"]
     ui_sheet = 'intake'
+    wrange_hap_partial = '!D81:D81'
+    wrange_rr_partial = '!D80:D80'
     range1 = '1'
     range2 = '100'
     wrange_unit1 = f'{ui_sheet}!A{range1}:A{range2}'
@@ -48,7 +50,6 @@ class MonthSheet:
         self.subsidy = [] 
         self.t_rent = []
        
-
     def control(self):
         if self.user_choice == 1:
             self.show_current_sheets(interactive=False)
@@ -141,7 +142,6 @@ class MonthSheet:
         gc.update_int(self.service, self.full_sheet,subsidy, f'{sheet_choice}!F2:F68', value_input_option='USER_ENTERED')
         
         tenant_rent = gc.batch_get(self.service, self.full_sheet, f'{self.ui_sheet}!A1:Z100', 4)
-        gc.update_int(self.service, self.full_sheet, tenant_rent, f'{sheet_choice}!H2:H68', value_input_option='USER_ENTERED')
 
     def export_month_format(self, sheet_choice):
         gc = GoogleApiCalls()
@@ -151,6 +151,25 @@ class MonthSheet:
         gc.write_formula_column(self.service, self.full_sheet, self.G_SUM_ACTRENT, f'{sheet_choice}!H69:H69')
         gc.write_formula_column(self.service, self.full_sheet, self.G_PAYMENT_MADE, f'{sheet_choice}!K69:K69')
         gc.write_formula_column(self.service, self.full_sheet, self.G_CURBAL, f'{sheet_choice}!L69:L69')
+
+    def export_deposit_detail(self, data):
+        gc = GoogleApiCalls()
+        sheet_choice = data['formatted_hap_date']
+        hap = [data['hap_amount']]
+        rr = [data['rr_amount']]
+        deposit_list = data['deposit_list']
+        print(deposit_list)
+        # gc.update_int(self.service, self.full_sheet, hap, f'{sheet_choice}' + f'{self.wrange_hap_partial}', value_input_option='USER_ENTERED')
+        # gc.update_int(self.service, self.full_sheet, rr, f'{sheet_choice}' + f'{self.wrange_rr_partial}', value_input_option='USER_ENTERED')
+        value = 82
+        for dep_amt in deposit_list:
+            sub_str0 = '!'
+            sub_str1 = 'D'
+            sub_str2 = ':'
+            cat_str = sub_str0 + sub_str1 + str(value) + sub_str2 + sub_str1 + str(value)
+            # print(cat_str)
+            gc.update_int(self.service, self.full_sheet, [dep_amt[1]], f'{sheet_choice}' + cat_str, value_input_option='USER_ENTERED')
+            value += 1
     
     def get_tables(self):
         DBUtils.get_tables(self, self.db)
