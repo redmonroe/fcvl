@@ -1,12 +1,14 @@
 # from google_api_calls_abstract import simple_batch_update#cli.py
 import click
+import pytest
 from receipts import RentReceipts
 from db_utils import pg_dump_one
+from checklist import Checklist
 from setup_month import MonthSheet
 from setup_year import YearSheet
 from build_rs import BuildRS
+from tests.test_combined_formatting import TestChecklist
 from file_manager import path_to_statements, write_hap
-from pdf import merchants_pdf_extract, nbofi_pdf_extract_hap, qb_extract_p_and_l, qb_extract_security_deposit, qb_extract_deposit_detail
 import click
 from auth_work import oauth
 from config import my_scopes, Config
@@ -33,12 +35,67 @@ MAKE MODE EXPLICIT: DEV PROD TESTING
 def cli():
     pass
 
-@click.group()
-def checklist():
-    pass
+@click.command()
+@click.option('--mode', required=True)
+def autors(mode):
+    click.echo(f'starting **autors*** in mode: {mode}')
+    click.echo('\nmust explicitly set mode: testing, dev, prod')
+    
+    sleep = 0
+    production_full_sheet = Config.TEST_RS
+    production_path = Config.TEST_RS_PATH
+    production_discard_pile = Config.TEST_MOVE_PATH
+    production_db = Config.test_findex_db
+    prod_cl_db = Config.cl_prod_db
+    
+    if mode == 'testing':
+        # would like to run the test suite        
+        pass
+    elif mode == 'dev':
+        build = BuildRS(full_sheet=production_full_sheet, path=production_path, mode='dev', sleep=sleep)
+        clist = Checklist(db=prod_cl_db)
+        clist.make_checklist()
 
+        build.reset_full_sheet()
+        build.reset_databases() #this does nothing yet
+        build.automatic_build()
+        
+        cur_cl = clist.show_checklist()
+        for item in cur_cl:
+            print(item)
 
+        #year format: base, format, copy +
 
+        #check checklist: CHECKLIST DOES NOT WORK!, WILL PROBABLY want to move a lot of this to autobuild
+        #month format
+        #index files
+        #trigger off files
+        #rr, dep, depdetail, grand_total
+        #rent sheets
+        # switch paths to production
+
+    elif mode == 'reset':
+        build = BuildRS(full_sheet=production_full_sheet, path=production_path, mode='dev', sleep=sleep)
+        build.reset_full_sheet()
+        pass
+
+@click.command()
+@click.argument('mode')
+def buildrs(mode=None):
+    click.echo('buildrs()=> Make sure to explicitly set mode')
+    if mode == 'production':
+        click.echo('buildrs(): PRODUCTION')
+        # ys = BuildRSFIXXXXXXXXXXXXXXXXXXXXXXXXXXX)
+        # ys.set_user_choice()
+        # ys.control()
+    elif mode == 'dev':
+        click.echo('testing and dev mode')
+        # service = oauth(my_scopes, 'sheet')
+        buildrs = BuildRS(full_sheet=Config.TEST_RS, path=Config.TEST_RS_PATH, mode='testing')
+        buildrs.set_user_choice()
+        buildrs.buildrs_control()
+    else:
+        print('must set mode in cl')
 
 
 '''
@@ -72,23 +129,14 @@ def pgdump():
 def workorders_todo():
     click.echo('you have most of this just tie it into fcvfin.py or something')
 
-@click.command()
-def placeholder():
-    click.echo('put whatever you need to here')
-
 
 cli.add_command(rent_receipts)
 cli.add_command(pgdump)
 cli.add_command(merchants)
 cli.add_command(nbofi)
-cli.add_command(placeholder)
 cli.add_command(workorders_todo)
 '''
-
-cli.add_command(checklist)
-cli.add_command(buildrs)
-cli.add_command(mformat)
-cli.add_command(yformat)
+cli.add_command(autors)
 
 if __name__ == '__main__':
     cli()

@@ -1,20 +1,19 @@
+import time
 from datetime import datetime
 from config import Config, my_scopes
 from db_utils import DBUtils
+from google_api_calls_abstract import GoogleApiCalls
 from auth_work import oauth
 from file_indexer import FileIndexer
 from checklist import Checklist
+from setup_year import YearSheet
 from setup_month import MonthSheet
 import dataset
 import pandas as pd
 from google_api_calls_abstract import GoogleApiCalls
 
-production_path = Config.TEST_RS_PATH
-production_discard_pile = Config.TEST_MOVE_PATH
-production_db = Config.test_findex_db
-
 class BuildRS(MonthSheet):
-    def __init__(self, full_sheet=None, path=None, mode=None, test_service=None):
+    def __init__(self, full_sheet=None, path=None, mode=None, discard_pile=None, db=None, table=None, test_service=None, sleep=None):
         if mode == 'testing':
             self.db = Config.test_build_db
             self.mode = 'testing'
@@ -23,10 +22,12 @@ class BuildRS(MonthSheet):
             self.service = test_service
             self.mformat = MonthSheet(full_sheet=Config.TEST_RS, path=Config.TEST_RS_PATH, mode='testing', test_service=self.service)
             self.calls = GoogleApiCalls()
-        else:
+        elif mode == 'dev':
+            self.full_sheet = full_sheet
             self.service = oauth(my_scopes, 'sheet')
-            self.findex = FileIndexer(path=production_path, discard_pile=production_discard_pile, db=production_db, table='findex')
+            self.findex = FileIndexer(path=path, discard_pile=discard_pile, db=db, table=table)
 
+        self.sleep = sleep
         self.wrange_pay = '!K2:K68'
         self.wrange_ntp = '!K71:K71'
         self.file_input_path = path
@@ -42,26 +43,24 @@ class BuildRS(MonthSheet):
     def automatic_build(self, key=None):
         '''this is the hook into the program for the checklist routine'''
 
-        # write cli to run and also reset
-        # two month test will tell us a lot; the combined test should provide us with almost all the code we need to run bare bones
-        # set up production environment for all but actual sheet
-        # DON'T FORGET TO STAY CURRENT WITH TESTS
-        
-        # get year to date to run with a full rebuild and teardown each time WITH sleeps, then focus on speeding up process
-            # skipping proc if checklist items are True
-
-        # this would be faster in production but in this stage of testing I don't have this list in memory
+        ys = YearSheet(full_sheet=self.full_sheet)
+        shnames = ys.auto_control()
    
-        items_true = self.get_processed_items_list()
+        # items_true = self.get_processed_items_list()
+            # buildrs.automatic_build(key='DEP')
+    # buildrs.automatic_build(key='RENTROLL')
+    # buildrs.automatic_build(key='cash')
+    # buildrs.show_table()
 
 
-        if key == 'ALL':
-            ## THIS DOES NOT WORK YET
-            rentrolls_true = self.get_by_kw(key='RENTROLL', selected=items_true)
-            deposits_true = self.get_by_kw(key='DEP', selected=items_true)
-        else:
-            list_true = self.get_by_kw(key=key, selected=items_true)
-            # breakpoint()
+        # if key == 'ALL':
+        #     ## THIS DOES NOT WORK YET
+        #     rentrolls_true = self.get_by_kw(key='RENTROLL', selected=items_true)
+        #     deposits_true = self.get_by_kw(key='DEP', selected=items_true)
+        # else:
+        #     list_true = self.get_by_kw(key=key, selected=items_true)
+
+    def auto_build_storage_to_erase(self):
 
         '''rentroll and monthly formatting'''
         if key == 'RENTROLL':
@@ -273,10 +272,30 @@ class BuildRS(MonthSheet):
     def set_user_choice(self):
         self.user_choice = int(input(self.user_text))
 
-if __name__ == '__main__':
-    test_service = oauth(my_scopes, 'sheet')
-    buildrs = BuildRS(mode='testing', test_service=test_service)
-    # buildrs.automatic_build(key='DEP')
-    # buildrs.automatic_build(key='RENTROLL')
-    buildrs.automatic_build(key='cash')
-    # buildrs.show_table()
+    def reset_full_sheet(self):
+        titles_dict = self.show_current_sheets()
+        calls = GoogleApiCalls()
+
+        intake_ok = False
+        for name, id2 in titles_dict.items():
+            if name == 'intake':
+                intake_ok = True
+                calls.clear_sheet(self.service, self.full_sheet, f'intake!A1:ZZ100')
+                break
+
+        if intake_ok == False:
+            calls.make_one_sheet(self.service, self.full_sheet, 'intake')
+        
+        # removal all sheets but intake
+        for name, id2, in titles_dict.items():
+            if name != 'intake':
+                calls.del_one_sheet(self.service, self.full_sheet, id2)
+       
+        time.sleep(self.sleep)
+        print(f'sleeping for {self.sleep} seconds')
+    
+    def reset_databases(self):
+        pass
+
+
+

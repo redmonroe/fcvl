@@ -82,6 +82,7 @@ class MonthSheet:
         path = Utils.show_files_as_choices(titles_dict, interactive=interactive)
         if interactive == True:
             return path
+        return titles_dict
 
     def walk_download_folder(self):
         print('showing ALL items in download folder')

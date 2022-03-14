@@ -2,6 +2,7 @@
 
     # do I want to do something with "TOTal" part of p and l?  I have it busted out into its own dict
     # do I want to do something with "mtd" part of p and L?  I have it also busted out into its own dict
+class AnnFin:   
     
     def pick_bank_statements(choice=None, list_of_statements=None):
 

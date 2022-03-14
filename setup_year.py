@@ -52,6 +52,7 @@ class YearSheet:
             self.shmonths = ['jan', 'feb']
         else:
             self.service = oauth(my_scopes, 'sheet')
+            self.full_sheet = full_sheet
             self.shmonths = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
         
         self.base_month = 'base'
@@ -118,7 +119,6 @@ class YearSheet:
         for name in sheet_names:
             insert_index += 1
             mdate, ydate = name.split(' ')
-            print(checklist)
             self.calls.api_duplicate_sheet(self.service, self.full_sheet, source_id=self.source_id, insert_index=insert_index, title=name)
             for item in checklist:
                 if item['month'] == mdate:

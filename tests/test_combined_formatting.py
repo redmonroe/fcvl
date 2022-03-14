@@ -322,6 +322,3 @@ class TestChecklist:
         assert len(discard_contents) == 1
         assert len(path_contents) == 6
 
-if __name__ == '__main__':
-    test = TestSheetFormat()
-    test.test_setup()
