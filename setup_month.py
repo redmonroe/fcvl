@@ -185,9 +185,12 @@ class MonthSheet:
         nbofi_total = gc.broad_get(self.service, self.full_sheet, f'{self.sheet_choice}!D90:D90')
         if onesite_total == nbofi_total:
             message = [f'balances at {str(dt.today().date())}']
+            gc.update(self.service, self.full_sheet, message, f'{self.sheet_choice}' + '!E90:E90')
+            return True
         else:
             message = ['does not balance']
-        gc.update(self.service, self.full_sheet, message, f'{self.sheet_choice}' + '!E90:E90')
+            gc.update(self.service, self.full_sheet, message, f'{self.sheet_choice}' + '!E90:E90')
+            return False
     
     def get_tables(self):
         DBUtils.get_tables(self, self.db)

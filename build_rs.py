@@ -39,22 +39,16 @@ class BuildRS(MonthSheet):
         self.dep_list = self.findex.dep_list
         self.deposit_and_date_list = self.findex.deposit_and_date_list
 
-    def buildrs_control(self):
-        pass
-        # FIRST SELECT A MONTH:
-
-            # return applicable docs, compare to necessary docs
-
-            # do I have a rent sheet?
-            # do I have the rent roll?
-            # do I have the deposits?
-            # do I have bank statements? 
-            # can I forestall reconciliation issues at this stage? 
-
     def automatic_build(self, key=None):
         '''this is the hook into the program for the checklist routine'''
+
+        # write cli to run and also reset
+        # two month test will tell us a lot; the combined test should provide us with almost all the code we need to run bare bones
+        # set up production environment for all but actual sheet
+        # DON'T FORGET TO STAY CURRENT WITH TESTS
         
-        '''display all'''
+        # get year to date to run with a full rebuild and teardown each time WITH sleeps, then focus on speeding up process
+            # skipping proc if checklist items are True
 
         # this would be faster in production but in this stage of testing I don't have this list in memory
    
@@ -112,8 +106,14 @@ class BuildRS(MonthSheet):
                     dict1['deposit_list'] = list(deposit_group.values())[0]
 
                 self.export_deposit_detail(data=dict1)
+                self.checklist.check_depdetail_proc(dict1['hap_date'])
                 self.write_sum_forumula1()
-                self.check_totals_reconcile()
+                reconciled_bool = self.check_totals_reconcile()
+                if reconciled_bool:
+                    self.checklist.check_grand_total_ok(dict1['hap_date'])
+                else:
+                    month = dict1['hap_date']
+                    print(f'rent sheet for {month} does not balance.')
 
         return items_true
 

@@ -32,8 +32,7 @@ class Checklist:
                 dep_proc=False, 
                 depdetail_proc=False, 
                 opcash_proc=False,
-                dep_rec=False,
-                rs_write=False,
+                grand_total_ok=False,
                 ))
 
     def get_checklist(self):
@@ -90,14 +89,6 @@ class Checklist:
             if item['year'] == year and item['month'] == month: 
                 data = dict(id=item['id'], rr_proc=True)
                 self.db[self.tablename].update(data, ['id'])
-
-    def check_dep_proc(self, date, col1=None):
-        year, month = self.fix_date(date)
-        check_items = [item for item in self.db[self.tablename]]
-        for item in check_items:
-            if item['year'] == year and item['month'] == month: 
-                data = dict(id=item['id'], dep_proc=True)
-                self.db[self.tablename].update(data, ['id'])
   
     def check_dep_proc(self, date, col1=None):
         year, month = self.fix_date(date)
@@ -107,7 +98,24 @@ class Checklist:
                 data = dict(id=item['id'], dep_proc=True)
                 self.db[self.tablename].update(data, ['id'])
 
+    def check_depdetail_proc(self, date, col1=None):
+        year, month = self.fix_date(date)
+        check_items = [item for item in self.db[self.tablename]]
+        for item in check_items:
+            if item['year'] == year and item['month'] == month: 
+                data = dict(id=item['id'], depdetail_proc=True)
+                self.db[self.tablename].update(data, ['id'])
+
+    def check_grand_total_ok(self, date, col1=None):
+        year, month = self.fix_date(date)
+        check_items = [item for item in self.db[self.tablename]]
+        for item in check_items:
+            if item['year'] == year and item['month'] == month: 
+                data = dict(id=item['id'], grand_total_ok=True)
+                self.db[self.tablename].update(data, ['id'])
+
 if __name__ == '__main__':
     clist = Checklist(db=Config.test_checklist_db)
     # clist.make_checklist()
+    # breakpoint()
     return_list, list1 = clist.show_checklist(col_str='id')
