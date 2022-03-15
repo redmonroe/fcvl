@@ -121,7 +121,7 @@ class TestChecklist:
        
         titles_dict = Utils.get_existing_sheets(service, test_workbook)
 
-        time.sleep(sleep1)
+        time.sleep(sleep1   )
 
         assert len(titles_dict) == 1
         assert list(titles_dict.keys())[0] == 'intake'

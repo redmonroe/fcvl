@@ -15,6 +15,7 @@ class Checklist:
         self.tablename = 'checklist'
 
     def make_checklist(self):
+        print(f'\nmaking checklist for the year {Config.current_year}')
         table = self.db[self.tablename]
         table.drop()
 
@@ -40,6 +41,7 @@ class Checklist:
         return checklist
 
     def drop_checklist(self):
+        print('\ndropping checklist')
         checklist = self.db[self.tablename]
         checklist.drop()
         print('checklist dropped')

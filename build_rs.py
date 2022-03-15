@@ -13,7 +13,7 @@ import pandas as pd
 from google_api_calls_abstract import GoogleApiCalls
 
 class BuildRS(MonthSheet):
-    def __init__(self, full_sheet=None, path=None, mode=None, discard_pile=None, db=None, table=None, test_service=None, sleep=None):
+    def __init__(self, full_sheet=None, path=None, mode=None, discard_pile=None, db=None, table=None, test_service=None, sleep=None, checklist_db=None):
         if mode == 'testing':
             self.db = Config.test_build_db
             self.mode = 'testing'
@@ -26,6 +26,7 @@ class BuildRS(MonthSheet):
             self.full_sheet = full_sheet
             self.service = oauth(my_scopes, 'sheet')
             self.findex = FileIndexer(path=path, discard_pile=discard_pile, db=db, table=table)
+            self.checklist_db = checklist_db
 
         self.sleep = sleep
         self.wrange_pay = '!K2:K68'
@@ -39,12 +40,18 @@ class BuildRS(MonthSheet):
         self.rr_list = self.findex.rr_list
         self.dep_list = self.findex.dep_list
         self.deposit_and_date_list = self.findex.deposit_and_date_list
+        self.checklist = None
 
     def automatic_build(self, key=None):
         '''this is the hook into the program for the checklist routine'''
+        self.checklist = Checklist(db=self.checklist_db)
+        self.checklist.make_checklist()
 
-        ys = YearSheet(full_sheet=self.full_sheet)
+        ys = YearSheet(full_sheet=self.full_sheet, checklist=self.checklist)
         shnames = ys.auto_control()
+        check_item, yfor = self.checklist.show_checklist(col_str='yfor')
+        check_item, rs_exist = self.checklist.show_checklist(col_str='rs_exist')
+
    
         # items_true = self.get_processed_items_list()
             # buildrs.automatic_build(key='DEP')

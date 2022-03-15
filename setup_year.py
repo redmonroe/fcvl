@@ -40,20 +40,21 @@ class YearSheet:
     grand_total = ["GRAND TOTAL"]
     
 
-    def __init__(self, full_sheet=None, mode=None, test_service=None):
+    def __init__(self, full_sheet=None, mode=None, test_service=None, checklist=None):
         self.test_message = 'hi_from_year_sheets!'
         self.full_sheet = full_sheet
         self.calls = GoogleApiCalls()
-        self.Checklist = Checklist(db=Config.test_checklist_db)
         if mode == 'testing':
             self.mode = mode
             self.sleep = 0
             self.service = test_service
             self.shmonths = ['jan', 'feb']
+            self.checklist = Checklist(db=Config.test_checklist_db)
         else:
             self.service = oauth(my_scopes, 'sheet')
             self.full_sheet = full_sheet
             self.shmonths = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
+            self.checklist = checklist
         
         self.base_month = 'base'
         self.user_text = f'Options:\n PRESS 1 to show all current sheets in {self.full_sheet} \n PRESS 2 to create list of sheet NAMES \n PRESS 3 to format all months. *****YOU NEED TO MANUALLY MAKE AN INTAKE SHEET AFTER RUNNING OPTION 3(this is the full year auto option; takes 45 min) \n >>>'
@@ -65,7 +66,6 @@ class YearSheet:
         self.sheet_id_list = None
         self.prev_bal_dict = None
         self.source_id = None
-        # self.titles_dict = Utils.get_existing_sheets(self.service, self.full_sheet)
 
     def control(self):
         if self.user_choice == 1:
@@ -97,6 +97,7 @@ class YearSheet:
         path = Utils.show_files_as_choices(titles_dict, interactive=interactive)
         if interactive == True:
             return path
+        return titles_dict
 
     def make_base_sheet(self):  
         self.calls.make_one_sheet(self.service, self.full_sheet, self.base_month + ' ' + f'{Config.current_year}')
@@ -116,6 +117,7 @@ class YearSheet:
 
     def update_checklist(self, checklist, sheet_names):
         insert_index = 2
+        breakpoint()
         for name in sheet_names:
             insert_index += 1
             mdate, ydate = name.split(' ')
@@ -193,17 +195,8 @@ class YearSheet:
                     self.calls.write_formula_column(self.service, self.full_sheet, G_SHEETS_PREVIOUS_BALANCE, f'{current_month}!D2:D2')
 
     def get_checklist(self):
-        checklist = self.Checklist.get_checklist()
+        checklist = self.checklist.get_checklist()
         return checklist
-        
-
-if __name__ == '__main__':
-    ys = YearSheet(full_sheet=Config.TEST_RS, mode='dev')
-    ys.auto_control()
-
-    # ys.update_checklist_db()
-    # ys.duplicate_formatted_sheets()
-    
 
 
 

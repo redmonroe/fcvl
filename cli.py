@@ -37,7 +37,8 @@ def cli():
 
 @click.command()
 @click.option('--mode', required=True)
-def autors(mode):
+@click.option('--depth')
+def autors(mode, depth=None):
     click.echo(f'starting **autors*** in mode: {mode}')
     click.echo('\nmust explicitly set mode: testing, dev, prod')
     
@@ -52,18 +53,22 @@ def autors(mode):
         # would like to run the test suite        
         pass
     elif mode == 'dev':
-        build = BuildRS(full_sheet=production_full_sheet, path=production_path, mode='dev', sleep=sleep)
-        clist = Checklist(db=prod_cl_db)
-        clist.make_checklist()
+
+        # if depth == 'short':
+        #     shnames = ['na']
+        build = BuildRS(full_sheet=production_full_sheet, path=production_path, mode='dev', sleep=sleep, checklist_db=prod_cl_db)    
 
         build.reset_full_sheet()
         build.reset_databases() #this does nothing yet
         build.automatic_build()
+
+
         
-        cur_cl = clist.show_checklist()
+        cur_cl = build.checklist.show_checklist()
         for item in cur_cl:
             print(item)
 
+        build.checklist.drop_checklist()
         #year format: base, format, copy +
 
         #check checklist: CHECKLIST DOES NOT WORK!, WILL PROBABLY want to move a lot of this to autobuild
