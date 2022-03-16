@@ -40,6 +40,7 @@ class BuildRS(MonthSheet):
         self.rr_list = self.findex.rr_list
         self.dep_list = self.findex.dep_list
         self.deposit_and_date_list = self.findex.deposit_and_date_list
+        self.proc_condition_list = None
         self.checklist = None
 
     def automatic_build(self, checklist_mode=None, key=None):
@@ -50,13 +51,11 @@ class BuildRS(MonthSheet):
         self.findex.build_index_runner()
 
         # start with what documents I have -> then fire formatting off of that
+        self.proc_condition_list = self.check_triad_processed()
+        self.reformat_conditions_as_bool(trigger_condition=3)
 
-        proc_condition_list = self.check_triad_processed()
+
         breakpoint()
-
-
-
-
 
 
         # if rs_write == False or yfor == False try making again?
@@ -81,23 +80,6 @@ class BuildRS(MonthSheet):
         # else:
         #     list_true = self.get_by_kw(key=key, selected=items_true)
 
-    def check_triad_processed(self):
-        print('\nsearching findex_db for processed files')
-        trigger_on_condition_met_list = []
-        items_true = self.get_processed_items_list()
-        period_dict = {date: 0 for date in list({period['period'] for period in items_true})}
-
-        for period, value in period_dict.items():
-            for record in items_true:
-                if period == record['period']:
-                    value += 1
-                    period_dict[period] = value
-                    trigger_on_condition_met_list.append(period_dict)
-
-        return [dict(t) for t in {tuple(d.items()) for d in trigger_on_condition_met_list}]
-
-        
-    
     def auto_build_storage_to_erase(self):
 
         '''rentroll and monthly formatting'''
@@ -153,6 +135,29 @@ class BuildRS(MonthSheet):
                     print(f'rent sheet for {month} does not balance.')
 
         return items_true
+
+    def reformat_conditions_as_bool(self, trigger_condition=None):
+        for item in self.proc_condition_list:
+            for date, value in item.items():
+                if value == trigger_condition:
+                    item[date] = True
+                else:
+                    item[date] = False
+
+    def check_triad_processed(self):
+        print('\nsearching findex_db for processed files')
+        trigger_on_condition_met_list = []
+        items_true = self.get_processed_items_list()
+        period_dict = {date: 0 for date in list({period['period'] for period in items_true})}
+
+        for period, value in period_dict.items():
+            for record in items_true:
+                if period == record['period']:
+                    value += 1
+                    period_dict[period] = value
+                    trigger_on_condition_met_list.append(period_dict)
+
+        return [dict(t) for t in {tuple(d.items()) for d in trigger_on_condition_met_list}] 
 
     def push_to_sheet_by_period(self, dt_code):
         print('pushing to sheet with code:', dt_code)
