@@ -117,7 +117,6 @@ class YearSheet:
 
     def update_checklist(self, checklist, sheet_names):
         insert_index = 2
-        breakpoint()
         for name in sheet_names:
             insert_index += 1
             mdate, ydate = name.split(' ')

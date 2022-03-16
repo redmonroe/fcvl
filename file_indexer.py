@@ -37,7 +37,6 @@ class FileIndexer:
     def build_index_runner(self):
         if self.mode == 'testing':
             self.reset_files_for_testing()
-        # breakpoint()
         self.articulate_directory()
         self.sort_directory_by_extension()
         if self.mode != 'testing':
@@ -48,10 +47,10 @@ class FileIndexer:
         else:
             self.rename_by_content_xls()
         
-
         self.rename_by_content_pdf()
+        self.build_raw_index()
         self.update_index_for_processed()
-        # self.do_index()
+        self.get_list_of_processed()
 
     def articulate_directory(self):
         for item in self.path.iterdir():
@@ -112,23 +111,21 @@ class FileIndexer:
         for name, extension in self.index_dict.items():
             if extension == 'pdf':
                 self.pdf_list.append(name)
-    
-        # paths to op cash, op cash date, op cash extract deposits, op cash mark as processed, write a test
+
         op_cash_list = []
         for item in self.pdf_list:
             op_cash_path = self.pdf.select_stmt_by_str(path=item, target_str=' XXXXXXX1891')
             if op_cash_path != None:
                 op_cash_list.append(op_cash_path)
 
-        self.hap_list, stmt_date = self.extract_deposits_by_type(op_cash_list, style='hap', target_str='QUADEL')
-        self.rr_list, stmt_date1 = self.extract_deposits_by_type(op_cash_list, style='rr', target_str='Incoming Wire')
-        self.dep_list, stmt_date2 = self.extract_deposits_by_type(op_cash_list, style='dep', target_str='Deposit')
-        self.deposit_and_date_list = self.pdf.deposits_list
-        assert stmt_date == stmt_date1
-
-        for path in op_cash_list:
-            self.processed_files.append((path.name, ''.join(stmt_date.split(' '))))
-        self.checklist.check_opcash(date=stmt_date)
+            self.hap_list, stmt_date = self.extract_deposits_by_type(op_cash_list, style='hap', target_str='QUADEL')
+            self.rr_list, stmt_date1 = self.extract_deposits_by_type(op_cash_list, style='rr', target_str='Incoming Wire')
+            self.dep_list, stmt_date2 = self.extract_deposits_by_type(op_cash_list, style='dep', target_str='Deposit')
+            self.deposit_and_date_list = self.pdf.deposits_list
+            assert stmt_date == stmt_date1
+            for path in op_cash_list:
+                self.processed_files.append((path.name, ''.join(stmt_date.split(' '))))
+            self.checklist.check_opcash(date=stmt_date)
 
     def extract_deposits_by_type(self, stmt_list, style=None, target_str=None):
         return_list = []
@@ -156,7 +153,7 @@ class FileIndexer:
             date_time = datetime. datetime.fromtimestamp(file_stat.st_ctime)
             print(item, date_time)
 
-    def build_index(self):
+    def build_raw_index(self):
         db = self.db
         tablename = self.tablename
         
@@ -173,6 +170,7 @@ class FileIndexer:
         for item in self.db[self.tablename]:
             for proc_file in self.processed_files:
                 if item['fn'] == proc_file[0]:                 
+                    breakpoint()
                     proc_date = self.normalize_dates(proc_file[1])
                     data = dict(id=item['id'], status='processed', period=proc_date)
                     self.db[self.tablename].update(data, ['id'])
@@ -183,9 +181,9 @@ class FileIndexer:
             f_date = f_date.strftime('%Y-%m')
             return f_date
 
-    def do_index(self):
+    def get_list_of_processed(self):
         processed_check_for_test = []
-        print('do_index')
+        print(f'\ngetting list of processed in {self.tablename}')
         for item in self.db[self.tablename]:
             if item['status'] == 'processed':
                 print(item)
@@ -249,7 +247,6 @@ class FileIndexer:
         self.move_original_back_to_dir(discard_dir=discard_pile, target_file=TEST_RR_FILE, target_dir=path)
         self.move_original_back_to_dir(discard_dir=discard_pile, target_file=TEST_DEP_FILE, target_dir=path)
 
-
     def remove_generated_file_from_dir(self, path1=None, file1=None):
         try:
             os.remove(os.path.join(str(path1), file1))
@@ -265,8 +262,3 @@ class FileIndexer:
                 except:
                     print('Error occurred copying file: jw')
 
-if __name__ == '__main__':
-    findex = FileIndexer(path=Config.TEST_RS_PATH, discard_pile=Config.TEST_MOVE_PATH, db=Config.test_findex_db, mode='testing', table='findex')
-    # findex.delete_table()
-    # findex.build_index_runner()
-    findex.show_table(table=findex.tablename)

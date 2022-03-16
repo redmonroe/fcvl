@@ -14,10 +14,12 @@ class Checklist:
         
         self.tablename = 'checklist'
 
-    def make_checklist(self):
+    def make_checklist(self, mode=None):
         print(f'\nmaking checklist for the year {Config.current_year}')
         table = self.db[self.tablename]
-        table.drop()
+        if mode == 'autoreset':
+            print('\n autoreset: checklist')
+            table.drop()
 
         month_list = pd.date_range(f'{Config.current_year}-01-01',f'{Config.current_year}-12-31', 
               freq='MS').strftime("%b").tolist()
@@ -44,7 +46,6 @@ class Checklist:
         print('\ndropping checklist')
         checklist = self.db[self.tablename]
         checklist.drop()
-        print('checklist dropped')
 
     def show_checklist(self, col_str=None):
         return_list = []

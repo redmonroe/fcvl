@@ -132,7 +132,6 @@ class GoogleApiCalls:
         ).execute()
 
     def del_one_sheet(self, service, spreadsheet_id, id):
-        f"Deleting sheet {id} . . . "
         sh_id = spreadsheet_id
 
         data = {"requests": [

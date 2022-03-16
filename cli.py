@@ -1,4 +1,4 @@
-# from google_api_calls_abstract import simple_batch_update#cli.py
+import time
 import click
 import pytest
 from receipts import RentReceipts
@@ -31,14 +31,21 @@ MAKE MODE EXPLICIT: DEV PROD TESTING
 
     # this would be faster in production but in this stage of testing I don't have this list in memory
 
+def timer(func):
+    start_time = time.time()
+    # func(mode)
+    runtime = time.time() - start_time
+    print(runtime)
+    # print(f"n = {n} rec: --- %s seconds ---" % (rec_func_time))
+
 @click.group()
 def cli():
     pass
 
 @click.command()
 @click.option('--mode', required=True)
-@click.option('--depth')
-def autors(mode, depth=None):
+# @timer
+def autors(mode):
     click.echo(f'starting **autors*** in mode: {mode}')
     click.echo('\nmust explicitly set mode: testing, dev, prod')
     
@@ -48,26 +55,28 @@ def autors(mode, depth=None):
     production_discard_pile = Config.TEST_MOVE_PATH
     production_db = Config.test_findex_db
     prod_cl_db = Config.cl_prod_db
+    prod_findex_db = Config.findex_prod_db
     
     if mode == 'testing':
         # would like to run the test suite        
         pass
     elif mode == 'dev':
+        build = BuildRS(full_sheet=production_full_sheet, path=production_path, mode='dev', sleep=sleep, checklist_db=prod_cl_db, findex_db=prod_findex_db, findex_table='findex_prod')    
 
-        # if depth == 'short':
-        #     shnames = ['na']
-        build = BuildRS(full_sheet=production_full_sheet, path=production_path, mode='dev', sleep=sleep, checklist_db=prod_cl_db)    
-
-        build.reset_full_sheet()
-        build.reset_databases() #this does nothing yet
-        build.automatic_build()
+        # build.reset_full_sheet()
+        # build.reset_databases() #this does nothing yet
+        build.automatic_build(checklist_mode='autoreset')
 
 
         
-        cur_cl = build.checklist.show_checklist()
-        for item in cur_cl:
-            print(item)
+        # cur_cl = build.checklist.show_checklist()
+        # for item in cur_cl:
+        #     print(item)
 
+      
+
+        # build.findex.delete_table()
+        build.findex.show_table(table='findex_prod')
         build.checklist.drop_checklist()
         #year format: base, format, copy +
 

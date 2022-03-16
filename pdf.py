@@ -285,14 +285,16 @@ class StructDataExtract:
         file1 = self.open_pdf_and_output_txt(path, txtfile='temp_output.txt')        
         line_list = []
         index = [(count, line) for count, line in enumerate(file1)]
+        stmt_date = self.get_stmt_date(index)
         line = [(count, line) for count, line in index if target_str in line]
         line = [line for count, line in line]
         lines = [line.split(' ') for line in line]
+        if line == []:
+            return stmt_date, 0
         line = line.pop()
         for hap_line in lines:
             target = self.get_cleaned_target_line(hap_line)
             line_list.append(target[0])
 
-            stmt_date = self.get_stmt_date(index)
 
         return stmt_date, sum(line_list)

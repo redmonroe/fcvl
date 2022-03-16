@@ -13,7 +13,7 @@ import pandas as pd
 from google_api_calls_abstract import GoogleApiCalls
 
 class BuildRS(MonthSheet):
-    def __init__(self, full_sheet=None, path=None, mode=None, discard_pile=None, db=None, table=None, test_service=None, sleep=None, checklist_db=None):
+    def __init__(self, full_sheet=None, path=None, mode=None, discard_pile=None, db=None, findex_table=None, test_service=None, sleep=None, checklist_db=None, findex_db=None):
         if mode == 'testing':
             self.db = Config.test_build_db
             self.mode = 'testing'
@@ -25,7 +25,7 @@ class BuildRS(MonthSheet):
         elif mode == 'dev':
             self.full_sheet = full_sheet
             self.service = oauth(my_scopes, 'sheet')
-            self.findex = FileIndexer(path=path, discard_pile=discard_pile, db=db, table=table)
+            self.findex = FileIndexer(path=path, discard_pile=discard_pile, db=findex_db, table=findex_table)
             self.checklist_db = checklist_db
 
         self.sleep = sleep
@@ -42,18 +42,33 @@ class BuildRS(MonthSheet):
         self.deposit_and_date_list = self.findex.deposit_and_date_list
         self.checklist = None
 
-    def automatic_build(self, key=None):
+    def automatic_build(self, checklist_mode=None, key=None):
         '''this is the hook into the program for the checklist routine'''
         self.checklist = Checklist(db=self.checklist_db)
-        self.checklist.make_checklist()
+        self.checklist.make_checklist(mode=checklist_mode)
+        self.findex.reset_files_for_testing()
+        self.findex.build_index_runner()
 
-        ys = YearSheet(full_sheet=self.full_sheet, checklist=self.checklist)
-        shnames = ys.auto_control()
-        check_item, yfor = self.checklist.show_checklist(col_str='yfor')
-        check_item, rs_exist = self.checklist.show_checklist(col_str='rs_exist')
+        # start with what documents I have -> then fire formatting off of that
+
+        self.check_triad_processed()
+
+
+
+
+
+
+        # if rs_write == False or yfor == False try making again?
+        # object initialization should be moved into object imho
+        # ys = YearSheet(full_sheet=self.full_sheet, checklist=self.checklist)
+        # shnames = ys.auto_control()
+
+        # init findexer
+
+        
+
 
    
-        # items_true = self.get_processed_items_list()
             # buildrs.automatic_build(key='DEP')
     # buildrs.automatic_build(key='RENTROLL')
     # buildrs.automatic_build(key='cash')
@@ -62,11 +77,49 @@ class BuildRS(MonthSheet):
 
         # if key == 'ALL':
         #     ## THIS DOES NOT WORK YET
-        #     rentrolls_true = self.get_by_kw(key='RENTROLL', selected=items_true)
-        #     deposits_true = self.get_by_kw(key='DEP', selected=items_true)
         # else:
         #     list_true = self.get_by_kw(key=key, selected=items_true)
 
+    def check_triad_processed(self):
+        print('\nsearching findex_db for processed files')
+
+
+        # def extraction_wrapper_for_transaction_detail(choice, func=None, path=None, keyword=None):
+
+            # path, files = path_to_statements(path=path, keyword=keyword)    
+            # #date_dict_groupby_m = qb_extract_security_deposit(files[0], path=path)
+            # date_dict_groupby_m = func(files[0], path=path)
+            # result = {amount for (dateq, amount) in date_dict_groupby_m.items() if dateq == choice}
+            # is_empty_set = (len(result) == 0)
+            # if is_empty_set:
+            #     data = [0]
+            #     return data
+            # else:
+            #     data = [min(result)]
+            #     return data
+
+        # sec_dep_qb = extraction_wrapper_for_transaction_detail(choice, func=qb_extract_security_deposit, path=path_security_deposit, keyword='Security')
+
+        items_true = self.get_processed_items_list()
+        period_set = set()
+        for item in items_true:
+            period_set.add(item['period'])
+            print(item, '*')
+
+        period_list = list(period_set)
+
+        count = 0
+        for proc_item in items_true:
+            for period in period_list:
+                if period == proc_item['period'] and proc_item['status'] == 'processed':
+                    count += 1
+                    print(period, count)
+            # rentrolls_true = self.get_by_kw(key='RENTROLL', selected=items_true)
+            # deposits_true = self.get_by_kw(key='DEP', selected=items_true)
+            # opcash_true = self.get_by_kw(key='cash', selected=items_true)
+            
+        # breakpoint()
+    
     def auto_build_storage_to_erase(self):
 
         '''rentroll and monthly formatting'''
@@ -240,9 +293,9 @@ class BuildRS(MonthSheet):
         return selected_items
 
     def get_processed_items_list(self):
-        check_tables = DBUtils.get_tables(self, self.findex.db)
+        print('\nmaking list of processed items')
         items_true = []
-        for item in self.findex.db['findex']:
+        for item in self.findex.db[self.findex.tablename]:
             if item['status'] == 'processed':
                 items_true.append(item)
         
