@@ -127,11 +127,6 @@ class FileIndexer:
             
             self.processed_files.append((op_cash_stmt_path.name, ''.join(stmt_date.split(' '))))
             self.checklist.check_opcash(date=stmt_date)
-    
-
-            # self.deposit_and_date_list = self.pdf.deposits_list
-            # for path in op_cash_list:
-        # breakpoint()
 
     def extract_deposits_by_type(self, path, style=None, target_str=None):
         return_list = []

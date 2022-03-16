@@ -87,7 +87,6 @@ class BuildRS(MonthSheet):
         # def extraction_wrapper_for_transaction_detail(choice, func=None, path=None, keyword=None):
 
             # path, files = path_to_statements(path=path, keyword=keyword)    
-            # #date_dict_groupby_m = qb_extract_security_deposit(files[0], path=path)
             # date_dict_groupby_m = func(files[0], path=path)
             # result = {amount for (dateq, amount) in date_dict_groupby_m.items() if dateq == choice}
             # is_empty_set = (len(result) == 0)
@@ -112,13 +111,17 @@ class BuildRS(MonthSheet):
         for proc_item in items_true:
             for period in period_list:
                 if period == proc_item['period'] and proc_item['status'] == 'processed':
+                    dict1 = {}
                     count += 1
-                    print(period, count)
+                    dict1[period] = count
+                    print(dict1, count)
+        breakpoint()
+
+
             # rentrolls_true = self.get_by_kw(key='RENTROLL', selected=items_true)
             # deposits_true = self.get_by_kw(key='DEP', selected=items_true)
             # opcash_true = self.get_by_kw(key='cash', selected=items_true)
             
-        # breakpoint()
     
     def auto_build_storage_to_erase(self):
 

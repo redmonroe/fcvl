@@ -3,7 +3,65 @@
     # do I want to do something with "TOTal" part of p and l?  I have it busted out into its own dict
     # do I want to do something with "mtd" part of p and L?  I have it also busted out into its own dict
 class AnnFin:   
+    def qb_extract_p_and_l(self, filename, keyword=None, path=None):
+        db_file = 'data/qb_output.txt'
+        
+        abs_file_path = os.path.join(path, filename)
+        print(abs_file_path)
+        df = pd.read_excel(abs_file_path)
+        
+        extract = df.loc[df['Fall Creek Village I'].str.contains(keyword, na=False)]
+        extract = extract.values[0]
+        amount = [item for item in extract if type(item) != str]
+        
+        df = pd.read_excel(abs_file_path, header=4)
+        date = list(df.columns)
+        date = date[1:]
+        target_date_dict = dict(zip(date, amount))
+        total = {k: v for (k, v) in target_date_dict.items() if 'Total' in k}
+        dict_wo_total = {k: v for (k, v) in target_date_dict.items() if 'Total' not in k}
+        dict_wo_total_and_mtd = {k:v for (k, v) in dict_wo_total.items() if '-' not in k}
+        fixed_target_date_dict = {dt.strptime(k, '%b %Y'): v for (k, v) in dict_wo_total_and_mtd.items() if '-' not in k}
+        fixed_target_date_dict = {k.strftime('%m %Y'): v for (k, v) in fixed_target_date_dict.items()}
+        fixed_target_date_dict = {dateq: (0 if math.isnan(amount) else amount) for (dateq, amount) in fixed_target_date_dict.items() }
     
+        return fixed_target_date_dict
+
+    def qb_extract_security_deposit(self, filename, path=None):
+
+        abs_file_path = os.path.join(path, filename)
+        
+        df = pd.read_excel(abs_file_path)    
+        
+        df = df.loc[df['Unnamed: 2'].str.contains('Deposit', na=False)]
+        dates_list = list(df['Unnamed: 1'])
+        amount_list = list(df['Unnamed: 8'])
+        tup_list = [(dt.strptime(dateq,  '%m/%d/%Y'), amount) for dateq, amount in zip(dates_list, amount_list)]
+        tup_list = [(item[0].strftime('%m %Y'), item[1]) for item in tup_list]
+        sum_dict = defaultdict(float)
+        for datet, amount in tup_list:
+            sum_dict[datet] += amount
+
+        return sum_dict
+
+    def qb_extract_deposit_detail(self, filename, path=None):
+        abs_file_path = os.path.join(path, filename)
+
+        df = pd.read_excel(abs_file_path)
+        df = df.loc[df['Unnamed: 2'].str.contains('Deposit', na=False)]
+        # df.sum('Unammed: 8')
+        
+        
+        '''
+        dates_list = list(df['Unnamed: 1'])
+        amount_list = list(df['Unnamed: 8'])
+
+        target_date_dict = defaultdict(list)
+        for dateq, amount in zip(dates_list, amount_list):
+            target_date_dict[dateq].append(amount)
+        '''
+        print(df.head(10)) 
+ 
     def pick_bank_statements(choice=None, list_of_statements=None):
 
         for item in bank_statements_ytd:
