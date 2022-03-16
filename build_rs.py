@@ -51,7 +51,8 @@ class BuildRS(MonthSheet):
 
         # start with what documents I have -> then fire formatting off of that
 
-        self.check_triad_processed()
+        proc_condition_list = self.check_triad_processed()
+        breakpoint()
 
 
 
@@ -82,46 +83,20 @@ class BuildRS(MonthSheet):
 
     def check_triad_processed(self):
         print('\nsearching findex_db for processed files')
-
-
-        # def extraction_wrapper_for_transaction_detail(choice, func=None, path=None, keyword=None):
-
-            # path, files = path_to_statements(path=path, keyword=keyword)    
-            # date_dict_groupby_m = func(files[0], path=path)
-            # result = {amount for (dateq, amount) in date_dict_groupby_m.items() if dateq == choice}
-            # is_empty_set = (len(result) == 0)
-            # if is_empty_set:
-            #     data = [0]
-            #     return data
-            # else:
-            #     data = [min(result)]
-            #     return data
-
-        # sec_dep_qb = extraction_wrapper_for_transaction_detail(choice, func=qb_extract_security_deposit, path=path_security_deposit, keyword='Security')
-
+        trigger_on_condition_met_list = []
         items_true = self.get_processed_items_list()
-        period_set = set()
-        for item in items_true:
-            period_set.add(item['period'])
-            print(item, '*')
+        period_dict = {date: 0 for date in list({period['period'] for period in items_true})}
 
-        period_list = list(period_set)
+        for period, value in period_dict.items():
+            for record in items_true:
+                if period == record['period']:
+                    value += 1
+                    period_dict[period] = value
+                    trigger_on_condition_met_list.append(period_dict)
 
-        count = 0
-        for proc_item in items_true:
-            for period in period_list:
-                if period == proc_item['period'] and proc_item['status'] == 'processed':
-                    dict1 = {}
-                    count += 1
-                    dict1[period] = count
-                    print(dict1, count)
-        breakpoint()
+        return [dict(t) for t in {tuple(d.items()) for d in trigger_on_condition_met_list}]
 
-
-            # rentrolls_true = self.get_by_kw(key='RENTROLL', selected=items_true)
-            # deposits_true = self.get_by_kw(key='DEP', selected=items_true)
-            # opcash_true = self.get_by_kw(key='cash', selected=items_true)
-            
+        
     
     def auto_build_storage_to_erase(self):
 
