@@ -65,6 +65,9 @@ def autors(mode):
 
         # build.reset_full_sheet()
         # build.reset_databases() #this does nothing yet
+        build.findex.delete_table()
+        print('findex before')
+        build.findex.show_table(table='findex_prod')
         build.automatic_build(checklist_mode='autoreset')
 
 
@@ -75,7 +78,7 @@ def autors(mode):
 
       
 
-        # build.findex.delete_table()
+        print('findex after')
         build.findex.show_table(table='findex_prod')
         build.checklist.drop_checklist()
         #year format: base, format, copy +

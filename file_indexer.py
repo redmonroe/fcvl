@@ -118,27 +118,32 @@ class FileIndexer:
             if op_cash_path != None:
                 op_cash_list.append(op_cash_path)
 
-            self.hap_list, stmt_date = self.extract_deposits_by_type(op_cash_list, style='hap', target_str='QUADEL')
-            self.rr_list, stmt_date1 = self.extract_deposits_by_type(op_cash_list, style='rr', target_str='Incoming Wire')
-            self.dep_list, stmt_date2 = self.extract_deposits_by_type(op_cash_list, style='dep', target_str='Deposit')
-            self.deposit_and_date_list = self.pdf.deposits_list
+        for op_cash_stmt_path in op_cash_list:
+            hap_iter_one_month, stmt_date = self.extract_deposits_by_type(op_cash_stmt_path, style='hap', target_str='QUADEL')
+            rr_iter_one_month, stmt_date1 = self.extract_deposits_by_type(op_cash_stmt_path, style='rr', target_str='Incoming Wire')
+            dep_iter_one_month, stmt_date2 = self.extract_deposits_by_type(op_cash_stmt_path, style='dep', target_str='Deposit')
+            deposit_and_date_iter_one_month, stmt_date2 = self.extract_deposits_by_type(op_cash_stmt_path, style='dep', target_str='Deposit')
             assert stmt_date == stmt_date1
-            for path in op_cash_list:
-                self.processed_files.append((path.name, ''.join(stmt_date.split(' '))))
+            
+            self.processed_files.append((op_cash_stmt_path.name, ''.join(stmt_date.split(' '))))
             self.checklist.check_opcash(date=stmt_date)
+    
 
-    def extract_deposits_by_type(self, stmt_list, style=None, target_str=None):
+            # self.deposit_and_date_list = self.pdf.deposits_list
+            # for path in op_cash_list:
+        # breakpoint()
+
+    def extract_deposits_by_type(self, path, style=None, target_str=None):
         return_list = []
-        for path in stmt_list:
-            kdict = {}
-            if style == 'rr':
-                date, amount = self.pdf.nbofi_pdf_extract_rr(path, target_str=target_str)
-            elif style == 'hap':
-                date, amount = self.pdf.nbofi_pdf_extract_hap(path, target_str=target_str)
-            elif style == 'dep':
-                date, amount = self.pdf.nbofi_pdf_extract_deposit(path, target_str=target_str)
-            kdict[str(date)] = [amount, path, style]
-            return_list.append(kdict)
+        kdict = {}
+        if style == 'rr':
+            date, amount = self.pdf.nbofi_pdf_extract_rr(path, target_str=target_str)
+        elif style == 'hap':
+            date, amount = self.pdf.nbofi_pdf_extract_hap(path, target_str=target_str)
+        elif style == 'dep':
+            date, amount = self.pdf.nbofi_pdf_extract_deposit(path, target_str=target_str)
+        kdict[str(date)] = [amount, path, style]
+        return_list.append(kdict)
             
         return return_list, date
 
@@ -166,11 +171,9 @@ class FileIndexer:
                 table.insert(dict(fn=item.name, path=str(item), status='raw'))
 
     def update_index_for_processed(self):
-
         for item in self.db[self.tablename]:
             for proc_file in self.processed_files:
                 if item['fn'] == proc_file[0]:                 
-                    breakpoint()
                     proc_date = self.normalize_dates(proc_file[1])
                     data = dict(id=item['id'], status='processed', period=proc_date)
                     self.db[self.tablename].update(data, ['id'])
