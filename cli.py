@@ -56,31 +56,24 @@ def autors(mode):
     production_db = Config.test_findex_db
     prod_cl_db = Config.cl_prod_db
     prod_findex_db = Config.findex_prod_db
-    
+
+
+    checklist = Checklist(db=prod_cl_db)
+    build = BuildRS(full_sheet=production_full_sheet, path=production_path, mode='dev', sleep=sleep, checklist=checklist, findex_db=prod_findex_db, findex_table='findex_prod')    
     if mode == 'testing':
         # would like to run the test suite        
         pass
     elif mode == 'dev':
-        build = BuildRS(full_sheet=production_full_sheet, path=production_path, mode='dev', sleep=sleep, checklist_db=prod_cl_db, findex_db=prod_findex_db, findex_table='findex_prod')    
 
-        # build.reset_full_sheet()
+        build.reset_full_sheet()
         # build.reset_databases() #this does nothing yet
-        build.findex.delete_table()
+        # build.findex.delete_table()
         print('findex before')
         build.findex.show_table(table='findex_prod')
-        build.automatic_build(checklist_mode='autoreset')
-
-
-        
-        # cur_cl = build.checklist.show_checklist()
-        # for item in cur_cl:
-        #     print(item)
-
-      
+        build.automatic_build(checklist_mode='autoreset')    
 
         print('findex after')
-        build.findex.show_table(table='findex_prod')
-        build.checklist.drop_checklist()
+        # build.findex.show_table(table='findex_prod')
         #year format: base, format, copy +
 
         #check checklist: CHECKLIST DOES NOT WORK!, WILL PROBABLY want to move a lot of this to autobuild
@@ -91,10 +84,19 @@ def autors(mode):
         #rent sheets
         # switch paths to production
 
-    elif mode == 'reset':
-        build = BuildRS(full_sheet=production_full_sheet, path=production_path, mode='dev', sleep=sleep)
+    elif mode == 'reset':   
         build.reset_full_sheet()
-        pass
+
+    elif mode == 'show_checklist':   
+        cur_cl = build.checklist.show_checklist()
+        for item in cur_cl:
+            print(item)
+            
+    elif mode == 'make_checklist':  
+        cur_cl = build.checklist.make_checklist()
+        cur_cl = build.checklist.show_checklist()
+        for item in cur_cl:
+            print(item)
 
 @click.command()
 @click.argument('mode')

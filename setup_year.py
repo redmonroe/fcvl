@@ -40,7 +40,7 @@ class YearSheet:
     grand_total = ["GRAND TOTAL"]
     
 
-    def __init__(self, full_sheet=None, mode=None, test_service=None, checklist=None):
+    def __init__(self, full_sheet=None, month_range=None, mode=None, test_service=None, checklist=None):
         self.test_message = 'hi_from_year_sheets!'
         self.full_sheet = full_sheet
         self.calls = GoogleApiCalls()
@@ -53,7 +53,8 @@ class YearSheet:
         else:
             self.service = oauth(my_scopes, 'sheet')
             self.full_sheet = full_sheet
-            self.shmonths = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
+            self.all_shmonths = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
+            self.shmonths = month_range
             self.checklist = checklist
         
         self.base_month = 'base'
@@ -166,7 +167,7 @@ class YearSheet:
             
 
     def format_units(self, sheet):
-        '''use in format_runner'''
+        '''used in format_runner'''
         self.calls.simple_batch_update(self.service, self.full_sheet, f'{sheet}{self.wrange_unit}', self.units, 'COLUMNS')  
 
     def remove_base_sheet(self):

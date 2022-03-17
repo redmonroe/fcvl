@@ -28,6 +28,7 @@ class Checklist:
             table.insert(dict(
                 year=f'{Config.current_year}', 
                 month=month.lower(),
+                base_docs=False, 
                 rs_exist=False,
                 yfor=False, 
                 mfor=False, 
@@ -107,6 +108,14 @@ class Checklist:
         for item in check_items:
             if item['year'] == year and item['month'] == month: 
                 data = dict(id=item['id'], depdetail_proc=True)
+                self.db[self.tablename].update(data, ['id'])
+
+    def check_basedocs_proc(self, date, col1=None):
+        year, month = self.fix_date(date)
+        check_items = [item for item in self.db[self.tablename]]
+        for item in check_items:
+            if item['year'] == year and item['month'] == month: 
+                data = dict(id=item['id'], base_docs=True)
                 self.db[self.tablename].update(data, ['id'])
 
     def check_grand_total_ok(self, date, col1=None):

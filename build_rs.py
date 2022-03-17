@@ -13,7 +13,7 @@ import pandas as pd
 from google_api_calls_abstract import GoogleApiCalls
 
 class BuildRS(MonthSheet):
-    def __init__(self, full_sheet=None, path=None, mode=None, discard_pile=None, db=None, findex_table=None, test_service=None, sleep=None, checklist_db=None, findex_db=None):
+    def __init__(self, full_sheet=None, path=None, mode=None, discard_pile=None, db=None, findex_table=None, test_service=None, sleep=None, checklist=None, findex_db=None):
         if mode == 'testing':
             self.db = Config.test_build_db
             self.mode = 'testing'
@@ -26,7 +26,7 @@ class BuildRS(MonthSheet):
             self.full_sheet = full_sheet
             self.service = oauth(my_scopes, 'sheet')
             self.findex = FileIndexer(path=path, discard_pile=discard_pile, db=findex_db, table=findex_table)
-            self.checklist_db = checklist_db
+            self.Checklist = checklist
 
         self.sleep = sleep
         self.wrange_pay = '!K2:K68'
@@ -35,50 +35,48 @@ class BuildRS(MonthSheet):
         self.user_text = f'Options:\n PRESS 1 to show current sheets in RENT SHEETS \n PRESS 2 TO VIEW ITEMS IN {self.file_input_path} \n PRESS 3 for MONTHLY FORMATTING, PART ONE (that is, update intake sheet in {self.file_input_path} (xlsx) \n PRESS 4 for MONTHLY FORMATTING, PART TWO: format rent roll & subsidy by month and sheet\n >>>'
         self.df = None
         self.tablename = 'build'
-        self.checklist = Checklist()
         self.hap_list = self.findex.hap_list
         self.rr_list = self.findex.rr_list
         self.dep_list = self.findex.dep_list
         self.deposit_and_date_list = self.findex.deposit_and_date_list
         self.proc_condition_list = None
-        self.checklist = None
+        self.final_to_process_list = []
 
     def automatic_build(self, checklist_mode=None, key=None):
         '''this is the hook into the program for the checklist routine'''
-        self.checklist = Checklist(db=self.checklist_db)
-        self.checklist.make_checklist(mode=checklist_mode)
+        self.Checklist.make_checklist(mode=checklist_mode)
         self.findex.reset_files_for_testing()
         self.findex.build_index_runner()
 
         # start with what documents I have -> then fire formatting off of that
         self.proc_condition_list = self.check_triad_processed()
         self.reformat_conditions_as_bool(trigger_condition=3)
-
-
+        self.make_list_of_true_dates()
+        for date in self.final_to_process_list:
+            self.Checklist.check_basedocs_proc(date)
         breakpoint()
+        self.final_to_process_list = [self.fix_date(date).split(' ')[0] for date in self.final_to_process_list]
+        # as some point we need to figure out how to automate year and sheet selection
+        ys = YearSheet(full_sheet=self.full_sheet, month_range=self.final_to_process_list, checklist=self.Checklist)
+        shnames = ys.auto_control()
+        cur_cl = self.Checklist.show_checklist()
+        for item in cur_cl:
+            print(item)
+
+        # ms = MonthSheet(full_sheet=self.full_sheet, path)
+        # at this point, past list to shnames in year
+
+
+        # breakpoint()
 
 
         # if rs_write == False or yfor == False try making again?
         # object initialization should be moved into object imho
-        # ys = YearSheet(full_sheet=self.full_sheet, checklist=self.checklist)
-        # shnames = ys.auto_control()
 
-        # init findexer
-
-        
-
-
-   
             # buildrs.automatic_build(key='DEP')
     # buildrs.automatic_build(key='RENTROLL')
     # buildrs.automatic_build(key='cash')
     # buildrs.show_table()
-
-
-        # if key == 'ALL':
-        #     ## THIS DOES NOT WORK YET
-        # else:
-        #     list_true = self.get_by_kw(key=key, selected=items_true)
 
     def auto_build_storage_to_erase(self):
 
@@ -135,6 +133,13 @@ class BuildRS(MonthSheet):
                     print(f'rent sheet for {month} does not balance.')
 
         return items_true
+
+    def make_list_of_true_dates(self):
+        self.final_to_process_list = []
+        for item in self.proc_condition_list:
+            for date, value in item.items():
+                if value == True:
+                    self.final_to_process_list.append(date)
 
     def reformat_conditions_as_bool(self, trigger_condition=None):
         for item in self.proc_condition_list:
