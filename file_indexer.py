@@ -212,6 +212,16 @@ class FileIndexer:
         db = self.db
         for results in db[table]:
             print(results)
+            
+    def show_checklist(self, col_str=None):
+        return_list = []
+        check_items = [item for item in self.db[self.tablename]]
+        if col_str:
+            for item in check_items:
+                print(item)
+                return_list.append(item[col_str])
+            return check_items, return_list
+        return check_items
     
     def get_file_names_kw(self, dir1):
 

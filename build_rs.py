@@ -13,7 +13,7 @@ import pandas as pd
 from google_api_calls_abstract import GoogleApiCalls
 
 class BuildRS(MonthSheet):
-    def __init__(self, full_sheet=None, path=None, mode=None, discard_pile=None, db=None, findex_table=None, test_service=None, sleep=None, checklist=None, findex_db=None):
+    def __init__(self, full_sheet=None, path=None, mode=None, discard_pile=None, db=None, findex_table=None, test_service=None, sleep=None, checklist=None, findex_db=None, mformat=None):
         if mode == 'testing':
             self.db = Config.test_build_db
             self.mode = 'testing'
@@ -27,6 +27,7 @@ class BuildRS(MonthSheet):
             self.service = oauth(my_scopes, 'sheet')
             self.findex = FileIndexer(path=path, discard_pile=discard_pile, db=findex_db, table=findex_table)
             self.Checklist = checklist
+            self.mformat = mformat
 
         self.sleep = sleep
         self.wrange_pay = '!K2:K68'
@@ -41,96 +42,98 @@ class BuildRS(MonthSheet):
         self.deposit_and_date_list = self.findex.deposit_and_date_list
         self.proc_condition_list = None
         self.final_to_process_list = []
+        self.proc_ms_list = []
 
     def automatic_build(self, checklist_mode=None, key=None):
         '''this is the hook into the program for the checklist routine'''
-        self.Checklist.make_checklist(mode=checklist_mode)
+        # as some point we need to figure out how to automate year and sheet selection
+
+        # self.Checklist.make_checklist(mode=checklist_mode)
         self.findex.reset_files_for_testing()
         self.findex.build_index_runner()
 
-        # start with what documents I have -> then fire formatting off of that
+        # start with what documents I have 
+            # --> update checklist
+            # --> trigger year formatting off that
+            # --> update checklist for formatting
         self.proc_condition_list = self.check_triad_processed()
         self.reformat_conditions_as_bool(trigger_condition=3)
         self.make_list_of_true_dates()
         for date in self.final_to_process_list:
             self.Checklist.check_basedocs_proc(date)
-        breakpoint()
+        # breakpoint()
         self.final_to_process_list = [self.fix_date(date).split(' ')[0] for date in self.final_to_process_list]
-        # as some point we need to figure out how to automate year and sheet selection
-        ys = YearSheet(full_sheet=self.full_sheet, month_range=self.final_to_process_list, checklist=self.Checklist)
-        shnames = ys.auto_control()
+        # ys = YearSheet(full_sheet=self.full_sheet, month_range=self.final_to_process_list, checklist=self.Checklist)
+        # shnames = ys.auto_control()
         cur_cl = self.Checklist.show_checklist()
         for item in cur_cl:
-            print(item)
+            if item['base_docs'] == True and item['rs_exist'] == True and item['yfor'] == True:
+                self.proc_ms_list.append(self.fix_date3(item['year'], item['month']))
+                # self.write_wrapper_major(item, key='ALL')
+        print(self.proc_ms_list, '*')
+        print(self.final_to_process_list, '**')
 
-        # ms = MonthSheet(full_sheet=self.full_sheet, path)
-        # at this point, past list to shnames in year
+        findex = self.findex.show_checklist()
+        for record in findex:
+            for date in self.proc_ms_list:
+                if date == record['period']:
+                    if 'cash' in record['fn'].split():
+                        self.write_wrapper_major(record, key='cash')
+                # self.write_wrapper_major(item, key='ALL')
+        # for item in findex:
+        #     print(item, '****')
 
-
-        # breakpoint()
-
-
-        # if rs_write == False or yfor == False try making again?
-        # object initialization should be moved into object imho
-
-            # buildrs.automatic_build(key='DEP')
-    # buildrs.automatic_build(key='RENTROLL')
-    # buildrs.automatic_build(key='cash')
-    # buildrs.show_table()
-
-    def auto_build_storage_to_erase(self):
+    def write_wrapper_major(self, item, key=None):
 
         '''rentroll and monthly formatting'''
-        if key == 'RENTROLL':
-            for item in list_true:
-                dt_object = self.fix_date(item['period'])
-                '''trigger formatting of dt_object named sheet'''
-                self.mformat.export_month_format(dt_object)
-                self.mformat.push_one_to_intake(input_file_path=item['path'])
-                self.checklist.check_mfor(dt_object)
-                self.month_write_col(dt_object)
-                self.checklist.check_rr_proc(dt_object)
+        if key == 'RENTROLL' or 'ALL':
+            dt_object = self.fix_date(item['period'])
+            '''trigger formatting of dt_object named sheet'''
+            self.mformat.export_month_format(dt_object)
+            breakpoint()
+            self.mformat.push_one_to_intake(input_file_path=item['path'])
+            self.checklist.check_mfor(dt_object)
+            self.month_write_col(dt_object)
+            self.checklist.check_rr_proc(dt_object)
 
         '''deposits push'''
-        if key == 'DEP':
-            for item in list_true:
-                '''get raw deposit items to sql'''
-                dt_object = self.fix_date(item['period'])
-                df = self.read_excel(path=item['path'])
-                df = self.remove_nan_lines(df=df)
-                self.to_sql(df=df)
-                dt_code = item['period'][-2:]
-                '''group objects by tenant name or unit: which was it?'''
-                payment_list, grand_total, ntp, df = self.push_to_sheet_by_period(dt_code=dt_code)
-                self.write_payment_list(dt_object, payment_list)
-                self.write_ntp(dt_object, [str(ntp)])
-                self.print_summary(payment_list, grand_total, ntp, df)
-                self.checklist.check_dep_proc(dt_object)
+        if key == 'DEP' or 'ALL':
+            '''get raw deposit items to sql'''
+            dt_object = self.fix_date(item['period'])
+            df = self.read_excel(path=item['path'])
+            df = self.remove_nan_lines(df=df)
+            self.to_sql(df=df)
+            dt_code = item['period'][-2:]
+            '''group objects by tenant name or unit: which was it?'''
+            payment_list, grand_total, ntp, df = self.push_to_sheet_by_period(dt_code=dt_code)
+            self.write_payment_list(dt_object, payment_list)
+            self.write_ntp(dt_object, [str(ntp)])
+            self.print_summary(payment_list, grand_total, ntp, df)
+            self.checklist.check_dep_proc(dt_object)
 
-        if key == 'cash':
-            if self.mode == 'testing':
-                self.findex.build_index_runner()
-                for hap, rr in zip(self.findex.hap_list, self.findex.rr_list):
-                    dict1 = {}
-                    dict1['formatted_hap_date'] = self.fix_date2(list(hap.keys())[0])
-                    dict1['hap_date'] = list(hap.keys())[0]
-                    dict1['hap_amount'] = list(hap.values())[0][0]
-                    dict1['rr_date'] = list(rr.keys())[0]
-                    dict1['rr_amount'] = list(rr.values())[0][0]
+        if key == 'cash' or 'ALL':
+            # self.findex.build_index_runner()
+            for hap, rr in zip(self.findex.hap_list, self.findex.rr_list):
+                dict1 = {}
+                dict1['formatted_hap_date'] = self.fix_date2(list(hap.keys())[0])
+                dict1['hap_date'] = list(hap.keys())[0]
+                dict1['hap_amount'] = list(hap.values())[0][0]
+                dict1['rr_date'] = list(rr.keys())[0]
+                dict1['rr_amount'] = list(rr.values())[0][0]
 
-                for deposit_group in self.findex.deposit_and_date_list:
-                    dict1['deposit_date'] = list(deposit_group.keys())[0]
-                    dict1['deposit_list'] = list(deposit_group.values())[0]
+            for deposit_group in self.findex.deposit_and_date_list:
+                dict1['deposit_date'] = list(deposit_group.keys())[0]
+                dict1['deposit_list'] = list(deposit_group.values())[0]
 
-                self.export_deposit_detail(data=dict1)
-                self.checklist.check_depdetail_proc(dict1['hap_date'])
-                self.write_sum_forumula1()
-                reconciled_bool = self.check_totals_reconcile()
-                if reconciled_bool:
-                    self.checklist.check_grand_total_ok(dict1['hap_date'])
-                else:
-                    month = dict1['hap_date']
-                    print(f'rent sheet for {month} does not balance.')
+            self.export_deposit_detail(data=dict1)
+            self.checklist.check_depdetail_proc(dict1['hap_date'])
+            self.write_sum_forumula1()
+            reconciled_bool = self.check_totals_reconcile()
+            if reconciled_bool:
+                self.checklist.check_grand_total_ok(dict1['hap_date'])
+            else:
+                month = dict1['hap_date']
+                print(f'rent sheet for {month} does not balance.')
 
         return items_true
 
@@ -218,6 +221,12 @@ class BuildRS(MonthSheet):
         for item in ntp_item.index:
             df.drop(labels=item, inplace=True)
         return df, ntp_item
+
+    def fix_date3(self, year, month):
+        date = year + '-' + month
+        dt_object = datetime.strptime(date, '%Y-%b')
+        dt_object = datetime.strftime(dt_object, '%Y-%m')
+        return dt_object
 
     def fix_date2(self, date):
         dt_object = datetime.strptime(date, '%m %Y')

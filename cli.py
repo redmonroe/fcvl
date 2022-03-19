@@ -56,16 +56,18 @@ def autors(mode):
     production_db = Config.test_findex_db
     prod_cl_db = Config.cl_prod_db
     prod_findex_db = Config.findex_prod_db
+    prod_findex_tablename = 'findex_prod'
 
 
     checklist = Checklist(db=prod_cl_db)
-    build = BuildRS(full_sheet=production_full_sheet, path=production_path, mode='dev', sleep=sleep, checklist=checklist, findex_db=prod_findex_db, findex_table='findex_prod')    
+    mformat = MonthSheet(full_sheet=production_full_sheet, path=production_path)
+    build = BuildRS(full_sheet=production_full_sheet, path=production_path, mode='dev', sleep=sleep, checklist=checklist, findex_db=prod_findex_db, findex_table=prod_findex_tablename, mformat=mformat)    
     if mode == 'testing':
         # would like to run the test suite        
         pass
     elif mode == 'dev':
 
-        build.reset_full_sheet()
+        # build.reset_full_sheet()
         # build.reset_databases() #this does nothing yet
         # build.findex.delete_table()
         print('findex before')
