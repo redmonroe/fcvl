@@ -29,10 +29,10 @@ class FileIndexer:
         self.processed_files = []
         self.pdf = StructDataExtract()
         self.checklist = Checklist()
-        self.hap_list = None
-        self.rr_list = None
-        self.dep_list = None
-        self.deposit_and_date_list = None
+        self.hap_list = []
+        self.rr_list = []
+        self.dep_list = []
+        self.deposit_and_date_list = []
 
     def build_index_runner(self):
         if self.mode == 'testing':
@@ -124,7 +124,12 @@ class FileIndexer:
             dep_iter_one_month, stmt_date2 = self.extract_deposits_by_type(op_cash_stmt_path, style='dep', target_str='Deposit')
             deposit_and_date_iter_one_month, stmt_date2 = self.extract_deposits_by_type(op_cash_stmt_path, style='dep', target_str='Deposit')
             assert stmt_date == stmt_date1
-            
+
+            self.hap_list.append(hap_iter_one_month)
+            self.rr_list.append(rr_iter_one_month)
+            self.dep_list.append(dep_iter_one_month)
+            self.deposit_and_date_list.append(deposit_and_date_iter_one_month)
+
             self.processed_files.append((op_cash_stmt_path.name, ''.join(stmt_date.split(' '))))
             self.checklist.check_opcash(date=stmt_date)
 
@@ -212,7 +217,7 @@ class FileIndexer:
         db = self.db
         for results in db[table]:
             print(results)
-            
+
     def show_checklist(self, col_str=None):
         return_list = []
         check_items = [item for item in self.db[self.tablename]]

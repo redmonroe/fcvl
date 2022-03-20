@@ -57,11 +57,13 @@ def autors(mode):
     prod_cl_db = Config.cl_prod_db
     prod_findex_db = Config.findex_prod_db
     prod_findex_tablename = 'findex_prod'
+    prod_rs_db = Config.test_build_db
+    prod_rs_tablename = 'build_prodc'
 
 
     checklist = Checklist(db=prod_cl_db)
     mformat = MonthSheet(full_sheet=production_full_sheet, path=production_path)
-    build = BuildRS(full_sheet=production_full_sheet, path=production_path, mode='dev', sleep=sleep, checklist=checklist, findex_db=prod_findex_db, findex_table=prod_findex_tablename, mformat=mformat)    
+    build = BuildRS(full_sheet=production_full_sheet, path=production_path, mode='dev', db=prod_rs_db, tablename=prod_rs_tablename, sleep=sleep, checklist=checklist, findex_db=prod_findex_db, findex_table=prod_findex_tablename, mformat=mformat)    
     if mode == 'testing':
         # would like to run the test suite        
         pass

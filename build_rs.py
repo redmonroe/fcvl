@@ -13,7 +13,7 @@ import pandas as pd
 from google_api_calls_abstract import GoogleApiCalls
 
 class BuildRS(MonthSheet):
-    def __init__(self, full_sheet=None, path=None, mode=None, discard_pile=None, db=None, findex_table=None, test_service=None, sleep=None, checklist=None, findex_db=None, mformat=None):
+    def __init__(self, full_sheet=None, path=None, mode=None, discard_pile=None, db=None, tablename=None, findex_table=None, test_service=None, sleep=None, checklist=None, findex_db=None, mformat=None):
         if mode == 'testing':
             self.db = Config.test_build_db
             self.mode = 'testing'
@@ -23,11 +23,14 @@ class BuildRS(MonthSheet):
             self.mformat = MonthSheet(full_sheet=Config.TEST_RS, path=Config.TEST_RS_PATH, mode='testing', test_service=self.service)
             self.calls = GoogleApiCalls()
         elif mode == 'dev':
+            self.db = db
             self.full_sheet = full_sheet
             self.service = oauth(my_scopes, 'sheet')
             self.findex = FileIndexer(path=path, discard_pile=discard_pile, db=findex_db, table=findex_table)
-            self.Checklist = checklist
+            self.checklist = checklist
             self.mformat = mformat
+            self.tablename = tablename 
+            self.calls = GoogleApiCalls() 
 
         self.sleep = sleep
         self.wrange_pay = '!K2:K68'
@@ -35,11 +38,15 @@ class BuildRS(MonthSheet):
         self.file_input_path = path
         self.user_text = f'Options:\n PRESS 1 to show current sheets in RENT SHEETS \n PRESS 2 TO VIEW ITEMS IN {self.file_input_path} \n PRESS 3 for MONTHLY FORMATTING, PART ONE (that is, update intake sheet in {self.file_input_path} (xlsx) \n PRESS 4 for MONTHLY FORMATTING, PART TWO: format rent roll & subsidy by month and sheet\n >>>'
         self.df = None
-        self.tablename = 'build'
         self.hap_list = self.findex.hap_list
         self.rr_list = self.findex.rr_list
         self.dep_list = self.findex.dep_list
         self.deposit_and_date_list = self.findex.deposit_and_date_list
+
+        self.good_rr_list = []
+        self.good_hap_list = []
+        self.good_dep_list = []
+        self.good_dep_detail_list = []
         self.proc_condition_list = None
         self.final_to_process_list = []
         self.proc_ms_list = []
@@ -48,11 +55,12 @@ class BuildRS(MonthSheet):
         '''this is the hook into the program for the checklist routine'''
         # as some point we need to figure out how to automate year and sheet selection
 
-        # self.Checklist.make_checklist(mode=checklist_mode)
+        # self.checklist.make_checklist(mode=checklist_mode)
         self.findex.reset_files_for_testing()
         self.findex.build_index_runner()
 
         # start with what documents I have 
+            # --> run_findex_build_runner
             # --> update checklist
             # --> trigger year formatting off that
             # --> update checklist for formatting
@@ -60,47 +68,69 @@ class BuildRS(MonthSheet):
         self.reformat_conditions_as_bool(trigger_condition=3)
         self.make_list_of_true_dates()
         for date in self.final_to_process_list:
-            self.Checklist.check_basedocs_proc(date)
-        # breakpoint()
+            self.checklist.check_basedocs_proc(date)
         self.final_to_process_list = [self.fix_date(date).split(' ')[0] for date in self.final_to_process_list]
-        # ys = YearSheet(full_sheet=self.full_sheet, month_range=self.final_to_process_list, checklist=self.Checklist)
+        # ys = YearSheet(full_sheet=self.full_sheet, month_range=self.final_to_process_list, checklist=self.checklist)
         # shnames = ys.auto_control()
-        cur_cl = self.Checklist.show_checklist()
+        cur_cl = self.checklist.show_checklist()
         for item in cur_cl:
             if item['base_docs'] == True and item['rs_exist'] == True and item['yfor'] == True:
                 self.proc_ms_list.append(self.fix_date3(item['year'], item['month']))
-                # self.write_wrapper_major(item, key='ALL')
-        print(self.proc_ms_list, '*')
-        print(self.final_to_process_list, '**')
 
         findex = self.findex.show_checklist()
+
+        # get pedigreed lists for op_cash, rr, dep
+        good_opcash_list = []
+        good_rr_list = []
+        good_dep_list = []
         for record in findex:
             for date in self.proc_ms_list:
                 if date == record['period']:
-                    if 'cash' in record['fn'].split():
-                        self.write_wrapper_major(record, key='cash')
-                # self.write_wrapper_major(item, key='ALL')
-        # for item in findex:
-        #     print(item, '****')
+                    if 'cash' in record['fn'].split('_'):
+                        good_opcash_list.append(record)
+                    if 'RENTROLL' in record['fn'].split('_'):
+                        good_rr_list.append(record)
+                    if 'DEP' in record['fn'].split('_'):
+                        good_dep_list.append(record)
 
+        for i in range(len(self.deposit_and_date_list)):
+            for ok_date in self.proc_ms_list:
+                if self.fix_date4(ok_date) == next(iter(self.deposit_and_date_list[i][0])):
+                    self.good_dep_detail_list.append(self.deposit_and_date_list[i])
+
+        for i in range(len(self.findex.rr_list)):
+            for ok_date in self.proc_ms_list:
+                if self.fix_date4(ok_date) == next(iter(self.findex.rr_list[i][0])):
+                    self.good_rr_list.append(self.findex.rr_list[i])
+
+        for i in range(len(self.findex.dep_list)):
+            for ok_date in self.proc_ms_list:
+                if self.fix_date4(ok_date) == next(iter(self.findex.dep_list[i][0])):
+                    self.good_dep_list.append(self.findex.dep_list[i])
+
+        for item in good_rr_list:
+            self.write_wrapper_major(item, key='RENTROLL')
+        for item in good_dep_list:
+            self.write_wrapper_major(item, key='DEP')
+        for item in good_opcash_list:
+            self.write_wrapper_major(item, key='cash')
+    
     def write_wrapper_major(self, item, key=None):
+        dt_object = self.fix_date(item['period'])
 
         '''rentroll and monthly formatting'''
-        if key == 'RENTROLL' or 'ALL':
-            dt_object = self.fix_date(item['period'])
+        if key == 'RENTROLL':
             '''trigger formatting of dt_object named sheet'''
             self.mformat.export_month_format(dt_object)
-            breakpoint()
             self.mformat.push_one_to_intake(input_file_path=item['path'])
             self.checklist.check_mfor(dt_object)
             self.month_write_col(dt_object)
             self.checklist.check_rr_proc(dt_object)
 
         '''deposits push'''
-        if key == 'DEP' or 'ALL':
+        if key == 'DEP':
             '''get raw deposit items to sql'''
-            dt_object = self.fix_date(item['period'])
-            df = self.read_excel(path=item['path'])
+            df = self.read_excel_rs(path=item['path'])
             df = self.remove_nan_lines(df=df)
             self.to_sql(df=df)
             dt_code = item['period'][-2:]
@@ -111,19 +141,19 @@ class BuildRS(MonthSheet):
             self.print_summary(payment_list, grand_total, ntp, df)
             self.checklist.check_dep_proc(dt_object)
 
-        if key == 'cash' or 'ALL':
-            # self.findex.build_index_runner()
-            for hap, rr in zip(self.findex.hap_list, self.findex.rr_list):
-                dict1 = {}
-                dict1['formatted_hap_date'] = self.fix_date2(list(hap.keys())[0])
-                dict1['hap_date'] = list(hap.keys())[0]
-                dict1['hap_amount'] = list(hap.values())[0][0]
-                dict1['rr_date'] = list(rr.keys())[0]
-                dict1['rr_amount'] = list(rr.values())[0][0]
+        if key == 'cash':
+            dict1 = {}
+            for hap, rr in zip(self.good_hap_list, self.good_rr_list):
+                dict1['formatted_hap_date'] = self.fix_date2(next(iter(hap[0])))
+                dict1['hap_date'] = next(iter(hap[0]))
+                dict1['hap_amount'] = next(iter(hap[0].values()))[0]
+                dict1['rr_date'] = next(iter(rr[0]))
+                dict1['rr_amount'] = next(iter(rr[0].values()))[0]
 
-            for deposit_group in self.findex.deposit_and_date_list:
-                dict1['deposit_date'] = list(deposit_group.keys())[0]
-                dict1['deposit_list'] = list(deposit_group.values())[0]
+            for deposit_group in self.good_dep_detail_list:
+                breakpoint()
+                dict1['deposit_date'] = next(iter(deposit_group[0]))
+                dict1['deposit_list'] = next(iter(deposit_group[0].values()))[0]
 
             self.export_deposit_detail(data=dict1)
             self.checklist.check_depdetail_proc(dict1['hap_date'])
@@ -134,8 +164,6 @@ class BuildRS(MonthSheet):
             else:
                 month = dict1['hap_date']
                 print(f'rent sheet for {month} does not balance.')
-
-        return items_true
 
     def make_list_of_true_dates(self):
         self.final_to_process_list = []
@@ -222,6 +250,11 @@ class BuildRS(MonthSheet):
             df.drop(labels=item, inplace=True)
         return df, ntp_item
 
+    def fix_date4(self, date):
+        dt_object = datetime.strptime(date, '%Y-%m')
+        dt_object = datetime.strftime(dt_object, '%m %Y')
+        return dt_object
+
     def fix_date3(self, year, month):
         date = year + '-' + month
         dt_object = datetime.strptime(date, '%Y-%b')
@@ -298,7 +331,7 @@ class BuildRS(MonthSheet):
         
         return items_true 
 
-    def read_excel(self, path, verbose=False):
+    def read_excel_rs(self, path, verbose=False):
         df = pd.read_excel(path, header=9)
         pd.set_option('display.max_columns', None)
         pd.set_option('display.max_rows', None)
@@ -307,7 +340,7 @@ class BuildRS(MonthSheet):
             print(df.head(20))
 
         columns = ['deposit_id', 'unit', 'name', 'date_posted', 'amount', 'date_code']
-
+        
         bde = df['BDEPID'].tolist()
         unit = df['Unit'].tolist()
         name = df['Name'].tolist()

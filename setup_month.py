@@ -90,7 +90,8 @@ class MonthSheet:
         for item in current_items:
             print(item.name)
 
-    def read_excel(self, verbose=False):
+    def read_excel_ms(self, verbose=False):
+
         df = pd.read_excel(self.file_input_path, header=16)
         if verbose: 
             pd.set_option('display.max_columns', None)
@@ -123,13 +124,13 @@ class MonthSheet:
     def push_to_intake(self):
         print('pushing selected excel to intake', '| Path:', self.file_input_path)
         self.file_input_path = Utils.sheet_finder(path=self.file_input_path, function='mformat')
-        self.t_name, self.unit, self.k_rent, self.subsidy, self.t_rent = self.read_excel(verbose=False)
+        self.t_name, self.unit, self.k_rent, self.subsidy, self.t_rent = self.read_excel_ms(verbose=False)
         self.write_to_rs()
 
     def push_one_to_intake(self, input_file_path=None):
         self.file_input_path = input_file_path
         print('pushing selected excel to intake', '| Path:', self.file_input_path) 
-        self.t_name, self.unit, self.k_rent, self.subsidy, self.t_rent = self.read_excel(verbose=False)
+        self.t_name, self.unit, self.k_rent, self.subsidy, self.t_rent = self.read_excel_ms(verbose=False)
         assert len(self.unit) == 67, 'fcvl: rentroll has too many entries, you will need to manually edit your rent roll file or find a programming solution.'
         self.write_to_rs()
 
@@ -160,11 +161,12 @@ class MonthSheet:
 
     def export_deposit_detail(self, data):
         gc = GoogleApiCalls()
-        sheet_choice = data['formatted_hap_date']
+        sheet_choice = data['deposit_date']
         self.sheet_choice = sheet_choice
         hap = [data['hap_amount']]
         rr = [data['rr_amount']]
         deposit_list = data['deposit_list']
+        breakpoint()
         gc.update_int(self.service, self.full_sheet, hap, f'{sheet_choice}' + f'{self.wrange_hap_partial}', value_input_option='USER_ENTERED')
         gc.update_int(self.service, self.full_sheet, rr, f'{sheet_choice}' + f'{self.wrange_rr_partial}', value_input_option='USER_ENTERED')
         value = 82
