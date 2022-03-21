@@ -122,7 +122,7 @@ class FileIndexer:
             hap_iter_one_month, stmt_date = self.extract_deposits_by_type(op_cash_stmt_path, style='hap', target_str='QUADEL')
             rr_iter_one_month, stmt_date1 = self.extract_deposits_by_type(op_cash_stmt_path, style='rr', target_str='Incoming Wire')
             dep_iter_one_month, stmt_date2 = self.extract_deposits_by_type(op_cash_stmt_path, style='dep', target_str='Deposit')
-            deposit_and_date_iter_one_month, stmt_date2 = self.extract_deposits_by_type(op_cash_stmt_path, style='dep', target_str='Deposit')
+            deposit_and_date_iter_one_month = self.extract_deposits_by_type(op_cash_stmt_path, style='dep_detail', target_str='Deposit')
             assert stmt_date == stmt_date1
 
             self.hap_list.append(hap_iter_one_month)
@@ -142,6 +142,9 @@ class FileIndexer:
             date, amount = self.pdf.nbofi_pdf_extract_hap(path, target_str=target_str)
         elif style == 'dep':
             date, amount = self.pdf.nbofi_pdf_extract_deposit(path, target_str=target_str)
+        elif style == 'dep_detail':
+            depdet_list = self.pdf.nbofi_pdf_extract_deposit(path, style=style, target_str=target_str)
+            return depdet_list
         kdict[str(date)] = [amount, path, style]
         return_list.append(kdict)
             

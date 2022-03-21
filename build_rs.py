@@ -52,7 +52,7 @@ class BuildRS(MonthSheet):
         '''this is the hook into the program for the checklist routine'''
         # as some point we need to figure out how to automate year and sheet selection
 
-        # self.checklist.make_checklist(mode=checklist_mode)
+        self.checklist.make_checklist(mode=checklist_mode)
         self.findex.reset_files_for_testing()
         self.findex.build_index_runner()
 
@@ -61,6 +61,10 @@ class BuildRS(MonthSheet):
             # --> update checklist
             # --> trigger year formatting off that
             # --> update checklist for formatting
+
+        # ISSUES: opcash_proc is not being marked as true
+        # ISSUES: CAN i DO THIS WITH MULTIPLE RENT SHEETS, i DON'T THINK IT WILL LOOP CORRECTLY W/O ADJUSTMENT
+        
         self.proc_condition_list = self.check_triad_processed()
         self.reformat_conditions_as_bool(trigger_condition=3)
         self.make_list_of_true_dates()
@@ -68,51 +72,21 @@ class BuildRS(MonthSheet):
         for date in self.final_to_process_list:
             self.checklist.check_basedocs_proc(date)
         self.final_to_process_list = [self.fix_date(date).split(' ')[0] for date in self.final_to_process_list]
-        # ys = YearSheet(full_sheet=self.full_sheet, month_range=self.final_to_process_list, checklist=self.checklist)
-        # shnames = ys.auto_control()
+        ys = YearSheet(full_sheet=self.full_sheet, month_range=self.final_to_process_list, checklist=self.checklist)
+        shnames = ys.auto_control()
         self.proc_ms_list = self.make_is_ready_to_write_list()
         findex_db = self.findex.show_checklist()
         self.good_opcash_list, self.good_rr_list, self.good_dep_list = self.find_targeted_doc_in_findex_db(db=findex_db)
 
-        # for item in self.good_rr_list:
-        #     self.write_rentroll(item)
+        for item in self.good_rr_list:
+            self.write_rentroll(item)
 
-        # for item in self.good_dep_list:
-        #     self.write_payments(item)
+        for item in self.good_dep_list:
+            self.write_payments(item)
 
         for item in self.good_opcash_list: #
             self.write_opcash_detail(item)
             print(self.findex.hap_list)
-
-            # so next step here is to get pedigreed list of ytd lists already made in build_index_runner
-
-
-
-        # for i in range(len(self.findex.deposit_and_date_list)):
-        #     for ok_date in self.proc_ms_list:
-        #         if self.fix_date4(ok_date) == next(iter(self.deposit_and_date_list[i][0])):
-        #             self.good_dep_detail_list.append(self.deposit_and_date_list[i])
-
-        # for i in range(len(self.findex.rr_list)):
-        #     for ok_date in self.proc_ms_list:
-        #         if self.fix_date4(ok_date) == next(iter(self.findex.rr_list[i][0])):
-        #             self.good_rr_list.append(self.findex.rr_list[i])
-
-        # for i in range(len(self.findex.dep_list)):
-        #     for ok_date in self.proc_ms_list:
-        #         if self.fix_date4(ok_date) == next(iter(self.findex.dep_list[i][0])):
-        #             self.good_dep_list.append(self.findex.dep_list[i])
-
-        # for item in self.good_rr_list:
-        #     self.write_wrapper_major(item, key='RENTROLL')
-        # for item in self.good_dep_list:
-        #     self.write_wrapper_major(item, key='DEP')
-
-
-        # for item in self.good_opcash_list:
-        #     self.write_wrapper_major(item, key='cash')
-
-    so next step is figuring out why I don't have a list of deposits and only have total!!!
 
     def write_opcash_detail(self, item):
         for good_date, hap in zip(self.proc_ms_list, self.findex.hap_list):
@@ -127,10 +101,15 @@ class BuildRS(MonthSheet):
                 dict1['rr_date'] = next(iter(rr[0]))
                 dict1['rr_amount'] = next(iter(rr[0].values()))[0]
 
-        for good_date, dd in zip(self.proc_ms_list, self.findex.deposit_and_date_list):
-            if self.fix_date4(good_date) == next(iter(dd[0])): # right = 01 2022
-                dict1['deposit_date'] = next(iter(dd[0]))
-                dict1['deposit_list'] = next(iter(dd[0].values()))[0]
+        # this is for a total deposit: do I need it? DON'T ERASE!
+        for good_date, d_sum in zip(self.proc_ms_list, self.findex.dep_list):
+            if self.fix_date4(good_date) == next(iter(d_sum[0])): # right = 01 2022
+                dict1['deposit_date'] = next(iter(d_sum[0]))
+
+        for d_detail in self.findex.deposit_and_date_list:
+            if self.fix_date4(good_date) == next(iter(d_detail[0])): # right = 01 2022
+                dict1['deposit_list_date'] = next(iter(d_detail[0]))
+                dict1['deposit_list'] = list(d_detail[0].values())[0]
 
             self.export_deposit_detail(data=dict1)
             self.checklist.check_depdetail_proc(dict1['hap_date'])

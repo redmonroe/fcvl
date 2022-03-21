@@ -209,8 +209,11 @@ class StructDataExtract:
         line_list.pop(0)
         date_list.pop(0)
         combined_list = list(zip(date_list, line_list))
-        self.deposits_list = []
-        self.deposits_list.append({stmt_date: combined_list}) 
+        if style =='dep_detail':
+            self.deposits_list = []
+            self.deposits_list.append({stmt_date: combined_list}) 
+            # breakpoint()
+            return self.deposits_list
         return stmt_date, sum(line_list)
 
     def nbofi_pdf_extract_hap(self, path, style=None, target_str=None):

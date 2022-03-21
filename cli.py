@@ -58,7 +58,7 @@ def autors(mode=None):
     prod_findex_db = Config.findex_prod_db
     prod_findex_tablename = 'findex_prod'
     prod_rs_db = Config.test_build_db
-    prod_rs_tablename = 'build_prodc'
+    prod_rs_tablename = 'build_prod'
 
 
     checklist = Checklist(db=prod_cl_db)
@@ -68,24 +68,12 @@ def autors(mode=None):
         # would like to run the test suite        
         pass
     elif mode == 'dev':
-        # build.reset_full_sheet()
+        build.reset_full_sheet()
         # build.reset_databases() #this does nothing yet
-        # build.findex.delete_table()
+        build.findex.delete_table()
         # print('findex before')
         # build.findex.show_table(table='findex_prod')
         build.automatic_build(checklist_mode='autoreset')    
-
-        # print('findex after')
-        # build.findex.show_table(table='findex_prod')
-        #year format: base, format, copy +
-
-        #check checklist: CHECKLIST DOES NOT WORK!, WILL PROBABLY want to move a lot of this to autobuild
-        #month format
-        #index files
-        #trigger off files
-        #rr, dep, depdetail, grand_total
-        #rent sheets
-        # switch paths to production
 
     elif mode == 'reset':   
         build.reset_full_sheet()
