@@ -45,7 +45,7 @@ def cli():
 @click.command()
 @click.option('--mode', required=True)
 # @timer
-def autors(mode):
+def autors(mode=None):
     click.echo(f'starting **autors*** in mode: {mode}')
     click.echo('\nmust explicitly set mode: testing, dev, prod')
     
@@ -162,3 +162,4 @@ cli.add_command(autors)
 
 if __name__ == '__main__':
     cli()
+

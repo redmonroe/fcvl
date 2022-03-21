@@ -74,12 +74,17 @@ class BuildRS(MonthSheet):
         findex_db = self.findex.show_checklist()
         self.good_opcash_list, self.good_rr_list, self.good_dep_list = self.find_targeted_doc_in_findex_db(db=findex_db)
 
-        for item in self.good_rr_list:
-            self.write_rentroll(item)
+        # for item in self.good_rr_list:
+        #     self.write_rentroll(item)
 
-        for item in self.good_dep_list:
-            self.write_payments(item)
-        breakpoint()
+        # for item in self.good_dep_list:
+        #     self.write_payments(item)
+
+        for item in self.good_opcash_list: #
+            self.write_opcash_detail(item)
+            print(self.findex.hap_list)
+
+            # so next step here is to get pedigreed list of ytd lists already made in build_index_runner
 
 
 
@@ -107,29 +112,35 @@ class BuildRS(MonthSheet):
         # for item in self.good_opcash_list:
         #     self.write_wrapper_major(item, key='cash')
 
-        # if key == 'cash':
-        #     dict1 = {}
-        #     for hap, rr in zip(self.good_hap_list, self.good_rr_list):
-        #         dict1['formatted_hap_date'] = self.fix_date2(next(iter(hap[0])))
-        #         dict1['hap_date'] = next(iter(hap[0]))
-        #         dict1['hap_amount'] = next(iter(hap[0].values()))[0]
-        #         dict1['rr_date'] = next(iter(rr[0]))
-        #         dict1['rr_amount'] = next(iter(rr[0].values()))[0]
+    so next step is figuring out why I don't have a list of deposits and only have total!!!
 
-        #     for deposit_group in self.good_dep_detail_list:
-        #         breakpoint()
-        #         dict1['deposit_date'] = next(iter(deposit_group[0]))
-        #         dict1['deposit_list'] = next(iter(deposit_group[0].values()))[0]
+    def write_opcash_detail(self, item):
+        for good_date, hap in zip(self.proc_ms_list, self.findex.hap_list):
+            if self.fix_date4(good_date) == next(iter(hap[0])): # right = 01 2022
+                dict1 = {}
+                dict1['formatted_hap_date'] = self.fix_date2(next(iter(hap[0])))
+                dict1['hap_date'] = next(iter(hap[0]))
+                dict1['hap_amount'] = next(iter(hap[0].values()))[0]
 
-        #     self.export_deposit_detail(data=dict1)
-        #     self.checklist.check_depdetail_proc(dict1['hap_date'])
-        #     self.write_sum_forumula1()
-        #     reconciled_bool = self.check_totals_reconcile()
-        #     if reconciled_bool:
-        #         self.checklist.check_grand_total_ok(dict1['hap_date'])
-        #     else:
-        #         month = dict1['hap_date']
-        #         print(f'rent sheet for {month} does not balance.')
+        for good_date, rr in zip(self.proc_ms_list, self.findex.rr_list):
+            if self.fix_date4(good_date) == next(iter(rr[0])): # right = 01 2022
+                dict1['rr_date'] = next(iter(rr[0]))
+                dict1['rr_amount'] = next(iter(rr[0].values()))[0]
+
+        for good_date, dd in zip(self.proc_ms_list, self.findex.deposit_and_date_list):
+            if self.fix_date4(good_date) == next(iter(dd[0])): # right = 01 2022
+                dict1['deposit_date'] = next(iter(dd[0]))
+                dict1['deposit_list'] = next(iter(dd[0].values()))[0]
+
+            self.export_deposit_detail(data=dict1)
+            self.checklist.check_depdetail_proc(dict1['hap_date'])
+            self.write_sum_forumula1()
+            reconciled_bool = self.check_totals_reconcile()
+            if reconciled_bool:
+                self.checklist.check_grand_total_ok(dict1['hap_date'])
+            else:
+                month = dict1['hap_date']
+                print(f'rent sheet for {month} does not balance.')
 
     def write_rentroll(self, item):
         dt_object = self.fix_date(item['period'])

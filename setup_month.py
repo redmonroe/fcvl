@@ -162,7 +162,7 @@ class MonthSheet:
 
     def export_deposit_detail(self, data):
         gc = GoogleApiCalls()
-        sheet_choice = data['deposit_date']
+        sheet_choice = data['formatted_hap_date']
         self.sheet_choice = sheet_choice
         hap = [data['hap_amount']]
         rr = [data['rr_amount']]
