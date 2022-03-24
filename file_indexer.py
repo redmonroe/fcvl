@@ -44,7 +44,6 @@ class FileIndexer:
             self.reset_files_for_testing()
         self.articulate_directory()
         self.sort_directory_by_extension(verbose=False)
-        print('stage1:', len(self.processed_files))
         if self.mode != 'testing':
             try:
                 self.rename_by_content_xls()
@@ -53,15 +52,10 @@ class FileIndexer:
         else:
             self.rename_by_content_xls()
         
-        print('stage2:', len(self.processed_files))
         self.rename_by_content_pdf()
-        print('stage3:', len(self.processed_files))
         self.build_raw_index(autodrop=True, verbose=False)
-        print('stage4:', len(self.processed_files))
         self.update_index_for_processed(verbose=True)
-        print('stage5:', len(self.processed_files))
         self.get_list_of_processed()
-        print('stage6:', len(self.processed_files))
 
     def articulate_directory(self):
         for item in self.path.iterdir():
@@ -205,7 +199,6 @@ class FileIndexer:
                 processed_check_for_test.append(item['fn'])
                 processed_check_for_test.append(item['period'])
 
-        # so now we can trigger off of processed
         return processed_check_for_test
 
     def drop_tables(self):

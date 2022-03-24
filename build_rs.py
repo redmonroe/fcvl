@@ -63,14 +63,16 @@ class BuildRS(MonthSheet):
             # --> update checklist for formatting
 
         # ISSUES: opcash_proc is not being marked as true
-        # ISSUES: CAN i DO THIS WITH MULTIPLE RENT SHEETS, i DON'T THINK IT WILL LOOP CORRECTLY W/O ADJUSTMENT
-        '''
         self.proc_condition_list = self.check_triad_processed()
+    
         self.reformat_conditions_as_bool(trigger_condition=3)
         self.make_list_of_true_dates()
         # checks box in base_docs_proc == True
         for date in self.final_to_process_list:
             self.checklist.check_basedocs_proc(date)
+
+        self.checklist.show_checklist(verbose=True)
+        breakpoint()
         self.final_to_process_list = [self.fix_date(date).split(' ')[0] for date in self.final_to_process_list]
         ys = YearSheet(full_sheet=self.full_sheet, month_range=self.final_to_process_list, checklist=self.checklist)
         shnames = ys.auto_control()
@@ -86,7 +88,6 @@ class BuildRS(MonthSheet):
 
         for item in self.good_opcash_list: #
             self.write_opcash_detail(item)
-        '''
 
     def write_opcash_detail(self, item):
         for good_date, hap in zip(self.proc_ms_list, self.findex.hap_list):

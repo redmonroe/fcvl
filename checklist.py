@@ -49,7 +49,7 @@ class Checklist:
         checklist.drop()
         return self.db, self.tablename
 
-    def show_checklist(self, col_str=None):
+    def show_checklist(self, verbose=None, col_str=None):
         return_list = []
         check_items = [item for item in self.db[self.tablename]]
         if col_str:
@@ -57,6 +57,10 @@ class Checklist:
                 print(item)
                 return_list.append(item[col_str])
             return check_items, return_list
+
+        if verbose:
+            for item in check_items:
+                print(item)
         return check_items
 
     def fix_date(self, date):
