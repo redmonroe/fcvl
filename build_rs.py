@@ -112,6 +112,7 @@ class BuildRS(MonthSheet):
 
             self.export_deposit_detail(data=dict1)
             self.checklist.check_depdetail_proc(dict1['hap_date'])
+            self.checklist.check_opcash(dict1['hap_date'])
             self.write_sum_forumula1()
             reconciled_bool = self.check_totals_reconcile()
             if reconciled_bool:

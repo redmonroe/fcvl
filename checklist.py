@@ -68,9 +68,8 @@ class Checklist:
 
         return year, month
 
+    '''for some reason I cannot update dict key to pass in argument to update by column name; very frustrating'''
     def check_opcash(self, date, col1=None):
-        '''for some reason I cannot update dict key to pass in argument to update by column name; very frustrating'''
-        # data[col1] = data.pop('col1')
         breakpoint()
         year, month = self.fix_date(date)
         check_items = [item for item in self.db[self.tablename]]

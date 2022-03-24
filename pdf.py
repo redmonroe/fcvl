@@ -212,7 +212,6 @@ class StructDataExtract:
         if style =='dep_detail':
             self.deposits_list = []
             self.deposits_list.append({stmt_date: combined_list}) 
-            # breakpoint()
             return self.deposits_list
         return stmt_date, sum(line_list)
 
@@ -239,6 +238,5 @@ class StructDataExtract:
         for hap_line in lines:
             target = self.get_cleaned_target_line(hap_line)
             line_list.append(target[0])
-
 
         return stmt_date, sum(line_list)

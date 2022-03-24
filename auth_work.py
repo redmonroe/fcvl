@@ -59,8 +59,8 @@ def oauth(SCOPES, type, mode=None):
     else:
         "service not found."
 
-    print(f'\nOpening {type} {service} with oauth . . . ')
-    print(f'with scopes: {SCOPES}\n')
+    # print(f'\nOpening {type} {service} with oauth . . . ')
+    # print(f'with scopes: {SCOPES}\n')
     return service
 
 def open_sheet(SCOPES_API, my_token_api, wb_string, ws_string):

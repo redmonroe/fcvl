@@ -63,10 +63,7 @@ def autors(mode=None):
     checklist = Checklist(db=prod_cl_db)
     mformat = MonthSheet(full_sheet=production_full_sheet, path=production_path)
     build = BuildRS(full_sheet=production_full_sheet, path=production_path, mode='dev', db=prod_rs_db, tablename=prod_rs_tablename, sleep=sleep, checklist=checklist, findex_db=prod_findex_db, findex_table=prod_findex_tablename, mformat=mformat)    
-    if mode == 'testing':
-        # would like to run the test suite        
-        pass
-    elif mode == 'dev':
+    if mode == 'dev':
         '''use reset flag to reset sheet'''
         build.checklist.make_checklist()
         # build.reset_databases() #this does nothing yet
@@ -91,25 +88,6 @@ def autors(mode=None):
         cur_cl = build.checklist.show_checklist()
         for item in cur_cl:
             print(item)
-
-@click.command()
-@click.argument('mode')
-def buildrs(mode=None):
-    click.echo('buildrs()=> Make sure to explicitly set mode')
-    if mode == 'production':
-        click.echo('buildrs(): PRODUCTION')
-        # ys = BuildRSFIXXXXXXXXXXXXXXXXXXXXXXXXXXX)
-        # ys.set_user_choice()
-        # ys.control()
-    elif mode == 'dev':
-        click.echo('testing and dev mode')
-        # service = oauth(my_scopes, 'sheet')
-        buildrs = BuildRS(full_sheet=Config.TEST_RS, path=Config.TEST_RS_PATH, mode='testing')
-        buildrs.set_user_choice()
-        buildrs.buildrs_control()
-    else:
-        print('must set mode in cl')
-
 
 '''
 @click.command()
