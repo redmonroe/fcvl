@@ -54,8 +54,7 @@ class BuildRS(MonthSheet):
 
         self.checklist.make_checklist(mode=checklist_mode)
         self.findex.reset_files_for_testing()
-        breakpoint()
-        # self.findex.build_index_runner()
+        self.findex.build_index_runner()
 
         # start with what documents I have 
             # --> run_findex_build_runner

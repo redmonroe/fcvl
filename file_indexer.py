@@ -1,4 +1,5 @@
 import os
+from pprint import pprint
 from utils import Utils
 from db_utils import DBUtils
 from pdf import StructDataExtract
@@ -42,7 +43,7 @@ class FileIndexer:
         if self.mode == 'testing':
             self.reset_files_for_testing()
         self.articulate_directory()
-        self.sort_directory_by_extension()
+        self.sort_directory_by_extension(verbose=False)
         if self.mode != 'testing':
             try:
                 self.rename_by_content_xls()
@@ -51,6 +52,7 @@ class FileIndexer:
         else:
             self.rename_by_content_xls()
         
+        # breakpoint()
         self.rename_by_content_pdf()
         self.build_raw_index()
         self.update_index_for_processed()
@@ -60,55 +62,60 @@ class FileIndexer:
         for item in self.path.iterdir():
             self.directory_contents.append(item)
     
-    def sort_directory_by_extension(self):
+    def sort_directory_by_extension(self, verbose=None):
         for item in self.directory_contents:
             sub_item = Path(item)
             filename = sub_item.parts[-1]
             f_ext = filename.split('.')
             f_ext = f_ext[-1]
             self.index_dict[sub_item] = f_ext
+        
+        if verbose:
+            pprint(self.index_dict)
+        return self.index_dict
 
     def find_by_content(self, style, target_string=None, ):
-        if style == 'rr':
-            filename_sub = 'TEST_RENTROLL_'
-            filename_post = '.xls'
-            get_col = 0
-            split_col = 11
-            split_type = ' '
-            date_split = 2
+        #     filename_sub = 'TEST_RENTROLL_'
+        #     filename_post = '.xls'
+        #     get_col = 0
+        #     split_col = 11
+        #     split_type = ' '
+        #     date_split = 2
 
-        if style == 'dep':
-            filename_sub = 'TEST_DEP_'
-            filename_post = '.xls'
-            get_col = 9
-            split_col = 9
-            split_type = '/'
-            date_split = 0
+        #     filename_sub = 'TEST_DEP_'
+        #     filename_post = '.xls'
+        #     get_col = 9
+        #     split_col = 9
+        #     split_type = '/'
+        #     date_split = 0
 
-        breakpoint()
         for item in self.xls_list:
-            df = pd.read_excel(item)
-            df = df.iloc[:, 0].to_list()
-            if target_string in df:
-                period = self.df_date_wrapper(item, get_col=get_col, split_col=split_col, split_type=split_type, date_split=date_split)
+            if style in (item.stem).split('_'):
+                print('*', item)
 
-                filename = filename_sub + period + filename_post
-                new_file = os.path.join(self.path, filename)
-                shutil.copy2(item, new_file)
-                shutil.move(str(item), Config.TEST_MOVE_PATH)
-                self.processed_files.append((filename, period))
-                self.xls_list.remove(item)
+            # breakpoint()
+            # df = pd.read_excel(item)
+            # df = df.iloc[:, 0].to_list()
+            # if target_string in df:
+            #     period = self.df_date_wrapper(item, get_col=get_col, split_col=split_col, split_type=split_type, date_split=date_split)
+
+            #     filename = filename_sub + period + filename_post
+            #     new_file = os.path.join(self.path, filename)
+            #     shutil.copy2(item, new_file)
+            #     shutil.move(str(item), Config.TEST_MOVE_PATH)
+            #     self.processed_files.append((filename, period))
+            #     self.xls_list.remove(item)
+        
 
     def rename_by_content_xls(self):
         '''find rent roll by content'''
-        ## this can be moved out to own function ie make_xls_list, make_pdf_list
         for name, extension in self.index_dict.items():
-            if extension == 'xls':
+            if extension == 'xls' or extension == 'xlsx':
                 self.xls_list.append(name)
 
-        self.find_by_content(style='rr', target_string='Affordable Rent Roll Detail/ GPR Report')
+        self.find_by_content(style='rent_roll', target_string='Affordable Rent Roll Detail/ GPR Report')
 
-        self.find_by_content(style='dep', target_string='BANK DEPOSIT DETAILS')
+        # self.find_by_content(style='deposits', target_string='BANK DEPOSIT DETAILS')
 
     def rename_by_content_pdf(self):
         '''index opcashes'''
@@ -259,7 +266,6 @@ class FileIndexer:
     def reset_files_for_testing(self):
         should_continue_dep = self.remove_generated_file_from_dir(path1=self.path, file1=self.GENERATED_DEP_FILE)
         should_continue_rr = self.remove_generated_file_from_dir(path1=self.path, file1=self.GENERATED_RR_FILE)
-        # breakpoint()
         if should_continue_dep:
             self.move_original_back_to_dir(discard_dir=self.discard_pile, target_file=self.TEST_DEP_FILE, target_dir=self.path)
         if should_continue_rr:

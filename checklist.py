@@ -70,7 +70,6 @@ class Checklist:
 
     '''for some reason I cannot update dict key to pass in argument to update by column name; very frustrating'''
     def check_opcash(self, date, col1=None):
-        breakpoint()
         year, month = self.fix_date(date)
         check_items = [item for item in self.db[self.tablename]]
         for item in check_items:
