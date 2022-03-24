@@ -60,7 +60,6 @@ def autors(mode=None):
     prod_rs_db = Config.test_build_db
     prod_rs_tablename = 'build_prod'
 
-
     checklist = Checklist(db=prod_cl_db)
     mformat = MonthSheet(full_sheet=production_full_sheet, path=production_path)
     build = BuildRS(full_sheet=production_full_sheet, path=production_path, mode='dev', db=prod_rs_db, tablename=prod_rs_tablename, sleep=sleep, checklist=checklist, findex_db=prod_findex_db, findex_table=prod_findex_tablename, mformat=mformat)    
@@ -68,15 +67,19 @@ def autors(mode=None):
         # would like to run the test suite        
         pass
     elif mode == 'dev':
-        build.reset_full_sheet()
+        '''use reset flag to reset sheet'''
+        build.checklist.make_checklist()
         # build.reset_databases() #this does nothing yet
-        build.findex.delete_table()
+        # build.findex.delete_table()
         # print('findex before')
         # build.findex.show_table(table='findex_prod')
         build.automatic_build(checklist_mode='autoreset')    
 
-    elif mode == 'reset':   
+    elif mode == 'reset_sheet':   
         build.reset_full_sheet()
+
+    elif mode == 'reset_cl':   
+        db, tablename = build.checklist.drop_checklist()
 
     elif mode == 'show_checklist':   
         cur_cl = build.checklist.show_checklist()

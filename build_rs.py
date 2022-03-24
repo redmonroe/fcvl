@@ -64,7 +64,7 @@ class BuildRS(MonthSheet):
 
         # ISSUES: opcash_proc is not being marked as true
         # ISSUES: CAN i DO THIS WITH MULTIPLE RENT SHEETS, i DON'T THINK IT WILL LOOP CORRECTLY W/O ADJUSTMENT
-        
+
         self.proc_condition_list = self.check_triad_processed()
         self.reformat_conditions_as_bool(trigger_condition=3)
         self.make_list_of_true_dates()
@@ -86,7 +86,6 @@ class BuildRS(MonthSheet):
 
         for item in self.good_opcash_list: #
             self.write_opcash_detail(item)
-            print(self.findex.hap_list)
 
     def write_opcash_detail(self, item):
         for good_date, hap in zip(self.proc_ms_list, self.findex.hap_list):
@@ -159,9 +158,6 @@ class BuildRS(MonthSheet):
                         self.good_dep_list.append(record)
 
         return self.good_opcash_list, self.good_rr_list, self.good_dep_list
-
-
- 
 
     def make_list_of_true_dates(self):
         self.final_to_process_list = []

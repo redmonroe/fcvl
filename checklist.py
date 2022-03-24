@@ -47,6 +47,7 @@ class Checklist:
         print('\ndropping checklist')
         checklist = self.db[self.tablename]
         checklist.drop()
+        return self.db, self.tablename
 
     def show_checklist(self, col_str=None):
         return_list = []
@@ -70,7 +71,7 @@ class Checklist:
     def check_opcash(self, date, col1=None):
         '''for some reason I cannot update dict key to pass in argument to update by column name; very frustrating'''
         # data[col1] = data.pop('col1')
-
+        breakpoint()
         year, month = self.fix_date(date)
         check_items = [item for item in self.db[self.tablename]]
         for item in check_items:
