@@ -1,7 +1,7 @@
 # import sys
 # import os
 # import time
-# import pytest
+import pytest
 # current = os.path.dirname(os.path.realpath(__file__))
 # parent = os.path.dirname(current)
 # sys.path.append(parent)
@@ -43,11 +43,18 @@
 
 # sleep1 = 1
 
-# # pdb.set_trace()
-
+#  pytest -v -m production
 class TestProduction:
 
-#     test_message = 'hi'
+    test_message = 'hi'
+
+    @pytest.mark.production
+    def test_setup(self):
+        assert self.test_message == 'hi'
+
+
+    #  build.automatic_build(checklist_mode='autoreset') 
+
 #     path_contents = []
 #     db = None
 

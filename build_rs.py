@@ -72,8 +72,8 @@ class BuildRS(MonthSheet):
             self.checklist.check_basedocs_proc(date)
 
         self.checklist.show_checklist(verbose=True)
-        breakpoint()
         self.final_to_process_list = [self.fix_date(date).split(' ')[0] for date in self.final_to_process_list]
+        breakpoint()
         ys = YearSheet(full_sheet=self.full_sheet, month_range=self.final_to_process_list, checklist=self.checklist)
         shnames = ys.auto_control()
         self.proc_ms_list = self.make_is_ready_to_write_list()
