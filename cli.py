@@ -65,13 +65,11 @@ def autors(mode=None):
     build = BuildRS(full_sheet=production_full_sheet, path=production_path, mode='dev', db=prod_rs_db, tablename=prod_rs_tablename, sleep=sleep, checklist=checklist, findex_db=prod_findex_db, findex_table=prod_findex_tablename, mformat=mformat)    
     if mode == 'dev':
         '''use reset flag to reset sheet'''
-        build.checklist.make_checklist()
         # build.reset_databases() #this does nothing yet
         # build.findex.delete_table()
         # print('findex before')
         # build.findex.show_table(table='findex_prod')
-        build.automatic_build(checklist_mode='autoreset')    
-        breakpoint()
+        build.automatic_build(checklist_mode='autoreset')       
 
     elif mode == 'reset_sheet':   
         build.reset_full_sheet()

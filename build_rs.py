@@ -54,7 +54,8 @@ class BuildRS(MonthSheet):
 
         self.checklist.make_checklist(mode=checklist_mode)
         self.findex.reset_files_for_testing()
-        self.findex.build_index_runner()
+        breakpoint()
+        # self.findex.build_index_runner()
 
         # start with what documents I have 
             # --> run_findex_build_runner
@@ -64,7 +65,7 @@ class BuildRS(MonthSheet):
 
         # ISSUES: opcash_proc is not being marked as true
         # ISSUES: CAN i DO THIS WITH MULTIPLE RENT SHEETS, i DON'T THINK IT WILL LOOP CORRECTLY W/O ADJUSTMENT
-
+        '''
         self.proc_condition_list = self.check_triad_processed()
         self.reformat_conditions_as_bool(trigger_condition=3)
         self.make_list_of_true_dates()
@@ -86,6 +87,7 @@ class BuildRS(MonthSheet):
 
         for item in self.good_opcash_list: #
             self.write_opcash_detail(item)
+        '''
 
     def write_opcash_detail(self, item):
         for good_date, hap in zip(self.proc_ms_list, self.findex.hap_list):

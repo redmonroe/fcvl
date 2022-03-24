@@ -33,12 +33,15 @@ class FileIndexer:
         self.rr_list = []
         self.dep_list = []
         self.deposit_and_date_list = []
+        self.TEST_RR_FILE = 'rent_roll_01_2022.xls'
+        self.TEST_DEP_FILE = 'deposits_01_2022.xls'
+        self.GENERATED_RR_FILE = 'TEST_RENTROLL_012022.xls'
+        self.GENERATED_DEP_FILE = 'TEST_DEP_012022.xls' 
 
     def build_index_runner(self):
         if self.mode == 'testing':
             self.reset_files_for_testing()
         self.articulate_directory()
-        breakpoint()
         self.sort_directory_by_extension()
         if self.mode != 'testing':
             try:
@@ -58,7 +61,6 @@ class FileIndexer:
             self.directory_contents.append(item)
     
     def sort_directory_by_extension(self):
-
         for item in self.directory_contents:
             sub_item = Path(item)
             filename = sub_item.parts[-1]
@@ -83,6 +85,7 @@ class FileIndexer:
             split_type = '/'
             date_split = 0
 
+        breakpoint()
         for item in self.xls_list:
             df = pd.read_excel(item)
             df = df.iloc[:, 0].to_list()
@@ -240,6 +243,8 @@ class FileIndexer:
             f_ext = filename.split('.')
             f_ext = f_ext[-1]
             self.test_list.append(filename)
+
+        return self.test_list
     
     def df_date_wrapper(self, item, get_col=None, split_col=None, split_type=None, date_split=None):
             df_date = pd.read_excel(item)
@@ -252,23 +257,20 @@ class FileIndexer:
             return period
 
     def reset_files_for_testing(self):
-        TEST_RR_FILE = 'TEST_rent_roll_01_2022.xls'
-        TEST_DEP_FILE = 'TEST_deposits_01_2022.xls'
-        GENERATED_RR_FILE = 'TEST_RENTROLL_012022.xls'
-        GENERATED_DEP_FILE = 'TEST_DEP_012022.xls'
-        path = Config.TEST_RS_PATH
-        discard_pile = Config.TEST_MOVE_PATH
-
-        self.remove_generated_file_from_dir(path1=path, file1=GENERATED_DEP_FILE)
-        self.remove_generated_file_from_dir(path1=path, file1=GENERATED_RR_FILE)
-        self.move_original_back_to_dir(discard_dir=discard_pile, target_file=TEST_RR_FILE, target_dir=path)
-        self.move_original_back_to_dir(discard_dir=discard_pile, target_file=TEST_DEP_FILE, target_dir=path)
+        should_continue_dep = self.remove_generated_file_from_dir(path1=self.path, file1=self.GENERATED_DEP_FILE)
+        should_continue_rr = self.remove_generated_file_from_dir(path1=self.path, file1=self.GENERATED_RR_FILE)
+        # breakpoint()
+        if should_continue_dep:
+            self.move_original_back_to_dir(discard_dir=self.discard_pile, target_file=self.TEST_DEP_FILE, target_dir=self.path)
+        if should_continue_rr:
+            self.move_original_back_to_dir(discard_dir=self.discard_pile, target_file=self.TEST_RR_FILE, target_dir=self.path)
 
     def remove_generated_file_from_dir(self, path1=None, file1=None):
         try:
             os.remove(os.path.join(str(path1), file1))
         except FileNotFoundError as e:
             print(e, f'{file1} NOT found in test_data_repository, make sure you are looking for the right name')
+            return False
     
     def move_original_back_to_dir(self, discard_dir=None, target_file=None, target_dir=None):
         self.get_file_names_kw(discard_dir)
