@@ -38,6 +38,7 @@ class FileIndexer:
         if self.mode == 'testing':
             self.reset_files_for_testing()
         self.articulate_directory()
+        breakpoint()
         self.sort_directory_by_extension()
         if self.mode != 'testing':
             try:

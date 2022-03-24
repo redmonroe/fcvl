@@ -71,12 +71,20 @@ def autors(mode=None):
         # print('findex before')
         # build.findex.show_table(table='findex_prod')
         build.automatic_build(checklist_mode='autoreset')    
+        breakpoint()
 
     elif mode == 'reset_sheet':   
         build.reset_full_sheet()
 
     elif mode == 'reset_cl':   
         db, tablename = build.checklist.drop_checklist()
+        cur_cl = build.checklist.show_checklist()
+
+        if cur_cl == []:
+            print(f'database: {db}, table {tablename} are empty!')
+        else:
+            for item in cur_cl:
+                print(item)
 
     elif mode == 'show_checklist':   
         cur_cl = build.checklist.show_checklist()
