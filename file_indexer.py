@@ -44,6 +44,7 @@ class FileIndexer:
             self.reset_files_for_testing()
         self.articulate_directory()
         self.sort_directory_by_extension(verbose=False)
+        print('stage1:', len(self.processed_files))
         if self.mode != 'testing':
             try:
                 self.rename_by_content_xls()
@@ -52,11 +53,15 @@ class FileIndexer:
         else:
             self.rename_by_content_xls()
         
-        # breakpoint()
+        print('stage2:', len(self.processed_files))
         self.rename_by_content_pdf()
-        self.build_raw_index()
-        self.update_index_for_processed()
+        print('stage3:', len(self.processed_files))
+        self.build_raw_index(autodrop=True, verbose=False)
+        print('stage4:', len(self.processed_files))
+        self.update_index_for_processed(verbose=True)
+        print('stage5:', len(self.processed_files))
         self.get_list_of_processed()
+        print('stage6:', len(self.processed_files))
 
     def articulate_directory(self):
         for item in self.path.iterdir():
@@ -75,37 +80,26 @@ class FileIndexer:
         return self.index_dict
 
     def find_by_content(self, style, target_string=None, ):
-        #     filename_sub = 'TEST_RENTROLL_'
-        #     filename_post = '.xls'
-        #     get_col = 0
-        #     split_col = 11
-        #     split_type = ' '
-        #     date_split = 2
+        if style == 'rent':
+            get_col = 0
+            split_col = 11
+            split_type = ' '
+            date_split = 2
 
-        #     filename_sub = 'TEST_DEP_'
-        #     filename_post = '.xls'
-        #     get_col = 9
-        #     split_col = 9
-        #     split_type = '/'
-        #     date_split = 0
+        if style == 'deposits':
+            get_col = 9
+            split_col = 9
+            split_type = '/'
+            date_split = 0
 
         for item in self.xls_list:
-            if style in (item.stem).split('_'):
-                print('*', item)
-
-            # breakpoint()
-            # df = pd.read_excel(item)
-            # df = df.iloc[:, 0].to_list()
-            # if target_string in df:
-            #     period = self.df_date_wrapper(item, get_col=get_col, split_col=split_col, split_type=split_type, date_split=date_split)
-
-            #     filename = filename_sub + period + filename_post
-            #     new_file = os.path.join(self.path, filename)
-            #     shutil.copy2(item, new_file)
-            #     shutil.move(str(item), Config.TEST_MOVE_PATH)
-            #     self.processed_files.append((filename, period))
-            #     self.xls_list.remove(item)
-        
+            part_list = (item.stem).split('_')
+            if style in part_list:
+                df = pd.read_excel(item)
+                df = df.iloc[:, 0].to_list()
+                if target_string in df:
+                    period = self.df_date_wrapper(item, get_col=get_col, split_col=split_col, split_type=split_type, date_split=date_split)
+                    self.processed_files.append((item.name, period))     
 
     def rename_by_content_xls(self):
         '''find rent roll by content'''
@@ -113,9 +107,11 @@ class FileIndexer:
             if extension == 'xls' or extension == 'xlsx':
                 self.xls_list.append(name)
 
-        self.find_by_content(style='rent_roll', target_string='Affordable Rent Roll Detail/ GPR Report')
+        self.find_by_content(style='rent', target_string='Affordable Rent Roll Detail/ GPR Report')
 
-        # self.find_by_content(style='deposits', target_string='BANK DEPOSIT DETAILS')
+        self.find_by_content(style='deposits', target_string='BANK DEPOSIT DETAILS')
+
+        return self.processed_files
 
     def rename_by_content_pdf(self):
         '''index opcashes'''
@@ -172,25 +168,27 @@ class FileIndexer:
             date_time = datetime. datetime.fromtimestamp(file_stat.st_ctime)
             print(item, date_time)
 
-    def build_raw_index(self):
-        db = self.db
-        tablename = self.tablename
-        
-        table = db[tablename]
-        table.drop()
+    def build_raw_index(self, autodrop=None, verbose=None):
+        table = self.db[self.tablename]
+        if autodrop:
+            table.drop()
         self.directory_contents = []
         self.articulate_directory()
         for item in self.directory_contents:
             if item.name != 'desktop.ini':
                 table.insert(dict(fn=item.name, path=str(item), status='raw'))
+        if verbose:
+            self.show_table()
 
-    def update_index_for_processed(self):
+    def update_index_for_processed(self, verbose=None):
         for item in self.db[self.tablename]:
             for proc_file in self.processed_files:
                 if item['fn'] == proc_file[0]:                 
                     proc_date = self.normalize_dates(proc_file[1])
                     data = dict(id=item['id'], status='processed', period=proc_date)
                     self.db[self.tablename].update(data, ['id'])
+        if verbose:
+            self.show_table()
 
     def normalize_dates(self, raw_date=None):    
         if raw_date:
@@ -228,8 +226,7 @@ class FileIndexer:
 
     def show_table(self, table=None):
         print(f'\n contents of {self.db}\n')
-        db = self.db
-        for results in db[table]:
+        for results in self.db[self.tablename]:
             print(results)
 
     def show_checklist(self, col_str=None):

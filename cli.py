@@ -66,9 +66,6 @@ def autors(mode=None):
     if mode == 'dev':
         '''use reset flag to reset sheet'''
         # build.reset_databases() #this does nothing yet
-        # build.findex.delete_table()
-        # print('findex before')
-        # build.findex.show_table(table='findex_prod')
         build.automatic_build(checklist_mode='autoreset')       
 
     elif mode == 'reset_sheet':   
