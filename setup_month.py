@@ -6,6 +6,7 @@ from db_utils import DBUtils
 from google_api_calls_abstract import GoogleApiCalls
 from pathlib import Path
 import pandas as pd
+from numpy import nan
 
 class MonthSheet:
 
@@ -91,11 +92,13 @@ class MonthSheet:
             print(item.name)
 
     def read_excel_ms(self, verbose=False):
-
         df = pd.read_excel(self.file_input_path, header=16)
         if verbose: 
             pd.set_option('display.max_columns', None)
             print(df.head(100))
+
+        df = self.str_to_float(df)
+
         t_name = df['Name'].tolist()
         unit = df['Unit'].tolist()
         k_rent = self.str_to_float(df['Lease Rent'].tolist())
@@ -105,9 +108,25 @@ class MonthSheet:
         return self.fix_data(t_name), self.fix_data(unit), self.fix_data(k_rent), self.fix_data(subsidy), self.fix_data(t_rent)
 
     def str_to_float(self, list1):
-        list1 = [item.replace(',', '') for item in list1]
-        list1 = [float(item) for item in list1]
-        return list1
+        list1 = [True for item in list1 if item is nan]
+        if len(list1) == 0:
+            print('No move out')
+            list1 = [item.replace(',', '') for item in list1]
+            list1 = [float(item) for item in list1]
+            return list1
+        else:
+            print('found a move out')
+            move_out_list = []
+            for index, row in df.iterrows():
+                row_lr = row['Lease Rent']
+                row_mr = row['Market/\nNote Rate\nRent']
+                if row_lr is nan and row_mr is nan:
+                    move_out_list.append(index)
+
+            for row in move_out_list:
+                df.drop(index=row)
+
+            return df
     
     def fix_data(self, item):
         item.pop()
@@ -201,3 +220,40 @@ class MonthSheet:
     def delete_table(self):
         db = Config
         DBUtils.delete_table(self, self.db)
+
+# if __name__ == '__main__':
+# print('hi')
+# ''' if 'Lease Rent' == nan & 'Market/\nNote Rate\nRent' == nan, then REMOVE entire line before we break it out into lists'''
+# '''also want to make some kind of notation here about what is going on'''
+# '''get len'''
+
+# def str_to_float(list1):
+#     list1 = [True for item in list1 if item is nan]
+#     if len(list1) == 0:
+#         print('No move out')
+#         list1 = [item.replace(',', '') for item in list1]
+#         list1 = [float(item) for item in list1]
+#         return list1
+#     else:
+#         print('found a move out')
+#         move_out_list = []
+#         for index, row in df.iterrows():
+#             row_lr = row['Lease Rent']
+#             row_mr = row['Market/\nNote Rate\nRent']
+#             if row_lr is nan and row_mr is nan:
+#                 move_out_list.append(index)
+
+#         for row in move_out_list:
+#             df.drop(index=row)
+
+#         return move_out_list
+
+
+# fi = '/mnt/c/Users/joewa/Google Drive/fall creek village I/audit 2022/test_rent_sheets_data_sources/rent_roll_02_2022.xlsx'
+# pd.set_option('display.max_columns', None)
+# pd.set_option('display.max_rows', None)
+# df = pd.read_excel(fi, header=16)
+# print(len(df))
+# k = str_to_float(df['Lease Rent'].tolist())
+# print(len(df))
+# breakpoint()

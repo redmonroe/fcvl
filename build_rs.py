@@ -71,9 +71,8 @@ class BuildRS(MonthSheet):
         for date in self.final_to_process_list:
             self.checklist.check_basedocs_proc(date)
 
-        self.checklist.show_checklist(verbose=True)
+        self.checklist.show_checklist(verbose=False)
         self.final_to_process_list = [self.fix_date(date).split(' ')[0] for date in self.final_to_process_list]
-        breakpoint()
         ys = YearSheet(full_sheet=self.full_sheet, month_range=self.final_to_process_list, checklist=self.checklist)
         shnames = ys.auto_control()
         self.proc_ms_list = self.make_is_ready_to_write_list()
@@ -85,6 +84,8 @@ class BuildRS(MonthSheet):
 
         for item in self.good_dep_list:
             self.write_payments(item)
+
+        breakpoint()
 
         for item in self.good_opcash_list: #
             self.write_opcash_detail(item)
@@ -155,9 +156,9 @@ class BuildRS(MonthSheet):
                 if date == record['period']:
                     if 'cash' in record['fn'].split('_'):
                         self.good_opcash_list.append(record)
-                    if 'RENTROLL' in record['fn'].split('_'):
+                    if 'rent' in record['fn'].split('_'):
                         self.good_rr_list.append(record)
-                    if 'DEP' in record['fn'].split('_'):
+                    if 'deposits' in record['fn'].split('_'):
                         self.good_dep_list.append(record)
 
         return self.good_opcash_list, self.good_rr_list, self.good_dep_list

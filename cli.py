@@ -64,7 +64,6 @@ def autors(mode=None):
     mformat = MonthSheet(full_sheet=production_full_sheet, path=production_path)
     build = BuildRS(full_sheet=production_full_sheet, path=production_path, mode='dev', db=prod_rs_db, tablename=prod_rs_tablename, sleep=sleep, checklist=checklist, findex_db=prod_findex_db, findex_table=prod_findex_tablename, mformat=mformat)    
     if mode == 'dev':
-        '''use reset flag to reset sheet'''
         # build.reset_databases() #this does nothing yet
         build.automatic_build(checklist_mode='autoreset')       
 
