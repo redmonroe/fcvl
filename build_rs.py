@@ -390,8 +390,6 @@ class BuildRS(MonthSheet):
         time.sleep(self.sleep)
         print(f'sleeping for {self.sleep} seconds')
     
-    def reset_databases(self):
-        pass
 
 
 

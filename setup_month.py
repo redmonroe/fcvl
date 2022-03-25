@@ -80,8 +80,10 @@ class MonthSheet:
     def show_current_sheets(self, interactive=False):
         print('showing current sheets')
         titles_dict = Utils.get_existing_sheets(self.service, self.full_sheet)
+            
         path = Utils.show_files_as_choices(titles_dict, interactive=interactive)
         if interactive == True:
+            
             return path
         return titles_dict
 
@@ -93,11 +95,13 @@ class MonthSheet:
 
     def read_excel_ms(self, verbose=False):
         df = pd.read_excel(self.file_input_path, header=16)
+        # jan len is 68
         if verbose: 
             pd.set_option('display.max_columns', None)
             print(df.head(100))
-
-        df = self.str_to_float(df)
+        if len(df) > 68:
+            df = self.check_for_mo(df)
+        # breakpoint()
 
         t_name = df['Name'].tolist()
         unit = df['Unit'].tolist()
@@ -108,12 +112,17 @@ class MonthSheet:
         return self.fix_data(t_name), self.fix_data(unit), self.fix_data(k_rent), self.fix_data(subsidy), self.fix_data(t_rent)
 
     def str_to_float(self, list1):
+        list1 = [item.replace(',', '') for item in list1]
+        list1 = [float(item) for item in list1]
+        return list1
+
+    def check_for_mo(self, df):
+        # breakpoint()
+        list1 = df['Lease Rent'].tolist()
         list1 = [True for item in list1 if item is nan]
+    
         if len(list1) == 0:
             print('No move out')
-            list1 = [item.replace(',', '') for item in list1]
-            list1 = [float(item) for item in list1]
-            return list1
         else:
             print('found a move out')
             move_out_list = []
@@ -126,7 +135,8 @@ class MonthSheet:
             for row in move_out_list:
                 df.drop(index=row)
 
-            return df
+        breakpoint()
+        return df
     
     def fix_data(self, item):
         item.pop()
@@ -221,39 +231,72 @@ class MonthSheet:
         db = Config
         DBUtils.delete_table(self, self.db)
 
+
+
+
 # if __name__ == '__main__':
-# print('hi')
+print('hi')
 # ''' if 'Lease Rent' == nan & 'Market/\nNote Rate\nRent' == nan, then REMOVE entire line before we break it out into lists'''
 # '''also want to make some kind of notation here about what is going on'''
 # '''get len'''
 
-# def str_to_float(list1):
-#     list1 = [True for item in list1 if item is nan]
-#     if len(list1) == 0:
-#         print('No move out')
-#         list1 = [item.replace(',', '') for item in list1]
-#         list1 = [float(item) for item in list1]
-#         return list1
-#     else:
-#         print('found a move out')
-#         move_out_list = []
-#         for index, row in df.iterrows():
-#             row_lr = row['Lease Rent']
-#             row_mr = row['Market/\nNote Rate\nRent']
-#             if row_lr is nan and row_mr is nan:
-#                 move_out_list.append(index)
 
-#         for row in move_out_list:
-#             df.drop(index=row)
+def check_for_mo(df):
+    # breakpoint()
+    list1 = df['Lease Rent'].tolist()
+    list1 = [True for item in list1 if item is nan]
 
-#         return move_out_list
+    if len(list1) == 0:
+        print('No move out')
+    else:
+        print('found a move out')
+        move_out_list = []
+        for index, row in df.iterrows():
+            row_lr = row['Lease Rent']
+            row_mr = row['Market/\nNote Rate\nRent']
+            if row_lr is nan and row_mr is nan:
+                move_out_list.append(index)
 
+        print(len(df))
+        print(df.index)
+        df = df.drop(index=move_out_list, axis=0)
+        print(len(df))
 
-# fi = '/mnt/c/Users/joewa/Google Drive/fall creek village I/audit 2022/test_rent_sheets_data_sources/rent_roll_02_2022.xlsx'
-# pd.set_option('display.max_columns', None)
-# pd.set_option('display.max_rows', None)
-# df = pd.read_excel(fi, header=16)
-# print(len(df))
+    # breakpoint()
+    return df
+
+def str_to_float(self, list1):
+    list1 = [item.replace(',', '') for item in list1]
+    list1 = [float(item) for item in list1]
+    return list1
+
+# def read_excel_ms(self, verbose=False):
+#     df = pd.read_excel(fi, header=16)
+#     # jan len is 68
+#     breakpoint()
+#     if verbose: 
+#         pd.set_option('display.max_columns', None)
+#         print(df.head(100))
+#     # breakpoint()
+
+#     t_name = df['Name'].tolist()
+#     unit = df['Unit'].tolist()
+#     k_rent = self.str_to_float(df['Lease Rent'].tolist())
+#     t_rent = self.str_to_float(df['Actual Rent Charge'].tolist())
+#     subsidy = self.str_to_float(df['Actual Subsidy Charge'].tolist())
+
+#     return self.fix_data(t_name), self.fix_data(unit), self.fix_data(k_rent), self.fix_data(subsidy), self.fix_data(t_rent)
+
+ms = MonthSheet(full_sheet=Config.TEST_RS, path=Config.TEST_RS_PATH)
+
+pd.set_option('display.max_columns', None)
+pd.set_option('display.max_rows', None)
+fi = '/mnt/c/Users/joewa/Google Drive/fall creek village I/audit 2022/test_rent_sheets_data_sources/rent_roll_02_2022.xlsx'
+df = pd.read_excel(fi, header=16)
+if len(df) > 68:
+    df = check_for_mo(df)
 # k = str_to_float(df['Lease Rent'].tolist())
 # print(len(df))
 # breakpoint()
+
+
