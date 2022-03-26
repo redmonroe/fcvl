@@ -40,6 +40,7 @@ class FileIndexer:
         self.GENERATED_DEP_FILE = 'TEST_DEP_012022.xls' 
         self.init_findex_status = None
         self.items_in_db = None
+        self.unindexed_files = []
 
     def build_index_runner(self):
         
@@ -61,8 +62,8 @@ class FileIndexer:
             self.processed_files = self.rename_by_content_pdf()
         elif findex_status == 'proceed':
             # is there new files?????
-            self.show_unchecked_files()
             self.articulate_directory()
+            self.show_unchecked_files()
 
         # if self.mode == 'testing':
         #     self.reset_files_for_testing()
@@ -88,8 +89,16 @@ class FileIndexer:
         
         return self.init_findex_status
 
-    def show_unchecked_files(self):
-        pass
+    def show_unchecked_files(self, verbose=None):
+        db_records = [item['fn'] for item in self.db[self.tablename]]
+        cur_dir = [item.name for item in self.directory_contents]
+
+        for f in cur_dir:
+            if f not in db_records:
+                self.unindexed_files.append(f)
+                if verbose:
+                    print(item)
+        return self.unindexed_files           
 
     def articulate_directory(self):
         self.directory_contents = [item for item in self.path.iterdir() if item.suffix != '.ini'] 
