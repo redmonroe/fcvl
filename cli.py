@@ -68,7 +68,7 @@ def autors(mode=None):
         # build.automatic_build(checklist_mode='autoreset')     
 
     if mode == 'iter_dev':
-        build.iterative_build()  
+        build.iterative_build(checklist_mode='iterative_cl')  
 
     elif mode == 'reset_sheet':   
         build.reset_full_sheet()
@@ -83,10 +83,8 @@ def autors(mode=None):
             for item in cur_cl:
                 print(item)
 
-    elif mode == 'show_checklist':   
-        cur_cl = build.checklist.show_checklist()
-        for item in cur_cl:
-            print(item)
+    elif mode == 'show_cl':   
+        cur_cl = build.checklist.show_checklist(verbose=True)
             
     elif mode == 'make_checklist':  
         cur_cl = build.checklist.make_checklist()

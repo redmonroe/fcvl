@@ -13,12 +13,22 @@ class Checklist:
             self.db = db
         
         self.tablename = 'checklist'
+        self.init_status = None
 
     def check_cl_exist(self):
-        if self.db:
-            return True
+        months_ytd = self.limit_date()
+        items_in_db = self.show_checklist()
+
+        if len(items_in_db) == 0: # cl is empty
+            self.init_status = 'empty_db'
+        elif len(items_in_db) > len(months_ytd):
+            self.init_status = 'issue: double entry?, reset?'
+        elif len(items_in_db) == len(months_ytd):
+            self.init_status = 'proceed'
         else:
-            return False
+            self.init_status = 'other'
+
+        return self.init_status
 
     def limit_date(self):
         range_month = datetime.now().strftime('%m')
@@ -27,20 +37,21 @@ class Checklist:
         month_list = pd.date_range(f'{Config.current_year}-01-01',f'{Config.current_year}-{range_month}-31', 
               freq='MS').strftime("%b").tolist()
         month_list = [item.lower() for item in month_list]
-        breakpoint()
-        # year = datetime.now.strftime("%Y") 
-        # month = datetime.now.strftime("%b")
-        return year, month 
 
-    def make_checklist(self, mode=None):
+        return month_list
+
+    def make_checklist(self, month_list=None, mode=None):
         print(f'\nmaking checklist for the year {Config.current_year}')
         table = self.db[self.tablename]
         if mode == 'autoreset':
             print('\n autoreset: checklist')
             table.drop()
 
-        month_list = pd.date_range(f'{Config.current_year}-01-01',f'{Config.current_year}-12-31', 
-              freq='MS').strftime("%b").tolist()
+            month_list = pd.date_range(f'{Config.current_year}-01-01',f'{Config.current_year}-12-31', 
+                  freq='MS').strftime("%b").tolist()
+
+        if mode == 'iterative_cl':
+            month_list = month_list
 
         for month in month_list:  
             table.insert(dict(
@@ -146,9 +157,3 @@ class Checklist:
             if item['year'] == year and item['month'] == month: 
                 data = dict(id=item['id'], grand_total_ok=True)
                 self.db[self.tablename].update(data, ['id'])
-
-if __name__ == '__main__':
-    clist = Checklist(db=Config.test_checklist_db)
-    # clist.make_checklist()
-    # breakpoint()
-    return_list, list1 = clist.show_checklist(col_str='id')

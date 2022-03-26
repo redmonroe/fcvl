@@ -90,14 +90,20 @@ class BuildRS(MonthSheet):
 
     def iterative_build(self, checklist_mode=None):
         # where are we: look at checklist
-        checklist_does_not_exist = self.checklist.check_cl_exist()
-        if checklist_does_not_exist:
-            self.checklist.make_checklist(mode=checklist_mode)
+        cl_init_status = self.checklist.check_cl_exist()
 
-        year, month = self.checklist.limit_date()
+        if cl_init_status == 'empty_db':        
+            month_list = self.checklist.limit_date()
+            self.checklist.make_checklist(month_list=month_list, mode=checklist_mode)
+        elif cl_init_status == 'proceed':
+            records = self.checklist.show_checklist(verbose=True)
 
-        breakpoint()
-        records = self.checklist.show_checklist()
+
+        # breakpoint()
+
+
+        # would be assert records == len of number in months in this year
+        # breakpoint()
         # reduce records to thos prior to current month
         pass
 
