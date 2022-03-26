@@ -14,6 +14,24 @@ class Checklist:
         
         self.tablename = 'checklist'
 
+    def check_cl_exist(self):
+        if self.db:
+            return True
+        else:
+            return False
+
+    def limit_date(self):
+        range_month = datetime.now().strftime('%m')
+        str_month = datetime.now().strftime('%b').lower()
+
+        month_list = pd.date_range(f'{Config.current_year}-01-01',f'{Config.current_year}-{range_month}-31', 
+              freq='MS').strftime("%b").tolist()
+        month_list = [item.lower() for item in month_list]
+        breakpoint()
+        # year = datetime.now.strftime("%Y") 
+        # month = datetime.now.strftime("%b")
+        return year, month 
+
     def make_checklist(self, mode=None):
         print(f'\nmaking checklist for the year {Config.current_year}')
         table = self.db[self.tablename]

@@ -85,10 +85,21 @@ class BuildRS(MonthSheet):
         for item in self.good_dep_list:
             self.write_payments(item)
 
-        breakpoint()
-
         for item in self.good_opcash_list: #
             self.write_opcash_detail(item)
+
+    def iterative_build(self, checklist_mode=None):
+        # where are we: look at checklist
+        checklist_does_not_exist = self.checklist.check_cl_exist()
+        if checklist_does_not_exist:
+            self.checklist.make_checklist(mode=checklist_mode)
+
+        year, month = self.checklist.limit_date()
+
+        breakpoint()
+        records = self.checklist.show_checklist()
+        # reduce records to thos prior to current month
+        pass
 
     def write_opcash_detail(self, item):
         for good_date, hap in zip(self.proc_ms_list, self.findex.hap_list):

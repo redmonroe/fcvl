@@ -101,7 +101,6 @@ class MonthSheet:
             print(df.head(100))
         if len(df) > 68:
             df = self.check_for_mo(df)
-        # breakpoint()
 
         t_name = df['Name'].tolist()
         unit = df['Unit'].tolist()
@@ -117,10 +116,9 @@ class MonthSheet:
         return list1
 
     def check_for_mo(self, df):
-        # breakpoint()
         list1 = df['Lease Rent'].tolist()
         list1 = [True for item in list1 if item is nan]
-    
+
         if len(list1) == 0:
             print('No move out')
         else:
@@ -132,10 +130,7 @@ class MonthSheet:
                 if row_lr is nan and row_mr is nan:
                     move_out_list.append(index)
 
-            for row in move_out_list:
-                df.drop(index=row)
-
-        breakpoint()
+            df = df.drop(index=move_out_list, axis=0)
         return df
     
     def fix_data(self, item):
@@ -240,9 +235,8 @@ print('hi')
 # '''also want to make some kind of notation here about what is going on'''
 # '''get len'''
 
-
+'''
 def check_for_mo(df):
-    # breakpoint()
     list1 = df['Lease Rent'].tolist()
     list1 = [True for item in list1 if item is nan]
 
@@ -257,19 +251,14 @@ def check_for_mo(df):
             if row_lr is nan and row_mr is nan:
                 move_out_list.append(index)
 
-        print(len(df))
-        print(df.index)
         df = df.drop(index=move_out_list, axis=0)
-        print(len(df))
-
-    # breakpoint()
     return df
 
 def str_to_float(self, list1):
     list1 = [item.replace(',', '') for item in list1]
     list1 = [float(item) for item in list1]
     return list1
-
+'''
 # def read_excel_ms(self, verbose=False):
 #     df = pd.read_excel(fi, header=16)
 #     # jan len is 68
@@ -286,7 +275,7 @@ def str_to_float(self, list1):
 #     subsidy = self.str_to_float(df['Actual Subsidy Charge'].tolist())
 
 #     return self.fix_data(t_name), self.fix_data(unit), self.fix_data(k_rent), self.fix_data(subsidy), self.fix_data(t_rent)
-
+'''
 ms = MonthSheet(full_sheet=Config.TEST_RS, path=Config.TEST_RS_PATH)
 
 pd.set_option('display.max_columns', None)
@@ -295,6 +284,9 @@ fi = '/mnt/c/Users/joewa/Google Drive/fall creek village I/audit 2022/test_rent_
 df = pd.read_excel(fi, header=16)
 if len(df) > 68:
     df = check_for_mo(df)
+'''
+
+
 # k = str_to_float(df['Lease Rent'].tolist())
 # print(len(df))
 # breakpoint()
