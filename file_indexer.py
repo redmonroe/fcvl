@@ -42,26 +42,38 @@ class FileIndexer:
         self.items_in_db = None
 
     def build_index_runner(self):
-        # do not reprocess
+        
+        '''if item is checked, do index again'''
+        '''if item is processed, do not process again'''
+        '''do not mark on cl main in body of a function that does something else'''
+
+
+
+
         findex_status = self.check_findex_exist()
-        if findex_status == 'proceed':
+        if findex_status == 'empty':
+            self.build_raw_index(verbose=True)
+            self.directory_contents = self.articulate_directory()
+            self.index_dict = self.sort_directory_by_extension(verbose=False)
+            self.mark_as_checked(verbose=True)
+            breakpoint()
+            self.processed_files = self.rename_by_content_xls()
+            self.processed_files = self.rename_by_content_pdf()
+        elif findex_status == 'proceed':
+            # is there new files?????
+            self.show_unchecked_files()
             self.articulate_directory()
 
-        # is there new files?????
-        breakpoint()
         # if self.mode == 'testing':
         #     self.reset_files_for_testing()
         # self.articulate_directory()
-        # self.sort_directory_by_extension(verbose=False)
         # if self.mode != 'testing':
         #     try:
-        #         self.rename_by_content_xls()
         #     except shutil.SameFileError as e:
         #         print(e, 'file_indexer: files likely renamed after generation proc in test')
         # else:
         #     self.rename_by_content_xls()
         
-        # self.rename_by_content_pdf()
         # self.build_raw_index(autodrop=True, verbose=False)
         # self.update_index_for_processed(verbose=True)
         # self.get_list_of_processed()
@@ -76,8 +88,12 @@ class FileIndexer:
         
         return self.init_findex_status
 
+    def show_unchecked_files(self):
+        pass
+
     def articulate_directory(self):
         self.directory_contents = [item for item in self.path.iterdir() if item.suffix != '.ini'] 
+        return self.directory_contents
             
     def sort_directory_by_extension(self, verbose=None):
         for item in self.directory_contents:
@@ -150,7 +166,9 @@ class FileIndexer:
             self.deposit_and_date_list.append(deposit_and_date_iter_one_month)
 
             self.processed_files.append((op_cash_stmt_path.name, ''.join(stmt_date.split(' '))))
-            self.checklist.check_opcash(date=stmt_date)
+            # self.checklist.check_opcash(date=stmt_date)  ## I dont like this being stuck here
+
+        return self.processed_files
 
     def extract_deposits_by_type(self, path, style=None, target_str=None):
         return_list = []
@@ -188,7 +206,7 @@ class FileIndexer:
         self.articulate_directory()
         for item in self.directory_contents:
             if item.name != 'desktop.ini':
-                table.insert(dict(fn=item.name, path=str(item), status='raw'))
+                table.insert(dict(fn=item.name, path=str(item), status='raw', indexed='false'))
         if verbose:
             self.show_table()
 
@@ -198,6 +216,15 @@ class FileIndexer:
                 if item['fn'] == proc_file[0]:                 
                     proc_date = self.normalize_dates(proc_file[1])
                     data = dict(id=item['id'], status='processed', period=proc_date)
+                    self.db[self.tablename].update(data, ['id'])
+        if verbose:
+            self.show_table()
+
+    def mark_as_checked(self, verbose=None):
+        for item in self.db[self.tablename]:
+            for path in self.index_dict:
+                if item['fn'] == path.name:                 
+                    data = dict(id=item['id'], indexed='true')
                     self.db[self.tablename].update(data, ['id'])
         if verbose:
             self.show_table()
