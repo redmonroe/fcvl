@@ -57,27 +57,13 @@ class FileIndexer:
             self.directory_contents = self.articulate_directory()
             self.index_dict = self.sort_directory_by_extension(verbose=False)
             self.mark_as_checked(verbose=True)
-            breakpoint()
             self.processed_files = self.rename_by_content_xls()
             self.processed_files = self.rename_by_content_pdf()
         elif findex_status == 'proceed':
-            # is there new files?????
-            self.articulate_directory()
-            self.show_unchecked_files()
-
-        # if self.mode == 'testing':
-        #     self.reset_files_for_testing()
-        # self.articulate_directory()
-        # if self.mode != 'testing':
-        #     try:
-        #     except shutil.SameFileError as e:
-        #         print(e, 'file_indexer: files likely renamed after generation proc in test')
-        # else:
-        #     self.rename_by_content_xls()
-        
-        # self.build_raw_index(autodrop=True, verbose=False)
-        # self.update_index_for_processed(verbose=True)
-        # self.get_list_of_processed()
+            # new files
+            self.directory_contents = self.articulate_directory()
+            self.unindexed_files = self.show_unchecked_files()
+            print('do you want to processs:', self.unindexed_files)
 
     def check_findex_exist(self):
         items_in_db = self.show_checklist()
@@ -174,10 +160,24 @@ class FileIndexer:
             self.dep_list.append(dep_iter_one_month)
             self.deposit_and_date_list.append(deposit_and_date_iter_one_month)
 
+            self.write_to_opcash_record(op_cash_stmt_path, stmt_date)
             self.processed_files.append((op_cash_stmt_path.name, ''.join(stmt_date.split(' '))))
             # self.checklist.check_opcash(date=stmt_date)  ## I dont like this being stuck here
 
         return self.processed_files
+
+    def write_to_opcash_record(self, opcash_path, stmt_date):
+        db_records = [item for item in self.db[self.tablename]]
+        for record in db_records:
+            if opcash_path.name == record['fn']:
+                proc_date = self.normalize_dates(''.join(stmt_date.split(' ')))
+                hap = next(iter(self.hap_list[0][0].values()))
+                rr = next(iter(self.rr_list[0][0].values()))
+                dep_sum = next(iter(self.dep_list[0][0].values()))
+                dep_list = str(next(iter(self.deposit_and_date_list[0][0].values())))
+                data = dict(id=record['id'], status='processed', period=proc_date, hap=hap[0], rr=rr[0], dep_sum=dep_sum[0],          
+                dep_list=dep_list)
+                self.db[self.tablename].update(data, ['id']) 
 
     def extract_deposits_by_type(self, path, style=None, target_str=None):
         return_list = []
