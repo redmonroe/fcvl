@@ -38,29 +38,47 @@ class FileIndexer:
         self.TEST_DEP_FILE = 'deposits_01_2022.xls'
         self.GENERATED_RR_FILE = 'TEST_RENTROLL_012022.xls'
         self.GENERATED_DEP_FILE = 'TEST_DEP_012022.xls' 
+        self.init_findex_status = None
+        self.items_in_db = None
 
     def build_index_runner(self):
-        if self.mode == 'testing':
-            self.reset_files_for_testing()
-        self.articulate_directory()
-        self.sort_directory_by_extension(verbose=False)
-        if self.mode != 'testing':
-            try:
-                self.rename_by_content_xls()
-            except shutil.SameFileError as e:
-                print(e, 'file_indexer: files likely renamed after generation proc in test')
-        else:
-            self.rename_by_content_xls()
+        # do not reprocess
+        findex_status = self.check_findex_exist()
+        if findex_status == 'proceed':
+            self.articulate_directory()
+
+        # is there new files?????
+        breakpoint()
+        # if self.mode == 'testing':
+        #     self.reset_files_for_testing()
+        # self.articulate_directory()
+        # self.sort_directory_by_extension(verbose=False)
+        # if self.mode != 'testing':
+        #     try:
+        #         self.rename_by_content_xls()
+        #     except shutil.SameFileError as e:
+        #         print(e, 'file_indexer: files likely renamed after generation proc in test')
+        # else:
+        #     self.rename_by_content_xls()
         
-        self.rename_by_content_pdf()
-        self.build_raw_index(autodrop=True, verbose=False)
-        self.update_index_for_processed(verbose=True)
-        self.get_list_of_processed()
+        # self.rename_by_content_pdf()
+        # self.build_raw_index(autodrop=True, verbose=False)
+        # self.update_index_for_processed(verbose=True)
+        # self.get_list_of_processed()
+
+    def check_findex_exist(self):
+        items_in_db = self.show_checklist()
+        self.items_in_db = items_in_db
+        if len(items_in_db) == 0:
+            self.init_findex_status = 'empty'
+        elif len(items_in_db) > 0:
+            self.init_findex_status = 'proceed'
+        
+        return self.init_findex_status
 
     def articulate_directory(self):
-        for item in self.path.iterdir():
-            self.directory_contents.append(item)
-    
+        self.directory_contents = [item for item in self.path.iterdir() if item.suffix != '.ini'] 
+            
     def sort_directory_by_extension(self, verbose=None):
         for item in self.directory_contents:
             sub_item = Path(item)
@@ -222,7 +240,7 @@ class FileIndexer:
         for results in self.db[self.tablename]:
             print(results)
 
-    def show_checklist(self, col_str=None):
+    def show_checklist(self, verbose=None, col_str=None):
         return_list = []
         check_items = [item for item in self.db[self.tablename]]
         if col_str:
@@ -230,6 +248,9 @@ class FileIndexer:
                 print(item)
                 return_list.append(item[col_str])
             return check_items, return_list
+        if verbose:
+            for item in check_items:
+                print(item)
         return check_items
     
     def get_file_names_kw(self, dir1):

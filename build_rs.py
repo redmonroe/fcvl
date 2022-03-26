@@ -97,6 +97,7 @@ class BuildRS(MonthSheet):
             self.checklist.make_checklist(month_list=month_list, mode=checklist_mode)
         elif cl_init_status == 'proceed':
             records = self.checklist.show_checklist(verbose=True)
+            self.findex.build_index_runner()
 
 
         # breakpoint()

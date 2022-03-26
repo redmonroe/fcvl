@@ -82,7 +82,6 @@ def autors(mode=None):
         else:
             for item in cur_cl:
                 print(item)
-
     elif mode == 'show_cl':   
         cur_cl = build.checklist.show_checklist(verbose=True)
             
@@ -91,6 +90,12 @@ def autors(mode=None):
         cur_cl = build.checklist.show_checklist()
         for item in cur_cl:
             print(item)
+
+    elif mode == 'reset_findex':
+        build.findex.drop_tables()
+
+    elif mode == 'show_findex':
+        build.findex.show_checklist(verbose=True)
 
 '''
 @click.command()
