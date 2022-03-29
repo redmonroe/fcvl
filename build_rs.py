@@ -113,11 +113,14 @@ class BuildRS(MonthSheet):
                     
             ys.month_range = self.final_to_process_list
             shnames = ys.auto_control()
-            breakpoint()
-            self.proc_ms_list = self.make_is_ready_to_write_list()
+            self.proc_ms_list = self.make_is_ready_to_write_list(style='base_docs_and_sheet_ok')
+
+            ## rr_proc & dep_proc checklist
+
             findex_db = self.findex.show_checklist()
             self.good_opcash_list, self.good_rr_list, self.good_dep_list = self.find_targeted_doc_in_findex_db(db=findex_db)
 
+            breakpoint()
             for item in self.good_rr_list:
                 self.write_rentroll(item)
 
@@ -226,13 +229,15 @@ class BuildRS(MonthSheet):
                 else:
                     item[date] = False
 
-    def make_is_ready_to_write_list(self):
+    def make_is_ready_to_write_list(self, style=None):
         cur_cl = self.checklist.show_checklist()
-        for item in cur_cl:
-            if item['base_docs'] == True and item['rs_exist'] == True and item['yfor'] == True:
-                self.proc_ms_list.append(self.fix_date3(item['year'], item['month']))
-        return self.proc_ms_list
 
+        if style == 'base_docs_and_sheet_ok':
+            for item in cur_cl:
+                if item['base_docs'] == True and item['rs_exist'] == True and item['yfor'] == True:
+                    self.proc_ms_list.append(self.fix_date3(item['year'], item['month']))       
+        
+        return self.proc_ms_list
 
     def check_triad_processed(self):
         print('\nsearching findex_db for processed files')
