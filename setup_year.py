@@ -82,7 +82,7 @@ class YearSheet:
 
     def auto_control(self):
         if self.shmonths == [] or self.shmonths == None:
-            return shnames
+            pass
         else:
             self.make_base_sheet()
             self.formatting_runner()

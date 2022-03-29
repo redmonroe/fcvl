@@ -109,15 +109,11 @@ class BuildRS(MonthSheet):
 
             ys = YearSheet(full_sheet=self.full_sheet, checklist=self.checklist)
             title_dict = ys.show_current_sheets()
-            for mon_year, id1 in title_dict.items():
-                for month in self.final_to_process_list:
-                    already_month = month + ' ' + str(Config.current_year)
-                    if mon_year == already_month:
-                        print(f'{month} already exists in Google Sheets')
-                        self.final_to_process_list.remove(month)
+            self.final_to_process_list = self.remove_already_made_sheets_from_list(input_dict=title_dict)    
                     
             ys.month_range = self.final_to_process_list
             shnames = ys.auto_control()
+            breakpoint()
             self.proc_ms_list = self.make_is_ready_to_write_list()
             findex_db = self.findex.show_checklist()
             self.good_opcash_list, self.good_rr_list, self.good_dep_list = self.find_targeted_doc_in_findex_db(db=findex_db)
@@ -189,6 +185,15 @@ class BuildRS(MonthSheet):
         self.write_ntp(dt_object, [str(ntp)])
         self.print_summary(payment_list, grand_total, ntp, df)
         self.checklist.check_dep_proc(dt_object)
+
+    def remove_already_made_sheets_from_list(self, input_dict=None):
+        for mon_year, id1 in input_dict.items():
+            for month in self.final_to_process_list:
+                already_month = month + ' ' + str(Config.current_year)
+                if mon_year == already_month:
+                    print(f'{month} already exists in Google Sheets')
+                    self.final_to_process_list.remove(month)
+        return self.final_to_process_list
     
     def find_targeted_doc_in_findex_db(self, db=None):
     # get pedigreed lists for op_cash, rr, dep
