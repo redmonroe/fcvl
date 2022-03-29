@@ -48,9 +48,6 @@ class FileIndexer:
         '''if item is processed, do not process again'''
         '''do not mark on cl main in body of a function that does something else'''
 
-
-
-
         findex_status = self.check_findex_exist()
         if findex_status == 'empty':
             self.build_raw_index(verbose=True)
@@ -59,11 +56,13 @@ class FileIndexer:
             self.mark_as_checked(verbose=True)
             self.processed_files = self.rename_by_content_xls()
             self.processed_files = self.rename_by_content_pdf()
+            self.update_index_for_processed()
         elif findex_status == 'proceed':
-            # new files
+            # new files: THIS IS INCOMPLETE
             self.directory_contents = self.articulate_directory()
             self.unindexed_files = self.show_unchecked_files()
             print('do you want to processs:', self.unindexed_files)
+            self.update_index_for_processed()
 
     def check_findex_exist(self):
         items_in_db = self.show_checklist()
@@ -162,7 +161,7 @@ class FileIndexer:
 
             self.write_to_opcash_record(op_cash_stmt_path, stmt_date)
             self.processed_files.append((op_cash_stmt_path.name, ''.join(stmt_date.split(' '))))
-            # self.checklist.check_opcash(date=stmt_date)  ## I dont like this being stuck here
+            self.checklist.check_opcash(date=stmt_date)  ## I dont like this being stuck here
 
         return self.processed_files
 

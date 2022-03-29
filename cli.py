@@ -82,6 +82,7 @@ def autors(mode=None):
         else:
             for item in cur_cl:
                 print(item)
+                
     elif mode == 'show_cl':   
         cur_cl = build.checklist.show_checklist(verbose=True)
             

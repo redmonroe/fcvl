@@ -81,13 +81,15 @@ class YearSheet:
             # self.make_shifted_list_for_prev_bal()
 
     def auto_control(self):
-        self.make_base_sheet()
-        self.formatting_runner()
-        shnames = self.duplicate_formatted_sheets()
-        self.remove_base_sheet()
-        self.make_shifted_list_for_prev_bal()
-
-        return shnames
+        if self.shmonths == [] or self.shmonths == None:
+            return shnames
+        else:
+            self.make_base_sheet()
+            self.formatting_runner()
+            shnames = self.duplicate_formatted_sheets()
+            self.remove_base_sheet()
+            self.make_shifted_list_for_prev_bal()
+            return shnames
 
     def set_user_choice(self):
         self.user_choice = int(input(self.user_text))

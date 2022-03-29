@@ -85,7 +85,7 @@ class BuildRS(MonthSheet):
         for item in self.good_dep_list:
             self.write_payments(item)
 
-        for item in self.good_opcash_list: #
+        for item in self.good_opcash_list: 
             self.write_opcash_detail(item)
 
     def iterative_build(self, checklist_mode=None):
@@ -95,18 +95,41 @@ class BuildRS(MonthSheet):
         if cl_init_status == 'empty_db':        
             month_list = self.checklist.limit_date()
             self.checklist.make_checklist(month_list=month_list, mode=checklist_mode)
+            self.iterative_build(checklist_mode='iterative_cl')
         elif cl_init_status == 'proceed':
             records = self.checklist.show_checklist(verbose=True)
             self.findex.build_index_runner()
+            self.proc_condition_list = self.check_triad_processed()
+            self.reformat_conditions_as_bool(trigger_condition=3)
+            self.final_to_process_list = self.make_list_of_true_dates()
+            for date in self.final_to_process_list:
+                self.checklist.check_basedocs_proc(date)
 
+            self.final_to_process_list = [self.fix_date(date).split(' ')[0] for date in self.final_to_process_list]
 
-        # breakpoint()
+            ys = YearSheet(full_sheet=self.full_sheet, checklist=self.checklist)
+            title_dict = ys.show_current_sheets()
+            for mon_year, id1 in title_dict.items():
+                for month in self.final_to_process_list:
+                    already_month = month + ' ' + str(Config.current_year)
+                    if mon_year == already_month:
+                        print(f'{month} already exists in Google Sheets')
+                        self.final_to_process_list.remove(month)
+                    
+            ys.month_range = self.final_to_process_list
+            shnames = ys.auto_control()
+            self.proc_ms_list = self.make_is_ready_to_write_list()
+            findex_db = self.findex.show_checklist()
+            self.good_opcash_list, self.good_rr_list, self.good_dep_list = self.find_targeted_doc_in_findex_db(db=findex_db)
 
+            for item in self.good_rr_list:
+                self.write_rentroll(item)
 
-        # would be assert records == len of number in months in this year
-        # breakpoint()
-        # reduce records to thos prior to current month
-        pass
+            for item in self.good_dep_list:
+                self.write_payments(item)
+
+            for item in self.good_opcash_list: 
+                self.write_opcash_detail(item)
 
     def write_opcash_detail(self, item):
         for good_date, hap in zip(self.proc_ms_list, self.findex.hap_list):
@@ -187,6 +210,8 @@ class BuildRS(MonthSheet):
             for date, value in item.items():
                 if value == True:
                     self.final_to_process_list.append(date)
+
+        return self.final_to_process_list
 
     def reformat_conditions_as_bool(self, trigger_condition=None):
         for item in self.proc_condition_list:

@@ -39,7 +39,7 @@ class Checklist:
         month_list = [item.lower() for item in month_list]
 
         return month_list
-
+    
     def make_checklist(self, month_list=None, mode=None):
         print(f'\nmaking checklist for the year {Config.current_year}')
         table = self.db[self.tablename]
