@@ -1,4 +1,5 @@
 import time
+import json
 from datetime import datetime
 from config import Config, my_scopes
 from db_utils import DBUtils
@@ -109,9 +110,10 @@ class BuildRS(MonthSheet):
 
             ys = YearSheet(full_sheet=self.full_sheet, checklist=self.checklist)
             title_dict = ys.show_current_sheets()
+            # breakpoint()
             self.final_to_process_list = self.remove_already_made_sheets_from_list(input_dict=title_dict)    
                     
-            ys.month_range = self.final_to_process_list
+            ys.shmonths = self.final_to_process_list
             shnames = ys.auto_control()
             self.proc_ms_list = self.make_is_ready_to_write_list(style='base_docs_and_sheet_ok')
 
@@ -120,15 +122,40 @@ class BuildRS(MonthSheet):
             findex_db = self.findex.show_checklist()
             self.good_opcash_list, self.good_rr_list, self.good_dep_list = self.find_targeted_doc_in_findex_db(db=findex_db)
 
-            breakpoint()
             for item in self.good_rr_list:
                 self.write_rentroll(item)
 
             for item in self.good_dep_list:
                 self.write_payments(item)
 
-            for item in self.good_opcash_list: 
-                self.write_opcash_detail(item)
+            # if self.findex.hap_list != []:
+            #     for item in self.good_opcash_list: 
+            #         self.write_opcash_detail(item)
+            # else:
+            #     for item in self.good_opcash_list: 
+            #         self.write_opcash_detail_from_db(item)
+
+    def write_opcash_detail_from_db(self, item):
+        dict1 = {}
+        dict1['formatted_hap_date'] = self.fix_date(item['period'])
+        dict1['hap_date'] = item['period']
+        dict1['hap_amount'] = item['hap']
+        dict1['rr_date'] = item['period']
+        dict1['rr_amount'] = item['rr']
+        dict1['deposit_list_date'] = item['period']
+        dict1['deposit_list'] = json.loads(item['dep_list'])
+        
+        self.export_deposit_detail(data=dict1)
+        self.checklist.check_depdetail_proc(dict1['hap_date'])
+        self.checklist.check_opcash(dict1['hap_date'])
+        self.write_sum_forumula1()
+        reconciled_bool = self.check_totals_reconcile()
+        if reconciled_bool:
+            self.checklist.check_grand_total_ok(dict1['hap_date'])
+        else:
+            month = dict1['hap_date']
+            print(f'rent sheet for {month} does not balance.')
+                
 
     def write_opcash_detail(self, item):
         for good_date, hap in zip(self.proc_ms_list, self.findex.hap_list):

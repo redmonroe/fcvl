@@ -70,6 +70,12 @@ def autors(mode=None):
     if mode == 'iter_dev':
         build.iterative_build(checklist_mode='iterative_cl')  
 
+    elif mode == 'reset_dev':
+        build.reset_full_sheet()
+        build.findex.drop_tables()
+        db, tablename = build.checklist.drop_checklist()
+
+
     elif mode == 'reset_sheet':   
         build.reset_full_sheet()
 

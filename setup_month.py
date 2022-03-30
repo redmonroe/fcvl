@@ -191,6 +191,7 @@ class MonthSheet:
         hap = [data['hap_amount']]
         rr = [data['rr_amount']]
         deposit_list = data['deposit_list']
+        breakpoint()
         gc.update_int(self.service, self.full_sheet, hap, f'{sheet_choice}' + f'{self.wrange_hap_partial}', value_input_option='USER_ENTERED')
         gc.update_int(self.service, self.full_sheet, rr, f'{sheet_choice}' + f'{self.wrange_rr_partial}', value_input_option='USER_ENTERED')
         value = 82
@@ -230,7 +231,6 @@ class MonthSheet:
 
 
 # if __name__ == '__main__':
-print('hi')
 # ''' if 'Lease Rent' == nan & 'Market/\nNote Rate\nRent' == nan, then REMOVE entire line before we break it out into lists'''
 # '''also want to make some kind of notation here about what is going on'''
 # '''get len'''

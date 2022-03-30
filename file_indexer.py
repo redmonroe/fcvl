@@ -1,4 +1,5 @@
 import os
+import json
 from pprint import pprint
 from utils import Utils
 from db_utils import DBUtils
@@ -153,30 +154,52 @@ class FileIndexer:
             dep_iter_one_month, stmt_date2 = self.extract_deposits_by_type(op_cash_stmt_path, style='dep', target_str='Deposit')
             deposit_and_date_iter_one_month = self.extract_deposits_by_type(op_cash_stmt_path, style='dep_detail', target_str='Deposit')
             assert stmt_date == stmt_date1
+        
 
             self.hap_list.append(hap_iter_one_month)
             self.rr_list.append(rr_iter_one_month)
             self.dep_list.append(dep_iter_one_month)
             self.deposit_and_date_list.append(deposit_and_date_iter_one_month)
 
-            self.write_to_opcash_record(op_cash_stmt_path, stmt_date)
+            self.write_deplist_to_db(deposit_and_date_iter_one_month, stmt_date)
             self.processed_files.append((op_cash_stmt_path.name, ''.join(stmt_date.split(' '))))
             self.checklist.check_opcash(date=stmt_date)  ## I dont like this being stuck here
 
+        # for item in self.deposit_and_date_list:
+        #     self.write_deplist_to_db(item)
+
         return self.processed_files
 
-    def write_to_opcash_record(self, opcash_path, stmt_date):
-        db_records = [item for item in self.db[self.tablename]]
+    def write_deplist_to_db(self, deposit_iter, stmt_date):
+        print('Writing deposit list to db')
+        db_records = [item for item in self.db[self.tablename] if 'cash' in item['fn'].split('_')]
         for record in db_records:
-            if opcash_path.name == record['fn']:
-                proc_date = self.normalize_dates(''.join(stmt_date.split(' ')))
-                hap = next(iter(self.hap_list[0][0].values()))
-                rr = next(iter(self.rr_list[0][0].values()))
-                dep_sum = next(iter(self.dep_list[0][0].values()))
-                dep_list = str(next(iter(self.deposit_and_date_list[0][0].values())))
-                data = dict(id=record['id'], status='processed', period=proc_date, hap=hap[0], rr=rr[0], dep_sum=dep_sum[0],          
-                dep_list=dep_list)
-                self.db[self.tablename].update(data, ['id']) 
+            if self.get_date_from_opcash_name(record) == [*deposit_iter[0]][0]:
+                breakpoint()
+                proc_date = stmt_date
+                dep_list = json.dumps(deposit_iter)
+                data = dict(id=record['id'], status='processed', period=proc_date, dep_list=dep_list)
+                self.db[self.tablename].update(data, ['id'])
+                print('updating db')
+                print(record, stmt_date, dep_list, data, deposit_iter)
+
+    def get_date_from_opcash_name(self, record):
+        date_list = record['fn'].split('.')[0].split('_')[2:]
+        date_list.reverse()
+        date_list = ' '.join(date_list)
+        breakpoint()
+        return date_list
+
+
+
+    # def write_to_opcash_record(self, opcash_path, stmt_date):
+            # hap = next(iter(self.hap_list[0][0].values()))
+            # rr = next(iter(self.rr_list[0][0].values()))
+            # dep_sum = next(iter(self.dep_list[dep_list_count][0].values()))
+    #     dep_list_count = 0
+    #         if opcash_path.name == record['fn']:
+    #             print('WRITING TO DB:', 'count', dep_list_count, proc_date, dep_list)
+    #         dep_list_count += 1 
 
     def extract_deposits_by_type(self, path, style=None, target_str=None):
         return_list = []
@@ -255,6 +278,7 @@ class FileIndexer:
         return processed_check_for_test
 
     def drop_tables(self):
+        print(f'\ndropping {self.tablename}')
         db = self.db    
         tablename = self.tablename
         
@@ -300,14 +324,14 @@ class FileIndexer:
         return self.test_list
     
     def df_date_wrapper(self, item, get_col=None, split_col=None, split_type=None, date_split=None):
-            df_date = pd.read_excel(item)
-            df_date = df_date.iloc[:, get_col].to_list()
-            df_date = df_date[split_col].split(split_type)
-            period = df_date[date_split]
-            period = period.rstrip()
-            period = period.lstrip()
-        
-            return period
+        df_date = pd.read_excel(item)
+        df_date = df_date.iloc[:, get_col].to_list()
+        df_date = df_date[split_col].split(split_type)
+        period = df_date[date_split]
+        period = period.rstrip()
+        period = period.lstrip()
+    
+        return period
 
     def reset_files_for_testing(self):
         should_continue_dep = self.remove_generated_file_from_dir(path1=self.path, file1=self.GENERATED_DEP_FILE)
