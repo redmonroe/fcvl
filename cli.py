@@ -102,7 +102,9 @@ def autors(mode=None):
         build.findex.drop_tables()
 
     elif mode == 'show_findex':
-        build.findex.show_checklist(verbose=True)
+        findex_records = build.findex.show_checklist()
+        for item in findex_records:
+            print(item['id'], '*', item['fn'], item['period'], item['status'], item['indexed'], item['hap'])
 
 '''
 @click.command()

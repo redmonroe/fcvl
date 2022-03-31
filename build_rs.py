@@ -98,8 +98,10 @@ class BuildRS(MonthSheet):
             self.checklist.make_checklist(month_list=month_list, mode=checklist_mode)
             self.iterative_build(checklist_mode='iterative_cl')
         elif cl_init_status == 'proceed':
-            records = self.checklist.show_checklist(verbose=True)
+            records = self.checklist.show_checklist(verbose=False)
             self.findex.build_index_runner()
+
+            '''
             self.proc_condition_list = self.check_triad_processed()
             self.reformat_conditions_as_bool(trigger_condition=3)
             self.final_to_process_list = self.make_list_of_true_dates()
@@ -110,7 +112,7 @@ class BuildRS(MonthSheet):
 
             ys = YearSheet(full_sheet=self.full_sheet, checklist=self.checklist)
             title_dict = ys.show_current_sheets()
-            # breakpoint()
+        
             self.final_to_process_list = self.remove_already_made_sheets_from_list(input_dict=title_dict)    
                     
             ys.shmonths = self.final_to_process_list
@@ -128,12 +130,15 @@ class BuildRS(MonthSheet):
             for item in self.good_dep_list:
                 self.write_payments(item)
 
-            # if self.findex.hap_list != []:
-            #     for item in self.good_opcash_list: 
-            #         self.write_opcash_detail(item)
+            for item in self.good_opcash_list: 
+                print('writing from deposit_detail from db')
+                self.write_opcash_detail_from_db(item)
             # else:
-            #     for item in self.good_opcash_list: 
-            #         self.write_opcash_detail_from_db(item)
+            # if self.findex.hap_list == []:
+            # print('writing from memory')
+            # for item in self.good_opcash_list: 
+            #     self.write_opcash_detail(item)
+            '''
 
     def write_opcash_detail_from_db(self, item):
         dict1 = {}
@@ -143,7 +148,7 @@ class BuildRS(MonthSheet):
         dict1['rr_date'] = item['period']
         dict1['rr_amount'] = item['rr']
         dict1['deposit_list_date'] = item['period']
-        dict1['deposit_list'] = json.loads(item['dep_list'])
+        dict1['deposit_list'] = json.loads(item['dep_list'])[0]
         
         self.export_deposit_detail(data=dict1)
         self.checklist.check_depdetail_proc(dict1['hap_date'])
@@ -155,9 +160,9 @@ class BuildRS(MonthSheet):
         else:
             month = dict1['hap_date']
             print(f'rent sheet for {month} does not balance.')
-                
 
     def write_opcash_detail(self, item):
+        '''does not write from memory properly; would like it to'''
         for good_date, hap in zip(self.proc_ms_list, self.findex.hap_list):
             if self.fix_date4(good_date) == next(iter(hap[0])): # right = 01 2022
                 dict1 = {}
@@ -175,7 +180,7 @@ class BuildRS(MonthSheet):
             if self.fix_date4(good_date) == next(iter(d_sum[0])): # right = 01 2022
                 dict1['deposit_date'] = next(iter(d_sum[0]))
 
-        for d_detail in self.findex.deposit_and_date_list:
+        for good_date, d_detail in zip(self.proc_ms_list, self.findex.deposit_and_date_list):
             if self.fix_date4(good_date) == next(iter(d_detail[0])): # right = 01 2022
                 dict1['deposit_list_date'] = next(iter(d_detail[0]))
                 dict1['deposit_list'] = list(d_detail[0].values())[0]
@@ -265,6 +270,11 @@ class BuildRS(MonthSheet):
                     self.proc_ms_list.append(self.fix_date3(item['year'], item['month']))       
         
         return self.proc_ms_list
+
+    def check_diad_processed(self):
+        print('\nsearching findex_db for processed files')
+        trigger_on_condition_met_list = []
+
 
     def check_triad_processed(self):
         print('\nsearching findex_db for processed files')

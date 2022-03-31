@@ -51,7 +51,7 @@ class FileIndexer:
 
         findex_status = self.check_findex_exist()
         if findex_status == 'empty':
-            self.build_raw_index(verbose=True)
+            self.build_raw_index(verbose=False)
             self.directory_contents = self.articulate_directory()
             self.index_dict = self.sort_directory_by_extension(verbose=False)
             self.mark_as_checked(verbose=True)
@@ -59,6 +59,7 @@ class FileIndexer:
             self.processed_files = self.rename_by_content_pdf()
             self.update_index_for_processed()
         elif findex_status == 'proceed':
+            print('findex already exists')
             # new files: THIS IS INCOMPLETE
             self.directory_contents = self.articulate_directory()
             self.unindexed_files = self.show_unchecked_files()
@@ -155,51 +156,36 @@ class FileIndexer:
             deposit_and_date_iter_one_month = self.extract_deposits_by_type(op_cash_stmt_path, style='dep_detail', target_str='Deposit')
             assert stmt_date == stmt_date1
         
-
             self.hap_list.append(hap_iter_one_month)
             self.rr_list.append(rr_iter_one_month)
             self.dep_list.append(dep_iter_one_month)
             self.deposit_and_date_list.append(deposit_and_date_iter_one_month)
 
-            self.write_deplist_to_db(deposit_and_date_iter_one_month, stmt_date)
+            self.write_deplist_to_db(hap_iter_one_month, rr_iter_one_month, dep_iter_one_month, deposit_and_date_iter_one_month, stmt_date)
+            
             self.processed_files.append((op_cash_stmt_path.name, ''.join(stmt_date.split(' '))))
             self.checklist.check_opcash(date=stmt_date)  ## I dont like this being stuck here
 
-        # for item in self.deposit_and_date_list:
-        #     self.write_deplist_to_db(item)
-
         return self.processed_files
 
-    def write_deplist_to_db(self, deposit_iter, stmt_date):
+    def write_deplist_to_db(self, hap_iter, rr_iter, depsum_iter, deposit_iter, stmt_date):
         print('Writing deposit list to db')
         db_records = [item for item in self.db[self.tablename] if 'cash' in item['fn'].split('_')]
         for record in db_records:
             if self.get_date_from_opcash_name(record) == [*deposit_iter[0]][0]:
-                breakpoint()
                 proc_date = stmt_date
-                dep_list = json.dumps(deposit_iter)
-                data = dict(id=record['id'], status='processed', period=proc_date, dep_list=dep_list)
+                rr = [*rr_iter[0].values()][0][0]
+                hap = [*hap_iter[0].values()][0][0] 
+                depsum = [*depsum_iter[0].values()][0][0]
+                dep_list = json.dumps([*deposit_iter[0].values()])
+                data = dict(id=record['id'], status='processed', period=proc_date, hap=hap, rr=rr, depsum=depsum, dep_list=dep_list)
                 self.db[self.tablename].update(data, ['id'])
-                print('updating db')
-                print(record, stmt_date, dep_list, data, deposit_iter)
 
     def get_date_from_opcash_name(self, record):
         date_list = record['fn'].split('.')[0].split('_')[2:]
         date_list.reverse()
         date_list = ' '.join(date_list)
-        breakpoint()
         return date_list
-
-
-
-    # def write_to_opcash_record(self, opcash_path, stmt_date):
-            # hap = next(iter(self.hap_list[0][0].values()))
-            # rr = next(iter(self.rr_list[0][0].values()))
-            # dep_sum = next(iter(self.dep_list[dep_list_count][0].values()))
-    #     dep_list_count = 0
-    #         if opcash_path.name == record['fn']:
-    #             print('WRITING TO DB:', 'count', dep_list_count, proc_date, dep_list)
-    #         dep_list_count += 1 
 
     def extract_deposits_by_type(self, path, style=None, target_str=None):
         return_list = []
