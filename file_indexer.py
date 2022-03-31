@@ -63,7 +63,8 @@ class FileIndexer:
             # new files: THIS IS INCOMPLETE
             self.directory_contents = self.articulate_directory()
             self.unindexed_files = self.show_unchecked_files()
-            print('do you want to processs:', self.unindexed_files)
+            if self.unindexed_files != []:                
+                choice = input('do you want to processs:', self.unindexed_files, 'y/n?')
             self.update_index_for_processed()
 
     def check_findex_exist(self):

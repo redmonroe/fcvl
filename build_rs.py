@@ -1,4 +1,5 @@
 import time
+from calendar import month_name
 import json
 from datetime import datetime
 from config import Config, my_scopes
@@ -100,22 +101,22 @@ class BuildRS(MonthSheet):
         elif cl_init_status == 'proceed':
             records = self.checklist.show_checklist(verbose=False)
             self.findex.build_index_runner()
-
-            '''
-            self.proc_condition_list = self.check_triad_processed()
-            self.reformat_conditions_as_bool(trigger_condition=3)
+            self.proc_condition_list = self.check_diad_processed()
+            self.proc_condition_list = self.reformat_conditions_as_bool(trigger_condition=2)
             self.final_to_process_list = self.make_list_of_true_dates()
+
             for date in self.final_to_process_list:
                 self.checklist.check_basedocs_proc(date)
 
             self.final_to_process_list = [self.fix_date(date).split(' ')[0] for date in self.final_to_process_list]
-
+            self.final_to_process_list = sorted(self.final_to_process_list, key=lambda m: datetime.strptime(m, "%b"))
+            
             ys = YearSheet(full_sheet=self.full_sheet, checklist=self.checklist)
             title_dict = ys.show_current_sheets()
         
             self.final_to_process_list = self.remove_already_made_sheets_from_list(input_dict=title_dict)    
                     
-            ys.shmonths = self.final_to_process_list
+            ys.shmonths = self.final_to_process_list # only write those sheets for which we have threshold data
             shnames = ys.auto_control()
             self.proc_ms_list = self.make_is_ready_to_write_list(style='base_docs_and_sheet_ok')
 
@@ -130,15 +131,11 @@ class BuildRS(MonthSheet):
             for item in self.good_dep_list:
                 self.write_payments(item)
 
-            for item in self.good_opcash_list: 
-                print('writing from deposit_detail from db')
-                self.write_opcash_detail_from_db(item)
-            # else:
-            # if self.findex.hap_list == []:
-            # print('writing from memory')
+            breakpoint()
             # for item in self.good_opcash_list: 
-            #     self.write_opcash_detail(item)
-            '''
+            #     print('writing from deposit_detail from db')
+            #     self.write_opcash_detail_from_db(item)
+           
 
     def write_opcash_detail_from_db(self, item):
         dict1 = {}
@@ -261,6 +258,8 @@ class BuildRS(MonthSheet):
                 else:
                     item[date] = False
 
+        return self.proc_condition_list
+
     def make_is_ready_to_write_list(self, style=None):
         cur_cl = self.checklist.show_checklist()
 
@@ -274,7 +273,22 @@ class BuildRS(MonthSheet):
     def check_diad_processed(self):
         print('\nsearching findex_db for processed files')
         trigger_on_condition_met_list = []
+        items_true = self.get_processed_items_list()
+        period_dict = {date: 0 for date in list({period['period'] for period in items_true})}
 
+        for period, value in period_dict.items():
+            for record in items_true:
+                if period == record['period'] and self.get_name_from_record(record) ==  'deposits':
+                    period_dict[period] += 1
+                    trigger_on_condition_met_list.append(period_dict)
+                if period == record['period'] and self.get_name_from_record(record) ==  'rent':
+                    period_dict[period] += 1
+                    trigger_on_condition_met_list.append(period_dict)
+
+        return [dict(t) for t in {tuple(d.items()) for d in trigger_on_condition_met_list}] 
+    def get_name_from_record(self, record):
+        name = record['fn'].split('_')[0]
+        return name 
 
     def check_triad_processed(self):
         print('\nsearching findex_db for processed files')
