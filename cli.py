@@ -63,9 +63,6 @@ def autors(mode=None):
     checklist = Checklist(db=prod_cl_db)
     mformat = MonthSheet(full_sheet=production_full_sheet, path=production_path)
     build = BuildRS(full_sheet=production_full_sheet, path=production_path, mode='dev', db=prod_rs_db, tablename=prod_rs_tablename, sleep=sleep, checklist=checklist, findex_db=prod_findex_db, findex_table=prod_findex_tablename, mformat=mformat)    
-    # if mode == 'dev':
-        # build.reset_databases() #this does nothing yet
-        # build.automatic_build(checklist_mode='autoreset')     
 
     if mode == 'iter_dev':
         build.iterative_build(checklist_mode='iterative_cl')  
@@ -103,6 +100,7 @@ def autors(mode=None):
 
     elif mode == 'show_findex':
         findex_records = build.findex.show_checklist()
+        print(f'showing records for {build.findex.tablename}')
         for item in findex_records:
             print(item['id'], '*', item['fn'], item['period'], item['status'], item['indexed'], item['hap'])
 
