@@ -180,6 +180,7 @@ class MonthSheet:
 
     def export_month_format(self, sheet_choice):
         gc = GoogleApiCalls()
+        time.sleep(self.sleep)
         gc.format_row(self.service, self.full_sheet, f'{sheet_choice}!A1:M1', "ROWS", self.HEADER_NAMES)
         gc.write_formula_column(self.service, self.full_sheet, self.G_SUM_KRENT, f'{sheet_choice}!E69:E69')
         gc.write_formula_column(self.service, self.full_sheet, self.G_SUM_ACTSUBSIDY, f'{sheet_choice}!F69:F69')
@@ -233,67 +234,5 @@ class MonthSheet:
         DBUtils.delete_table(self, self.db)
 
 
-
-
-# if __name__ == '__main__':
-# ''' if 'Lease Rent' == nan & 'Market/\nNote Rate\nRent' == nan, then REMOVE entire line before we break it out into lists'''
-# '''also want to make some kind of notation here about what is going on'''
-# '''get len'''
-
-'''
-def check_for_mo(df):
-    list1 = df['Lease Rent'].tolist()
-    list1 = [True for item in list1 if item is nan]
-
-    if len(list1) == 0:
-        print('No move out')
-    else:
-        print('found a move out')
-        move_out_list = []
-        for index, row in df.iterrows():
-            row_lr = row['Lease Rent']
-            row_mr = row['Market/\nNote Rate\nRent']
-            if row_lr is nan and row_mr is nan:
-                move_out_list.append(index)
-
-        df = df.drop(index=move_out_list, axis=0)
-    return df
-
-def str_to_float(self, list1):
-    list1 = [item.replace(',', '') for item in list1]
-    list1 = [float(item) for item in list1]
-    return list1
-'''
-# def read_excel_ms(self, verbose=False):
-#     df = pd.read_excel(fi, header=16)
-#     # jan len is 68
-#     breakpoint()
-#     if verbose: 
-#         pd.set_option('display.max_columns', None)
-#         print(df.head(100))
-#     # breakpoint()
-
-#     t_name = df['Name'].tolist()
-#     unit = df['Unit'].tolist()
-#     k_rent = self.str_to_float(df['Lease Rent'].tolist())
-#     t_rent = self.str_to_float(df['Actual Rent Charge'].tolist())
-#     subsidy = self.str_to_float(df['Actual Subsidy Charge'].tolist())
-
-#     return self.fix_data(t_name), self.fix_data(unit), self.fix_data(k_rent), self.fix_data(subsidy), self.fix_data(t_rent)
-'''
-ms = MonthSheet(full_sheet=Config.TEST_RS, path=Config.TEST_RS_PATH)
-
-pd.set_option('display.max_columns', None)
-pd.set_option('display.max_rows', None)
-fi = '/mnt/c/Users/joewa/Google Drive/fall creek village I/audit 2022/test_rent_sheets_data_sources/rent_roll_02_2022.xlsx'
-df = pd.read_excel(fi, header=16)
-if len(df) > 68:
-    df = check_for_mo(df)
-'''
-
-
-# k = str_to_float(df['Lease Rent'].tolist())
-# print(len(df))
-# breakpoint()
 
 

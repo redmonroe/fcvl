@@ -49,7 +49,7 @@ def autors(mode=None):
     click.echo(f'starting **autors*** in mode: {mode}')
     click.echo('\nmust explicitly set mode: testing, dev, prod')
     
-    sleep = 10
+    sleep = 8
     production_full_sheet = Config.TEST_RS
     production_path = Config.TEST_RS_PATH
     production_discard_pile = Config.TEST_MOVE_PATH

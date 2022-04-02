@@ -2,7 +2,7 @@
 class GoogleApiCalls:
 
     def simple_batch_update(self, service, sheet_id, wrange, data, dim):
-        print(f"Updating {sheet_id} with batch call to {wrange}...")
+        print(f"Updating with batch call to {wrange}...")
         body_request = {
                         'value_input_option': 'RAW',
                         'data': [
@@ -15,7 +15,7 @@ class GoogleApiCalls:
 
         request = service.spreadsheets().values().batchUpdate(spreadsheetId=sheet_id, body=body_request)
         response = request.execute()
-        print(response)
+        print(f'Updating {[*response.values()][5][0]["updatedRange"]}, changing {[*response.values()][5][0]["updatedCells"]} cells.')
 
     def batch_get(self, service, sheet_id, range, col_num): 
         sheet = service.spreadsheets()
@@ -141,6 +141,7 @@ class GoogleApiCalls:
             spreadsheetId=sh_id,
             body=data
         ).execute()
+        breakpoint()
         print(response)
 
     def write_formula_column(self, service, sheet_id, data, write_range):
