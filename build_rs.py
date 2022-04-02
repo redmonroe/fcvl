@@ -103,6 +103,7 @@ class BuildRS(MonthSheet):
             records = self.checklist.show_checklist(verbose=False)
             self.findex.build_index_runner()
             self.proc_condition_list = self.check_diad_processed()
+            breakpoint()
             self.proc_condition_list = self.reformat_conditions_as_bool(trigger_condition=2)
             self.final_to_process_list = self.make_list_of_true_dates()
 
@@ -113,8 +114,10 @@ class BuildRS(MonthSheet):
 
             # remove the ones that are grand_total is true
             complete_month_list = self.checklist.get_complete_cl_month()
+            complete_month_set = set(complete_month_list)
+            final_to_process_set = set(self.final_to_process_list)
 
-            breakpoint()
+            self.final_to_process_list = list(final_to_process_set.difference(complete_month_set)) # remove the ones that are grand_total is true, leaving only the ones that are not grand_total ok
 
             self.final_to_process_list = [self.fix_date(date).split(' ')[0] for date in self.final_to_process_list]
             self.final_to_process_list = sorted(self.final_to_process_list, key=lambda m: datetime.strptime(m, "%b"))
@@ -126,6 +129,9 @@ class BuildRS(MonthSheet):
                     
             ys.shmonths = self.final_to_process_list # only write those sheets for which we have threshold data
             shnames = ys.auto_control()
+
+            #### SO WE ARE STILL WRITING THE SHEETS THAT ARE ALREADY MADE, WE NEED TO REMOVE THEM FROM THE LIST FOR RR AND DEP AND DEP DETAIL!!!!!!!!
+
             self.proc_ms_list = self.make_is_ready_to_write_list(style='base_docs_and_sheet_ok')
 
             ## rr_proc & dep_proc checklist
@@ -133,13 +139,14 @@ class BuildRS(MonthSheet):
             findex_db = self.findex.show_checklist()
             self.good_opcash_list, self.good_rr_list, self.good_dep_list = self.find_targeted_doc_in_findex_db(db=findex_db)
 
+
+            breakpoint()
             for item in self.good_rr_list:
                 self.write_rentroll(item)
 
             for item in self.good_dep_list:
                 self.write_payments(item)
 
-            # breakpoint()
             for item in self.good_opcash_list: 
                 print('writing from deposit_detail from db')
                 self.write_opcash_detail_from_db(item)

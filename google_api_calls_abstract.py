@@ -141,8 +141,7 @@ class GoogleApiCalls:
             spreadsheetId=sh_id,
             body=data
         ).execute()
-        breakpoint()
-        print(response)
+        print(f"Deleting sheet id: {response['spreadsheetId']}")
 
     def write_formula_column(self, service, sheet_id, data, write_range):
         value_input_option = 'USER_ENTERED'

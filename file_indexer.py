@@ -54,7 +54,7 @@ class FileIndexer:
             self.build_raw_index(verbose=False)
             self.directory_contents = self.articulate_directory()
             self.index_dict = self.sort_directory_by_extension(verbose=False)
-            self.mark_as_checked(verbose=True)
+            self.mark_as_checked(verbose=False)
             self.processed_files = self.rename_by_content_xls()
             self.processed_files = self.rename_by_content_pdf()
             self.update_index_for_processed()
@@ -64,8 +64,18 @@ class FileIndexer:
             self.directory_contents = self.articulate_directory()
             self.unindexed_files = self.show_unchecked_files()
             if self.unindexed_files != []:                
-                choice = input('do you want to processs:', self.unindexed_files, 'y/n?')
-            self.update_index_for_processed()
+                choice = input(f'do you want to processs: {self.unindexed_files} y/n?')
+                if choice == 'y':
+                    print('adding new files to findex')
+                    self.directory_contents = self.articulate_directory()
+                    self.index_dict = self.sort_directory_by_extension(verbose=False)
+                    self.mark_as_checked(verbose=False)
+                    self.processed_files = self.rename_by_content_xls()
+                    self.processed_files = self.rename_by_content_pdf()
+                    self.update_index_for_processed()
+                    breakpoint()
+                else:
+                    exit()
 
     def check_findex_exist(self):
         items_in_db = self.show_checklist()
