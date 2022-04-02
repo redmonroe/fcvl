@@ -1,3 +1,7 @@
+## Config file
+
+[config backup: 04/02/22](https://docs.google.com/document/d/1ppJAYvWywn7t-yLFdu12K11rRn6a3_f2HNRroSR76o8/edit)
+
 ## Purpose
 
 The purpose of this collection of code is to automate the entire financial cycle for my work. This includes:
