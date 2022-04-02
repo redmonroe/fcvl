@@ -1,4 +1,5 @@
 from config import Config
+from calendar import monthrange
 import dataset
 import pandas as pd
 from datetime import datetime
@@ -33,8 +34,9 @@ class Checklist:
     def limit_date(self):
         range_month = datetime.now().strftime('%m')
         str_month = datetime.now().strftime('%b').lower()
-
-        month_list = pd.date_range(f'{Config.current_year}-01-01',f'{Config.current_year}-{range_month}-31', 
+        date_info = monthrange(int(Config.current_year), int(range_month))
+        last_day = date_info[1]
+        month_list = pd.date_range(f'{Config.current_year}-01-01',f'{Config.current_year}-{range_month}-{last_day}',
               freq='MS').strftime("%b").tolist()
         month_list = [item.lower() for item in month_list]
 

@@ -21,12 +21,24 @@ webdriver_service = Service("/home/joe/chromedriver/stable/chromedriver")
 browser = webdriver.Chrome(service=webdriver_service, options=chrome_options)
 
 # Get page
-browser.get("https://www.nytimes.com")
+# browser.get("https://www.nytimes.com")
+browser.get('https://www.nbofi.com')
+browser.find_element_by_class_name('olb-area').click()
+browser.find_element(By.NAME, 'username')
+browser.find_element(By.NAME, 'username').send_keys('jwalsh')
+browser.find_element(By.XPATH, ("//input[@value='Login']")).click()
+time.sleep(10)
+ids = browser.find_elements(By.XPATH, ('//*[@id]'))
+browser.find_element(By.ID, ('password')).send_keys('izow162nb')
+for ii in ids:
+    #print ii.tag_name
+    print('*', ii.get_attribute('id'))    # id name as string
 
+
+breakpoint()
 # Extract description from page and print
 description = browser.find_element(By.NAME, "description").get_attribute("content")
 print(f"{description}")
 
 #Wait for 10 seconds
-time.sleep(10)
 browser.quit()

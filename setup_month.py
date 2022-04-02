@@ -1,4 +1,5 @@
 from datetime import datetime as dt
+import time
 from config import Config, my_scopes
 from auth_work import oauth
 from utils import Utils
@@ -30,7 +31,8 @@ class MonthSheet:
     wrange_t_rent1 = f'{ui_sheet}!e{range1}:e{range2}'
     user_text2 = f'\n Please make sure you have run option 3 in the previous menu that formats Intake for the rent sheet. \n Please PRESS 1 when ready . . .'
 
-    def __init__(self, full_sheet, path, mode=None, test_service=None):
+    def __init__(self, full_sheet, path, mode=None, test_service=None, sleep=None):
+
         self.test_message = 'hi'
         self.full_sheet = full_sheet
         if mode == 'testing':
@@ -54,6 +56,7 @@ class MonthSheet:
         self.subsidy = [] 
         self.t_rent = []
         self.sheet_choice = None
+        self.sleep = sleep
         self.gc = GoogleApiCalls()
        
     def control(self):
@@ -183,10 +186,13 @@ class MonthSheet:
         gc.write_formula_column(self.service, self.full_sheet, self.G_SUM_ACTRENT, f'{sheet_choice}!H69:H69')
         gc.write_formula_column(self.service, self.full_sheet, self.G_PAYMENT_MADE, f'{sheet_choice}!K69:K69')
         gc.write_formula_column(self.service, self.full_sheet, self.G_CURBAL, f'{sheet_choice}!L69:L69')
+        print(f'exported month format to {sheet_choice} with wait time of {self.sleep} seconds')
 
     def export_deposit_detail(self, data):
+        time.sleep(self.sleep)
         gc = GoogleApiCalls()
         sheet_choice = data['formatted_hap_date']
+        print(f'export deposit detail to {sheet_choice} with wait time of {self.sleep} seconds')
         self.sheet_choice = sheet_choice
         hap = [data['hap_amount']]
         rr = [data['rr_amount']]

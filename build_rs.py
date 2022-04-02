@@ -33,8 +33,8 @@ class BuildRS(MonthSheet):
             self.mformat = mformat
             self.tablename = tablename 
             self.calls = GoogleApiCalls() 
+            self.sleep = sleep
 
-        self.sleep = sleep
         self.wrange_pay = '!K2:K68'
         self.wrange_ntp = '!K71:K71'
         self.file_input_path = path
@@ -75,7 +75,8 @@ class BuildRS(MonthSheet):
 
         self.checklist.show_checklist(verbose=False)
         self.final_to_process_list = [self.fix_date(date).split(' ')[0] for date in self.final_to_process_list]
-        ys = YearSheet(full_sheet=self.full_sheet, month_range=self.final_to_process_list, checklist=self.checklist)
+        ys = YearSheet(full_sheet=self.full_sheet, month_range=self.final_to_process_list, checklist=self.checklist, sleep=self.sleep, service=self.service, tablename=self.tablename, db=self.db)
+        
         shnames = ys.auto_control()
         self.proc_ms_list = self.make_is_ready_to_write_list()
         findex_db = self.findex.show_checklist()
@@ -111,7 +112,7 @@ class BuildRS(MonthSheet):
             self.final_to_process_list = [self.fix_date(date).split(' ')[0] for date in self.final_to_process_list]
             self.final_to_process_list = sorted(self.final_to_process_list, key=lambda m: datetime.strptime(m, "%b"))
             
-            ys = YearSheet(full_sheet=self.full_sheet, checklist=self.checklist)
+            ys = YearSheet(full_sheet=self.full_sheet, checklist=self.checklist, sleep=self.sleep)
             title_dict = ys.show_current_sheets()
         
             self.final_to_process_list = self.remove_already_made_sheets_from_list(input_dict=title_dict)    
@@ -131,10 +132,10 @@ class BuildRS(MonthSheet):
             for item in self.good_dep_list:
                 self.write_payments(item)
 
-            breakpoint()
-            # for item in self.good_opcash_list: 
-            #     print('writing from deposit_detail from db')
-            #     self.write_opcash_detail_from_db(item)
+            # breakpoint()
+            for item in self.good_opcash_list: 
+                print('writing from deposit_detail from db')
+                self.write_opcash_detail_from_db(item)
            
 
     def write_opcash_detail_from_db(self, item):

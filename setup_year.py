@@ -40,7 +40,7 @@ class YearSheet:
     grand_total = ["GRAND TOTAL"]
     
 
-    def __init__(self, full_sheet=None, month_range=None, mode=None, test_service=None, checklist=None):
+    def __init__(self, full_sheet=None, month_range=None, mode=None, test_service=None, checklist=None, sleep=None):
         self.test_message = 'hi_from_year_sheets!'
         self.full_sheet = full_sheet
         self.calls = GoogleApiCalls()
@@ -67,6 +67,7 @@ class YearSheet:
         self.sheet_id_list = None
         self.prev_bal_dict = None
         self.source_id = None
+        self.sleep = sleep
 
     def control(self):
         if self.user_choice == 1:
@@ -136,6 +137,7 @@ class YearSheet:
         titles_dict = {name:id2 for name, id2 in titles_dict.items() if name != 'intake'}
         
         for sheet, sheet_id in titles_dict.items():
+            print(f'formatting {sheet} with delay of {self.sleep}')
             self.format_units(sheet)
             self.calls.write_formula_column(self.service, self.full_sheet, self.CURRENT_BALANCE, f'{sheet}!L2:L2')
             self.calls.write_formula_column(self.service, self.full_sheet, self.G_SUM_STARTBAL, f'{sheet}!D69:D69')
@@ -151,6 +153,7 @@ class YearSheet:
             self.calls.format_row(self.service, self.full_sheet, f'{sheet}!M71:M71', 'ROWS', self.laundry_income)
             self.calls.format_row(self.service, self.full_sheet, f'{sheet}!J77:J77', 'ROWS', self.grand_total)
             self.calls.format_row(self.service, self.full_sheet, f'{sheet}!M73:M74', 'ROWS', self.sd_total)
+            time.sleep(self.sleep)
             
             self.calls.format_row(self.service, self.full_sheet, f'{sheet}!A1:M1', 'ROWS', self.HEADER_NAMES)
             self.calls.format_row(self.service, self.full_sheet, f'{sheet}!G80:G86', 'COLUMNS', self.MF_FORMATTING_TEXT)
@@ -166,6 +169,7 @@ class YearSheet:
             self.calls.bold_freeze(self.service, self.full_sheet, sheet_id, 1)
             self.calls.bold_range(self.service, self.full_sheet, sheet_id, 1, 5, 79, 90)
             self.calls.bold_range(self.service, self.full_sheet, sheet_id, 0, 100, 68, 69)
+            time.sleep(self.sleep)
             
 
     def format_units(self, sheet):

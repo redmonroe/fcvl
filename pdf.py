@@ -210,10 +210,8 @@ class StructDataExtract:
         date_list.pop(0)
         combined_list = list(zip(date_list, line_list))
         if style =='dep_detail':
-            print('EXTRACTING DEPOSIT DETAIL')
             self.deposits_list = []
             self.deposits_list.append({stmt_date: combined_list}) 
-            print('EXTRACTING DEPOSIT DETAIL', self.deposits_list)
             return self.deposits_list
         return stmt_date, sum(line_list)
 

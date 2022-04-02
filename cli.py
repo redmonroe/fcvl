@@ -49,7 +49,7 @@ def autors(mode=None):
     click.echo(f'starting **autors*** in mode: {mode}')
     click.echo('\nmust explicitly set mode: testing, dev, prod')
     
-    sleep = 0
+    sleep = 10
     production_full_sheet = Config.TEST_RS
     production_path = Config.TEST_RS_PATH
     production_discard_pile = Config.TEST_MOVE_PATH
@@ -61,7 +61,7 @@ def autors(mode=None):
     prod_rs_tablename = 'build_prod'
 
     checklist = Checklist(db=prod_cl_db)
-    mformat = MonthSheet(full_sheet=production_full_sheet, path=production_path)
+    mformat = MonthSheet(full_sheet=production_full_sheet, path=production_path, sleep=sleep)
     build = BuildRS(full_sheet=production_full_sheet, path=production_path, mode='dev', db=prod_rs_db, tablename=prod_rs_tablename, sleep=sleep, checklist=checklist, findex_db=prod_findex_db, findex_table=prod_findex_tablename, mformat=mformat)    
 
     if mode == 'iter_dev':
@@ -71,7 +71,6 @@ def autors(mode=None):
         build.reset_full_sheet()
         build.findex.drop_tables()
         db, tablename = build.checklist.drop_checklist()
-
 
     elif mode == 'reset_sheet':   
         build.reset_full_sheet()
