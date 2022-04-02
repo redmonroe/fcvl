@@ -103,6 +103,14 @@ class Checklist:
 
         return year, month
 
+    def fix_date2(self, month):
+        dt_object = parse(month)
+        month = str(dt_object.month)
+
+        month = dt_object.strftime('%m')
+
+        return month
+
     '''for some reason I cannot update dict key to pass in argument to update by column name; very frustrating'''
     def check_opcash(self, date, col1=None):
         year, month = self.fix_date(date)
@@ -159,3 +167,10 @@ class Checklist:
             if item['year'] == year and item['month'] == month: 
                 data = dict(id=item['id'], grand_total_ok=True)
                 self.db[self.tablename].update(data, ['id'])
+
+    def get_complete_cl_month(self):
+        checklist = self.db[self.tablename]
+        complete_cl_month = [item['year'] + '-' + self.fix_date2(item['month']) for item in checklist if item['grand_total_ok'] == True]
+        return complete_cl_month
+
+

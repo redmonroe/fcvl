@@ -106,8 +106,15 @@ class BuildRS(MonthSheet):
             self.proc_condition_list = self.reformat_conditions_as_bool(trigger_condition=2)
             self.final_to_process_list = self.make_list_of_true_dates()
 
+
+            # add a check to see if the base_docs_proc is true
             for date in self.final_to_process_list:
                 self.checklist.check_basedocs_proc(date)
+
+            # remove the ones that are grand_total is true
+            complete_month_list = self.checklist.get_complete_cl_month()
+
+            breakpoint()
 
             self.final_to_process_list = [self.fix_date(date).split(' ')[0] for date in self.final_to_process_list]
             self.final_to_process_list = sorted(self.final_to_process_list, key=lambda m: datetime.strptime(m, "%b"))
