@@ -2,6 +2,7 @@ import sys
 import os
 import time
 import pytest
+from datetime import datetime
 current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
 sys.path.append(parent)
@@ -14,7 +15,7 @@ from pathlib import Path
 # from setup_month import MonthSheet
 # from file_indexer import FileIndexer
 # from build_rs import BuildRS
-# from checklist import Checklist
+from checklist import Checklist
 from google_api_calls_abstract import GoogleApiCalls
 # from _pytest.monkeypatch import MonkeyPatch
 # import shutil
@@ -37,10 +38,10 @@ build_test_db = Config.test_build_db
 # monkeypatch = MonkeyPatch()
 service = oauth(Config.my_scopes, 'sheet', mode='testing')
 calls = GoogleApiCalls()
+checklist = Checklist()
 # findex = FileIndexer(path=test_path, discard_pile=discard_pile, db=Config.test_findex_db, table='findex')
 # ys = YearSheet(full_sheet=test_workbook, mode='testing', test_service=service)
 # build = BuildRS(full_sheet=test_workbook, path=test_path, mode='testing', test_service=service)
-# cl = Checklist(db=chck_list_db)
 
 # sleep1 = 1
 
@@ -63,8 +64,33 @@ class TestProduction:
         assert build_test_db.__dict__['url'] == "sqlite:////home/joe/local_dev_projects/fcvl/sqlite/build_test_database.db"
         assert service.__dict__['_dynamic_attrs'][1] == 'spreadsheets'
         assert calls.verify == '511'
-        breakpoint()
 
+    def test_setup_checklist(self):
+        '''checklist should assess state of checklist'''
+        '''if checklist is empty, it should create a checklist and populate it with as many records as months in ytd'''
+
+
+
+        '''PLACE YEAR IN DB NAME SO THAT IT MIGHT LIVE PAST THE YEAR'''
+
+
+        assert checklist.db == cl_test_db
+        assert checklist.tablename == 'checklist_test'
+
+        checklist.check_cl_exist()
+        assert checklist.init_status == 'empty_db'
+
+        cl_month_list = checklist.limit_date()
+
+        current_year = Config.dynamic_current_year
+
+        # def diff_month(d1, d2):
+        #     return (d1.year - d2.year) * 12 + d1.month - d2.month
+        # chklist.make_checklist()
+        # records, r_list = chklist.show_checklist(col_str='id')
+
+        breakpoint()
+        assert len(r_list) == 12
 
     #  build.automatic_build(checklist_mode='autoreset') 
 
@@ -111,13 +137,6 @@ class TestProduction:
 #         assert len(discard_contents) == 1
 #         assert len(path_contents1) == 6
 
-#     def test_setup_checklist(self):
-#         '''make checklist for current year/12 sheets'''
-#         chklist = Checklist(db=chck_list_db)
-#         chklist.make_checklist()
-#         records, r_list = chklist.show_checklist(col_str='id')
-
-#         assert len(r_list) == 12
     
 #     def test_setup_intake(self):
 #         '''test to make sure intake is present; reset intake state'''

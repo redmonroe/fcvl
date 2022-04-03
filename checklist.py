@@ -10,10 +10,11 @@ class Checklist:
     def __init__(self, db=None):
         if db == None:
             self.db = Config.test_checklist_db
+            self.tablename = Config.test_checklist_name
         else:
             self.db = db
+            self.tablename = Config.cl_prod_name
         
-        self.tablename = 'checklist'
         self.init_status = None
 
     def check_cl_exist(self):
