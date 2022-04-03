@@ -1,6 +1,8 @@
 
 class GoogleApiCalls:
 
+    verify = '511'
+
     def simple_batch_update(self, service, sheet_id, wrange, data, dim):
         print(f"Updating with batch call to {wrange}...")
         body_request = {

@@ -1,21 +1,21 @@
-# import sys
-# import os
-# import time
+import sys
+import os
+import time
 import pytest
-# current = os.path.dirname(os.path.realpath(__file__))
-# parent = os.path.dirname(current)
-# sys.path.append(parent)
-# from config import Config
-# from auth_work import oauth
+current = os.path.dirname(os.path.realpath(__file__))
+parent = os.path.dirname(current)
+sys.path.append(parent)
+from config import Config
+from auth_work import oauth
 # from utils import Utils
 # from db_utils import DBUtils
-# from pathlib import Path
+from pathlib import Path
 # from setup_year import YearSheet
 # from setup_month import MonthSheet
 # from file_indexer import FileIndexer
 # from build_rs import BuildRS
 # from checklist import Checklist
-# from google_api_calls_abstract import GoogleApiCalls
+from google_api_calls_abstract import GoogleApiCalls
 # from _pytest.monkeypatch import MonkeyPatch
 # import shutil
 # import pdb
@@ -28,14 +28,15 @@ import pytest
 # GENERATED_DEP_FILE = 'TEST_DEP_012022.xls'
 
 
-# test_workbook = Config.TEST_RS
-# path = Config.TEST_RS_PATH
-# test_path = Config.TEST_RS_PATH
-# discard_pile = Config.TEST_MOVE_PATH
-# chck_list_db = Config.test_checklist_db
+test_workbook = Config.TEST_RS
+path = Config.TEST_RS_PATH
+discard_pile = Config.TEST_MOVE_PATH
+cl_test_db = Config.test_checklist_db
+findex_test_db = Config.test_findex_db
+build_test_db = Config.test_build_db
 # monkeypatch = MonkeyPatch()
-# service = oauth(Config.my_scopes, 'sheet', mode='testing')
-# calls = GoogleApiCalls()
+service = oauth(Config.my_scopes, 'sheet', mode='testing')
+calls = GoogleApiCalls()
 # findex = FileIndexer(path=test_path, discard_pile=discard_pile, db=Config.test_findex_db, table='findex')
 # ys = YearSheet(full_sheet=test_workbook, mode='testing', test_service=service)
 # build = BuildRS(full_sheet=test_workbook, path=test_path, mode='testing', test_service=service)
@@ -43,14 +44,26 @@ import pytest
 
 # sleep1 = 1
 
-#  pytest -v -m production
+# invokce a test func marked @pytest.mark.production with pytest -v -m production
+# invoke test class with: pytest -q -m production
+@pytest.mark.production
 class TestProduction:
 
     test_message = 'hi'
 
-    @pytest.mark.production
     def test_setup(self):
         assert self.test_message == 'hi'
+        assert test_workbook == '1Z_Qoz-4ehalutipyH2Vj5k-y2b78U69Bc7uXoBKK47Q'
+        assert path == Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/audit 2022/test_rent_sheets_data_sources')
+        assert Config.test_findex_name == 'findex_test'
+        assert Config.test_build_name == 'build_test'
+        assert Config.test_checklist_name == 'checklist_test'
+        assert cl_test_db.__dict__['url'] == "sqlite:////home/joe/local_dev_projects/fcvl/sqlite/checklist_test_database.db"
+        assert findex_test_db.__dict__['url'] == "sqlite:////home/joe/local_dev_projects/fcvl/sqlite/findex_test_database.db"
+        assert build_test_db.__dict__['url'] == "sqlite:////home/joe/local_dev_projects/fcvl/sqlite/build_test_database.db"
+        assert service.__dict__['_dynamic_attrs'][1] == 'spreadsheets'
+        assert calls.verify == '511'
+        breakpoint()
 
 
     #  build.automatic_build(checklist_mode='autoreset') 
