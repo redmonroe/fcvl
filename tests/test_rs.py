@@ -71,7 +71,7 @@ class TestProduction:
 
 
 
-        '''PLACE YEAR IN DB NAME SO THAT IT MIGHT LIVE PAST THE YEAR'''
+        '''PLACE YEAR IN DB TABLENAME SO THAT IT MIGHT LIVE PAST THE YEAR'''
 
 
         assert checklist.db == cl_test_db

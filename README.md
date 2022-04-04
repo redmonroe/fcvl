@@ -11,13 +11,20 @@ The purpose of this collection of code is to automate the entire financial cycle
 3. preparing annual financials
 4. generating receipts and work orders
 
-This project is to be realtime. It will use Python, Flask, sqlite, and Postgres for the backend. The front end will be made using Google Sheets Tailwind and Remix/React.
+This project is to be realtime. It will use Python, Flask, Selenium, sqlite, and Postgres for the backend. The front end will be made using Google Sheets Tailwind and Remix/React.
 
 ###
 
 Roadmap
 
-- separating prod, dev, testing infrastructure &
-- scraping from nbofi
+- testing coverage for autors & checklist (generation and population of checklist and rent sheets for rent roll and tenant payments by date: )
+  - major issues: is access to deposits before month end
+- damages list
+- autogenerate
+- scraping kata
+- scraping from nbofi: shadow-dom link
+- scraping from intuit
+- investigate plaid
+- distributing processed files to audit checklist pre-packaged for auditors
 - must make it must faster (obviously the bottleneck it the calls to google sheets)
 - async

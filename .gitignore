@@ -11,6 +11,7 @@ env
 *.pdf
 *.swp
 *.swo
+*.png
 config.py
 
 # secrets
