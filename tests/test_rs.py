@@ -108,30 +108,36 @@ class TestProduction:
         assert init_status == 'empty'
     
         table = findex.build_raw_index(verbose=False)
-        assert len(table) == 4  # we have 4 files in the directory(2 rent roll, 2 deposits)
+        assert len(table) == 5  # we have 4 files in the directory(2 rent roll, 2 deposits, 1 opcash)
         assert table.columns == ['id', 'fn', 'path', 'status', 'indexed']
         directory_contents = findex.articulate_directory()
         names = [x.name for x in directory_contents]
-        assert names == ['deposits_01_2022.xls', 'deposits_02_2022.xlsx', 'rent_roll_01_2022.xls', 'rent_roll_02_2022.xlsx']
+        assert names == ['deposits_01_2022.xls', 'deposits_02_2022.xlsx', 'op_cash_2022_01.pdf', 'rent_roll_01_2022.xls', 'rent_roll_02_2022.xlsx']
 
         index_dict = findex.sort_directory_by_extension(verbose=False) # get extensions: NO PDF YET
-        assert 'xls' and 'xlsx' in [*index_dict.values()]
+        assert 'xls' and 'xlsx' and 'pdf' in [*index_dict.values()]
 
         findex.mark_as_checked(verbose=False) # no return: marks all files as checked
         results = findex.ventilate_table()
-        assert len(results) == 4
+        assert len(results) == 5
         checked_in_true = [x['indexed'] for x in results]
         assert all(checked_in_true)
 
         processed_files = findex.rename_by_content_xls() # the concept of processed is getting weaker
+        findex.processed_files = findex.rename_by_content_pdf()
         findex.update_index_for_processed()
 
         results = findex.ventilate_table()
         processed_true = [x['status'] for x in results]
         assert all(processed_true)
 
-        # DO NOT ERASE THIS!!!
-        # self.processed_files = self.rename_by_content_pdf()
+    def test_opcash_details(self):
+        results = findex.ventilate_table()
+        hap_target = [result['hap'] for result in results if result['fn'] == 'op_cash_2022_01.pdf']
+        rr_target = [result['rr'] for result in results if result['fn'] == 'op_cash_2022_01.pdf']
+        assert hap_target[0] == 30990.0
+        assert rr_target[0] == 15576.54
+        # breakpoint()
 
     def test_buildrs_init(self):
         results = build.findex.ventilate_table()
@@ -210,7 +216,6 @@ class TestProduction:
         assert result[0][0] == '153'
         assert result2[0][0] == '588'
         # breakpoint()
-
 
     def test_teardown_sheets(self):
         # remove existing sheets minus intake but clear intake
