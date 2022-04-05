@@ -293,10 +293,15 @@ class FileIndexer:
         db = Config
         DBUtils.delete_table(self, self.db)
 
-    def show_table(self, table=None):
+    def ventilate_table(self):
+        return [item for item in self.db[self.tablename]]
+
+    def show_table(self):
         print(f'\n contents of {self.db}\n')
         for results in self.db[self.tablename]:
             print(results)
+
+        return results
 
     def show_checklist(self, verbose=None, col_str=None):
         return_list = []

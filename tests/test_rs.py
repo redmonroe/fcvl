@@ -88,7 +88,7 @@ class TestProduction:
 
     def test_setup_findexer(self):    
 
-        '''what do I want my test files to be?'''
+        '''NEED TO TEST PDF SOON OR AT SOME POINT'''
 
         assert path == Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/audit 2022/test_rent_sheets_data_sources')
 
@@ -103,12 +103,24 @@ class TestProduction:
         names = [x.name for x in directory_contents]
         assert names == ['deposits_01_2022.xls', 'deposits_02_2022.xlsx', 'rent_roll_01_2022.xls', 'rent_roll_02_2022.xlsx']
 
-        index_dict = findex.sort_directory_by_extension(verbose=False)
-        # self.mark_as_checked(verbose=False)
-        # self.processed_files = self.rename_by_content_xls()
+        index_dict = findex.sort_directory_by_extension(verbose=False) # get extensions: NO PDF YET
+        assert 'xls' and 'xlsx' in [*index_dict.values()]
+
+        findex.mark_as_checked(verbose=False) # no return: marks all files as checked
+        results = findex.ventilate_table()
+        assert len(results) == 4
+        checked_in_true = [x['indexed'] for x in results]
+        assert all(checked_in_true)
+
+        processed_files = findex.rename_by_content_xls() # the concept of processed is getting weaker
+        findex.update_index_for_processed()
+
+        results = findex.ventilate_table()
+        processed_true = [x['status'] for x in results]
+        assert all(processed_true)
+
+        # breakpoint()
         # self.processed_files = self.rename_by_content_pdf()
-        # self.update_index_for_processed()
-        breakpoint()
 
 
 
