@@ -53,6 +53,7 @@ class TestProduction:
     test_message = 'hi'
 
     def test_setup(self):
+        '''basic checks for environment and configuration'''
         assert self.test_message == 'hi'
         assert test_workbook == '1Z_Qoz-4ehalutipyH2Vj5k-y2b78U69Bc7uXoBKK47Q'
         assert path == Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/audit 2022/test_rent_sheets_data_sources')
@@ -70,9 +71,7 @@ class TestProduction:
         '''if checklist is empty, it should create a checklist and populate it with as many records as months in ytd'''
 
 
-
         '''PLACE YEAR IN DB TABLENAME SO THAT IT MIGHT LIVE PAST THE YEAR'''
-
 
         assert checklist.db == cl_test_db
         assert checklist.tablename == 'checklist_test'
@@ -81,16 +80,9 @@ class TestProduction:
         assert checklist.init_status == 'empty_db'
 
         cl_month_list = checklist.limit_date()
-
-        current_year = Config.dynamic_current_year
-
-        # def diff_month(d1, d2):
-        #     return (d1.year - d2.year) * 12 + d1.month - d2.month
-        # chklist.make_checklist()
-        # records, r_list = chklist.show_checklist(col_str='id')
-
-        breakpoint()
-        assert len(r_list) == 12
+        current_month = datetime.now().month
+        # breakpoint()
+        assert len(cl_month_list) == current_month
 
     #  build.automatic_build(checklist_mode='autoreset') 
 
