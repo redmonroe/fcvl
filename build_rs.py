@@ -103,7 +103,7 @@ class BuildRS(MonthSheet):
             records = self.checklist.show_checklist(verbose=False)
             self.findex.build_index_runner()
             self.proc_condition_list = self.check_diad_processed()
-            breakpoint()
+            # breakpoint()
             self.proc_condition_list = self.reformat_conditions_as_bool(trigger_condition=2)
             self.final_to_process_list = self.make_list_of_true_dates()
 
@@ -301,6 +301,7 @@ class BuildRS(MonthSheet):
                     trigger_on_condition_met_list.append(period_dict)
 
         return [dict(t) for t in {tuple(d.items()) for d in trigger_on_condition_met_list}] 
+    
     def get_name_from_record(self, record):
         name = record['fn'].split('_')[0]
         return name 

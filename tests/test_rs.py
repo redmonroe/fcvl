@@ -14,7 +14,7 @@ from pathlib import Path
 # from setup_year import YearSheet
 # from setup_month import MonthSheet
 from file_indexer import FileIndexer
-# from build_rs import BuildRS
+from build_rs import BuildRS
 from checklist import Checklist
 from google_api_calls_abstract import GoogleApiCalls
 # from _pytest.monkeypatch import MonkeyPatch
@@ -41,7 +41,7 @@ calls = GoogleApiCalls()
 checklist = Checklist()
 findex = FileIndexer(path=path, discard_pile=discard_pile, db=findex_test_db, table=Config.test_findex_name)
 # ys = YearSheet(full_sheet=test_workbook, mode='testing', test_service=service)
-# build = BuildRS(full_sheet=test_workbook, path=test_path, mode='testing', test_service=service)
+build = BuildRS(full_sheet=test_workbook, path=path, mode='testing', test_service=service)
 
 # sleep1 = 1
 
@@ -119,17 +119,15 @@ class TestProduction:
         processed_true = [x['status'] for x in results]
         assert all(processed_true)
 
-        # breakpoint()
+        # DO NOT ERASE THIS!!!
         # self.processed_files = self.rename_by_content_pdf()
+    def test_buildrs_init(self):
+        proc_conditions = build.check_diad_processed()
+        breakpoint()
 
+    def test_diad_processed(self):
+        pass
 
-
-
-
-        # findex.drop_findex()
-
-        # assert findex.db == findex_test_db
-        # assert findex.tablename == 'findex_test'
 
         
         
