@@ -70,6 +70,8 @@ class Checklist:
                 opcash_proc=False,
                 grand_total_ok=False,
                 ))
+                
+        return table
 
     def get_checklist(self):
         checklist = self.db[self.tablename]

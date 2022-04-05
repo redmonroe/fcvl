@@ -39,7 +39,7 @@ build_test_db = Config.test_build_db
 service = oauth(Config.my_scopes, 'sheet', mode='testing')
 calls = GoogleApiCalls()
 checklist = Checklist()
-# findex = FileIndexer(path=test_path, discard_pile=discard_pile, db=Config.test_findex_db, table='findex')
+findex = FileIndexer(path=test_path, discard_pile=discard_pile, db=Config.test_findex_db, table='findex')
 # ys = YearSheet(full_sheet=test_workbook, mode='testing', test_service=service)
 # build = BuildRS(full_sheet=test_workbook, path=test_path, mode='testing', test_service=service)
 
@@ -64,27 +64,39 @@ class TestProduction:
         assert findex_test_db.__dict__['url'] == "sqlite:////home/joe/local_dev_projects/fcvl/sqlite/findex_test_database.db"
         assert build_test_db.__dict__['url'] == "sqlite:////home/joe/local_dev_projects/fcvl/sqlite/build_test_database.db"
         assert service.__dict__['_dynamic_attrs'][1] == 'spreadsheets'
-        assert calls.verify == '511'
+        assert calls.verify == '511' # this is the arbitrary test for the google api calls class
 
     def test_setup_checklist(self):
-        '''checklist should assess state of checklist'''
-        '''if checklist is empty, it should create a checklist and populate it with as many records as months in ytd'''
-
-
         '''PLACE YEAR IN DB TABLENAME SO THAT IT MIGHT LIVE PAST THE YEAR'''
 
+        checklist.drop_checklist()
+
         assert checklist.db == cl_test_db
-        assert checklist.tablename == 'checklist_test'
+        assert checklist.tablename == 'checklist_test' # we have right name
 
         checklist.check_cl_exist()
-        assert checklist.init_status == 'empty_db'
+        assert checklist.init_status == 'empty_db' # cl is empty
 
-        cl_month_list = checklist.limit_date()
+        cl_month_list = checklist.limit_date() # we are building cl iteratively
         current_month = datetime.now().month
-        # breakpoint()
+    
         assert len(cl_month_list) == current_month
 
-    #  build.automatic_build(checklist_mode='autoreset') 
+        table = checklist.make_checklist(month_list=cl_month_list, mode='iterative_cl')
+        assert len(table) == current_month
+        assert table.columns == ['id', 'year', 'month', 'base_docs', 'rs_exist', 'yfor', 'mfor', 'rr_proc', 'dep_proc', 'depdetail_proc', 'opcash_proc', 'grand_total_ok']
+
+    def test_setup_findexer(self):    
+
+        # findex.drop_findex()
+
+        assert findex.db == findex_test_db
+        assert findex.tablename == 'findex_test'
+
+        # breakpoint()
+        
+        
+        # build.automatic_build(checklist_mode='autoreset') 
 
 #     path_contents = []
 #     db = None
