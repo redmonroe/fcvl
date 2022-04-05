@@ -11,7 +11,7 @@ from auth_work import oauth
 # from utils import Utils
 # from db_utils import DBUtils
 from pathlib import Path
-# from setup_year import YearSheet
+from setup_year import YearSheet
 # from setup_month import MonthSheet
 from file_indexer import FileIndexer
 from build_rs import BuildRS
@@ -40,7 +40,7 @@ service = oauth(Config.my_scopes, 'sheet', mode='testing')
 calls = GoogleApiCalls()
 checklist = Checklist()
 findex = FileIndexer(path=path, discard_pile=discard_pile, db=findex_test_db, table=Config.test_findex_name)
-# ys = YearSheet(full_sheet=test_workbook, mode='testing', test_service=service)
+ys = YearSheet(full_sheet=test_workbook, mode='testing', checklist=checklist, test_service=service)
 build = BuildRS(full_sheet=test_workbook, path=path, mode='testing', findex_obj=findex, checklist_obj=checklist, test_service=service)
 
 # sleep1 = 1
@@ -153,7 +153,13 @@ class TestProduction:
         build.final_to_process_list = build.sort_and_adj_final_to_process_list()
         ftp = build.final_to_process_list
         assert ftp == ['jan', 'feb']  ## ORDER MATTERS HERE
+
+    def test_init_yearsheet_and_set_month_range(self):
+        ys.shmonths = build.final_to_process_list
+        assert ys.shmonths == ['jan', 'feb']
         breakpoint()
+
+
     #     pass
         # breakpoint()
     def test_diad_processed(self):

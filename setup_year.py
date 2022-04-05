@@ -47,9 +47,10 @@ class YearSheet:
         if mode == 'testing':
             self.mode = mode
             self.sleep = 0
+            self.shmonths = None
             self.service = test_service
-            self.shmonths = ['jan', 'feb']
-            self.checklist = Checklist(db=Config.test_checklist_db)
+            # self.shmonths = ['jan', 'feb'] # list of months generated programmatically
+            self.checklist = checklist 
         else:
             self.service = oauth(my_scopes, 'sheet')
             self.full_sheet = full_sheet
