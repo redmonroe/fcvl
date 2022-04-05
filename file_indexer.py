@@ -294,7 +294,7 @@ class FileIndexer:
         DBUtils.delete_table(self, self.db)
 
     def ventilate_table(self):
-        return [item for item in self.db[self.tablename]]
+        return [item for item in self.db[self.tablename]    ]
 
     def show_table(self):
         print(f'\n contents of {self.db}\n')

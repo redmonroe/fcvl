@@ -15,12 +15,13 @@ import pandas as pd
 from google_api_calls_abstract import GoogleApiCalls
 
 class BuildRS(MonthSheet):
-    def __init__(self, full_sheet=None, path=None, mode=None, discard_pile=None, db=None, tablename=None, findex_table=None, test_service=None, sleep=None, checklist=None, findex_db=None, mformat=None):
+    def __init__(self, full_sheet=None, path=None, mode=None, discard_pile=None, db=None, tablename=None, findex_table=None, findex_obj=None, checklist_obj=None, test_service=None, sleep=None, checklist=None, findex_db=None, mformat=None):
         if mode == 'testing':
             self.db = Config.test_build_db
             self.mode = 'testing'
             self.full_sheet=Config.TEST_RS
-            self.findex = FileIndexer(path=Config.TEST_RS_PATH, discard_pile=Config.TEST_MOVE_PATH, db=Config.test_findex_db, mode='testing', table='findex')
+            self.findex = findex_obj
+            self.checklist = checklist_obj
             self.service = test_service
             self.mformat = MonthSheet(full_sheet=Config.TEST_RS, path=Config.TEST_RS_PATH, mode='testing', test_service=self.service)
             self.calls = GoogleApiCalls()
@@ -43,6 +44,7 @@ class BuildRS(MonthSheet):
         self.proc_ms_list = []
         self.proc_condition_list = None
         self.final_to_process_list = []
+        self.month_complete_is_true_list = []
 
         self.good_opcash_list = []
         self.good_rr_list = []
@@ -103,21 +105,15 @@ class BuildRS(MonthSheet):
             records = self.checklist.show_checklist(verbose=False)
             self.findex.build_index_runner()
             self.proc_condition_list = self.check_diad_processed()
-            # breakpoint()
             self.proc_condition_list = self.reformat_conditions_as_bool(trigger_condition=2)
-            self.final_to_process_list = self.make_list_of_true_dates()
-
-
-            # add a check to see if the base_docs_proc is true
-            for date in self.final_to_process_list:
+            self.final_to_process_list = self.make_list_of_true_dates()    
+            for date in self.final_to_process_list: # check base_docs are True 4 dates processed
                 self.checklist.check_basedocs_proc(date)
 
             # remove the ones that are grand_total is true
-            complete_month_list = self.checklist.get_complete_cl_month()
-            complete_month_set = set(complete_month_list)
-            final_to_process_set = set(self.final_to_process_list)
+            final_to_process_set = self.compare_base_docs_true_to_grand_total_true()
 
-            self.final_to_process_list = list(final_to_process_set.difference(complete_month_set)) # remove the ones that are grand_total is true, leaving only the ones that are not grand_total ok
+            self.final_to_process_list = list(final_to_process_set.difference(set(self.month_complete_is_true_list)))
 
             self.final_to_process_list = [self.fix_date(date).split(' ')[0] for date in self.final_to_process_list]
             self.final_to_process_list = sorted(self.final_to_process_list, key=lambda m: datetime.strptime(m, "%b"))
@@ -286,9 +282,16 @@ class BuildRS(MonthSheet):
         return self.proc_ms_list
 
     def check_diad_processed(self):
-        print('\nsearching findex_db for processed files')
+        print('\nsearching memory for processed files')
         trigger_on_condition_met_list = []
         items_true = self.get_processed_items_list()
+        # breakpoint()
+        if items_true == []: # if we need to get this from db we can
+            print('\nsearching findex_db for processed files')
+            # list1 = self.findex.ventilate_table()
+            # items_true1 = [x for x in self.findex.ventilate_table() if x['status'] == True]
+            breakpoint()
+
         period_dict = {date: 0 for date in list({period['period'] for period in items_true})}
 
         for period, value in period_dict.items():
@@ -301,6 +304,14 @@ class BuildRS(MonthSheet):
                     trigger_on_condition_met_list.append(period_dict)
 
         return [dict(t) for t in {tuple(d.items()) for d in trigger_on_condition_met_list}] 
+
+    def compare_base_docs_true_to_grand_total_true(self):
+        print('Preparing write list: do not write if both base docs and grand total are true')
+        self.month_complete_is_true_list = self.checklist.get_complete_cl_month()
+        self.month_complete_is_true_list  = list(set(self.month_complete_is_true_list))
+        final_to_process_set = set(self.final_to_process_list)
+
+        return final_to_process_set
     
     def get_name_from_record(self, record):
         name = record['fn'].split('_')[0]

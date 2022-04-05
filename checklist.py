@@ -60,7 +60,7 @@ class Checklist:
             table.insert(dict(
                 year=f'{Config.current_year}', 
                 month=month.lower(),
-                base_docs=False, 
+                base_docs=False, # means rent roll && deposit detail are 
                 rs_exist=False,
                 yfor=False, 
                 mfor=False, 
@@ -68,9 +68,9 @@ class Checklist:
                 dep_proc=False, 
                 depdetail_proc=False, 
                 opcash_proc=False,
-                grand_total_ok=False,
+                grand_total_ok=False, # if true means nothing else needs be done to this sheet
                 ))
-                
+
         return table
 
     def get_checklist(self):

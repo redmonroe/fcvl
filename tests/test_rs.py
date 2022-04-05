@@ -41,13 +41,13 @@ calls = GoogleApiCalls()
 checklist = Checklist()
 findex = FileIndexer(path=path, discard_pile=discard_pile, db=findex_test_db, table=Config.test_findex_name)
 # ys = YearSheet(full_sheet=test_workbook, mode='testing', test_service=service)
-build = BuildRS(full_sheet=test_workbook, path=path, mode='testing', test_service=service)
+build = BuildRS(full_sheet=test_workbook, path=path, mode='testing', findex_obj=findex, checklist_obj=checklist, test_service=service)
 
 # sleep1 = 1
 
 # invokce a test func marked @pytest.mark.production with pytest -v -m production
-# invoke test class with: pytest -q -m production
-@pytest.mark.production
+# invoke test class with: pytest -q -m testing
+@pytest.mark.testing
 class TestProduction:
 
     test_message = 'hi'
@@ -121,11 +121,40 @@ class TestProduction:
 
         # DO NOT ERASE THIS!!!
         # self.processed_files = self.rename_by_content_pdf()
+
     def test_buildrs_init(self):
-        proc_conditions = build.check_diad_processed()
+        results = build.findex.ventilate_table()
+
+        build.proc_condition_list = build.check_diad_processed()
+        assert [*build.proc_condition_list[0].values()] == [2, 2]
+        build.proc_condition_list = build.reformat_conditions_as_bool(trigger_condition=2)
+        assert [*build.proc_condition_list[0].values()] == [True, True]
+        build.final_to_process_list = build.make_list_of_true_dates()
+        assert '2022-01' and '2022-02' in build.final_to_process_list
+
+    def test_merely_mark_base_docs_processed(self):
+        for date in build.final_to_process_list:
+            build.checklist.check_basedocs_proc(date)
+        check_items = checklist.show_checklist()
+        assertion1 = [x['month'] for x in check_items if x['base_docs'] == True]
+        assert assertion1 == ['jan', 'feb']
+
+    def test_compare_base_docs_true_to_grand_total_true(self):
+        '''on first pass this should show empty lists bc no month is complete'''
+        final_to_process_set = build.compare_base_docs_true_to_grand_total_true()
+        assert build.month_complete_is_true_list == []
+        assert final_to_process_set == {'2022-01', '2022-02'}
+        assert type(final_to_process_set) == set
+
+        build.final_to_process_list = list(final_to_process_set.difference(set(build.month_complete_is_true_list)))
+        assert'2022-01' and '2022-02' in build.final_to_process_list
         breakpoint()
 
+    # def test_cl_status(self):
+    #     pass
+        # breakpoint()
     def test_diad_processed(self):
+
         pass
 
 
