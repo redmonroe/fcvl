@@ -15,7 +15,7 @@ import pandas as pd
 from google_api_calls_abstract import GoogleApiCalls
 
 class BuildRS(MonthSheet):
-    def __init__(self, full_sheet=None, path=None, mode=None, discard_pile=None, db=None, tablename=None, findex_table=None, findex_obj=None, checklist_obj=None, test_service=None, sleep=None, checklist=None, findex_db=None, mformat=None):
+    def __init__(self, full_sheet=None, path=None, mode=None, discard_pile=None, db=None, tablename=None, findex_table=None, findex_obj=None, checklist_obj=None, mformat_obj=None, test_service=None, sleep=None, checklist=None, findex_db=None, mformat=None):
         if mode == 'testing':
             self.db = Config.test_build_db
             self.mode = 'testing'
@@ -23,7 +23,7 @@ class BuildRS(MonthSheet):
             self.findex = findex_obj
             self.checklist = checklist_obj
             self.service = test_service
-            self.mformat = MonthSheet(full_sheet=Config.TEST_RS, path=Config.TEST_RS_PATH, mode='testing', test_service=self.service)
+            self.mformat = mformat_obj
             self.calls = GoogleApiCalls()
         elif mode == 'dev':
             self.db = db
