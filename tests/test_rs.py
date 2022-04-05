@@ -29,6 +29,7 @@ from google_api_calls_abstract import GoogleApiCalls
 # GENERATED_DEP_FILE = 'TEST_DEP_012022.xls'
 
 
+sleep = 1
 test_workbook = Config.TEST_RS
 path = Config.TEST_RS_PATH
 discard_pile = Config.TEST_MOVE_PATH
@@ -40,10 +41,9 @@ service = oauth(Config.my_scopes, 'sheet', mode='testing')
 calls = GoogleApiCalls()
 checklist = Checklist()
 findex = FileIndexer(path=path, discard_pile=discard_pile, db=findex_test_db, table=Config.test_findex_name)
-ys = YearSheet(full_sheet=test_workbook, mode='testing', checklist=checklist, test_service=service, sleep=0)
+ys = YearSheet(full_sheet=test_workbook, mode='testing', checklist=checklist, test_service=service, sleep=sleep)
 build = BuildRS(full_sheet=test_workbook, path=path, mode='testing', findex_obj=findex, checklist_obj=checklist, test_service=service)
 
-# sleep1 = 1
 
 # invokce a test func marked @pytest.mark.production with pytest -v -m production
 # invoke test class with: pytest -q -m testing
@@ -175,8 +175,16 @@ class TestProduction:
         assert shnames == ['jan 2022', 'feb 2022']
 
     def test_teardown_sheets(self):
-        breakpoint()
-        # calls.clear_sheet(service, test_workbook, f'intake!A1:ZZ100')
+        # remove existing sheets minus intake but clear intake
+        title_dict = ys.show_current_sheets()
+        for name, id2, in title_dict.items():
+            if name != 'intake':
+                calls.del_one_sheet(service, test_workbook, id2)
+        calls.clear_sheet(service, test_workbook, f'intake!A1:ZZ100')
+        # calls.del_one_sheet(service, spreadsheet_id, id):
+        title_dict = ys.show_current_sheets()
+        assert [*title_dict.items()] == [('intake', 1226016565)]
+        # breakpoint()
         # calls.clear_sheet(service, test_workbook, f'jan 2022!b2:b68')
         # calls.clear_sheet(service, test_workbook, f'jan 2022!e2:h68')
         # calls.clear_sheet(service, test_workbook, f'jan 2022!k2:k68')
@@ -185,8 +193,8 @@ class TestProduction:
 
         # result = calls.broad_get(service, test_workbook, 'jan 2022!E69:E69')
         # result2 = calls.broad_get(service, test_workbook, f'intake!A1:A1')
-        assert result == []   
-        assert result2 == []   
+        # assert result == []   
+        # assert result2 == []   
 
 
         
