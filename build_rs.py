@@ -112,11 +112,8 @@ class BuildRS(MonthSheet):
 
             # remove the ones that are grand_total is true
             final_to_process_set = self.compare_base_docs_true_to_grand_total_true()
-
             self.final_to_process_list = list(final_to_process_set.difference(set(self.month_complete_is_true_list)))
-
-            self.final_to_process_list = [self.fix_date(date).split(' ')[0] for date in self.final_to_process_list]
-            self.final_to_process_list = sorted(self.final_to_process_list, key=lambda m: datetime.strptime(m, "%b"))
+            self.final_to_process_list = self.sort_and_adj_final_to_process_list()
             
             ys = YearSheet(full_sheet=self.full_sheet, checklist=self.checklist, sleep=self.sleep)
             title_dict = ys.show_current_sheets()
@@ -520,6 +517,12 @@ class BuildRS(MonthSheet):
        
         time.sleep(self.sleep)
         print(f'sleeping for {self.sleep} seconds')
+
+    def sort_and_adj_final_to_process_list(self):
+        self.final_to_process_list = [self.fix_date(date).split(' ')[0] for date in self.final_to_process_list]
+        self.final_to_process_list = sorted(self.final_to_process_list, key=lambda m: datetime.strptime(m, "%b"))
+
+        return self.final_to_process_list
     
 
 

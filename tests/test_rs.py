@@ -148,9 +148,12 @@ class TestProduction:
 
         build.final_to_process_list = list(final_to_process_set.difference(set(build.month_complete_is_true_list)))
         assert'2022-01' and '2022-02' in build.final_to_process_list
-        breakpoint()
 
-    # def test_cl_status(self):
+    def test_sort_final_to_process_list(self):
+        build.final_to_process_list = build.sort_and_adj_final_to_process_list()
+        ftp = build.final_to_process_list
+        assert ftp == ['jan', 'feb']  ## ORDER MATTERS HERE
+        breakpoint()
     #     pass
         # breakpoint()
     def test_diad_processed(self):
