@@ -238,6 +238,8 @@ class FileIndexer:
         if verbose:
             self.show_table()
 
+        return table
+
     def update_index_for_processed(self, verbose=None):
         for item in self.db[self.tablename]:
             for proc_file in self.processed_files:

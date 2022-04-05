@@ -13,7 +13,7 @@ from auth_work import oauth
 from pathlib import Path
 # from setup_year import YearSheet
 # from setup_month import MonthSheet
-# from file_indexer import FileIndexer
+from file_indexer import FileIndexer
 # from build_rs import BuildRS
 from checklist import Checklist
 from google_api_calls_abstract import GoogleApiCalls
@@ -39,7 +39,7 @@ build_test_db = Config.test_build_db
 service = oauth(Config.my_scopes, 'sheet', mode='testing')
 calls = GoogleApiCalls()
 checklist = Checklist()
-findex = FileIndexer(path=test_path, discard_pile=discard_pile, db=Config.test_findex_db, table='findex')
+findex = FileIndexer(path=path, discard_pile=discard_pile, db=findex_test_db, table=Config.test_findex_name)
 # ys = YearSheet(full_sheet=test_workbook, mode='testing', test_service=service)
 # build = BuildRS(full_sheet=test_workbook, path=test_path, mode='testing', test_service=service)
 
@@ -88,12 +88,37 @@ class TestProduction:
 
     def test_setup_findexer(self):    
 
+        '''what do I want my test files to be?'''
+
+        assert path == Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/audit 2022/test_rent_sheets_data_sources')
+
+        findex.drop_tables()
+        init_status = findex.check_findex_exist()
+        assert init_status == 'empty'
+    
+        table = findex.build_raw_index(verbose=False)
+        assert len(table) == 4  # we have 4 files in the directory(2 rent roll, 2 deposits)
+        assert table.columns == ['id', 'fn', 'path', 'status', 'indexed']
+        directory_contents = findex.articulate_directory()
+        names = [x.name for x in directory_contents]
+        assert names == ['deposits_01_2022.xls', 'deposits_02_2022.xlsx', 'rent_roll_01_2022.xls', 'rent_roll_02_2022.xlsx']
+
+        index_dict = findex.sort_directory_by_extension(verbose=False)
+        # self.mark_as_checked(verbose=False)
+        # self.processed_files = self.rename_by_content_xls()
+        # self.processed_files = self.rename_by_content_pdf()
+        # self.update_index_for_processed()
+        breakpoint()
+
+
+
+
+
         # findex.drop_findex()
 
-        assert findex.db == findex_test_db
-        assert findex.tablename == 'findex_test'
+        # assert findex.db == findex_test_db
+        # assert findex.tablename == 'findex_test'
 
-        # breakpoint()
         
         
         # build.automatic_build(checklist_mode='autoreset') 
