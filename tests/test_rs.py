@@ -52,6 +52,15 @@ class TestProduction:
 
     test_message = 'hi'
 
+    def test_setup_sheet_prime(self):
+        title_dict = ys.show_current_sheets()
+        for name, id2, in title_dict.items():
+            if name != 'intake':
+                calls.del_one_sheet(service, test_workbook, id2)
+        calls.clear_sheet(service, test_workbook, f'intake!A1:ZZ100')
+        title_dict = ys.show_current_sheets()
+        assert [*title_dict.items()] == [('intake', 1226016565)]
+
     def test_setup(self):
         '''basic checks for environment and configuration'''
         assert self.test_message == 'hi'
@@ -173,6 +182,21 @@ class TestProduction:
     def test_write_sheets(self):
         shnames = ys.full_auto()
         assert shnames == ['jan 2022', 'feb 2022']
+
+    def test_ready_to_write_first_pass(self):
+        build.proc_ms_list = build.make_is_ready_to_write_list(style='base_docs_and_sheet_ok')
+        assert build.proc_ms_list == ['2022-01', '2022-02']
+    
+    def test_target_processed_docs_by_month(self):
+        build.good_opcash_list, build.good_rr_list, build.good_dep_list = build.find_targeted_doc_in_findex_db()
+        assert build.good_opcash_list == []
+        rr_s = [x['fn'] for x in build.good_rr_list]
+        assert rr_s == ['rent_roll_01_2022.xls', 'rent_roll_02_2022.xlsx']
+        dep_s = [x['fn'] for x in build.good_dep_list]
+        assert dep_s == ['deposits_01_2022.xls', 'deposits_02_2022.xlsx']
+        # breakpoint()c
+        
+
 
     def test_teardown_sheets(self):
         # remove existing sheets minus intake but clear intake

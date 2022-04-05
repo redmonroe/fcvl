@@ -19,7 +19,7 @@ class BuildRS(MonthSheet):
         if mode == 'testing':
             self.db = Config.test_build_db
             self.mode = 'testing'
-            self.full_sheet=Config.TEST_RS
+            self.full_sheet = Config.TEST_RS
             self.findex = findex_obj
             self.checklist = checklist_obj
             self.service = test_service
@@ -29,7 +29,7 @@ class BuildRS(MonthSheet):
             self.db = db
             self.full_sheet = full_sheet
             self.service = oauth(my_scopes, 'sheet')
-            self.findex = FileIndexer(path=path, discard_pile=discard_pile, db=findex_db, table=findex_table)
+            self.findex = findex_obj
             self.checklist = checklist
             self.mformat = mformat
             self.tablename = tablename 
@@ -122,14 +122,13 @@ class BuildRS(MonthSheet):
             self.final_to_process_list = self.remove_already_made_sheets_from_list(input_dict=title_dict)    
                     
             ys.shmonths = self.final_to_process_list # only write those sheets for which we have threshold data
-            shnames = ys.full_auto() # ALWAYS MAKE BASE SHEET IN FULL AUTO
+            shnames = ys.full_auto() # ALWAYS MAKE BASE SHEET IF MODE = FULL_AUTO
 
             self.proc_ms_list = self.make_is_ready_to_write_list(style='base_docs_and_sheet_ok')
 
             ## rr_proc & dep_proc checklist
-
             findex_db = self.findex.show_checklist()
-            self.good_opcash_list, self.good_rr_list, self.good_dep_list = self.find_targeted_doc_in_findex_db(db=findex_db)
+            self.good_opcash_list, self.good_rr_list, self.good_dep_list = self.find_targeted_doc_in_findex_db()
 
 
             breakpoint()
@@ -234,9 +233,9 @@ class BuildRS(MonthSheet):
                     self.final_to_process_list.remove(month)
         return self.final_to_process_list
     
-    def find_targeted_doc_in_findex_db(self, db=None):
-    # get pedigreed lists for op_cash, rr, dep
-        for record in db:
+    def find_targeted_doc_in_findex_db(self):    
+        # get pedigreed lists for op_cash, rr, dep
+        for record in self.findex.db[self.findex.tablename]:
             for date in self.proc_ms_list:
                 if date == record['period']:
                     if 'cash' in record['fn'].split('_'):
