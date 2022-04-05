@@ -36,6 +36,7 @@ discard_pile = Config.TEST_MOVE_PATH
 cl_test_db = Config.test_checklist_db
 findex_test_db = Config.test_findex_db
 build_test_db = Config.test_build_db
+build_tablename = Config.test_build_name
 # monkeypatch = MonkeyPatch()
 service = oauth(Config.my_scopes, 'sheet', mode='testing')
 calls = GoogleApiCalls()
@@ -43,7 +44,7 @@ checklist = Checklist()
 findex = FileIndexer(path=path, discard_pile=discard_pile, db=findex_test_db, table=Config.test_findex_name)
 ys = YearSheet(full_sheet=test_workbook, mode='testing', checklist=checklist, test_service=service, sleep=sleep)
 ms = MonthSheet(full_sheet=test_workbook, path=path, mode='testing', sleep=sleep, test_service=service)
-build = BuildRS(full_sheet=test_workbook, path=path, mode='testing', findex_obj=findex, checklist_obj=checklist, mformat_obj=ms, test_service=service)
+build = BuildRS(full_sheet=test_workbook, path=path, mode='testing', findex_obj=findex, checklist_obj=checklist, mformat_obj=ms, test_service=service, rs_tablename=build_tablename)
 
 
 # invokce a test func marked @pytest.mark.production with pytest -v -m production
@@ -196,10 +197,20 @@ class TestProduction:
         dep_s = [x['fn'] for x in build.good_dep_list]
         assert dep_s == ['deposits_01_2022.xls', 'deposits_02_2022.xlsx']
 
-    def test_write_rent_roll(self):
+    def test_write_all_then_test(self):
         for item in build.good_rr_list:
             build.write_rentroll(item)
-        breakpoint()
+
+        for item in build.good_dep_list:
+            build.write_payments(item)
+
+    def test_select_from_sheets_after_writing(self):
+        result = calls.broad_get(service, test_workbook, 'jan 2022!k68:k68')
+        result2 = calls.broad_get(service, test_workbook, 'feb 2022!f68:fq68')
+        assert result[0][0] == '153'
+        assert result2[0][0] == '588'
+        # breakpoint()
+
 
     def test_teardown_sheets(self):
         # remove existing sheets minus intake but clear intake
