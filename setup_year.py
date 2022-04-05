@@ -46,7 +46,7 @@ class YearSheet:
         self.calls = GoogleApiCalls()
         if mode == 'testing':
             self.mode = mode
-            self.sleep = 0
+            self.sleep = sleep
             self.shmonths = None
             self.service = test_service
             # self.shmonths = ['jan', 'feb'] # list of months generated programmatically
@@ -57,6 +57,7 @@ class YearSheet:
             self.all_shmonths = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
             self.shmonths = month_range
             self.checklist = checklist
+            self.sleep = sleep
         
         self.base_month = 'base'
         self.user_text = f'Options:\n PRESS 1 to show all current sheets in {self.full_sheet} \n PRESS 2 to create list of sheet NAMES \n PRESS 3 to format all months. *****YOU NEED TO MANUALLY MAKE AN INTAKE SHEET AFTER RUNNING OPTION 3(this is the full year auto option; takes 45 min) \n >>>'
@@ -68,7 +69,6 @@ class YearSheet:
         self.sheet_id_list = None
         self.prev_bal_dict = None
         self.source_id = None
-        self.sleep = sleep
 
     def control(self):
         if self.user_choice == 1:
@@ -82,16 +82,19 @@ class YearSheet:
             self.remove_base_sheet()
             # self.make_shifted_list_for_prev_bal()
 
-    def auto_control(self):
+    def full_auto(self):
         if self.shmonths == [] or self.shmonths == None:
             pass
         else:
-            self.make_base_sheet()
+            self.make_base_sheet() ## we aren't necessarily going to always write more than one sheet at a time, we might normally just write one, hence iterative build
             self.formatting_runner()
             shnames = self.duplicate_formatted_sheets()
             self.remove_base_sheet()
             self.make_shifted_list_for_prev_bal()
             return shnames
+
+    def semi_auto(self):
+       pass
 
     def set_user_choice(self):
         self.user_choice = int(input(self.user_text))

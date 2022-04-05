@@ -40,7 +40,7 @@ service = oauth(Config.my_scopes, 'sheet', mode='testing')
 calls = GoogleApiCalls()
 checklist = Checklist()
 findex = FileIndexer(path=path, discard_pile=discard_pile, db=findex_test_db, table=Config.test_findex_name)
-ys = YearSheet(full_sheet=test_workbook, mode='testing', checklist=checklist, test_service=service)
+ys = YearSheet(full_sheet=test_workbook, mode='testing', checklist=checklist, test_service=service, sleep=0)
 build = BuildRS(full_sheet=test_workbook, path=path, mode='testing', findex_obj=findex, checklist_obj=checklist, test_service=service)
 
 # sleep1 = 1
@@ -157,14 +157,36 @@ class TestProduction:
     def test_init_yearsheet_and_set_month_range(self):
         ys.shmonths = build.final_to_process_list
         assert ys.shmonths == ['jan', 'feb']
+
+    def test_remove_made_sheets_from_ftp_list(self):
+        '''I really need to test this more: second pass of these tests(not of my effort)'''
+        title_dict = ys.show_current_sheets()
+        build.final_to_process_list = build.remove_already_made_sheets_from_list(input_dict=title_dict)
+        ftp = build.final_to_process_list
+        assert ftp == ['jan', 'feb']
+
+    def test_init_yearsheet_and_set_month_range_after_removing_writes(self):
+        '''make this func meaningful'''
+        ys.shmonths = build.final_to_process_list
+        assert ys.shmonths == ['jan', 'feb']
+
+    def test_write_sheets(self):
+        shnames = ys.full_auto()
+        assert shnames == ['jan 2022', 'feb 2022']
+
+    def test_teardown_sheets(self):
         breakpoint()
+        # calls.clear_sheet(service, test_workbook, f'intake!A1:ZZ100')
+        # calls.clear_sheet(service, test_workbook, f'jan 2022!b2:b68')
+        # calls.clear_sheet(service, test_workbook, f'jan 2022!e2:h68')
+        # calls.clear_sheet(service, test_workbook, f'jan 2022!k2:k68')
+        # calls.clear_sheet(service, test_workbook, f'jan 2022!k71:k71')
+        # calls.clear_sheet(service, test_workbook, f'jan 2022!a69:z69')
 
-
-    #     pass
-        # breakpoint()
-    def test_diad_processed(self):
-
-        pass
+        # result = calls.broad_get(service, test_workbook, 'jan 2022!E69:E69')
+        # result2 = calls.broad_get(service, test_workbook, f'intake!A1:A1')
+        assert result == []   
+        assert result2 == []   
 
 
         
@@ -398,18 +420,18 @@ class TestProduction:
 #         assert result1[0][0][0:4] == 'bala'   
 #         breakpoint()
 
-#     def test_teardown_mformat(self):
-#         calls.clear_sheet(service, test_workbook, f'intake!A1:ZZ100')
-#         calls.clear_sheet(service, test_workbook, f'jan 2022!b2:b68')
-#         calls.clear_sheet(service, test_workbook, f'jan 2022!e2:h68')
-#         calls.clear_sheet(service, test_workbook, f'jan 2022!k2:k68')
-#         calls.clear_sheet(service, test_workbook, f'jan 2022!k71:k71')
-#         calls.clear_sheet(service, test_workbook, f'jan 2022!a69:z69')
+    # def test_teardown_mformat(self):
+    #     calls.clear_sheet(service, test_workbook, f'intake!A1:ZZ100')
+    #     calls.clear_sheet(service, test_workbook, f'jan 2022!b2:b68')
+    #     calls.clear_sheet(service, test_workbook, f'jan 2022!e2:h68')
+    #     calls.clear_sheet(service, test_workbook, f'jan 2022!k2:k68')
+    #     calls.clear_sheet(service, test_workbook, f'jan 2022!k71:k71')
+    #     calls.clear_sheet(service, test_workbook, f'jan 2022!a69:z69')
 
-#         result = calls.broad_get(service, test_workbook, 'jan 2022!E69:E69')
-#         result2 = calls.broad_get(service, test_workbook, f'intake!A1:A1')
-#         assert result == []   
-#         assert result2 == []   
+    #     result = calls.broad_get(service, test_workbook, 'jan 2022!E69:E69')
+    #     result2 = calls.broad_get(service, test_workbook, f'intake!A1:A1')
+    #     assert result == []   
+    #     assert result2 == []   
 
 #     def test_build_index_postflight(self, setup_test_db):
 #         db = setup_test_db

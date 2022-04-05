@@ -115,15 +115,14 @@ class BuildRS(MonthSheet):
             self.final_to_process_list = list(final_to_process_set.difference(set(self.month_complete_is_true_list)))
             self.final_to_process_list = self.sort_and_adj_final_to_process_list()
             
-            ys = YearSheet(full_sheet=self.full_sheet, checklist=self.checklist, sleep=self.sleep)
-            title_dict = ys.show_current_sheets()
+            ys = YearSheet(full_sheet=self.full_sheet, checklist=self.checklist, sleep=self.sleep) # lil ol init
         
+            # also remove from ftp list if sheet is already written
+            title_dict = ys.show_current_sheets()
             self.final_to_process_list = self.remove_already_made_sheets_from_list(input_dict=title_dict)    
                     
             ys.shmonths = self.final_to_process_list # only write those sheets for which we have threshold data
-            shnames = ys.auto_control()
-
-            #### SO WE ARE STILL WRITING THE SHEETS THAT ARE ALREADY MADE, WE NEED TO REMOVE THEM FROM THE LIST FOR RR AND DEP AND DEP DETAIL!!!!!!!!
+            shnames = ys.full_auto() # ALWAYS MAKE BASE SHEET IN FULL AUTO
 
             self.proc_ms_list = self.make_is_ready_to_write_list(style='base_docs_and_sheet_ok')
 

@@ -19,6 +19,7 @@ Roadmap
 
 - testing coverage for autors & checklist (generation and population of checklist and rent sheets for rent roll and tenant payments by date: )
   - major issues: is access to deposits before month end
+- fill down formula(efficiently?)
 - damages list
 - autogenerate
 - scraping kata
