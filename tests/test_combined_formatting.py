@@ -33,13 +33,14 @@ path = Config.TEST_RS_PATH
 test_path = Config.TEST_RS_PATH
 discard_pile = Config.TEST_MOVE_PATH
 chck_list_db = Config.test_checklist_db
+cl_table = Config.test_checklist_name
 monkeypatch = MonkeyPatch()
 service = oauth(Config.my_scopes, 'sheet', mode='testing')
 calls = GoogleApiCalls()
-findex = FileIndexer(path=test_path, discard_pile=discard_pile, db=Config.test_findex_db, table='findex')
+cl = Checklist(db=chck_list_db, tablename=cl_table)
+findex = FileIndexer(cl, path=test_path, discard_pile=discard_pile, db=Config.test_findex_db, table='findex')
 ys = YearSheet(full_sheet=test_workbook, mode='testing', test_service=service)
 build = BuildRS(full_sheet=test_workbook, path=test_path, mode='testing', test_service=service)
-cl = Checklist(db=chck_list_db)
 
 sleep1 = 1
 

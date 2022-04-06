@@ -7,6 +7,7 @@ from checklist import Checklist
 from setup_month import MonthSheet
 from setup_year import YearSheet
 from build_rs import BuildRS
+from file_indexer import FileIndexer
 from tests.test_combined_formatting import TestChecklist
 from file_manager import path_to_statements, write_hap
 import click
@@ -50,19 +51,32 @@ def autors(mode=None):
     click.echo('\nmust explicitly set mode: testing, dev, prod')
     
     sleep = 8
-    production_full_sheet = Config.TEST_RS
-    production_path = Config.TEST_RS_PATH
-    production_discard_pile = Config.TEST_MOVE_PATH
-    production_db = Config.test_findex_db
-    prod_cl_db = Config.cl_prod_db
+    dev_full_sheet = Config.dev_rs
+    dev_path = Config.DEV_RS_PATH
+    dev_discard_pile = Config.DEV_MOVE_PATH # is this used?  
+
+
+    dev_findex_db = Config.findex_dev_db
+    dev_findex_tablename = Config.findex_dev_name
+
+    dev_cl_db = Config.cl_dev_db
+    dev_cl_tablename = Config.cl_dev_name
+
+    dev_build_db = Config.build_dev_db
+    dev_build_tablename = Config.build_dev_name
+
     prod_findex_db = Config.findex_prod_db
     prod_findex_tablename = 'findex_prod'
     prod_rs_db = Config.test_build_db
-    prod_rs_tablename = 'build_prod'
+    prod_rs_tablename = 'build_dev'
 
-    checklist = Checklist(db=prod_cl_db)
-    mformat = MonthSheet(full_sheet=production_full_sheet, path=production_path, sleep=sleep)
-    build = BuildRS(full_sheet=production_full_sheet, path=production_path, mode='dev', db=prod_rs_db, rs_tablename=prod_rs_tablename, sleep=sleep, checklist=checklist, findex_db=prod_findex_db, findex_table=prod_findex_tablename, mformat=mformat)    
+    checklist = Checklist(db=dev_cl_db, tablename=dev_cl_tablename)#
+    findex = FileIndexer(checklist, path=dev_path, discard_pile=dev_discard_pile, db=dev_findex_db, table=dev_findex_tablename)
+    mformat = MonthSheet(full_sheet=dev_full_sheet, path=dev_path, sleep=sleep)
+
+    build = BuildRS(full_sheet=dev_full_sheet, path=dev_path, mode='dev', db=dev_build_db, rs_tablename=dev_build_tablename, sleep=sleep, checklist=checklist, findex_db=dev_findex_db, findex_table=dev_findex_tablename, findex_obj=findex, mformat=mformat)    
+
+    breakpoint()
 
     if mode == 'iter_dev':
         build.iterative_build(checklist_mode='iterative_cl')  

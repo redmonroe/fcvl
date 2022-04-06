@@ -15,7 +15,7 @@ import shutil
 
 class FileIndexer:
 
-    def __init__(self, path=None, discard_pile=None, db=None, mode=None, table=None):
+    def __init__(self, checklist_obj, path=None, discard_pile=None, db=None, mode=None, table=None):
         
         self.mode = mode
         self.path = path
@@ -30,7 +30,7 @@ class FileIndexer:
         self.check_tables = None
         self.processed_files = []
         self.pdf = StructDataExtract()
-        self.checklist = Checklist()
+        self.checklist = checklist_obj
         self.hap_list = []
         self.rr_list = []
         self.dep_list = []

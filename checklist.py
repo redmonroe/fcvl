@@ -7,13 +7,10 @@ from dateutil.parser import parse
 
 class Checklist:
 
-    def __init__(self, db=None):
-        if db == None:
-            self.db = Config.test_checklist_db
-            self.tablename = Config.test_checklist_name
-        else:
-            self.db = db
-            self.tablename = Config.cl_prod_name
+    def __init__(self, db, tablename):
+      
+        self.db = db
+        self.tablename = tablename
         
         self.init_status = None
 
