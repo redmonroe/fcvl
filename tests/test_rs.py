@@ -17,6 +17,7 @@ from file_indexer import FileIndexer
 from build_rs import BuildRS
 from checklist import Checklist
 from google_api_calls_abstract import GoogleApiCalls
+from googleapiclient.errors import HttpError
 # from _pytest.monkeypatch import MonkeyPatch
 # import shutil
 # import pdb
@@ -29,21 +30,22 @@ from google_api_calls_abstract import GoogleApiCalls
 # GENERATED_DEP_FILE = 'TEST_DEP_012022.xls'
 
 
-sleep = 1
+sleep1 = 1
 test_workbook = Config.TEST_RS
 path = Config.TEST_RS_PATH
 discard_pile = Config.TEST_MOVE_PATH
 cl_test_db = Config.test_checklist_db
+cl_test_tn = Config.test_checklist_name
 findex_test_db = Config.test_findex_db
 build_test_db = Config.test_build_db
 build_tablename = Config.test_build_name
 # monkeypatch = MonkeyPatch()
 service = oauth(Config.my_scopes, 'sheet', mode='testing')
 calls = GoogleApiCalls()
-checklist = Checklist()
-findex = FileIndexer(path=path, discard_pile=discard_pile, db=findex_test_db, table=Config.test_findex_name)
-ys = YearSheet(full_sheet=test_workbook, mode='testing', checklist=checklist, test_service=service, sleep=sleep)
-ms = MonthSheet(full_sheet=test_workbook, path=path, mode='testing', sleep=sleep, test_service=service)
+checklist = Checklist(db=cl_test_db, tablename=cl_test_tn)
+findex = FileIndexer(path=path, discard_pile=discard_pile, db=findex_test_db, table=Config.test_findex_name, checklist_obj=checklist)
+ys = YearSheet(full_sheet=test_workbook, mode='testing', checklist=checklist, test_service=service, sleep=sleep1)
+ms = MonthSheet(full_sheet=test_workbook, path=path, mode='testing', sleep=sleep1, test_service=service)
 build = BuildRS(full_sheet=test_workbook, path=path, mode='testing', findex_obj=findex, checklist_obj=checklist, mformat_obj=ms, test_service=service, rs_tablename=build_tablename)
 
 
@@ -55,13 +57,20 @@ class TestProduction:
     test_message = 'hi'
 
     def test_setup_sheet_prime(self):
-        title_dict = ys.show_current_sheets()
-        for name, id2, in title_dict.items():
-            if name != 'intake':
-                calls.del_one_sheet(service, test_workbook, id2)
-        calls.clear_sheet(service, test_workbook, f'intake!A1:ZZ100')
-        title_dict = ys.show_current_sheets()
-        assert [*title_dict.items()] == [('intake', 1226016565)]
+        try:
+            title_dict = ys.show_current_sheets()
+            for name, id2, in title_dict.items():
+                if name != 'intake':
+                    calls.del_one_sheet(service, test_workbook, id2)
+            calls.clear_sheet(service, test_workbook, f'intake!A1:ZZ100')
+            title_dict = ys.show_current_sheets()
+            assert [*title_dict.items()] == [('intake', 1226016565)]
+        except HttpError as e:
+            if e.resp.status == 429:
+                print(f'trying again with timeout of {sleep1} s')
+                time.sleep(sleep1)
+            else:
+                raise
 
     def test_setup(self):
         '''basic checks for environment and configuration'''
@@ -197,18 +206,32 @@ class TestProduction:
     
     def test_target_processed_docs_by_month(self):
         build.good_opcash_list, build.good_rr_list, build.good_dep_list = build.find_targeted_doc_in_findex_db()
-        assert build.good_opcash_list == []
+        # breakpoint()
+        assert build.good_opcash_list[0]['fn'] == 'op_cash_2022_01.pdf'
         rr_s = [x['fn'] for x in build.good_rr_list]
         assert rr_s == ['rent_roll_01_2022.xls', 'rent_roll_02_2022.xlsx']
         dep_s = [x['fn'] for x in build.good_dep_list]
         assert dep_s == ['deposits_01_2022.xls', 'deposits_02_2022.xlsx']
 
     def test_write_all_then_test(self):
-        for item in build.good_rr_list:
-            build.write_rentroll(item)
-
-        for item in build.good_dep_list:
-            build.write_payments(item)
+        try:
+            for item in build.good_rr_list:
+                build.write_rentroll(item)
+        except HttpError as e:
+            if e.resp.status == 429:
+                print(f'trying again with timeout of {sleep1} s')
+                time.sleep(sleep1)
+            else:
+                raise
+        try:
+            for item in build.good_dep_list:
+                build.write_payments(item)
+        except HttpError as e:
+            if e.resp.status == 429:
+                print(f'trying again with timeout of {sleep1} s')
+                time.sleep(sleep1)
+            else:
+                raise
 
     def test_select_from_sheets_after_writing(self):
         result = calls.broad_get(service, test_workbook, 'jan 2022!k68:k68')
@@ -219,14 +242,21 @@ class TestProduction:
 
     def test_teardown_sheets(self):
         # remove existing sheets minus intake but clear intake
-        title_dict = ys.show_current_sheets()
-        for name, id2, in title_dict.items():
-            if name != 'intake':
-                calls.del_one_sheet(service, test_workbook, id2)
-        calls.clear_sheet(service, test_workbook, f'intake!A1:ZZ100')
-        # calls.del_one_sheet(service, spreadsheet_id, id):
-        title_dict = ys.show_current_sheets()
-        assert [*title_dict.items()] == [('intake', 1226016565)]
+        try:
+            title_dict = ys.show_current_sheets()
+            for name, id2, in title_dict.items():
+                if name != 'intake':
+                    calls.del_one_sheet(service, test_workbook, id2)
+            calls.clear_sheet(service, test_workbook, f'intake!A1:ZZ100')
+            # calls.del_one_sheet(service, spreadsheet_id, id):
+            title_dict = ys.show_current_sheets()
+            assert [*title_dict.items()] == [('intake', 1226016565)]
+        except HttpError as e:
+            if e.resp.status == 429:
+                print(f'trying again with timeout of {sleep1} s')
+                time.sleep(sleep1)
+            else:
+                raise
         # breakpoint()
         # calls.clear_sheet(service, test_workbook, f'jan 2022!b2:b68')
         # calls.clear_sheet(service, test_workbook, f'jan 2022!e2:h68')
