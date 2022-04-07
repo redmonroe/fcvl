@@ -59,21 +59,6 @@ class GoogleApiCalls:
         request = service.spreadsheets().values().update(spreadsheetId=spreadsheet_id, range=range_, valueInputOption=value_input_option, body=value_range_body)
         response = request.execute()
 
-
-    def write_formula_column(self, service, sheet_choice, data, write_range):
-        print(f"Writing {data} to {write_range}  . . .")
-        sheet = service.spreadsheets()
-        spreadsheet_id = sheet_choice
-        range_ = write_range  # TODO: Update placeholder value.
-        # How the input data should be interpreted.
-        value_input_option = 'USER_ENTERED'
-        value_range_body = {
-                            "values": [data]
-        }
-
-        request = service.spreadsheets().values().update(spreadsheetId=spreadsheet_id, range=range_, valueInputOption=value_input_option, body=value_range_body)
-        response = request.execute()
-
     def format_row(self, service, sheet_choice, write_range, r_or_c, name_list): # and writing strings to ranges passed
         print(f"Formatting {r_or_c} . . .")
         sheet = service.spreadsheets()
@@ -144,6 +129,20 @@ class GoogleApiCalls:
             body=data
         ).execute()
         print(f"Deleting sheet id: {response['spreadsheetId']}")
+
+    def write_formula_hardcoded_column(self, service, sheet_id, data, write_range):
+        value_input_option = 'USER_ENTERED'
+        # value_range_body = {
+        #                     "values": [data]
+        # }
+
+        value_range_body = {"range": write_range,
+                            "majorDimension": 'COLUMNS', 
+                            "values": [data]
+        }
+
+        request = service.spreadsheets().values().update(spreadsheetId=sheet_id, range=write_range, valueInputOption=value_input_option, body=value_range_body)
+        response = request.execute()
 
     def write_formula_column(self, service, sheet_id, data, write_range):
         value_input_option = 'USER_ENTERED'

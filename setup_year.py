@@ -196,10 +196,21 @@ class YearSheet:
 
         prev_bal_dict = dict(zip(actual_titles_list, titles_list1))
 
-        self.prev_bal_dict = prev_bal_dict        
+        self.prev_bal_dict = prev_bal_dict
+        # self.write_one_cell_prev_bal(sheet_titles=titles_list1)     
+
+    def write_column_prev_bal(self, sheet_titles=None):
+        prev_month_bal_list = []
+        for prev_month, current_month in prev_bal_dict.items():
+            for item in sheet_titles:
+                if item == current_month:
+                    prev_month_bal_list = [f"='{prev_month}'!L{row}" for row in range(2, 69)]
+                    calls.write_formula_hardcoded_column(service, full_sheet, prev_month_bal_list, f'{current_month}!D2')
+
+    def write_one_cell_prev_bal(self, sheet_titles=None):   
 
         for prev_month, current_month in self.prev_bal_dict.items():
-            for item in titles_list1:
+            for item in sheet_titles:
                 if item == current_month:
                     G_SHEETS_PREVIOUS_BALANCE = [f"='{prev_month}'!L2"]
                     self.calls.write_formula_column(self.service, self.full_sheet, G_SHEETS_PREVIOUS_BALANCE, f'{current_month}!D2:D2')
@@ -209,7 +220,32 @@ class YearSheet:
         return checklist
 
 
+'''
+def test_func():
 
+    calls = GoogleApiCalls()
 
+    full_sheet = Config.TEST_RS
+    service = oauth(my_scopes, 'sheet')
 
+    titles_dict = Utils.get_existing_sheets(service, full_sheet)
+
+    titles_dict = {name:id2 for name, id2 in titles_dict.items() if name != 'intake'}
+
+    titles_list1 = list(titles_dict)
+    titles_list1 = titles_list1[1:]
+
+    actual_titles_list = list(titles_dict)
+
+    prev_bal_dict = dict(zip(actual_titles_list, titles_list1))
+
+    # self.prev_bal_dict = prev_bal_dict        
+        
+        
+                
+                # G_SHEETS_PREVIOUS_BALANCE = [f"='{prev_month}'!L2"]
+
+test_func()
+
+'''
 

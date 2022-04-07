@@ -208,10 +208,12 @@ class TestProduction:
 
         assert shnames == ['jan 2022', 'feb 2022']
 
+
     def test_ready_to_write_first_pass(self):
         build.proc_ms_list = build.make_is_ready_to_write_list(style='base_docs_and_sheet_ok')
         assert build.proc_ms_list == ['2022-01', '2022-02']
     
+        # breakpoint()
     def test_target_processed_docs_by_month(self):
         build.good_opcash_list, build.good_rr_list, build.good_dep_list = build.find_targeted_doc_in_findex_db()
         # breakpoint()
@@ -252,6 +254,7 @@ class TestProduction:
                 time.sleep(sleep1)
             else:
                 raise
+        breakpoint()
 
     def test_select_from_sheets_after_writing(self):
         try: 
