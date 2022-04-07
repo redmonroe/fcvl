@@ -28,6 +28,7 @@ GENERATED_RR_FILE = 'TEST_RENTROLL_012022.xls'
 GENERATED_DEP_FILE = 'TEST_DEP_012022.xls'
 
 
+sleep1 = 1
 test_workbook = Config.TEST_RS
 path = Config.TEST_RS_PATH
 test_path = Config.TEST_RS_PATH
@@ -40,9 +41,8 @@ calls = GoogleApiCalls()
 cl = Checklist(db=chck_list_db, tablename=cl_table)
 findex = FileIndexer(cl, path=test_path, discard_pile=discard_pile, db=Config.test_findex_db, table='findex')
 ys = YearSheet(full_sheet=test_workbook, mode='testing', test_service=service)
-build = BuildRS(full_sheet=test_workbook, path=test_path, mode='testing', test_service=service)
+build = BuildRS(sleep1, full_sheet=test_workbook, path=test_path, mode='testing', test_service=service)
 
-sleep1 = 1
 
 # pdb.set_trace()
 

@@ -50,7 +50,7 @@ def autors(mode=None):
     click.echo(f'starting **autors*** in mode: {mode}')
     click.echo('\nmust explicitly set mode: testing, dev, prod')
     
-    sleep = 8
+    sleep1 = 8
     dev_full_sheet = Config.dev_rs
     dev_path = Config.DEV_RS_PATH
     dev_discard_pile = Config.DEV_MOVE_PATH # is this used?  
@@ -74,7 +74,7 @@ def autors(mode=None):
     findex = FileIndexer(checklist, path=dev_path, discard_pile=dev_discard_pile, db=dev_findex_db, table=dev_findex_tablename)
     mformat = MonthSheet(full_sheet=dev_full_sheet, path=dev_path, sleep=sleep)
 
-    build = BuildRS(full_sheet=dev_full_sheet, path=dev_path, mode='dev', db=dev_build_db, rs_tablename=dev_build_tablename, sleep=sleep, checklist=checklist, findex_db=dev_findex_db, findex_table=dev_findex_tablename, findex_obj=findex, mformat=mformat)    
+    build = BuildRS(sleep1, full_sheet=dev_full_sheet, path=dev_path, mode='dev', db=dev_build_db, rs_tablename=dev_build_tablename, sleep=sleep, checklist=checklist, findex_db=dev_findex_db, findex_table=dev_findex_tablename, findex_obj=findex, mformat=mformat)    
 
     breakpoint()
 

@@ -30,7 +30,7 @@ from googleapiclient.errors import HttpError
 # GENERATED_DEP_FILE = 'TEST_DEP_012022.xls'
 
 
-sleep1 = 1
+sleep1 = 2
 test_workbook = Config.TEST_RS
 path = Config.TEST_RS_PATH
 discard_pile = Config.TEST_MOVE_PATH
@@ -44,10 +44,10 @@ service = oauth(Config.my_scopes, 'sheet', mode='testing')
 calls = GoogleApiCalls()
 checklist = Checklist(db=cl_test_db, tablename=cl_test_tn)
 findex = FileIndexer(path=path, discard_pile=discard_pile, db=findex_test_db, table=Config.test_findex_name, checklist_obj=checklist)
-ys = YearSheet(full_sheet=test_workbook, mode='testing', checklist=checklist, test_service=service, sleep=sleep1)
 ms = MonthSheet(full_sheet=test_workbook, path=path, mode='testing', sleep=sleep1, test_service=service)
-build = BuildRS(full_sheet=test_workbook, path=path, mode='testing', findex_obj=findex, checklist_obj=checklist, mformat_obj=ms, test_service=service, rs_tablename=build_tablename)
-
+ys = YearSheet(full_sheet=test_workbook, mode='testing', checklist=checklist, test_service=service, sleep=sleep1)
+build = BuildRS(sleep1, full_sheet=test_workbook, path=path, mode='testing', findex_obj=findex, checklist_obj=checklist, mformat_obj=ms, test_service=service, rs_tablename=build_tablename)
+error_codes = [429]
 
 # invokce a test func marked @pytest.mark.production with pytest -v -m production
 # invoke test class with: pytest -q -m testing
@@ -66,7 +66,7 @@ class TestProduction:
             title_dict = ys.show_current_sheets()
             assert [*title_dict.items()] == [('intake', 1226016565)]
         except HttpError as e:
-            if e.resp.status == 429:
+            if e.resp.status == error_codes:
                 print(f'trying again with timeout of {sleep1} s')
                 time.sleep(sleep1)
             else:
@@ -197,7 +197,15 @@ class TestProduction:
         assert ys.shmonths == ['jan', 'feb']
 
     def test_write_sheets(self):
-        shnames = ys.full_auto()
+        try:
+            shnames = ys.full_auto()
+        except HttpError as e:
+            if e.resp.status == error_codes:
+                print(f'trying again with timeout of {sleep1} s')
+                time.sleep(sleep1)
+            else:
+                raise
+
         assert shnames == ['jan 2022', 'feb 2022']
 
     def test_ready_to_write_first_pass(self):
@@ -218,8 +226,8 @@ class TestProduction:
             for item in build.good_rr_list:
                 build.write_rentroll(item)
         except HttpError as e:
-            if e.resp.status == 429:
-                print(f'trying again with timeout of {sleep1} s')
+            if e.resp.status == error_codes:
+                print(f'test_rs: trying again with timeout of {sleep1} s')
                 time.sleep(sleep1)
             else:
                 raise
@@ -227,18 +235,66 @@ class TestProduction:
             for item in build.good_dep_list:
                 build.write_payments(item)
         except HttpError as e:
-            if e.resp.status == 429:
-                print(f'trying again with timeout of {sleep1} s')
+            if e.resp.status == error_codes:
+                print(f'test_rs: trying again with timeout of {sleep1} s')
+                time.sleep(sleep1)
+            else:
+                raise
+
+        
+        try:
+            for item in build.good_opcash_list: 
+                print('writing from deposit_detail from db')
+                build.write_opcash_detail_from_db(item)
+        except HttpError as e:
+            if e.resp.status == error_codes:
+                print(f'test_rs: trying again with timeout of {sleep1} s')
                 time.sleep(sleep1)
             else:
                 raise
 
     def test_select_from_sheets_after_writing(self):
-        result = calls.broad_get(service, test_workbook, 'jan 2022!k68:k68')
-        result2 = calls.broad_get(service, test_workbook, 'feb 2022!f68:fq68')
+        try: 
+            result = calls.broad_get(service, test_workbook, 'jan 2022!k68:k68')
+        except HttpError as e:
+            if e.resp.status == error_codes:
+                print(f'test_rs: trying again with timeout of {sleep1} s')
+                time.sleep(sleep1)
+            else:
+                raise
+        try:
+            result2 = calls.broad_get(service, test_workbook, 'feb 2022!f68:fq68')
+        except HttpError as e:
+            if e.resp.status == error_codes:
+                print(f'test_rs: trying again with timeout of {sleep1} s')
+                time.sleep(sleep1)
+            else:
+                raise
+        
+        try:
+            grand_total_dep_detail = calls.broad_get(service, test_workbook, 'jan 2022!d90:d90')
+        except HttpError as e:
+            if e.resp.status == error_codes:
+                print(f'test_rs: trying again with timeout of {sleep1} s')
+                time.sleep(sleep1)
+            else:
+                raise
+
+        try:
+            grand_total = calls.broad_get(service, test_workbook, 'jan 2022!k77:k77')
+        except HttpError as e:
+            if e.resp.status == error_codes:
+                print(f'test_rs: trying again with timeout of {sleep1} s')
+                time.sleep(sleep1)
+            else:
+                raise
+
         assert result[0][0] == '153'
         assert result2[0][0] == '588'
+
         # breakpoint()
+        # assert grand_total_dep_detail[0][0] == '15491.71'
+        assert grand_total[0][0] == '15491.71'
 
     def test_teardown_sheets(self):
         # remove existing sheets minus intake but clear intake
@@ -246,17 +302,25 @@ class TestProduction:
             title_dict = ys.show_current_sheets()
             for name, id2, in title_dict.items():
                 if name != 'intake':
-                    calls.del_one_sheet(service, test_workbook, id2)
+                    try:
+                        calls.del_one_sheet(service, test_workbook, id2)
+                    except HttpError as e:
+                        if e.resp.status == error_codes:
+                            print(f'test_rs: trying again with timeout of {sleep1} s')
+                            time.sleep(sleep1)
+                        else:
+                            raise
             calls.clear_sheet(service, test_workbook, f'intake!A1:ZZ100')
             # calls.del_one_sheet(service, spreadsheet_id, id):
             title_dict = ys.show_current_sheets()
-            assert [*title_dict.items()] == [('intake', 1226016565)]
         except HttpError as e:
-            if e.resp.status == 429:
+            if e.resp.status == error_codes:
                 print(f'trying again with timeout of {sleep1} s')
                 time.sleep(sleep1)
             else:
                 raise
+
+        assert [*title_dict.items()] == [('intake', 1226016565)]
         # breakpoint()
         # calls.clear_sheet(service, test_workbook, f'jan 2022!b2:b68')
         # calls.clear_sheet(service, test_workbook, f'jan 2022!e2:h68')
