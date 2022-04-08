@@ -16,6 +16,7 @@ from setup_month import MonthSheet
 from file_indexer import FileIndexer
 from build_rs import BuildRS
 from checklist import Checklist
+from records import MakeLog
 from google_api_calls_abstract import GoogleApiCalls
 from googleapiclient.errors import HttpError
 # from _pytest.monkeypatch import MonkeyPatch
@@ -51,6 +52,7 @@ error_codes = [429]
 
 # invokce a test func marked @pytest.mark.production with pytest -v -m production
 # invoke test class with: pytest -q -m testing
+
 @pytest.mark.testing
 class TestProduction:
 
