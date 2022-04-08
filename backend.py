@@ -2,6 +2,7 @@ import os
 from peewee import *
 import datetime
 import pandas as pd
+from numpy import nan
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 db = SqliteDatabase(f'{basedir}/sqlite/test_pw_db.db')
@@ -20,7 +21,9 @@ class Tenant(BaseModel):
             print(df.head(100))
 
         t_name = df['Name'].tolist()
-        unit = df['Unit'].tolist()
+        t_name = [item.capitalize() for item in t_name if isinstance(item, str)]
+        # t_name = [item.lower() for item in t_name]
+        # unit = df['Unit'].tolist()
         # k_rent = self.str_to_float(df['Lease Rent'].tolist())
         # t_rent = self.str_to_float(df['Actual Rent Charge'].tolist())
         # subsidy = self.str_to_float(df['Actual Subsidy Charge'].tolist())

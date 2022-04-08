@@ -8,6 +8,7 @@ create_tables_list = [Tenant]
 
 target_tenant_load_file = 'rent_roll_01_2022.xls'
 path = Config.TEST_RS_PATH
+tenant = Tenant()
 findex = FileIndexer(path=path)
 
 @pytest.mark.testing_db
@@ -33,6 +34,8 @@ class TestDB:
         assert target_tenant_load_file in dir_items
 
         target_tenant_file = path.joinpath(target_tenant_load_file)
+
+        tenant_list = tenant.load_tenants(filename=target_tenant_file, verbose=False)
         
         breakpoint()
 
