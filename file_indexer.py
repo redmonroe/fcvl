@@ -15,7 +15,7 @@ import shutil
 
 class FileIndexer:
 
-    def __init__(self, checklist_obj, path=None, discard_pile=None, db=None, mode=None, table=None):
+    def __init__(self, checklist_obj=None, path=None, discard_pile=None, db=None, mode=None, table=None):
         
         self.mode = mode
         self.path = path

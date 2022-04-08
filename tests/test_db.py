@@ -1,7 +1,14 @@
 import pytest
+from pathlib import Path
+from config import Config
+from file_indexer import FileIndexer
 from backend import db, Tenant
 
 create_tables_list = [Tenant]
+
+target_tenant_load_file = 'rent_roll_01_2022.xls'
+path = Config.TEST_RS_PATH
+findex = FileIndexer(path=path)
 
 @pytest.mark.testing_db
 class TestDB:
@@ -17,5 +24,16 @@ class TestDB:
         assert db.database == '/home/joe/local_dev_projects/fcvl/sqlite/test_pw_db.db'
         assert db.get_tables() == ['tenant']
         assert db.get_columns(table='tenant')[0]._asdict() == {'name': 'id', 'data_type': 'INTEGER', 'null': False, 'primary_key': True, 'table': 'tenant', 'default': None}
+
+    def test_load_tables(self):
+
+        assert path == Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/audit 2022/test_rent_sheets_data_sources')
+
+        dir_items = [item.name for item in path.iterdir()]
+        assert target_tenant_load_file in dir_items
+
+        target_tenant_file = path.joinpath(target_tenant_load_file)
         
         breakpoint()
+
+        
