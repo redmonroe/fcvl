@@ -12,6 +12,7 @@ env
 *.swp
 *.swo
 *.png
+*.log
 config.py
 
 # secrets

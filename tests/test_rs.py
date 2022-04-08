@@ -16,9 +16,10 @@ from setup_month import MonthSheet
 from file_indexer import FileIndexer
 from build_rs import BuildRS
 from checklist import Checklist
-from records import MakeLog
+from records import RecordHandler
 from google_api_calls_abstract import GoogleApiCalls
 from googleapiclient.errors import HttpError
+from errors import retry_google_api
 # from _pytest.monkeypatch import MonkeyPatch
 # import shutil
 # import pdb
@@ -48,31 +49,25 @@ findex = FileIndexer(path=path, discard_pile=discard_pile, db=findex_test_db, ta
 ms = MonthSheet(full_sheet=test_workbook, path=path, mode='testing', sleep=sleep1, test_service=service)
 ys = YearSheet(full_sheet=test_workbook, mode='testing', checklist=checklist, test_service=service, sleep=sleep1)
 build = BuildRS(sleep1, full_sheet=test_workbook, path=path, mode='testing', findex_obj=findex, checklist_obj=checklist, mformat_obj=ms, test_service=service, rs_tablename=build_tablename)
-error_codes = [429]
 
+error_codes = 429
 # invokce a test func marked @pytest.mark.production with pytest -v -m production
 # invoke test class with: pytest -q -m testing
 
-@pytest.mark.testing
+@pytest.mark.testing_rs
 class TestProduction:
 
     test_message = 'hi'
 
+    @retry_google_api(3, sleep1, error_codes)
     def test_setup_sheet_prime(self):
-        try:
-            title_dict = ys.show_current_sheets()
-            for name, id2, in title_dict.items():
-                if name != 'intake':
-                    calls.del_one_sheet(service, test_workbook, id2)
-            calls.clear_sheet(service, test_workbook, f'intake!A1:ZZ100')
-            title_dict = ys.show_current_sheets()
-            assert [*title_dict.items()] == [('intake', 1226016565)]
-        except HttpError as e:
-            if e.resp.status == error_codes:
-                print(f'trying again with timeout of {sleep1} s')
-                time.sleep(sleep1)
-            else:
-                raise
+        title_dict = ys.show_current_sheets()
+        for name, id2, in title_dict.items():
+            if name != 'intake':
+                calls.del_one_sheet(service, test_workbook, id2)
+        calls.clear_sheet(service, test_workbook, f'intake!A1:ZZ100')
+        title_dict = ys.show_current_sheets()
+        assert [*title_dict.items()] == [('intake', 1226016565)]
 
     def test_setup(self):
         '''basic checks for environment and configuration'''
@@ -87,6 +82,7 @@ class TestProduction:
         assert build_test_db.__dict__['url'] == "sqlite:////home/joe/local_dev_projects/fcvl/sqlite/build_test_database.db"
         assert service.__dict__['_dynamic_attrs'][1] == 'spreadsheets'
         assert calls.verify == '511' # this is the arbitrary test for the google api calls class
+        breakpoint()
 
     def test_setup_checklist(self):
         '''PLACE YEAR IN DB TABLENAME SO THAT IT MIGHT LIVE PAST THE YEAR'''
