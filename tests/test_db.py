@@ -127,9 +127,7 @@ class TestDB:
             all_rows.append(row) 
         assert all_rows[-1] == ('graves, renee', Decimal('38'), 'PT-212')
         
-        # get all payments for multiple tenants
-        payment_list = [(rec.tenant_name, rec.beg_bal_amount, rec.payment_amount) for rec in Tenant.select(Tenant.tenant_name, Tenant.beg_bal_amount, Payment.payment_date, Payment.payment_amount).join(Payment).namedtuples()]
-
+        # get all payments and sums for multiple tenants
         sum_payment_list = list(set([(rec.tenant_name, rec.beg_bal_amount, rec.total_payments) for rec in Tenant.select(
             Tenant.tenant_name, 
             Tenant.beg_bal_amount, 
@@ -137,14 +135,17 @@ class TestDB:
             fn.SUM(Payment.payment_amount).over(partition_by=[Tenant.tenant_name]).alias('total_payments')
             ).join(Payment).namedtuples()]))
 
+        # generate end_bals for multiple tenants
         end_bal_list = [(rec[0], rec[1] - Decimal(rec[2]).quantize(Decimal('.01'), rounding=ROUND_UP)) for rec in sum_payment_list]
-        assert end_bal_list == [('gillespie, janet', Decimal('-152.00')), ('alexander, charles', Decimal('-541.20'))]
-        breakpoint()    
+        assert end_bal_list == [('gillespie, janet', Decimal('-152.00')), ('alexander, charles', Decimal('-541.20'))]     
+       
+       
+        def test_ranges(self):
+            # sum if in date range
+            # do charges class
+            pass
+            breakpoint()    
 
-        # sum multiple tenants
-        # sum both multiple tenants and payments
-        # sum if in date range
-        # do charges class
         
         
 
