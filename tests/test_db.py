@@ -88,17 +88,17 @@ class TestDB:
         # get all payments for a single tenant
         payments = Payment().select().join(Tenant).where(Tenant.tenant_name == 'alexander, charles')
         end_bal = [(name.payment_date, name.payment_amount) for name in payments]
-        assert end_bal == [(datetime.date(2022, 1, 5), Decimal('200.20')), (datetime.date(2022, 2, 5), Decimal('250'))]
+        assert end_bal == [(datetime.date(2022, 1, 5), Decimal('200.20')), (datetime.date(2022, 1, 6), Decimal('100')), (datetime.date(2022, 2, 5), Decimal('250'))]
 
         # get sum of payments for a single tenant
         payments = Payment().select().join(Tenant).where(Tenant.tenant_name == 'alexander, charles')
         sum_payments = sum([name.payment_amount for name in payments])
-        assert sum_payments == Decimal('450.20')
+        assert sum_payments == Decimal('550.20')
 
         # get lifetime balance for a single tenant
         startbal = row[2]
         current_bal = startbal + sum_payments
-        assert current_bal == Decimal('359.20')
+        assert current_bal == Decimal('459.20')
 
     def test_find_vacants(self):
         vacant_units = Unit.find_vacants()
@@ -137,14 +137,31 @@ class TestDB:
 
         # generate end_bals for multiple tenants
         end_bal_list = [(rec[0], rec[1] - Decimal(rec[2]).quantize(Decimal('.01'), rounding=ROUND_UP)) for rec in sum_payment_list]
-        assert end_bal_list == [('gillespie, janet', Decimal('-152.00')), ('alexander, charles', Decimal('-541.20'))]     
+
+        end_bal_list_no_dec = [(rec[0], float(rec[1]) - rec[2]) for rec in sum_payment_list]
+        # breakpoint()    
+
+        assert ('gillespie, janet', float('-152.0')) and ('alexander, charles', float('-641.2')) in end_bal_list_no_dec
        
-       
-        def test_ranges(self):
-            # sum if in date range
-            # do charges class
-            pass
-            breakpoint()    
+    
+    def test_ranges(self):
+        # sum if in date range
+
+        # get all payments in Jan 2022 as list
+        jan_payments = [rec for rec in Payment().select().where(Payment.payment_date >= datetime.date(2022, 1, 1)).where(Payment.payment_date <= datetime.date(2022, 1, 31)).namedtuples()]
+
+        breakpoint()    
+        assert len(jan_payments) == 2
+        assert jan_payments[0].id == 1
+        assert jan_payments[0].tenant == 'alexander, charles'
+        
+    
+
+        # get all 
+        # do charges class
+        
+        
+        pass
 
         
         
