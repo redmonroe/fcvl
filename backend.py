@@ -23,8 +23,18 @@ class Tenant(BaseModel):
 
 class Unit(BaseModel):
     unit_name = CharField(unique=True)
-    # status = CharField(default='vacant') 
+    status = CharField(default='occupied') 
     tenant = ForeignKeyField(Tenant, backref='unit')
+
+    @staticmethod
+    def find_vacants():
+        all_units = Config.units
+        # get all units
+        query = [unit for unit in Unit.select().namedtuples()]
+        unit_status = [unit.unit_name for unit in Unit.select().namedtuples()]
+        vacant_list = list(set(all_units) - set(unit_status))
+
+        return vacant_list
 
 class Payment(BaseModel):
     payment_date = DateField(default='2022-01-01')

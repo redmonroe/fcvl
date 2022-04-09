@@ -100,12 +100,24 @@ class TestDB:
         current_bal = startbal + sum_payments
         assert current_bal == Decimal('359')
 
+    def test_find_vacants(self):
+        vacant_units = Unit.find_vacants()
+        assert 'PT-201' and 'CD-115' and 'CD-101' in vacant_units
+
+        # breakpoint()
+
+
+    def test_multiple_tenants(self):
+        # get unit for multiple tenants
+        query = Unit.select().join(Tenant).namedtuples()
+        multi_row1 = [name for name in query]
+        breakpoint()    
+        # assert alexanders_row1[0].unit_name == 'PT-204'
+
         # sum multiple tenants
         # sum both multiple tenants and payments
         # sum if in date range
         # do charges class
-        breakpoint()    
-
         
 
         
