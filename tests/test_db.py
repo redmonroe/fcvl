@@ -79,7 +79,7 @@ class TestDB:
         assert alexanders_row2[0][0] == 'alexander, charles'
         assert alexanders_row2[0][1] == Decimal('-91')
        
-        # get all cols for single tenant
+        # get all cols for single tenant (except Payment)
         query = Tenant.get(Tenant.tenant_name == 'alexander, charles')
         for unit1 in query.unit:
             row = (query.tenant_name, unit1.unit_name, query.beg_bal_amount, query.beg_bal_date)
@@ -87,17 +87,19 @@ class TestDB:
 
         # get all payments for a single tenant
         payments = Payment().select().join(Tenant).where(Tenant.tenant_name == 'alexander, charles')
-        end_bal = [name for name in payments]
-        # sum_list = []
-        # for item in end_bal:
-        #     sum_list.append(item.payment_amount)
-        breakpoint()
+        end_bal = [(name.payment_date, name.payment_amount) for name in payments]
+        assert end_bal == [(datetime.date(2022, 1, 5), Decimal('200')), (datetime.date(2022, 2, 5), Decimal('250'))]
 
-        # end_bal = sum(sum_list)
-        # beg_bal = row[2]
-        # end_bal = end_bal + beg_bal
+        # get sum of payments for a single tenant
+        payments = Payment().select().join(Tenant).where(Tenant.tenant_name == 'alexander, charles')
+        sum_payments = sum([name.payment_amount for name in payments])
+        assert sum_payments == Decimal('450')
 
-        # sum multiple payments
+        # get lifetime balance for a single tenant
+        startbal = row[2]
+        current_bal = startbal + sum_payments
+        assert current_bal == Decimal('359')
+
         # sum multiple tenants
         # sum both multiple tenants and payments
         # sum if in date range
