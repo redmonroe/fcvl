@@ -1,4 +1,5 @@
 import os
+from config import Config
 from peewee import *
 import datetime
 import pandas as pd
@@ -13,50 +14,41 @@ class BaseModel(Model):
 
 class Tenant(BaseModel):
     tenant_name = CharField(unique=True)
+    unit = CharField()
     status = CharField(default='active')  # this should be updated automatically when I use build_rs
-    beg_bal = DecimalField(default=0.00)
+    beg_bal_2022 = DecimalField(default=0.00)
     # do the join on unit and tenant name
 
-    def load_tenants(self, filename, verbose=False):
+    def load_tenants(self, filename):
         df = pd.read_excel(filename, header=16)
-        if verbose: 
-            pd.set_option('display.max_columns', None)
-            print(df.head(100))
 
         t_name = df['Name'].tolist()
-        t_name = [item.capitalize() for item in t_name if isinstance(item, str)]
-        t_name = [item for item in t_name if item != 'Vacant']
-        t_name = list(set(t_name))
-        insert_many_list = []
-        for item in t_name:
-            insert_many_list.append({'tenant_name': item})
+        unit = df['Unit'].tolist()
+        rent_roll_dict = dict(zip(t_name, unit))
+        rent_roll_dict = {k.lower(): v for k, v in rent_roll_dict.items() if k is not nan}
+        rent_roll_dict = {k: v for k, v in rent_roll_dict.items() if k != 'vacant'}
+        insert_many_list = [{'tenant_name': name, 'unit': unit} for (name, unit) in rent_roll_dict.items()]
 
         query = Tenant.insert_many(insert_many_list)
         query.execute()
+
+        return rent_roll_dict
 
 class Unit(BaseModel):
     unit_name = CharField(unique=True)
     status = CharField(default='vacant')  # this should be updated automatically when I use build_rs
 
     def load_units(self, filename, verbose=False):
-        df = pd.read_excel(filename, header=16)
-        if verbose: 
-            pd.set_option('display.max_columns', None)
-            print(df.head(100))
-
-        unit = df['Unit'].tolist()
-        units = list(set(units))
         insert_many_list = []
-        for item in units:
+        for item in Config.units:
             insert_many_list.append({'unit_name': item})
 
         query = Unit.insert_many(insert_many_list)
         query.execute()
 
-        breakpoint()
+        # breakpoint()
 
-        return units
-
+        return Config.units
 # class Tweet(BaseModel):
 #     user = ForeignKeyField(User, backref='tweets')
 #     message = TextField()
