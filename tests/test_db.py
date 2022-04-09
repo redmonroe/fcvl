@@ -1,12 +1,13 @@
 import pytest
+import datetime
 from decimal import Decimal
 from pathlib import Path
 from config import Config
 from file_indexer import FileIndexer
-from backend import db, PopulateTable, Tenant, Unit, BeginningBalance, Payment
+from backend import db, PopulateTable, Tenant, Unit, Payment
 from peewee import JOIN
 
-create_tables_list = [Tenant, Unit, BeginningBalance, Payment]
+create_tables_list = [Tenant, Unit, Payment]
 
 target_tenant_load_file = 'rent_roll_01_2022.xls'
 target_bal_load_file = 'beginning_balance_2022.xlsx'
@@ -30,7 +31,7 @@ class TestDB:
         db.drop_tables(models=create_tables_list)
         db.create_tables(create_tables_list)
         assert db.database == '/home/joe/local_dev_projects/fcvl/sqlite/test_pw_db.db'
-        assert db.get_tables() == ['beginningbalance', 'tenant', 'unit', 'payment']
+        assert db.get_tables() == ['payment', 'tenant', 'unit']
         # assert db.get_columns(table='tenant')[0]._asdict() == {'name': 'id', 'data_type': 'INTEGER', 'null': False, 'primary_key': True, 'table': 'tenant', 'default': None}
 
         # assert db.get_columns(table='unit')[0]._asdict() == {'name': 'id', 'data_type': 'INTEGER', 'null': False, 'primary_key': True, 'table': 'tenant', 'default': None}
@@ -67,28 +68,34 @@ class TestDB:
 
     def test_charles_alexander(self):
 
+        # get unit for single tenant
         query = Unit.select().join(Tenant).where(Tenant.tenant_name == 'alexander, charles').namedtuples()
         alexanders_row1 = [name for name in query]
         assert alexanders_row1[0].unit_name == 'PT-204'
         
-        query = BeginningBalance().select().join(Tenant).where(Tenant.tenant_name == 'alexander, charles').namedtuples()
-        alexanders_row2 = [name for name in query]
-
+        # get all TENANT cols for single tenant
+        query = Tenant.select().where(Tenant.tenant_name == 'alexander, charles').namedtuples()
+        alexanders_row2 = [(name.tenant_name, name.beg_bal_amount) for name in query]
+        assert alexanders_row2[0][0] == 'alexander, charles'
+        assert alexanders_row2[0][1] == Decimal('-91')
+       
+        # get all cols for single tenant
         query = Tenant.get(Tenant.tenant_name == 'alexander, charles')
-        for unit1, bb in zip(query.unit, query.beg_bal):
-            row = (query.tenant_name, unit1.unit_name, bb.beg_bal_amount)
+        for unit1 in query.unit:
+            row = (query.tenant_name, unit1.unit_name, query.beg_bal_amount, query.beg_bal_date)
+        assert row == ('alexander, charles', 'PT-204', Decimal('-91'), datetime.date(2022, 1, 1))
 
-        assert row == ('alexander, charles', 'PT-204', Decimal('-91'))
+        # get all payments for a single tenant
+        payments = Payment().select().join(Tenant).where(Tenant.tenant_name == 'alexander, charles')
+        end_bal = [name for name in payments]
+        # sum_list = []
+        # for item in end_bal:
+        #     sum_list.append(item.payment_amount)
+        breakpoint()
 
-        end_bal = Payment().select().join(Tenant).where(Tenant.tenant_name == 'alexander, charles')
-        end_bal = [name for name in end_bal]
-        sum_list = []
-        for item in end_bal:
-            sum_list.append(item.payment_amount)
-
-        end_bal = sum(sum_list)
-        beg_bal = row[2]
-        end_bal = end_bal + beg_bal
+        # end_bal = sum(sum_list)
+        # beg_bal = row[2]
+        # end_bal = end_bal + beg_bal
 
         # sum multiple payments
         # sum multiple tenants

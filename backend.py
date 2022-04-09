@@ -18,16 +18,13 @@ class BaseModel(Model):
 
 class Tenant(BaseModel):
     tenant_name = CharField(primary_key=True, unique=True)
+    beg_bal_date = DateField(default='2022-01-01')
+    beg_bal_amount = DecimalField(default=0.00)
 
 class Unit(BaseModel):
     unit_name = CharField(unique=True)
     # status = CharField(default='vacant') 
     tenant = ForeignKeyField(Tenant, backref='unit')
-
-class BeginningBalance(BaseModel):
-    beg_bal_date = DateField(default='2022-01-01')
-    beg_bal_amount = DecimalField(default=0.00)
-    tenant = ForeignKeyField(Tenant, backref='beg_bal')
 
 class Payment(BaseModel):
     payment_date = DateField(default='2022-01-01')
@@ -66,9 +63,14 @@ class PopulateTable:
         rent_roll_dict = {k.lower(): v for k, v in rent_roll_dict.items() if k != 'vacant'}
         rent_roll_dict = {k: v for k, v in rent_roll_dict.items() if k != 'vacant'}
 
-        insert_many_list = [{'beg_bal_amount': balance, 'tenant': name} for (name, balance) in rent_roll_dict.items()]
-        query = BeginningBalance.insert_many(insert_many_list)
-        query.execute()
+        ten_list = [tenant for tenant in Tenant.select()]
+        for tenant in ten_list:
+            for name, bal in rent_roll_dict.items():
+                if tenant.tenant_name == name:
+                    tenant.beg_bal_amount = bal
+                    tenant.save()
+
+        # could also use bulk update query: https://docs.peewee-orm.com/en/latest/peewee/api.html
 
     def payment_load_simple(self, filename):
         df = pd.read_excel(filename)
