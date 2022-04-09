@@ -90,9 +90,9 @@ class PopulateTable:
             tup = (row['name'], row['date'], row['amount'])
             insert_many_list1.append(tup)
         insert_many_list = [{'tenant': name, 'payment_date': date, 'payment_amount': amount} for (name, date, amount) in insert_many_list1]
-        # breakpoint()
         query = Payment.insert_many(insert_many_list)
         query.execute()
+        # breakpoint()
 
     def load_units(self, filename, verbose=False):
         insert_many_list = []

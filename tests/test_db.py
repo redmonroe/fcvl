@@ -1,11 +1,11 @@
 import pytest
 import datetime
-from decimal import Decimal
+from decimal import Decimal, ROUND_DOWN, ROUND_UP
 from pathlib import Path
 from config import Config
 from file_indexer import FileIndexer
 from backend import db, PopulateTable, Tenant, Unit, Payment
-from peewee import JOIN
+from peewee import JOIN, fn
 
 create_tables_list = [Tenant, Unit, Payment]
 
@@ -88,17 +88,17 @@ class TestDB:
         # get all payments for a single tenant
         payments = Payment().select().join(Tenant).where(Tenant.tenant_name == 'alexander, charles')
         end_bal = [(name.payment_date, name.payment_amount) for name in payments]
-        assert end_bal == [(datetime.date(2022, 1, 5), Decimal('200')), (datetime.date(2022, 2, 5), Decimal('250'))]
+        assert end_bal == [(datetime.date(2022, 1, 5), Decimal('200.20')), (datetime.date(2022, 2, 5), Decimal('250'))]
 
         # get sum of payments for a single tenant
         payments = Payment().select().join(Tenant).where(Tenant.tenant_name == 'alexander, charles')
         sum_payments = sum([name.payment_amount for name in payments])
-        assert sum_payments == Decimal('450')
+        assert sum_payments == Decimal('450.20')
 
         # get lifetime balance for a single tenant
         startbal = row[2]
         current_bal = startbal + sum_payments
-        assert current_bal == Decimal('359')
+        assert current_bal == Decimal('359.20')
 
     def test_find_vacants(self):
         vacant_units = Unit.find_vacants()
@@ -126,7 +126,20 @@ class TestDB:
             row = (tow.tenant_name, tow.beg_bal_amount, tow.unit_name) 
             all_rows.append(row) 
         assert all_rows[-1] == ('graves, renee', Decimal('38'), 'PT-212')
-        # breakpoint()    
+        
+        # get all payments for multiple tenants
+        payment_list = [(rec.tenant_name, rec.beg_bal_amount, rec.payment_amount) for rec in Tenant.select(Tenant.tenant_name, Tenant.beg_bal_amount, Payment.payment_date, Payment.payment_amount).join(Payment).namedtuples()]
+
+        sum_payment_list = list(set([(rec.tenant_name, rec.beg_bal_amount, rec.total_payments) for rec in Tenant.select(
+            Tenant.tenant_name, 
+            Tenant.beg_bal_amount, 
+            Payment.payment_amount, 
+            fn.SUM(Payment.payment_amount).over(partition_by=[Tenant.tenant_name]).alias('total_payments')
+            ).join(Payment).namedtuples()]))
+
+        end_bal_list = [(rec[0], rec[1] - Decimal(rec[2]).quantize(Decimal('.01'), rounding=ROUND_UP)) for rec in sum_payment_list]
+        assert end_bal_list == [('gillespie, janet', Decimal('-152.00')), ('alexander, charles', Decimal('-541.20'))]
+        breakpoint()    
 
         # sum multiple tenants
         # sum both multiple tenants and payments
