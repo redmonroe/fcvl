@@ -13,6 +13,9 @@ class BaseModel(Model):
 
 class Tenant(BaseModel):
     tenant_name = CharField(unique=True)
+    status = CharField(default='active')  # this should be updated automatically when I use build_rs
+    beg_bal = DecimalField(default=0.00)
+    # do the join on unit and tenant name
 
     def load_tenants(self, filename, verbose=False):
         df = pd.read_excel(filename, header=16)
@@ -22,6 +25,7 @@ class Tenant(BaseModel):
 
         t_name = df['Name'].tolist()
         t_name = [item.capitalize() for item in t_name if isinstance(item, str)]
+        t_name = [item for item in t_name if item != 'Vacant']
         t_name = list(set(t_name))
         insert_many_list = []
         for item in t_name:
@@ -29,24 +33,29 @@ class Tenant(BaseModel):
 
         query = Tenant.insert_many(insert_many_list)
         query.execute()
+
+class Unit(BaseModel):
+    unit_name = CharField(unique=True)
+    status = CharField(default='vacant')  # this should be updated automatically when I use build_rs
+
+    def load_units(self, filename, verbose=False):
+        df = pd.read_excel(filename, header=16)
+        if verbose: 
+            pd.set_option('display.max_columns', None)
+            print(df.head(100))
+
+        unit = df['Unit'].tolist()
+        units = list(set(units))
+        insert_many_list = []
+        for item in units:
+            insert_many_list.append({'unit_name': item})
+
+        query = Unit.insert_many(insert_many_list)
+        query.execute()
+
         breakpoint()
 
-
-
-        # for item in t_name_list:
-        #     new_tenant = Tenant.create(tenant_name=item)
-        #     breakpoint()
-        #     new_tenant.save()
-
-        # charlie = User.create(username='charlie')
-
-        # t_name = [item.lower() for item in t_name]
-        # unit = df['Unit'].tolist()
-        # k_rent = self.str_to_float(df['Lease Rent'].tolist())
-        # t_rent = self.str_to_float(df['Actual Rent Charge'].tolist())
-        # subsidy = self.str_to_float(df['Actual Subsidy Charge'].tolist())
-
-        return t_name
+        return units
 
 # class Tweet(BaseModel):
 #     user = ForeignKeyField(User, backref='tweets')

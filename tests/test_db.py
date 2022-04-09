@@ -37,12 +37,16 @@ class TestDB:
         target_tenant_file = path.joinpath(target_tenant_load_file)
 
         tenant_list = tenant.load_tenants(filename=target_tenant_file, verbose=False)
+        # assert len(tenant_list) == 68
         
 
     def test_query_tenants(self):
-        ten_list = Tenant.select().order_by(Tenant.id).namedtuples()
+        ten_list = Tenant.select().order_by(Tenant.tenant_name).namedtuples()
         unpacked_tenants = [name for name in ten_list]
-        assert unpacked_tenants[0].tenant_name == 'Lambert, nira'
+        assert unpacked_tenants[0].tenant_name == 'Alexander, charles'
+
+        ten_count = Tenant.select().count()
+        assert ten_count == 64
         breakpoint()
 
         
