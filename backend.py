@@ -1,15 +1,14 @@
-import os
-import logging
-from config import Config
-from peewee import *
 import datetime
+import logging
+import os
+
 import pandas as pd
 from numpy import nan
-basedir = os.path.abspath(os.path.dirname(__file__))
+from peewee import *
 
-logger = logging.getLogger('peewee')
-logger.addHandler(logging.StreamHandler())
-logger.setLevel(logging.DEBUG)
+from config import Config
+
+basedir = os.path.abspath(os.path.dirname(__file__))
 
 db = SqliteDatabase(f'{basedir}/sqlite/test_pw_db.db', pragmas={'foreign_keys': 1})
 
@@ -19,10 +18,6 @@ class BaseModel(Model):
 
 class Tenant(BaseModel):
     tenant_name = CharField(primary_key=True, unique=True)
-    # unit = CharField()
-    # status = CharField(default='active')  # this should be updated automatically when I use build_rs
-    # beg_bal_2022 = DecimalField(default=0.00)
-    # do the join on unit and tenant name
 
 class Unit(BaseModel):
     unit_name = CharField(unique=True)
@@ -30,7 +25,7 @@ class Unit(BaseModel):
     tenant = ForeignKeyField(Tenant, backref='unit')
 
 class BeginningBalance(BaseModel):
-    beg_bal_date = DateField()
+    beg_bal_date = DateField(default='2022-01-01')
     beg_bal_amount = DecimalField(default=0.00)
     tenant = ForeignKeyField(Tenant, backref='beg_bal')
 
@@ -57,6 +52,18 @@ class PopulateTable:
         query.execute()
 
         return rent_roll_dict
+
+    def balance_load(self, filename):
+        df = pd.read_excel(filename)
+        t_name = df['name'].tolist()
+        beg_bal = df['balance'].tolist()
+        rent_roll_dict = dict(zip(t_name, beg_bal))
+        rent_roll_dict = {k.lower(): v for k, v in rent_roll_dict.items() if k != 'vacant'}
+        rent_roll_dict = {k: v for k, v in rent_roll_dict.items() if k != 'vacant'}
+
+        insert_many_list = [{'beg_bal_amount': balance, 'tenant': name} for (name, balance) in rent_roll_dict.items()]
+        query = BeginningBalance.insert_many(insert_many_list)
+        query.execute()
 
     def load_units(self, filename, verbose=False):
         insert_many_list = []
