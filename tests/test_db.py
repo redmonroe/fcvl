@@ -21,6 +21,7 @@ class TestDB:
 
     def test_db(self):
         db.connect()
+        # db.drop_tables(models=create_tables_list)
         db.create_tables(create_tables_list)
         assert db.database == '/home/joe/local_dev_projects/fcvl/sqlite/test_pw_db.db'
         assert db.get_tables() == ['tenant']
@@ -35,8 +36,11 @@ class TestDB:
 
         target_tenant_file = path.joinpath(target_tenant_load_file)
 
-        tenant_list = tenant.load_tenants(filename=target_tenant_file, verbose=False)
+        # tenant_list = tenant.load_tenants(filename=target_tenant_file, verbose=False)
         
-        breakpoint()
+        # breakpoint()
+
+    def test_query_tenants(self):
+        pass
 
         

@@ -22,6 +22,24 @@ class Tenant(BaseModel):
 
         t_name = df['Name'].tolist()
         t_name = [item.capitalize() for item in t_name if isinstance(item, str)]
+        t_name = list(set(t_name))
+        insert_many_list = []
+        for item in t_name:
+            insert_many_list.append({'tenant_name': item})
+
+        query = Tenant.insert_many(insert_many_list)
+        query.execute()
+        breakpoint()
+
+
+
+        # for item in t_name_list:
+        #     new_tenant = Tenant.create(tenant_name=item)
+        #     breakpoint()
+        #     new_tenant.save()
+
+        # charlie = User.create(username='charlie')
+
         # t_name = [item.lower() for item in t_name]
         # unit = df['Unit'].tolist()
         # k_rent = self.str_to_float(df['Lease Rent'].tolist())
@@ -35,3 +53,4 @@ class Tenant(BaseModel):
 #     message = TextField()
 #     created_date = DateTimeField(default=datetime.datetime.now)
 #     is_published = BooleanField(default=True)
+
