@@ -104,28 +104,35 @@ class TestDB:
         vacant_units = Unit.find_vacants()
         assert 'PT-201' and 'CD-115' and 'CD-101' in vacant_units
 
-        # breakpoint()
-
-
     def test_multiple_tenants(self):
         # get unit for multiple tenants
         query = Unit.select().join(Tenant).namedtuples()
         multi_row1 = [name for name in query]
-        breakpoint()    
-        # assert alexanders_row1[0].unit_name == 'PT-204'
+        woods_row1 = multi_row1[0]
+        assert woods_row1.tenant == 'woods, leon'
+        assert woods_row1.status == 'occupied'
+        gil_row1 = multi_row1[1]
+        assert gil_row1.tenant == 'gillespie, janet'
+        assert gil_row1.unit_name == 'CD-B'
+        
+        # get all TENANT cols for single tenant
+        many_rows = [(name.tenant_name, name.beg_bal_amount) for name in Tenant.select().namedtuples()]
+        assert many_rows[0][0] == 'woods, leon'
+        assert many_rows[0][1] == Decimal('18')
+        
+        # get all cols for multipe tenants (except Payment)
+        all_rows = []
+        for tow in Tenant.select(Tenant.tenant_name, Tenant.beg_bal_amount, Unit.unit_name).join(Unit).namedtuples():
+            row = (tow.tenant_name, tow.beg_bal_amount, tow.unit_name) 
+            all_rows.append(row) 
+        assert all_rows[-1] == ('graves, renee', Decimal('38'), 'PT-212')
+        # breakpoint()    
 
         # sum multiple tenants
         # sum both multiple tenants and payments
         # sum if in date range
         # do charges class
         
-
-        
-        # query = (Tenant
-        #  .select(Tenant.tenant_name)
-        #  .join(Unit, JOIN.LEFT_OUTER)  # Joins user -> tweet.
-        #  .join(BeginningBalance(), JOIN.LEFT_OUTER)  # Joins tweet -> favorite.
-        #  .group_by(Tenant.tenant_name))
         
 
 
