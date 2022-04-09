@@ -24,11 +24,15 @@ class Tenant(BaseModel):
     # beg_bal_2022 = DecimalField(default=0.00)
     # do the join on unit and tenant name
 
-
 class Unit(BaseModel):
     unit_name = CharField(unique=True)
     # status = CharField(default='vacant') 
     tenant = ForeignKeyField(Tenant, backref='unit')
+
+class BeginningBalance(BaseModel):
+    beg_bal_date = DateField()
+    beg_bal_amount = DecimalField(default=0.00)
+    tenant = ForeignKeyField(Tenant, backref='beg_bal')
 
 class PopulateTable:
 
@@ -43,7 +47,6 @@ class PopulateTable:
         all_units_dict = {k: v for k, v in rent_roll_dict.items()}
         
         rent_roll_dict = {k: v for k, v in rent_roll_dict.items() if k != 'vacant'}
-
 
         insert_many_list = [{'tenant_name': name} for (name, unit) in rent_roll_dict.items()]
         insert_many_list_units = [{'unit_name': unit, 'tenant': name} for (name, unit) in rent_roll_dict.items()]

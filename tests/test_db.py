@@ -40,25 +40,31 @@ class TestDB:
 
         target_tenant_file = path.joinpath(target_tenant_load_file)
 
-        # tenant_list = tenant.load_tenants(filename=target_tenant_file)
         populate.basic_load(filename=target_tenant_file)  
 
     def test_query_tables(self):
         ten_list = Tenant.select().order_by(Tenant.tenant_name).namedtuples()
         unpacked_tenants = [name for name in ten_list]
-        # breakpoint()
+        
         assert unpacked_tenants[0].tenant_name == 'alexander, charles'
 
         ten_count = Tenant.select().count()
         assert ten_count == 64
 
-    #     breakpoint()
         unit_list = Unit.select().order_by(Unit.unit_name).namedtuples()
         unit_list = [name for name in unit_list]
-        # unit_count = Unit.select().count()
-        # assert unit_count == 67 
-        breakpoint()     
+        occupied_unit_count = Unit.select().count()
+        assert occupied_unit_count == 64 
 
+    def test_charles_alexander(self):
+        # from UNIT perspective
+        query = Unit.select().join(Tenant).where(Tenant.tenant_name == 'alexander, charles').namedtuples()
+        alexanders_row = [name for name in query]
+        assert alexanders_row[0].unit_name == 'PT-204'
+
+        # query = Tenant.select().join(Unit).where(Unit.unit_name == 'PT-204').namedtuples()
+        # alexanders_row = [name for name in query]
+        breakpoint()     
     # def test_join(self):
     #     unit_list = Unit.select().order_by(Unit.unit_name).namedtuples()
     #     unit_list = [name for name in unit_list]
