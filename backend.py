@@ -29,6 +29,11 @@ class BeginningBalance(BaseModel):
     beg_bal_amount = DecimalField(default=0.00)
     tenant = ForeignKeyField(Tenant, backref='beg_bal')
 
+class Payment(BaseModel):
+    payment_date = DateField(default='2022-01-01')
+    payment_amount = DecimalField(default=0.00)
+    tenant = ForeignKeyField(Tenant, backref='payments')
+
 class PopulateTable:
 
     def basic_load(self, filename):
@@ -63,6 +68,19 @@ class PopulateTable:
 
         insert_many_list = [{'beg_bal_amount': balance, 'tenant': name} for (name, balance) in rent_roll_dict.items()]
         query = BeginningBalance.insert_many(insert_many_list)
+        query.execute()
+
+    def payment_load_simple(self, filename):
+        df = pd.read_excel(filename)
+        insert_many_list1 = []
+        for index, row in df.iterrows():
+            tup = ()
+            tup = (row['name'], row['date'], row['amount'])
+            insert_many_list1.append(tup)
+
+        insert_many_list = [{'tenant': name, 'payment_date': date, 'payment_amount': amount} for (name, date, amount) in insert_many_list1]
+        # breakpoint()
+        query = Payment.insert_many(insert_many_list)
         query.execute()
 
     def load_units(self, filename, verbose=False):

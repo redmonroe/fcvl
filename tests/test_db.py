@@ -3,13 +3,14 @@ from decimal import Decimal
 from pathlib import Path
 from config import Config
 from file_indexer import FileIndexer
-from backend import db, PopulateTable, Tenant, Unit, BeginningBalance
+from backend import db, PopulateTable, Tenant, Unit, BeginningBalance, Payment
 from peewee import JOIN
 
-create_tables_list = [Tenant, Unit, BeginningBalance]
+create_tables_list = [Tenant, Unit, BeginningBalance, Payment]
 
 target_tenant_load_file = 'rent_roll_01_2022.xls'
 target_bal_load_file = 'beginning_balance_2022.xlsx'
+target_pay_load_file = 'sample_payment_2022.xlsx'
 path = Config.TEST_RS_PATH
 populate = PopulateTable()
 tenant = Tenant()
@@ -29,7 +30,7 @@ class TestDB:
         db.drop_tables(models=create_tables_list)
         db.create_tables(create_tables_list)
         assert db.database == '/home/joe/local_dev_projects/fcvl/sqlite/test_pw_db.db'
-        assert db.get_tables() == ['beginningbalance', 'tenant', 'unit']
+        assert db.get_tables() == ['beginningbalance', 'tenant', 'unit', 'payment']
         # assert db.get_columns(table='tenant')[0]._asdict() == {'name': 'id', 'data_type': 'INTEGER', 'null': False, 'primary_key': True, 'table': 'tenant', 'default': None}
 
         # assert db.get_columns(table='unit')[0]._asdict() == {'name': 'id', 'data_type': 'INTEGER', 'null': False, 'primary_key': True, 'table': 'tenant', 'default': None}
@@ -44,9 +45,11 @@ class TestDB:
 
         target_tenant_file = path.joinpath(target_tenant_load_file)
         target_balance_file = path.joinpath(target_bal_load_file)
+        target_payment_file = path.joinpath(target_pay_load_file)
 
         populate.basic_load(filename=target_tenant_file)  
         populate.balance_load(filename=target_balance_file)
+        populate.payment_load_simple(filename=target_payment_file)
 
     def test_query_tables(self):
         ten_list = Tenant.select().order_by(Tenant.tenant_name).namedtuples()
@@ -63,7 +66,7 @@ class TestDB:
         assert occupied_unit_count == 64 
 
     def test_charles_alexander(self):
-        # from UNIT perspective
+
         query = Unit.select().join(Tenant).where(Tenant.tenant_name == 'alexander, charles').namedtuples()
         alexanders_row1 = [name for name in query]
         assert alexanders_row1[0].unit_name == 'PT-204'
@@ -77,7 +80,26 @@ class TestDB:
 
         assert row == ('alexander, charles', 'PT-204', Decimal('-91'))
 
+        end_bal = Payment().select().join(Tenant).where(Tenant.tenant_name == 'alexander, charles')
+        end_bal = [name for name in end_bal]
+        sum_list = []
+        for item in end_bal:
+            sum_list.append(item.payment_amount)
 
+        end_bal = sum(sum_list)
+        beg_bal = row[2]
+        end_bal = end_bal + beg_bal
+
+        # sum multiple payments
+        # sum multiple tenants
+        # sum both multiple tenants and payments
+        # sum if in date range
+        # do charges class
+        breakpoint()    
+
+        
+
+        
         # query = (Tenant
         #  .select(Tenant.tenant_name)
         #  .join(Unit, JOIN.LEFT_OUTER)  # Joins user -> tweet.
@@ -85,8 +107,6 @@ class TestDB:
         #  .group_by(Tenant.tenant_name))
         
 
-        breakpoint()     
-        # get from backref unit and beg_bal
 
 
         
