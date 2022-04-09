@@ -150,10 +150,21 @@ class TestDB:
         # get all payments in Jan 2022 as list
         jan_payments = [rec for rec in Payment().select().where(Payment.payment_date >= datetime.date(2022, 1, 1)).where(Payment.payment_date <= datetime.date(2022, 1, 31)).namedtuples()]
 
-        breakpoint()    
         assert len(jan_payments) == 2
         assert jan_payments[0].id == 1
         assert jan_payments[0].tenant == 'alexander, charles'
+
+        sum_payment_list_jan = list(set([(rec.tenant_name, rec.beg_bal_amount, rec.total_payments) for rec in Tenant.select(
+            Tenant.tenant_name, 
+            Tenant.beg_bal_amount, 
+            Payment.payment_amount, 
+            fn.SUM(Payment.payment_amount).over(partition_by=[Tenant.tenant_name]).alias('total_payments')).
+            where(Payment.payment_date >= datetime.date(2022, 1, 1)).
+            where(Payment.payment_date <= datetime.date(2022, 1, 31)).
+            join(Payment).namedtuples()]))
+
+        assert sum_payment_list_jan == [('alexander, charles', Decimal('-91'), 300.2)]
+        breakpoint()    
         
     
 
