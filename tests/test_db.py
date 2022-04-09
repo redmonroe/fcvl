@@ -2,12 +2,13 @@ import pytest
 from pathlib import Path
 from config import Config
 from file_indexer import FileIndexer
-from backend import db, Tenant, Unit
+from backend import db, PopulateTable, Tenant, Unit
 
 create_tables_list = [Tenant, Unit]
 
 target_tenant_load_file = 'rent_roll_01_2022.xls'
 path = Config.TEST_RS_PATH
+populate = PopulateTable()
 tenant = Tenant()
 unit = Unit()
 findex = FileIndexer(path=path)
@@ -39,25 +40,28 @@ class TestDB:
 
         target_tenant_file = path.joinpath(target_tenant_load_file)
 
-        tenant_list = tenant.load_tenants(filename=target_tenant_file)
-        unit_list = unit.load_units(filename=target_tenant_file, verbose=False)       
+        # tenant_list = tenant.load_tenants(filename=target_tenant_file)
+        populate.basic_load(filename=target_tenant_file)  
 
     def test_query_tables(self):
         ten_list = Tenant.select().order_by(Tenant.tenant_name).namedtuples()
         unpacked_tenants = [name for name in ten_list]
-        breakpoint()
-        assert unpacked_tenants[0].tenant_name == 'Alexander, charles'
+        # breakpoint()
+        assert unpacked_tenants[0].tenant_name == 'alexander, charles'
 
         ten_count = Tenant.select().count()
         assert ten_count == 64
 
+    #     breakpoint()
         unit_list = Unit.select().order_by(Unit.unit_name).namedtuples()
         unit_list = [name for name in unit_list]
-        unit_count = Unit.select().count()
-        assert unit_count == 67 
+        # unit_count = Unit.select().count()
+        # assert unit_count == 67 
+        breakpoint()     
 
-    def test_join(self):
+    # def test_join(self):
+    #     unit_list = Unit.select().order_by(Unit.unit_name).namedtuples()
+    #     unit_list = [name for name in unit_list]
 
-        breakpoint()
 
         
