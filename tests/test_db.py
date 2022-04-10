@@ -51,11 +51,7 @@ class TestDB:
         january_rent_roll_path = rent_roll_list[0][3]
         assert january_rent_roll_path == '/mnt/c/Users/joewa/Google Drive/fall creek village I/audit 2022/test_rent_sheets_data_sources/rent_roll_01_2022.xls'
         populate.basic_load(filename=january_rent_roll_path)  
-        breakpoint()
-        
-        # do realistic month of payments load
-
-        # do charges class
+  
     def test_load_tables(self):
 
         assert path == Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/audit 2022/test_rent_sheets_data_sources')
@@ -184,7 +180,26 @@ class TestDB:
         assert sum_payment_list_jan == [('alexander, charles', Decimal('-91'), 300.2)]
 
         
+    def test_compare_feb_rent_roll(self):
+        records = findex.ventilate_table()
+        rent_roll_list = [(item['fn'], item['period'], item['status'], item['path']) for item in records if item['fn'].split('_')[0] == 'rent' and item['status'] == 'processed']
+
+        # try to compare jan(from db) and feb(from rent roll)
+        feb_rent_roll_path = rent_roll_list[1][3]
+        assert feb_rent_roll_path == '/mnt/c/Users/joewa/Google Drive/fall creek village I/audit 2022/test_rent_sheets_data_sources/rent_roll_02_2022.xlsx'
         
+        breakpoint()
+
+
+
+        # populate.basic_load(filename=january_rent_roll_path) 
+
+        # use a set opration to determine whether or not there is a change in the rent_roll
+        # could also do a check on vacants
+        
+        # do realistic month of payments load
+
+        # do charges class
 
 
         
