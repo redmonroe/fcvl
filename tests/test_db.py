@@ -232,11 +232,18 @@ class TestDB:
             if date != '2022-01':
                 mis, mos = populate.find_mi_and_mo(start_set=period_start_tenant_names,end_set=rent_roll_set)
                 populate.insert_move_ins(move_ins=mis)
+
+            if date == '2022-02':
+                assert 'johnson, thomas' in rent_roll_dict.keys()
+                assert len(rent_roll_dict) == 65
+
+            if date == '2022-03':
+                assert 'johnson, thomas' not in rent_roll_dict.keys()
+                assert len(rent_roll_dict) == 64
             # breakpoint()
 
         # need to reload other tables after I dropped them in above func
         # could also do a check on vacants: vacants as of when??
-        # I should have a move=out in march with t johnson
         # what about transfers?
         
         # do realistic month of payments load

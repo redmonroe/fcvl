@@ -62,9 +62,6 @@ class PopulateTable:
                 print(f'You have a likely admin move out or move outs see {admin_mo}')
             if actual_mo != []:
                 rent_roll_dict = self.remove_actual_move_outs(rr_dict=rent_roll_dict, actual_mo=actual_mo)
-    
-        if filename == '/mnt/c/Users/joewa/Google Drive/fall creek village I/audit 2022/test_rent_sheets_data_sources/rent_roll_03_2022.xlsx':
-            assert 'johnson, thomas' not in rent_roll_dict.keys()
        
         all_units_dict = {k: v for k, v in rent_roll_dict.items()}
         
