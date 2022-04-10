@@ -53,7 +53,6 @@ class TestDB:
         populate.basic_load(filename=january_rent_roll_path, mode='execute')  
    
     def test_load_tables(self):
-
         assert path == Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/audit 2022/test_rent_sheets_data_sources')
 
         dir_items = [item.name for item in path.iterdir()]
@@ -208,11 +207,14 @@ class TestDB:
         assert 'greiner, richard' in feb_tenant_from_db
 
     @pytest.mark.testing_db_loop
-    def test_compare_rent_rolls_loop(self):
+    def test_reset_test_for_looping(self):
         db.drop_tables(models=create_tables_list)
         db.create_tables(create_tables_list)
         findex.drop_tables()
         findex.build_index_runner()
+    
+    @pytest.mark.testing_db_loop
+    def test_compare_rent_rolls_loop(self):
         records = findex.ventilate_table()
         rent_roll_list = [(item['fn'], item['period'], item['status'], item['path']) for item in records if item['fn'].split('_')[0] == 'rent' and item['status'] == 'processed']
 
@@ -223,15 +225,17 @@ class TestDB:
             # get initial tenant list in iter period
             period_start_tenant_names = set([name.tenant_name for name in Tenant.select().where(Tenant.active==True).namedtuples()])
             # get end tenant list in iter period
-            if date == '2022-01':
+            if date == '2022-01': # skip compare on init month
                 rent_roll_dict = populate.basic_load(filename=path, mode='execute')
             else: 
                 rent_roll_dict = populate.basic_load(filename=path, mode='return_only')
             dipstick = (date, 'start:', len(period_start_tenant_names), 'end:', len(rent_roll_dict), path)
             rent_roll_set = set([name for name in rent_roll_dict.keys()])
-            if date != '2022-01':
+            if date != '2022-01': # this is the main loop
                 mis, mos = populate.find_mi_and_mo(start_set=period_start_tenant_names,end_set=rent_roll_set)
                 populate.insert_move_ins(move_ins=mis)
+                populate.deactivate_move_outs(move_outs=mos)
+                # are move-ins active??q
 
             if date == '2022-02':
                 assert 'johnson, thomas' in rent_roll_dict.keys()
@@ -240,8 +244,38 @@ class TestDB:
             if date == '2022-03':
                 assert 'johnson, thomas' not in rent_roll_dict.keys()
                 assert len(rent_roll_dict) == 64
-            # breakpoint()
+                all_rows = [(tow.tenant_name, tow.active, tow.beg_bal_amount, tow.unit_name) for tow in Tenant.select(Tenant.tenant_name, Tenant.active, Tenant.beg_bal_amount, Unit.unit_name).join(Unit).namedtuples()]
 
+                tj_row = [row for row in all_rows if row[0] == 'johnson, thomas'][0]
+                assert tj_row[1] == 'False'
+    
+        
+    @pytest.mark.testing_db_loop
+    def test_init_balance_reload(self):
+        assert path == Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/audit 2022/test_rent_sheets_data_sources')
+
+        dir_items = [item.name for item in path.iterdir()]
+        assert target_bal_load_file in dir_items
+
+        target_balance_file = path.joinpath(target_bal_load_file)
+    #     target_payment_file = path.joinpath(target_pay_load_file)
+
+        populate.balance_load(filename=target_balance_file)
+    #     populate.payment_load_simple(filename=target_payment_file)
+
+        ''' this is state of balance at start of jan 2022, so tj should be in it'''
+        all_rows = []
+        for tow in Tenant.select(Tenant.tenant_name, Tenant.active, Tenant.beg_bal_amount, Unit.unit_name).join(Unit).namedtuples():
+            row = (tow.tenant_name, tow.active, tow.beg_bal_amount, tow.unit_name) 
+            all_rows.append(row) 
+
+        breakpoint()
+        # assert all_rows[-1] == ('graves, renee', Decimal('38'), 'PT-212')
+
+        
+    # @pytest.mark.testing_db_loop
+    # def test_loop_deposit_intake(self):
+    #     breakpoint()
         # need to reload other tables after I dropped them in above func
         # could also do a check on vacants: vacants as of when??
         # what about transfers?

@@ -56,12 +56,12 @@ class PopulateTable:
         
         mo_len_list = list(set([it for it in explicit_move_outs]))
         if len(mo_len_list) > 1:
-            admin_mo, actual_mo = self.catch_move_outs(t_name=t_name, unit=unit, explicit_move_outs=explicit_move_outs)
+            admin_mo, actual_mo = self.catch_move_outs_in_target_file(t_name=t_name, unit=unit, explicit_move_outs=explicit_move_outs)
 
             if admin_mo != []:
                 print(f'You have a likely admin move out or move outs see {admin_mo}')
             if actual_mo != []:
-                rent_roll_dict = self.remove_actual_move_outs(rr_dict=rent_roll_dict, actual_mo=actual_mo)
+                rent_roll_dict = self.remove_actual_move_outs_from_target_rent_roll(rr_dict=rent_roll_dict, actual_mo=actual_mo)
        
         all_units_dict = {k: v for k, v in rent_roll_dict.items()}
         
@@ -134,7 +134,10 @@ class PopulateTable:
         return rent_roll_dict
 
     def find_mi_and_mo(self, start_set=None, end_set=None):
-
+        '''compares list of tenants at start of month to those at end'''
+        '''explicit move-outs from excel have been removed from end of month rent_roll_dict 
+        and should initiated a discrepancy in the following code by making end list diverge from start list'''
+        '''these tenants are explicitly marked as active='False' in the tenant table in func() deactivate_move_outs'''
         move_ins = list(end_set - start_set) # catches move in
         move_outs = list(start_set - end_set) # catches move out
 
@@ -145,7 +148,7 @@ class PopulateTable:
             nt = Tenant.create(tenant_name=new_tenant)
             nt.save()
 
-    def catch_move_outs(self, t_name=None, unit=None, explicit_move_outs=None):
+    def catch_move_outs_in_target_file(self, t_name=None, unit=None, explicit_move_outs=None):
          # catch 'VACANT': '02/06/2022'
         move_out_df = pd.DataFrame(
                         {'Name': t_name,
@@ -159,9 +162,16 @@ class PopulateTable:
 
         return vacant_move_out_iter, occupied_move_out_iter
 
-    def remove_actual_move_outs(self, rr_dict=None, actual_mo=None):
+    def remove_actual_move_outs_from_target_rent_roll(self, rr_dict=None, actual_mo=None):
+        '''removes from rent roll dict insertion'''
         for row in actual_mo:
             if row[0] in rr_dict:
                 del rr_dict[row[0]]
 
         return rr_dict
+
+    def deactivate_move_outs(self, move_outs=None):
+        for row in move_outs:
+            tenant = Tenant.get(Tenant.tenant_name == row)
+            tenant.active = False
+            tenant.save()
