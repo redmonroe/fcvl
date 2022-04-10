@@ -51,14 +51,20 @@ class PopulateTable:
         unit = df['Unit'].tolist()
         explicit_move_outs = df['Move out'].fillna(value='0').tolist()
 
-        mo_len_list = list(set([it for it in explicit_move_outs]))
-        if len(mo_len_list) > 1:
-            self.catch_move_outs(t_name=t_name, unit=unit, explicit_move_outs=explicit_move_outs)
-        # catch 'VACANT': '02/06/2022'
-        # ['0']
-
         rent_roll_dict = dict(zip(t_name, unit))
         rent_roll_dict = {k.lower(): v for k, v in rent_roll_dict.items() if k is not nan}
+        
+        mo_len_list = list(set([it for it in explicit_move_outs]))
+        if len(mo_len_list) > 1:
+            admin_mo, actual_mo = self.catch_move_outs(t_name=t_name, unit=unit, explicit_move_outs=explicit_move_outs)
+
+            if admin_mo != []:
+                print(f'You have a likely admin move out or move outs see {admin_mo}')
+            if actual_mo != []:
+                rent_roll_dict = self.remove_actual_move_outs(rr_dict=rent_roll_dict, actual_mo=actual_mo)
+    
+        if filename == '/mnt/c/Users/joewa/Google Drive/fall creek village I/audit 2022/test_rent_sheets_data_sources/rent_roll_03_2022.xlsx':
+            assert 'johnson, thomas' not in rent_roll_dict.keys()
        
         all_units_dict = {k: v for k, v in rent_roll_dict.items()}
         
@@ -152,9 +158,13 @@ class PopulateTable:
 
         vacant_move_out_iter = [(row['Name'], row['Unit'], row['Move out']) for (index, row) in move_out_df.iterrows() if row['Name'] == 'VACANT' and row['Move out'] != '0']
 
-        occupied_move_out_iter = [(row['Name'], row['Unit'], row['Move out']) for (index, row) in move_out_df.iterrows() if row['Name'] != 'VACANT' and row['Move out'] != '0']
-        breakpoint()
-            # else:
-            #     row['Move out'] = row['Move out'].strftime('%m/%d/%Y')
+        occupied_move_out_iter = [(row['Name'].lower(), row['Unit'], row['Move out']) for (index, row) in move_out_df.iterrows() if row['Name'] != 'VACANT' and row['Move out'] != '0']
 
+        return vacant_move_out_iter, occupied_move_out_iter
 
+    def remove_actual_move_outs(self, rr_dict=None, actual_mo=None):
+        for row in actual_mo:
+            if row[0] in rr_dict:
+                del rr_dict[row[0]]
+
+        return rr_dict
