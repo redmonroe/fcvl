@@ -42,40 +42,16 @@ class TestDB:
 
         # assert db.get_columns(table='unit')[0]._asdict() == {'name': 'id', 'data_type': 'INTEGER', 'null': False, 'primary_key': True, 'table': 'tenant', 'default': None}
 
-    # def test_load_rent_roll_from_real_sheet(self):
-    #     findex.build_index_runner()
-    #     records = findex.ventilate_table()
-    #     rent_roll_list = [(item['fn'], item['period'], item['status'], item['path']) for item in records if item['fn'].split('_')[0] == 'rent' and item['status'] == 'processed']
-
-    #     # try load one month of rent_roll from sheets
-    #     january_rent_roll_path = rent_roll_list[0][3]
-    #     assert january_rent_roll_path == '/mnt/c/Users/joewa/Google Drive/fall creek village I/audit 2022/test_rent_sheets_data_sources/rent_roll_01_2022.xls'
-    #     populate.basic_load(filename=january_rent_roll_path, mode='execute')  
-    def test_compare_rent_rolls_loop(self):
-        # db.drop_tables(models=Tenant)
-        # db.create_tables(Tenant)
+    def test_load_rent_roll_from_real_sheet(self):
+        findex.build_index_runner()
         records = findex.ventilate_table()
         rent_roll_list = [(item['fn'], item['period'], item['status'], item['path']) for item in records if item['fn'].split('_')[0] == 'rent' and item['status'] == 'processed']
 
-        processed_rentr_dates_and_paths = [(item[1], item[3]) for item in rent_roll_list]
-        processed_rentr_dates_and_paths.sort()
-
-        for date, path in processed_rentr_dates_and_paths:
-            # get initial tenant list in iter period
-            period_start_tenant_names = set([name.tenant_name for name in Tenant.select().where(Tenant.active==True).namedtuples()])
-            # get end tenant list in iter period
-            if date == '2022-01':
-                rent_roll_dict = populate.basic_load(filename=path, mode='execute')
-            else: 
-                rent_roll_dict = populate.basic_load(filename=path, mode='return_only')
-            dipstick = (date, 'start:', len(period_start_tenant_names), 'end:', len(rent_roll_dict), path)
-            rent_roll_set = set([name for name in rent_roll_dict.keys()])
-            if date != '2022-01':
-                mis, mos = populate.find_mi_and_mo(start_set=period_start_tenant_names,end_set=rent_roll_set)
-                populate.insert_move_ins(move_ins=mis)
-        breakpoint()
-            
-  
+        # try load one month of rent_roll from sheets
+        january_rent_roll_path = rent_roll_list[0][3]
+        assert january_rent_roll_path == '/mnt/c/Users/joewa/Google Drive/fall creek village I/audit 2022/test_rent_sheets_data_sources/rent_roll_01_2022.xls'
+        populate.basic_load(filename=january_rent_roll_path, mode='execute')  
+   
     def test_load_tables(self):
 
         assert path == Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/audit 2022/test_rent_sheets_data_sources')
@@ -104,7 +80,6 @@ class TestDB:
         assert occupied_unit_count == 64 
 
     def test_charles_alexander(self):
-
         # get unit for single tenant
         query = Unit.select().join(Tenant).where(Tenant.tenant_name == 'alexander, charles').namedtuples()
         alexanders_row1 = [name for name in query]
@@ -203,41 +178,61 @@ class TestDB:
 
         assert sum_payment_list_jan == [('alexander, charles', Decimal('-91'), 300.2)]
 
+    def test_compare_feb_rent_roll(self):
+        records = findex.ventilate_table()
+        rent_roll_list = [(item['fn'], item['period'], item['status'], item['path']) for item in records if item['fn'].split('_')[0] == 'rent' and item['status'] == 'processed']
+
+        # try to compare jan(from db) and feb(from rent roll)
+        feb_rent_roll_path = rent_roll_list[1][3]
+        assert feb_rent_roll_path == '/mnt/c/Users/joewa/Google Drive/fall creek village I/audit 2022/test_rent_sheets_data_sources/rent_roll_02_2022.xlsx'
+
+        jan_tenant_from_db = set([name.tenant_name for name in Tenant.select().where(Tenant.active==True).namedtuples()])
+        assert len(jan_tenant_from_db) == 64
         
-    # def test_compare_feb_rent_roll(self):
-    #     records = findex.ventilate_table()
-    #     rent_roll_list = [(item['fn'], item['period'], item['status'], item['path']) for item in records if item['fn'].split('_')[0] == 'rent' and item['status'] == 'processed']
+        rent_roll_dict_feb = populate.basic_load(filename=feb_rent_roll_path, mode='return_only') 
+        feb_tenant_from_sheet = set([name for name in rent_roll_dict_feb.keys()])
+        assert len(feb_tenant_from_sheet) == 65
 
-    #     # try to compare jan(from db) and feb(from rent roll)
-    #     feb_rent_roll_path = rent_roll_list[1][3]
-    #     assert feb_rent_roll_path == '/mnt/c/Users/joewa/Google Drive/fall creek village I/audit 2022/test_rent_sheets_data_sources/rent_roll_02_2022.xlsx'
+        # this should be moved to backend: last months - this month
+        feb_move_ins = list(feb_tenant_from_sheet - jan_tenant_from_db) # catches move in
+        feb_move_outs = list(jan_tenant_from_db - feb_tenant_from_sheet) # catches move out
 
-    #     jan_tenant_from_db = set([name.tenant_name for name in Tenant.select().where(Tenant.active==True).namedtuples()])
-    #     assert len(jan_tenant_from_db) == 64
-        
-    #     rent_roll_dict_feb = populate.basic_load(filename=feb_rent_roll_path, mode='return_only') 
-    #     feb_tenant_from_sheet = set([name for name in rent_roll_dict_feb.keys()])
-    #     assert len(feb_tenant_from_sheet) == 65
+        assert len(feb_move_ins) == 1
+        assert len(feb_move_outs) == 0
+        assert isinstance(feb_move_outs, list) == True
+        assert isinstance(feb_move_ins, list) == True
 
-    #     # this should be moved to backend: last months - this month
-    #     feb_move_ins = list(feb_tenant_from_sheet - jan_tenant_from_db) # catches move in
-    #     feb_move_outs = list(jan_tenant_from_db - feb_tenant_from_sheet) # catches move out
+        populate.insert_move_ins(move_ins=feb_move_ins)
 
-    #     assert len(feb_move_ins) == 1
-    #     assert len(feb_move_outs) == 0
-    #     assert isinstance(feb_move_outs, list) == True
-    #     assert isinstance(feb_move_ins, list) == True
+        feb_tenant_from_db = [name.tenant_name for name in Tenant.select().where(Tenant.active==True).namedtuples()]
+        assert len(feb_tenant_from_db) == 65
+        assert 'greiner, richard' in feb_tenant_from_db
 
-    #     populate.insert_move_ins(move_ins=feb_move_ins)
+    def test_compare_rent_rolls_loop(self):
+        db.drop_tables(models=create_tables_list)
+        db.create_tables(create_tables_list)
+        records = findex.ventilate_table()
+        rent_roll_list = [(item['fn'], item['period'], item['status'], item['path']) for item in records if item['fn'].split('_')[0] == 'rent' and item['status'] == 'processed']
 
-    #     feb_tenant_from_db = [name.tenant_name for name in Tenant.select().where(Tenant.active==True).namedtuples()]
-    #     assert len(feb_tenant_from_db) == 65
-    #     assert 'greiner, richard' in feb_tenant_from_db
+        processed_rentr_dates_and_paths = [(item[1], item[3]) for item in rent_roll_list]
+        processed_rentr_dates_and_paths.sort()
 
+        for date, path in processed_rentr_dates_and_paths:
+            # get initial tenant list in iter period
+            period_start_tenant_names = set([name.tenant_name for name in Tenant.select().where(Tenant.active==True).namedtuples()])
+            # get end tenant list in iter period
+            if date == '2022-01':
+                rent_roll_dict = populate.basic_load(filename=path, mode='execute')
+            else: 
+                rent_roll_dict = populate.basic_load(filename=path, mode='return_only')
+            dipstick = (date, 'start:', len(period_start_tenant_names), 'end:', len(rent_roll_dict), path)
+            rent_roll_set = set([name for name in rent_roll_dict.keys()])
+            if date != '2022-01':
+                mis, mos = populate.find_mi_and_mo(start_set=period_start_tenant_names,end_set=rent_roll_set)
+                populate.insert_move_ins(move_ins=mis)
+        breakpoint()
 
-    
-
-
+        # need to reload other tables after I dropped them in above func
         # could also do a check on vacants: vacants as of when??
         # I should have a move=out in march with t johnson
         # what about transfers?
