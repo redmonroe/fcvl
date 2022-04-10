@@ -258,35 +258,36 @@ class TestDB:
         assert target_bal_load_file in dir_items
 
         target_balance_file = path.joinpath(target_bal_load_file)
-    #     target_payment_file = path.joinpath(target_pay_load_file)
 
         populate.balance_load(filename=target_balance_file)
-    #     populate.payment_load_simple(filename=target_payment_file)
 
         ''' this is state of balance at start of jan 2022, so tj should be in it'''
         sum_beg_bal_all = [row.beg_bal_amount for row in Tenant.select(Tenant.beg_bal_amount).namedtuples()] 
         summary_total = float(sum(sum_beg_bal_all))
         assert summary_total == 793.0
-        
+
         ''' this is state of balance at start at end of loop(march 2020), so tj should not be in it'''
         sum_beg_bal_all = [row.beg_bal_amount for row in Tenant.select(Tenant.active, Tenant.beg_bal_amount).where(Tenant.active=='True').namedtuples()] 
         summary_total = float(sum(sum_beg_bal_all))
         assert summary_total == 795.0
-        # all_rows = [(tow.tenant_name, tow.active, tow.beg_bal_amount, tow.unit_name) for tow in Tenant.select(Tenant.tenant_name, Tenant.active, Tenant.beg_bal_amount, Unit.unit_name).join(Unit).where(Tenant.active=='True').namedtuples()]
 
-        breakpoint()
-        # assert all_rows[-1] == ('graves, renee', Decimal('38'), 'PT-212')
-
+    @pytest.mark.testing_db_loop
+    def test_real_payments(self):
+        records = findex.ventilate_table()
+        file_list = [(item['fn'], item['period'], item['status'], item['path']) for item in records if item['fn'].split('_')[0] == 'deposits' and item['status'] == 'processed']
         
-    # @pytest.mark.testing_db_loop
-    # def test_loop_deposit_intake(self):
-    #     breakpoint()
-        # need to reload other tables after I dropped them in above func
+        processed_dates_and_paths = [(item[1], item[3]) for item in file_list]
+        processed_dates_and_paths.sort()
+        
+        for date, path in processed_dates_and_paths:
+            df = populate.payment_load_full(filename=path)
+            breakpoint()
+
+        # target_payment_file = path.joinpath(target_pay_load_file)
         # could also do a check on vacants: vacants as of when??
         # what about transfers?
         
         # do realistic month of payments load
-        # load real beginning balances at 01/2022
         # do charges class
         # damages and other charges list
 

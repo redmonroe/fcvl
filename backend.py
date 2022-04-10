@@ -38,9 +38,12 @@ class Unit(BaseModel):
         return vacant_list
 
 class Payment(BaseModel):
-    payment_date = DateField(default='2022-01-01')
-    payment_amount = DecimalField(default=0.00)
     tenant = ForeignKeyField(Tenant, backref='payments')
+    amount = CharField()
+    date_posted = DateField()
+    date_code = IntegerField()
+    unit = CharField()
+    deposit_id = IntegerField()
 
 class PopulateTable:
 
@@ -102,9 +105,54 @@ class PopulateTable:
             tup = ()
             tup = (row['name'], row['date'], row['amount'])
             insert_many_list1.append(tup)
+
         insert_many_list = [{'tenant': name, 'payment_date': date, 'payment_amount': amount} for (name, date, amount) in insert_many_list1]
+
         query = Payment.insert_many(insert_many_list)
         query.execute()
+
+    def payment_load_full(self, filename):
+        df = pd.read_excel(filename, header=9)
+
+        columns = ['deposit_id', 'unit', 'name', 'date_posted', 'amount', 'date_code']
+        
+        bde = df['BDEPID'].tolist()
+        unit = df['Unit'].tolist()
+        name = df['Name'].tolist()
+        date = df['Date Posted'].tolist()
+        pay = df['Amount'].tolist()
+        dt_code = [datetime.datetime.strptime(item, '%m/%d/%Y') for item in date if type(item) == str]
+        dt_code = [str(datetime.datetime.strftime(item, '%m')) for item in dt_code]
+
+        zipped = zip(bde, unit, name, date, pay, dt_code)
+        self.df = pd.DataFrame(zipped, columns=columns)
+
+        insert_many_list = []
+        for index, row in self.df.iterrows():
+            tup = ()
+            tup = (row['name'].lower(), row['amount'], row['date_posted'], int(row['date_code']), row['unit'], int(row['deposit_id']))
+            insert_many_list.append(tup)
+
+        insert_many_list1 = [{
+            'tenant': name, 
+            'amount': amount, 
+            'date_posted': date_posted, 
+            'date_code': dt_code,
+            'unit': unit,
+            'deposit_id': deposit_id,
+
+             } for (name, amount, date_posted, dt_code, unit, deposit_id) in insert_many_list]
+        breakpoint()
+
+        query = Payment.insert_many(insert_many_list1)
+        query.execute()
+
+
+        
+        return self.df
+        # insert_many_list = [{'tenant': name, 'payment_date': date, 'payment_amount': amount} for (name, date, amount) in insert_many_list1]
+        # query = Payment.insert_many(insert_many_list)
+        # query.execute()
 
     def load_units(self, filename, verbose=False):
         insert_many_list = []
