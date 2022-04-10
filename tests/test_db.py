@@ -264,10 +264,15 @@ class TestDB:
     #     populate.payment_load_simple(filename=target_payment_file)
 
         ''' this is state of balance at start of jan 2022, so tj should be in it'''
-        all_rows = []
-        for tow in Tenant.select(Tenant.tenant_name, Tenant.active, Tenant.beg_bal_amount, Unit.unit_name).join(Unit).namedtuples():
-            row = (tow.tenant_name, tow.active, tow.beg_bal_amount, tow.unit_name) 
-            all_rows.append(row) 
+        sum_beg_bal_all = [row.beg_bal_amount for row in Tenant.select(Tenant.beg_bal_amount).namedtuples()] 
+        summary_total = float(sum(sum_beg_bal_all))
+        assert summary_total == 793.0
+        
+        ''' this is state of balance at start at end of loop(march 2020), so tj should not be in it'''
+        sum_beg_bal_all = [row.beg_bal_amount for row in Tenant.select(Tenant.active, Tenant.beg_bal_amount).where(Tenant.active=='True').namedtuples()] 
+        summary_total = float(sum(sum_beg_bal_all))
+        assert summary_total == 795.0
+        # all_rows = [(tow.tenant_name, tow.active, tow.beg_bal_amount, tow.unit_name) for tow in Tenant.select(Tenant.tenant_name, Tenant.active, Tenant.beg_bal_amount, Unit.unit_name).join(Unit).where(Tenant.active=='True').namedtuples()]
 
         breakpoint()
         # assert all_rows[-1] == ('graves, renee', Decimal('38'), 'PT-212')
