@@ -64,7 +64,8 @@ class FileIndexer:
             self.directory_contents = self.articulate_directory()
             self.unindexed_files = self.show_unchecked_files()
             if self.unindexed_files != []:                
-                choice = input(f'do you want to processs: {self.unindexed_files} y/n?')
+                # choice = input(f'do you want to processs: {self.unindexed_files} y/n?')
+                choice = 'y'
                 if choice == 'y':
                     print('adding new files to findex')
                     self.directory_contents = self.articulate_directory()
@@ -73,7 +74,6 @@ class FileIndexer:
                     self.processed_files = self.rename_by_content_xls()
                     self.processed_files = self.rename_by_content_pdf()
                     self.update_index_for_processed()
-                    breakpoint()
                 else:
                     exit()
 
@@ -305,7 +305,11 @@ class FileIndexer:
 
     def show_checklist(self, verbose=None, col_str=None):
         return_list = []
-        check_items = [item for item in self.db[self.tablename]]
+        try:
+            check_items = [item for item in self.db[self.tablename]]
+        except TypeError as e:
+            print(e, 'FileIndexer.show_checklist() returned None likely because no db or table has been set')
+            raise
         if col_str:
             for item in check_items:
                 print(item)

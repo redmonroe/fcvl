@@ -50,6 +50,7 @@ class PopulateTable:
         t_name = df['Name'].tolist()
         unit = df['Unit'].tolist()
         rent_roll_dict = dict(zip(t_name, unit))
+        breakpoint()
         rent_roll_dict = {k.lower(): v for k, v in rent_roll_dict.items() if k is not nan}
        
         all_units_dict = {k: v for k, v in rent_roll_dict.items()}

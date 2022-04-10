@@ -4,19 +4,25 @@ from decimal import Decimal, ROUND_DOWN, ROUND_UP
 from pathlib import Path
 from config import Config
 from file_indexer import FileIndexer
+from checklist import Checklist
 from backend import db, PopulateTable, Tenant, Unit, Payment
 from peewee import JOIN, fn
 
 create_tables_list = [Tenant, Unit, Payment]
 
-target_tenant_load_file = 'rent_roll_01_2022.xls'
+# target_tenant_load_file = 'rent_roll_01_2022.xls'
 target_bal_load_file = 'beginning_balance_2022.xlsx'
 target_pay_load_file = 'sample_payment_2022.xlsx'
 path = Config.TEST_RS_PATH
+findex_db = Config.test_findex_db
+findex_tablename = Config.test_findex_name
+checkl_db = Config. test_checklist_db 
+checkl_tablename = Config.test_checklist_name
 populate = PopulateTable()
 tenant = Tenant()
 unit = Unit()
-findex = FileIndexer(path=path)
+checkl = Checklist(checkl_db, checkl_tablename)
+findex = FileIndexer(path=path, db=findex_db, table=findex_tablename, checklist_obj=checkl)
 
 @pytest.mark.testing_db
 class TestDB:
@@ -36,19 +42,30 @@ class TestDB:
 
         # assert db.get_columns(table='unit')[0]._asdict() == {'name': 'id', 'data_type': 'INTEGER', 'null': False, 'primary_key': True, 'table': 'tenant', 'default': None}
 
+    def test_load_rent_roll_from_real_sheet(self):
+        findex.build_index_runner()
+        records = findex.ventilate_table()
+        rent_roll_list = [(item['fn'], item['period'], item['status'], item['path']) for item in records if item['fn'].split('_')[0] == 'rent' and item['status'] == 'processed']
+
+        # try load one month of rent_roll from sheets
+        january_rent_roll_path = rent_roll_list[0][3]
+        assert january_rent_roll_path == '/mnt/c/Users/joewa/Google Drive/fall creek village I/audit 2022/test_rent_sheets_data_sources/rent_roll_01_2022.xls'
+        populate.basic_load(filename=january_rent_roll_path)  
+        breakpoint()
+        
+        # do realistic month of payments load
+
+        # do charges class
     def test_load_tables(self):
 
         assert path == Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/audit 2022/test_rent_sheets_data_sources')
 
         dir_items = [item.name for item in path.iterdir()]
-        assert target_tenant_load_file in dir_items
         assert target_bal_load_file in dir_items
 
-        target_tenant_file = path.joinpath(target_tenant_load_file)
         target_balance_file = path.joinpath(target_bal_load_file)
         target_payment_file = path.joinpath(target_pay_load_file)
 
-        populate.basic_load(filename=target_tenant_file)  
         populate.balance_load(filename=target_balance_file)
         populate.payment_load_simple(filename=target_payment_file)
 
@@ -75,7 +92,6 @@ class TestDB:
         
         # get all TENANT cols for single tenant
         alexander = [(name.tenant_name, name.active, name.beg_bal_date, name.beg_bal_amount) for name in Tenant.select().where(Tenant.tenant_name == 'alexander, charles').namedtuples()]
-        breakpoint()
         assert alexander == [('alexander, charles', 'True', datetime.date(2022, 1, 1), Decimal('-91'))]
        
         # get all cols for single tenant (except Payment)
@@ -154,7 +170,7 @@ class TestDB:
         assert jan_payments[0].tenant == 'alexander, charles'
 
         month_list = [datetime.date(datetime.date.today().year, month, 1) for month in range(1, 13)]
-        breakpoint()
+
         # get all payments in Jan 2022 as sum(in a list with tenant_name)
         sum_payment_list_jan = list(set([(rec.tenant_name, rec.beg_bal_amount, rec.total_payments) for rec in Tenant.select(
             Tenant.tenant_name, 
@@ -166,11 +182,7 @@ class TestDB:
             join(Payment).namedtuples()]))
 
         assert sum_payment_list_jan == [('alexander, charles', Decimal('-91'), 300.2)]
-        breakpoint()    
-        
-        # do realistic month of payments load
 
-        # do charges class
         
         
 
