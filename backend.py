@@ -18,6 +18,7 @@ class BaseModel(Model):
 
 class Tenant(BaseModel):
     tenant_name = CharField(primary_key=True, unique=True)
+    active = CharField(default=True) # 
     beg_bal_date = DateField(default='2022-01-01')
     beg_bal_amount = DecimalField(default=0.00)
 

@@ -74,10 +74,9 @@ class TestDB:
         assert alexanders_row1[0].unit_name == 'PT-204'
         
         # get all TENANT cols for single tenant
-        query = Tenant.select().where(Tenant.tenant_name == 'alexander, charles').namedtuples()
-        alexanders_row2 = [(name.tenant_name, name.beg_bal_amount) for name in query]
-        assert alexanders_row2[0][0] == 'alexander, charles'
-        assert alexanders_row2[0][1] == Decimal('-91')
+        alexander = [(name.tenant_name, name.active, name.beg_bal_date, name.beg_bal_amount) for name in Tenant.select().where(Tenant.tenant_name == 'alexander, charles').namedtuples()]
+        breakpoint()
+        assert alexander == [('alexander, charles', 'True', datetime.date(2022, 1, 1), Decimal('-91'))]
        
         # get all cols for single tenant (except Payment)
         query = Tenant.get(Tenant.tenant_name == 'alexander, charles')
