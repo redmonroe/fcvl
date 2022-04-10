@@ -50,7 +50,7 @@ class TestDB:
         # try load one month of rent_roll from sheets
         january_rent_roll_path = rent_roll_list[0][3]
         assert january_rent_roll_path == '/mnt/c/Users/joewa/Google Drive/fall creek village I/audit 2022/test_rent_sheets_data_sources/rent_roll_01_2022.xls'
-        populate.basic_load(filename=january_rent_roll_path)  
+        populate.basic_load(filename=january_rent_roll_path, mode='execute')  
   
     def test_load_tables(self):
 
@@ -187,15 +187,39 @@ class TestDB:
         # try to compare jan(from db) and feb(from rent roll)
         feb_rent_roll_path = rent_roll_list[1][3]
         assert feb_rent_roll_path == '/mnt/c/Users/joewa/Google Drive/fall creek village I/audit 2022/test_rent_sheets_data_sources/rent_roll_02_2022.xlsx'
+
+        jan_tenant_from_db = set([name.tenant_name for name in Tenant.select().where(Tenant.active==True).namedtuples()])
+        assert len(jan_tenant_from_db) == 64
         
+        rent_roll_dict_feb = populate.basic_load(filename=feb_rent_roll_path, mode='return_only') 
+        feb_tenant_from_sheet = set([name for name in rent_roll_dict_feb.keys()])
+        assert len(feb_tenant_from_sheet) == 65
+
+        # this should be moved to backend: last months - this month
+        feb_move_ins = list(feb_tenant_from_sheet - jan_tenant_from_db) # catches move in
+        feb_move_outs = list(jan_tenant_from_db - feb_tenant_from_sheet) # catches move out
+
+        assert len(feb_move_ins) == 1
+        assert len(feb_move_outs) == 0
+        assert isinstance(feb_move_outs, list) == True
+        assert isinstance(feb_move_ins, list) == True
+
+        populate.insert_move_ins(move_ins=feb_move_ins)
+
+        feb_tenant_from_db = [name.tenant_name for name in Tenant.select().where(Tenant.active==True).namedtuples()]
+        assert len(feb_tenant_from_db) == 65
+        assert 'greiner, richard' in feb_tenant_from_db
+
+
+        # def insert_move_ins(move_ins):
         breakpoint()
 
 
 
-        # populate.basic_load(filename=january_rent_roll_path) 
 
-        # use a set opration to determine whether or not there is a change in the rent_roll
-        # could also do a check on vacants
+        # could also do a check on vacants: vacants as of when??
+        # I should have a move=out in march with t johnson
+        # what about transfers?
         
         # do realistic month of payments load
 

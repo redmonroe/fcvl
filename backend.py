@@ -44,7 +44,7 @@ class Payment(BaseModel):
 
 class PopulateTable:
 
-    def basic_load(self, filename):
+    def basic_load(self, filename, mode=None):
         df = pd.read_excel(filename, header=16)
 
         t_name = df['Name'].tolist()
@@ -59,10 +59,11 @@ class PopulateTable:
         insert_many_list = [{'tenant_name': name} for (name, unit) in rent_roll_dict.items()]
         insert_many_list_units = [{'unit_name': unit, 'tenant': name} for (name, unit) in rent_roll_dict.items()]
 
-        query = Tenant.insert_many(insert_many_list)
-        query.execute()
-        query = Unit.insert_many(insert_many_list_units)
-        query.execute()
+        if mode == 'execute':
+            query = Tenant.insert_many(insert_many_list)
+            query.execute()
+            query = Unit.insert_many(insert_many_list_units)
+            query.execute()
 
         return rent_roll_dict
 
@@ -93,7 +94,6 @@ class PopulateTable:
         insert_many_list = [{'tenant': name, 'payment_date': date, 'payment_amount': amount} for (name, date, amount) in insert_many_list1]
         query = Payment.insert_many(insert_many_list)
         query.execute()
-        # breakpoint()
 
     def load_units(self, filename, verbose=False):
         insert_many_list = []
@@ -120,12 +120,11 @@ class PopulateTable:
         query.execute()
 
         return rent_roll_dict
-        # breakpoint()
 
-        return Config.units
-# class Tweet(BaseModel):
-#     user = ForeignKeyField(User, backref='tweets')
-#     message = TextField()
-#     created_date = DateTimeField(default=datetime.datetime.now)
-#     is_published = BooleanField(default=True)
+    def insert_move_ins(self, move_ins=None):
+        for new_tenant in move_ins:
+            nt = Tenant.create(tenant_name=new_tenant)
+            nt.save()
+
+
 
