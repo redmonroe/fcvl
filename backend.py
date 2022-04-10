@@ -49,6 +49,14 @@ class PopulateTable:
 
         t_name = df['Name'].tolist()
         unit = df['Unit'].tolist()
+        explicit_move_outs = df['Move out'].fillna(value='0').tolist()
+
+        mo_len_list = list(set([it for it in explicit_move_outs]))
+        if len(mo_len_list) > 1:
+            self.catch_move_outs(t_name=t_name, unit=unit, explicit_move_outs=explicit_move_outs)
+        # catch 'VACANT': '02/06/2022'
+        # ['0']
+
         rent_roll_dict = dict(zip(t_name, unit))
         rent_roll_dict = {k.lower(): v for k, v in rent_roll_dict.items() if k is not nan}
        
@@ -108,6 +116,7 @@ class PopulateTable:
 
         t_name = df['Name'].tolist()
         unit = df['Unit'].tolist()
+
         rent_roll_dict = dict(zip(t_name, unit))
         rent_roll_dict = {k.lower(): v for k, v in rent_roll_dict.items() if k is not nan}
         rent_roll_dict = {k: v for k, v in rent_roll_dict.items() if k != 'vacant'}
@@ -133,5 +142,19 @@ class PopulateTable:
             nt = Tenant.create(tenant_name=new_tenant)
             nt.save()
 
+    def catch_move_outs(self, t_name=None, unit=None, explicit_move_outs=None):
+         # catch 'VACANT': '02/06/2022'
+        move_out_df = pd.DataFrame(
+                        {'Name': t_name,
+                        'Unit': unit,
+                        'Move out': explicit_move_outs, 
+                        })
+
+        vacant_move_out_iter = [(row['Name'], row['Unit'], row['Move out']) for (index, row) in move_out_df.iterrows() if row['Name'] == 'VACANT' and row['Move out'] != '0']
+
+        occupied_move_out_iter = [(row['Name'], row['Unit'], row['Move out']) for (index, row) in move_out_df.iterrows() if row['Name'] != 'VACANT' and row['Move out'] != '0']
+        breakpoint()
+            # else:
+            #     row['Move out'] = row['Move out'].strftime('%m/%d/%Y')
 
 

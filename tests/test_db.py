@@ -149,7 +149,6 @@ class TestDB:
         end_bal_list = [(rec[0], rec[1] - Decimal(rec[2]).quantize(Decimal('.01'), rounding=ROUND_UP)) for rec in sum_payment_list]
 
         end_bal_list_no_dec = [(rec[0], float(rec[1]) - rec[2]) for rec in sum_payment_list]
-        # breakpoint()    
 
         assert ('gillespie, janet', float('-152.0')) and ('alexander, charles', float('-641.2')) in end_bal_list_no_dec
        
@@ -208,9 +207,12 @@ class TestDB:
         assert len(feb_tenant_from_db) == 65
         assert 'greiner, richard' in feb_tenant_from_db
 
+    @pytest.mark.testing_db_loop
     def test_compare_rent_rolls_loop(self):
         db.drop_tables(models=create_tables_list)
         db.create_tables(create_tables_list)
+        findex.drop_tables()
+        findex.build_index_runner()
         records = findex.ventilate_table()
         rent_roll_list = [(item['fn'], item['period'], item['status'], item['path']) for item in records if item['fn'].split('_')[0] == 'rent' and item['status'] == 'processed']
 
@@ -230,7 +232,7 @@ class TestDB:
             if date != '2022-01':
                 mis, mos = populate.find_mi_and_mo(start_set=period_start_tenant_names,end_set=rent_roll_set)
                 populate.insert_move_ins(move_ins=mis)
-        breakpoint()
+            # breakpoint()
 
         # need to reload other tables after I dropped them in above func
         # could also do a check on vacants: vacants as of when??
