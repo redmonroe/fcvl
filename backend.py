@@ -118,8 +118,9 @@ class PopulateTable:
         grand_total = self.grand_total(df=df)
         df, ntp = self.return_and_remove_ntp(df=df, col='unit', remove_str=0)
 
+        ntp = sum(ntp['amount'].astype(float).tolist())  # can split up ntp further here
         breakpoint()
-        ntp = self.group_df(df=ntp, just_return_total=True)
+        # ntp = self.group_df(df=ntp, just_return_total=True)
 
 
         return grand_total, ntp, df
