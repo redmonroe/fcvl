@@ -154,6 +154,9 @@ class TestDB:
         assert jan_payments[0].id == 1
         assert jan_payments[0].tenant == 'alexander, charles'
 
+        month_list = [datetime.date(datetime.date.today().year, month, 1) for month in range(1, 13)]
+        breakpoint()
+        # get all payments in Jan 2022 as sum(in a list with tenant_name)
         sum_payment_list_jan = list(set([(rec.tenant_name, rec.beg_bal_amount, rec.total_payments) for rec in Tenant.select(
             Tenant.tenant_name, 
             Tenant.beg_bal_amount, 
@@ -166,13 +169,12 @@ class TestDB:
         assert sum_payment_list_jan == [('alexander, charles', Decimal('-91'), 300.2)]
         breakpoint()    
         
-    
+        # do realistic month of payments load
 
-        # get all 
         # do charges class
         
         
-        pass
+
 
         
         
