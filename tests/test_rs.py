@@ -48,7 +48,6 @@ checklist = Checklist(db=cl_test_db, tablename=cl_test_tn)
 findex = FileIndexer(path=path, discard_pile=discard_pile, db=findex_test_db, table=Config.test_findex_name, checklist_obj=checklist)
 ms = MonthSheet(full_sheet=test_workbook, path=path, mode='testing', sleep=sleep1, test_service=service)
 ys = YearSheet(full_sheet=test_workbook, mode='testing', checklist=checklist, test_service=service, sleep=sleep1)
-build = BuildRS(sleep1, full_sheet=test_workbook, path=path, mode='testing', findex_obj=findex, checklist_obj=checklist, mformat_obj=ms, test_service=service, rs_tablename=build_tablename)
 
 error_codes = 429
 # invokce a test func marked @pytest.mark.production with pytest -v -m production

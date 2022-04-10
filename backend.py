@@ -7,6 +7,7 @@ from numpy import nan
 from peewee import *
 
 from config import Config
+from build_rs import BuildRS
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
@@ -112,7 +113,50 @@ class PopulateTable:
         query.execute()
 
     def payment_load_full(self, filename):
-        df = pd.read_excel(filename, header=9)
+        df = self.read_excel_payments(path=filename)
+        df = self.remove_nan_lines(df=df)
+        grand_total = self.grand_total(df=df)
+        df, ntp = self.return_and_remove_ntp(df=df, col='unit', remove_str=0)
+
+        breakpoint()
+        ntp = self.group_df(df=ntp, just_return_total=True)
+
+
+        return grand_total, ntp, df
+
+        
+
+        
+
+        # insert_many_list = []
+        # for index, row in self.df.iterrows():
+        #     tup = ()
+        #     tup = (row['name'].lower(), row['amount'], row['date_posted'], int(row['date_code']), row['unit'], int(row['deposit_id']))
+        #     insert_many_list.append(tup)
+
+        # insert_many_list1 = [{
+        #     'tenant': name, 
+        #     'amount': amount, 
+        #     'date_posted': date_posted, 
+        #     'date_code': dt_code,
+        #     'unit': unit,
+        #     'deposit_id': deposit_id,
+
+        #      } for (name, amount, date_posted, dt_code, unit, deposit_id) in insert_many_list]
+        # breakpoint()
+
+        # query = Payment.insert_many(insert_many_list1)
+        # query.execute()
+
+
+        
+        return self.df
+        # insert_many_list = [{'tenant': name, 'payment_date': date, 'payment_amount': amount} for (name, date, amount) in insert_many_list1]
+        # query = Payment.insert_many(insert_many_list)
+        # query.execute()
+
+    def read_excel_payments(self, path):
+        df = pd.read_excel(path, header=9)
 
         columns = ['deposit_id', 'unit', 'name', 'date_posted', 'amount', 'date_code']
         
@@ -127,32 +171,28 @@ class PopulateTable:
         zipped = zip(bde, unit, name, date, pay, dt_code)
         self.df = pd.DataFrame(zipped, columns=columns)
 
-        insert_many_list = []
-        for index, row in self.df.iterrows():
-            tup = ()
-            tup = (row['name'].lower(), row['amount'], row['date_posted'], int(row['date_code']), row['unit'], int(row['deposit_id']))
-            insert_many_list.append(tup)
-
-        insert_many_list1 = [{
-            'tenant': name, 
-            'amount': amount, 
-            'date_posted': date_posted, 
-            'date_code': dt_code,
-            'unit': unit,
-            'deposit_id': deposit_id,
-
-             } for (name, amount, date_posted, dt_code, unit, deposit_id) in insert_many_list]
-        breakpoint()
-
-        query = Payment.insert_many(insert_many_list1)
-        query.execute()
-
-
-        
         return self.df
-        # insert_many_list = [{'tenant': name, 'payment_date': date, 'payment_amount': amount} for (name, date, amount) in insert_many_list1]
-        # query = Payment.insert_many(insert_many_list)
-        # query.execute()
+
+    def grand_total(self, df):
+        grand_total = sum(df['amount'].astype(float).tolist())
+        return grand_total
+
+    def return_and_remove_ntp(self, df, col=None, remove_str=None):
+        ntp_item = df.loc[df[col] == remove_str]
+        for item in ntp_item.index:
+            df.drop(labels=item, inplace=True)
+        return df, ntp_item
+
+    def group_df(self, df, just_return_total=False):
+        df = df.groupby(['name', 'unit']).sum()
+        if just_return_total:
+            df = df[0]
+        return df   
+
+    def remove_nan_lines(self, df=None):
+        df = df.dropna(thresh=2)
+        df = df.fillna(0)
+        return df
 
     def load_units(self, filename, verbose=False):
         insert_many_list = []

@@ -13,6 +13,7 @@ create_tables_list = [Tenant, Unit, Payment]
 # target_tenant_load_file = 'rent_roll_01_2022.xls'
 target_bal_load_file = 'beginning_balance_2022.xlsx'
 target_pay_load_file = 'sample_payment_2022.xlsx'
+sleep1 = 0
 path = Config.TEST_RS_PATH
 findex_db = Config.test_findex_db
 findex_tablename = Config.test_findex_name
