@@ -121,6 +121,13 @@ class PopulateTable:
 
         return rent_roll_dict
 
+    def find_mi_and_mo(self, start_set=None, end_set=None):
+
+        move_ins = list(end_set - start_set) # catches move in
+        move_outs = list(start_set - end_set) # catches move out
+
+        return move_ins, move_outs
+
     def insert_move_ins(self, move_ins=None):
         for new_tenant in move_ins:
             nt = Tenant.create(tenant_name=new_tenant)
