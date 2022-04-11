@@ -301,27 +301,19 @@ class TestDB:
 
                 # check beg_bal_amount again
                 beg_bal_sum_by_period = populate.get_beg_bal_sum_by_period(style='initial')
-                breakpoint()
-                assert summary_total == 795.0
-
+                assert beg_bal_sum_by_period == 795.0
                 # check total tenant payments sum db-side
                 # check total tenant payments from dataframe against what I committed to db
                 tp_sum_by_period_db, tp_sum_by_period_df = populate.match_tp_db_to_df(df=tenant_payment_df, dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
 
                 # sum tenant payments by tenant
-                sum_payment_list_jan = list(set([(rec.tenant_name, rec.beg_bal_amount, rec.total_payments) for rec in Tenant.select(
-                Tenant.tenant_name, 
-                Tenant.beg_bal_amount, 
-                fn.SUM(Payment.amount).over(partition_by=[Tenant.tenant_name]).alias('total_payments')).
-                where(Payment.date_posted >= dt_obj_first).
-                where(Payment.date_posted <= dt_obj_last).
-                join(Payment).namedtuples()]))
+                sum_payment_list = populate.get_sum_tp_by_tenant(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
 
-                yancy_jan = [row for row in sum_payment_list_jan if row[0] == 'yancy, claude'][0]
+                yancy_jan = [row for row in sum_payment_list if row[0] == 'yancy, claude'][0]
                 assert yancy_jan[2] == float(Decimal('297.00'))
 
                 # check jan ending balances by tenant
-                end_bal_list_no_dec = [(rec[0], float(rec[1]) - rec[2]) for rec in sum_payment_list_jan]
+                end_bal_list_no_dec = populate.get_end_bal_by_tenant(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
 
                 tj_row = [row for row in end_bal_list_no_dec if row[0] == 'johnson, thomas'][0]
                 yancy_row = [row for row in end_bal_list_no_dec if row[0] == 'yancy, claude'][0]

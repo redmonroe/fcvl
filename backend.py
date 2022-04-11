@@ -307,13 +307,30 @@ class PopulateTable:
 
         return sum(sum_beg_bal_all)
 
-    def match_tp_db_to_df(self, df=None):
+    def match_tp_db_to_df(self, df=None, dt_obj_first=None, dt_obj_last=None):
         sum_this_month_db = sum([float(row.amount) for row in 
             Payment.select(Payment.amount).
             where(Payment.date_posted >= dt_obj_first).
             where(Payment.date_posted <= dt_obj_last)])
 
-        sum_this_month_df = sum(tenant_payment_df['amount'].astype(float).tolist())
+        sum_this_month_df = sum(df['amount'].astype(float).tolist())
         assert sum_this_month_db == sum_this_month_df
 
         return sum_this_month_db, sum_this_month_df
+
+    def get_sum_tp_by_tenant(self, dt_obj_first=None, dt_obj_last=None):
+        '''what happens on a moveout'''
+        sum_payment_list = list(set([(rec.tenant_name, rec.beg_bal_amount, rec.total_payments) for rec in Tenant.select(
+        Tenant.tenant_name, 
+        Tenant.beg_bal_amount, 
+        fn.SUM(Payment.amount).over(partition_by=[Tenant.tenant_name]).alias('total_payments')).
+        where(Payment.date_posted >= dt_obj_first).
+        where(Payment.date_posted <= dt_obj_last).
+        join(Payment).namedtuples()]))
+
+        return sum_payment_list
+
+    def get_end_bal_by_tenant(self, dt_obj_first=None, dt_obj_last=None):
+        sum_payment_list = self.get_sum_tp_by_tenant(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
+        end_bal_list = [(rec[0], float(rec[1]) - rec[2]) for rec in sum_payment_list]
+        return end_bal_list
