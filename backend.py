@@ -271,9 +271,13 @@ class PopulateTable:
 
         return dt_obj_first, dt_obj_last
 
-    def check_db_tp_and_ntp(self, grand_total=None):
-        all_tp = [float(rec.amount) for rec in Payment.select()]
-        all_ntp = [float(rec.amount) for rec in NTPayment.select()]
+    def check_db_tp_and_ntp(self, grand_total=None, dt_obj_first=None, dt_obj_last=None):
+        all_tp = [float(rec.amount) for rec in Payment.select().
+                where(Payment.date_posted >= dt_obj_first).
+                where(Payment.date_posted <= dt_obj_last)]
+        all_ntp = [float(rec.amount) for rec in NTPayment.select().
+                where(NTPayment.date_posted >= dt_obj_first).
+                where(NTPayment.date_posted <= dt_obj_last)]
 
         assert sum(all_ntp) + sum(all_tp) == grand_total
 
@@ -285,11 +289,16 @@ class PopulateTable:
 
         return detail_beg_bal_all
 
-    def check_for_duplicate_payments(self, detail_beg_bal_all=None):
-        pay_names = [row[0] for row in detail_beg_bal_all]
+    def check_for_multiple_payments(self, detail_beg_bal_all=None, dt_obj_first=None, dt_obj_last=None):
+        pay_names = [row.tenant for row in Payment().
+                select().
+                where(Payment.date_posted >= dt_obj_first).
+                where(Payment.date_posted <= dt_obj_last).
+                join(Tenant).namedtuples()]
         if len(pay_names) != len(set(pay_names)):
             different_names = [name for name in pay_names if pay_names.count(name) > 1]
-        return different_names
+            return different_names
+        return []
 
     def get_beg_bal_sum_by_period(self, style=None, dt_obj_first=None, dt_obj_last=None):
         if style == 'initial':

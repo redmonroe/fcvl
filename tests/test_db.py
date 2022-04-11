@@ -289,11 +289,12 @@ class TestDB:
                 dt_obj_first, dt_obj_last = populate.make_first_and_last_dates(date_str=date1)
 
                 # check db commited ten payments and ntp against df
-                all_tp, all_ntp = populate.check_db_tp_and_ntp(grand_total=grand_total)      
+                all_tp, all_ntp = populate.check_db_tp_and_ntp(grand_total=grand_total, dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)      
 
                 # get beginning balance by tenant and check for duplicate payments
                 detail_beg_bal_all = populate.get_all_tenants_beg_bal()
-                different_names = populate.check_for_duplicate_payments(detail_beg_bal_all=detail_beg_bal_all)
+
+                different_names = populate.check_for_multiple_payments(detail_beg_bal_all=detail_beg_bal_all, dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
 
                 if len(different_names) > 0:
                     detail_one = [row for row in detail_beg_bal_all if row[0] == different_names[0]]
@@ -324,14 +325,36 @@ class TestDB:
 
             if date1 == '2022-02':
                 dt_obj_first, dt_obj_last = populate.make_first_and_last_dates(date_str=date1)
+                all_tp, all_ntp = populate.check_db_tp_and_ntp(grand_total=grand_total, dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)           
 
                 beg_bal_sum_by_period = populate.get_beg_bal_sum_by_period(style='other', dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
-                breakpoint()
-                breakpoint()
+
+                detail_beg_bal_all = populate.get_all_tenants_beg_bal()
+
+                different_names = populate.check_for_multiple_payments(detail_beg_bal_all=detail_beg_bal_all, dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
+           
+                if len(different_names) > 0:
+                    detail_one = [row for row in detail_beg_bal_all if row[0] == different_names[0]]
+                    assert detail_one == [('coleman, william', '192.0', Decimal('-24')), ('coleman, william', '192.0', Decimal('-24'))]
       
+                '''this doesn't work; not able to get beginning balance for february; wait till I put in rent & charges'''
+                beg_bal_sum_by_period = populate.get_beg_bal_sum_by_period(style='initial')
+                assert beg_bal_sum_by_period == 795.0
+
+                tp_sum_by_period_db, tp_sum_by_period_df = populate.match_tp_db_to_df(df=tenant_payment_df, dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
         
-        # do realistic month of payments load
-        # where do ntp goes in database?
+                sum_payment_list = populate.get_sum_tp_by_tenant(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
+
+                test_feb = [row for row in sum_payment_list if row[0] == 'coleman, william'][0]
+                assert test_feb[2] == float(Decimal('384.00'))
+
+                end_bal_list_no_dec = populate.get_end_bal_by_tenant(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
+
+                '''asserts for end_bal_list_no_dec no necessary until I put in rent & charges'''
+                
+                breakpoint()
+
+
         # do charges class
         # damages and other charges list
 
