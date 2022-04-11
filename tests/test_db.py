@@ -4,13 +4,13 @@ from decimal import ROUND_DOWN, ROUND_UP, Decimal
 from pathlib import Path
 
 import pytest
-from backend import Payment, PopulateTable, Tenant, Unit, NTPayment, db
+from backend import Payment, PopulateTable, Tenant, Unit, NTPayment, TenantRent, db
 from checklist import Checklist
 from config import Config
 from file_indexer import FileIndexer
 from peewee import JOIN, fn
 
-create_tables_list = [Tenant, Unit, Payment, NTPayment]
+create_tables_list = [Tenant, Unit, Payment, NTPayment, TenantRent]
 
 # target_tenant_load_file = 'rent_roll_01_2022.xls'
 target_bal_load_file = 'beginning_balance_2022.xlsx'
@@ -40,7 +40,7 @@ class TestDB:
         db.drop_tables(models=create_tables_list)
         db.create_tables(create_tables_list)
         assert db.database == '/home/joe/local_dev_projects/fcvl/sqlite/test_pw_db.db'
-        assert db.get_tables() == ['ntpayment', 'payment', 'tenant', 'unit']
+        assert db.get_tables() == ['tenantrent', 'ntpayment', 'payment', 'tenant', 'unit']
         assert [*db.get_columns(table='payment')[0]._asdict().keys()] == ['name', 'data_type', 'null', 'primary_key', 'table', 'default']
 
     def test_load_rent_roll_from_real_sheet(self):
@@ -242,8 +242,21 @@ class TestDB:
                 
                 breakpoint()
 
-        # do charges class
-        # damages and other charges list
+        # class TenantRent(BaseModel):
+        #     tenant = ForeignKeyField(Tenant, backref='rent')
+        #     unit = ForeignKeyField(Unit, backref='rent')
+        #     rent_amount = DecimalField(default=0.00)
+        #     rent_date = DateField(default='2022-01-01')
+        #     date_code = IntegerField()
+
+        # class SubsidyRent(BaseModel):
+        #     pass
+
+        # class ContractRent(BaseModel):
+        #     pass
+
+        # class Damages(BaseModel):
+        #     pass
 
 
 

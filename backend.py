@@ -38,6 +38,22 @@ class Unit(BaseModel):
 
         return vacant_list
 
+class TenantRent(BaseModel):
+    tenant = ForeignKeyField(Tenant, backref='rent')
+    unit = ForeignKeyField(Unit, backref='rent')
+    rent_amount = DecimalField(default=0.00)
+    rent_date = DateField(default='2022-01-01')
+    date_code = IntegerField()
+
+class SubsidyRent(BaseModel):
+    pass
+
+class ContractRent(BaseModel):
+    pass
+
+class Damages(BaseModel):
+    pass
+
 class Payment(BaseModel):
     tenant = ForeignKeyField(Tenant, backref='payments')
     amount = CharField()
