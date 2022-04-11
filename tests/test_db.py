@@ -148,7 +148,7 @@ class TestDB:
             ).join(Payment).namedtuples()]))
 
         # generate end_bals for multiple tenants
-        end_bal_list = [(rec[0], rec[1] - Decimal(rec[2]).quantize(Decimal('.01'), rounding=ROUND_UP)) for rec in sum_payment_list]
+        # end_bal_list = [(rec[0], rec[1] - Decimal(rec[2]).quantize(Decimal('.01'), rounding=ROUND_UP)) for rec in sum_payment_list]
 
         end_bal_list_no_dec = [(rec[0], float(rec[1]) - rec[2]) for rec in sum_payment_list]
 
@@ -302,7 +302,7 @@ class TestDB:
                     # yancy: 279 and 18
                 detail_one = [row for row in detail_beg_bal_all if row[0] == different_names[0]]
                 assert detail_one == [('yancy, claude', '279.00', Decimal('-9')), ('yancy, claude', '18.00', Decimal('-9'))]
-                
+
                 # check beg_bal_amount again
                 sum_beg_bal_all = [row.beg_bal_amount for row in Tenant.select(Tenant.active, Tenant.beg_bal_amount).where(Tenant.active=='True').namedtuples()] 
                 summary_total = float(sum(sum_beg_bal_all))
@@ -330,6 +330,15 @@ class TestDB:
                 yancy_jan = [row for row in sum_payment_list_jan if row[0] == 'yancy, claude'][0]
                 assert yancy_jan[2] == float(Decimal('297.00'))
 
+                # check jan ending balances by tenant
+                end_bal_list_no_dec = [(rec[0], float(rec[1]) - rec[2]) for rec in sum_payment_list_jan]
+
+                tj_row = [row for row in end_bal_list_no_dec if row[0] == 'johnson, thomas'][0]
+                yancy_row = [row for row in end_bal_list_no_dec if row[0] == 'yancy, claude'][0]
+                jack_row = [row for row in end_bal_list_no_dec if row[0] == 'davis, jacki'][0]
+                assert tj_row == ('johnson, thomas', -162.0)
+                assert yancy_row == ('yancy, claude', -306.0)
+                assert jack_row == ('davis, jacki', -211.0)
 
                 breakpoint()
         # target_payment_file = path.joinpath(target_pay_load_file)
