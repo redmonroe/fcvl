@@ -1,11 +1,13 @@
-import pytest
+import calendar
 import datetime
-from decimal import Decimal, ROUND_DOWN, ROUND_UP
+from decimal import ROUND_DOWN, ROUND_UP, Decimal
 from pathlib import Path
+
+import pytest
+from backend import Payment, PopulateTable, Tenant, Unit, db
+from checklist import Checklist
 from config import Config
 from file_indexer import FileIndexer
-from checklist import Checklist
-from backend import db, PopulateTable, Tenant, Unit, Payment
 from peewee import JOIN, fn
 
 create_tables_list = [Tenant, Unit, Payment]
@@ -280,9 +282,14 @@ class TestDB:
         processed_dates_and_paths = [(item[1], item[3]) for item in file_list]
         processed_dates_and_paths.sort()
         
-        for date, path in processed_dates_and_paths:
+        for date1, path in processed_dates_and_paths:
             grand_total, ntp, tenant_payment_df = populate.payment_load_full(filename=path)
-            if date == '2022-01':
+            if date1 == '2022-01':
+                # get first and last dates in date
+                dt_obj = datetime.datetime.strptime(date1, '%Y-%m')
+                dt_obj_first = dt_obj.replace(day = 1)
+                dt_obj_last = dt_obj.replace(day = calendar.monthrange(dt_obj.year, dt_obj.month)[1])
+
                 all_p = [float(rec.amount) for rec in Payment.select()]
                 assert ntp + sum(all_p) == grand_total
 
@@ -295,33 +302,36 @@ class TestDB:
                     # yancy: 279 and 18
                 detail_one = [row for row in detail_beg_bal_all if row[0] == different_names[0]]
                 assert detail_one == [('yancy, claude', '279.00', Decimal('-9')), ('yancy, claude', '18.00', Decimal('-9'))]
+                
                 # check beg_bal_amount again
                 sum_beg_bal_all = [row.beg_bal_amount for row in Tenant.select(Tenant.active, Tenant.beg_bal_amount).where(Tenant.active=='True').namedtuples()] 
                 summary_total = float(sum(sum_beg_bal_all))
                 assert summary_total == 795.0
 
-                # check total tenant payments sum
-                sum_this_month = sum([float(row.amount) for row in 
+                # check total tenant payments sum db-side
+                sum_this_month_db = sum([float(row.amount) for row in 
                     Payment.select(Payment.amount).
-                    # where(Payment.payment_date.contains(date))]
-                    where(Payment.date_posted >= datetime.date(2022, 1, 1)).
-                    where(Payment.date_posted <= datetime.date(2022, 1, 31))])
-                # summary_total = float(sum(sum_beg_bal_all))
-                # assert summary_total == 793.0
-                # check end jan end balances
-                # check between dates
+                    where(Payment.date_posted >= dt_obj_first).
+                    where(Payment.date_posted <= dt_obj_last)])
 
-            #  sum_payment_list_jan = list(set([(rec.tenant_name, rec.beg_bal_amount, rec.total_payments) for rec in Tenant.select(
-            # Tenant.tenant_name, 
-            # Tenant.beg_bal_amount, 
-            # Payment.payment_amount, 
-            # fn.SUM(Payment.payment_amount).over(partition_by=[Tenant.tenant_name]).alias('total_payments')).
-            # where(Payment.payment_date >= datetime.date(2022, 1, 1)).
-            # where(Payment.payment_date <= datetime.date(2022, 1, 31)).
-            # join(Payment).namedtuples()]))
-       
+                # check total tenant payments from dataframe against what I committed to db
+                sum_this_month_df = sum(tenant_payment_df['amount'].astype(float).tolist())
+                assert sum_this_month_db == sum_this_month_df
+
+                # sum tenant payments by tenant
+                sum_payment_list_jan = list(set([(rec.tenant_name, rec.beg_bal_amount, rec.total_payments) for rec in Tenant.select(
+                Tenant.tenant_name, 
+                Tenant.beg_bal_amount, 
+                fn.SUM(Payment.amount).over(partition_by=[Tenant.tenant_name]).alias('total_payments')).
+                where(Payment.date_posted >= dt_obj_first).
+                where(Payment.date_posted <= dt_obj_last).
+                join(Payment).namedtuples()]))
+
+                yancy_jan = [row for row in sum_payment_list_jan if row[0] == 'yancy, claude'][0]
+                assert yancy_jan[2] == float(Decimal('297.00'))
+
+
                 breakpoint()
-
         # target_payment_file = path.joinpath(target_pay_load_file)
         # could also do a check on vacants: vacants as of when??
         # what about transfers?
