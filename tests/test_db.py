@@ -4,13 +4,13 @@ from decimal import ROUND_DOWN, ROUND_UP, Decimal
 from pathlib import Path
 
 import pytest
-from backend import Payment, PopulateTable, Tenant, Unit, db
+from backend import Payment, PopulateTable, Tenant, Unit, NTPayment, db
 from checklist import Checklist
 from config import Config
 from file_indexer import FileIndexer
 from peewee import JOIN, fn
 
-create_tables_list = [Tenant, Unit, Payment]
+create_tables_list = [Tenant, Unit, Payment, NTPayment]
 
 # target_tenant_load_file = 'rent_roll_01_2022.xls'
 target_bal_load_file = 'beginning_balance_2022.xlsx'
@@ -286,22 +286,19 @@ class TestDB:
             grand_total, ntp, tenant_payment_df = populate.payment_load_full(filename=path)
             if date1 == '2022-01':
                 # get first and last dates in date
-                dt_obj = datetime.datetime.strptime(date1, '%Y-%m')
-                dt_obj_first = dt_obj.replace(day = 1)
-                dt_obj_last = dt_obj.replace(day = calendar.monthrange(dt_obj.year, dt_obj.month)[1])
+                dt_obj_first, dt_obj_last = populate.make_first_and_last_dates(date_str=date1)
 
-                all_p = [float(rec.amount) for rec in Payment.select()]
-                assert ntp + sum(all_p) == grand_total
+                # check db commited ten payments and ntp against df
+                all_tp, all_ntp = populate.check_db_tp_and_ntp(grand_total=grand_total)            
 
-                detail_beg_bal_all = [(row.tenant_name, row.amount, row.beg_bal_amount) for row in Tenant.select(Tenant.tenant_name, Tenant.beg_bal_amount, Payment.amount).join(Payment).namedtuples()] 
 
-                #check for duplicate payments
-                pay_names = [row[0] for row in detail_beg_bal_all]
-                if len(pay_names) != len(set(pay_names)):
-                    different_names = [name for name in pay_names if pay_names.count(name) > 1]
-                    # yancy: 279 and 18
-                detail_one = [row for row in detail_beg_bal_all if row[0] == different_names[0]]
-                assert detail_one == [('yancy, claude', '279.00', Decimal('-9')), ('yancy, claude', '18.00', Decimal('-9'))]
+                # get beginning balance by tenant and check for duplicate payments
+                detail_beg_bal_all = populate.get_all_tenants_beg_bal()
+                different_names = populate.check_for_duplicate_payments(detail_beg_bal_all=detail_beg_bal_all)
+
+                if len(different_names) > 0:
+                    detail_one = [row for row in detail_beg_bal_all if row[0] == different_names[0]]
+                    assert detail_one == [('yancy, claude', '279.00', Decimal('-9')), ('yancy, claude', '18.00', Decimal('-9'))]
 
                 # check beg_bal_amount again
                 sum_beg_bal_all = [row.beg_bal_amount for row in Tenant.select(Tenant.active, Tenant.beg_bal_amount).where(Tenant.active=='True').namedtuples()] 
@@ -340,10 +337,12 @@ class TestDB:
                 assert yancy_row == ('yancy, claude', -306.0)
                 assert jack_row == ('davis, jacki', -211.0)
 
+            if date1 == '2022-02':
+                dt_obj_first, dt_obj_last = populate.make_first_and_last_dates(date_str=date1)
+
                 breakpoint()
-        # target_payment_file = path.joinpath(target_pay_load_file)
-        # could also do a check on vacants: vacants as of when??
-        # what about transfers?
+                breakpoint()
+      
         
         # do realistic month of payments load
         # where do ntp goes in database?

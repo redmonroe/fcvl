@@ -46,6 +46,14 @@ class Payment(BaseModel):
     unit = CharField()
     deposit_id = IntegerField()
 
+class NTPayment(BaseModel):
+    payee = CharField()
+    amount = CharField()
+    date_posted = DateField()
+    date_code = IntegerField()
+    genus = CharField(default='other')    
+    deposit_id = IntegerField()
+
 class PopulateTable:
 
     def basic_load(self, filename, mode=None):
@@ -116,9 +124,22 @@ class PopulateTable:
         df = self.read_excel_payments(path=filename)
         df = self.remove_nan_lines(df=df)
         grand_total = self.grand_total(df=df)
-        tenant_payment_df, ntp = self.return_and_remove_ntp(df=df, col='unit', remove_str=0)
+        tenant_payment_df, ntp_df = self.return_and_remove_ntp(df=df, col='unit', remove_str=0)
 
-        ntp = sum(ntp['amount'].astype(float).tolist())  # can split up ntp further here
+        ntp_sum = sum(ntp_df['amount'].astype(float).tolist())  # can split up ntp further here
+        
+        if len(ntp_df) > 0:
+            insert_nt_list = [{
+                'payee': name.lower(),
+                'amount': amount, 
+                'date_posted': datetime.datetime.strptime(date_posted, '%m/%d/%Y'),  
+                'date_code': date_code, 
+                'genus': genus, 
+                'deposit_id': deposit_id, 
+                } for (deposit_id, genus, name, date_posted, amount, date_code) in ntp_df.values]
+            query = NTPayment.insert_many(insert_nt_list)
+            query.execute()
+        
         insert_many_list = [{
             'tenant': name.lower(),
             'amount': amount, 
@@ -131,7 +152,7 @@ class PopulateTable:
         query = Payment.insert_many(insert_many_list)
         query.execute()
 
-        return grand_total, ntp, tenant_payment_df
+        return grand_total, ntp_sum, tenant_payment_df
 
     def read_excel_payments(self, path):
         df = pd.read_excel(path, header=9)
@@ -241,3 +262,31 @@ class PopulateTable:
             tenant = Tenant.get(Tenant.tenant_name == row)
             tenant.active = False
             tenant.save()
+
+    def make_first_and_last_dates(self, date_str=None):
+        import calendar
+        dt_obj = datetime.datetime.strptime(date_str, '%Y-%m')
+        dt_obj_first = dt_obj.replace(day = 1)
+        dt_obj_last = dt_obj.replace(day = calendar.monthrange(dt_obj.year, dt_obj.month)[1])
+
+        return dt_obj_first, dt_obj_last
+
+    def check_db_tp_and_ntp(self, grand_total=None):
+        all_tp = [float(rec.amount) for rec in Payment.select()]
+        all_ntp = [float(rec.amount) for rec in NTPayment.select()]
+
+        assert sum(all_ntp) + sum(all_tp) == grand_total
+
+        return all_tp, all_ntp
+
+    def get_all_tenants_beg_bal(self):
+        # doesn't need tenant active at this point
+        detail_beg_bal_all = [(row.tenant_name, row.amount, row.beg_bal_amount) for row in Tenant.select(Tenant.tenant_name, Tenant.beg_bal_amount, Payment.amount).join(Payment).namedtuples()] 
+
+        return detail_beg_bal_all
+
+    def check_for_duplicate_payments(detail_beg_bal_all=None):
+        pay_names = [row[0] for row in detail_beg_bal_all]
+        if len(pay_names) != len(set(pay_names)):
+            different_names = [name for name in pay_names if pay_names.count(name) > 1]
+        return different_names
