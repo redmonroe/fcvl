@@ -289,8 +289,7 @@ class TestDB:
                 dt_obj_first, dt_obj_last = populate.make_first_and_last_dates(date_str=date1)
 
                 # check db commited ten payments and ntp against df
-                all_tp, all_ntp = populate.check_db_tp_and_ntp(grand_total=grand_total)            
-
+                all_tp, all_ntp = populate.check_db_tp_and_ntp(grand_total=grand_total)      
 
                 # get beginning balance by tenant and check for duplicate payments
                 detail_beg_bal_all = populate.get_all_tenants_beg_bal()
@@ -301,19 +300,13 @@ class TestDB:
                     assert detail_one == [('yancy, claude', '279.00', Decimal('-9')), ('yancy, claude', '18.00', Decimal('-9'))]
 
                 # check beg_bal_amount again
-                sum_beg_bal_all = [row.beg_bal_amount for row in Tenant.select(Tenant.active, Tenant.beg_bal_amount).where(Tenant.active=='True').namedtuples()] 
-                summary_total = float(sum(sum_beg_bal_all))
+                beg_bal_sum_by_period = populate.get_beg_bal_sum_by_period(style='initial')
+                breakpoint()
                 assert summary_total == 795.0
 
                 # check total tenant payments sum db-side
-                sum_this_month_db = sum([float(row.amount) for row in 
-                    Payment.select(Payment.amount).
-                    where(Payment.date_posted >= dt_obj_first).
-                    where(Payment.date_posted <= dt_obj_last)])
-
                 # check total tenant payments from dataframe against what I committed to db
-                sum_this_month_df = sum(tenant_payment_df['amount'].astype(float).tolist())
-                assert sum_this_month_db == sum_this_month_df
+                tp_sum_by_period_db, tp_sum_by_period_df = populate.match_tp_db_to_df(df=tenant_payment_df, dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
 
                 # sum tenant payments by tenant
                 sum_payment_list_jan = list(set([(rec.tenant_name, rec.beg_bal_amount, rec.total_payments) for rec in Tenant.select(
@@ -340,6 +333,7 @@ class TestDB:
             if date1 == '2022-02':
                 dt_obj_first, dt_obj_last = populate.make_first_and_last_dates(date_str=date1)
 
+                beg_bal_sum_by_period = populate.get_beg_bal_sum_by_period(style='other', dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
                 breakpoint()
                 breakpoint()
       

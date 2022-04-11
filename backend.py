@@ -285,8 +285,35 @@ class PopulateTable:
 
         return detail_beg_bal_all
 
-    def check_for_duplicate_payments(detail_beg_bal_all=None):
+    def check_for_duplicate_payments(self, detail_beg_bal_all=None):
         pay_names = [row[0] for row in detail_beg_bal_all]
         if len(pay_names) != len(set(pay_names)):
             different_names = [name for name in pay_names if pay_names.count(name) > 1]
         return different_names
+
+    def get_beg_bal_sum_by_period(self, style=None, dt_obj_first=None, dt_obj_last=None):
+        if style == 'initial':
+            sum_beg_bal_all = [float(row.beg_bal_amount) for row in Tenant.select(
+                Tenant.active, Tenant.beg_bal_amount).
+                where(Tenant.active=='True').
+                namedtuples()]     
+        else:
+            sum_beg_bal_all = [float(row.beg_bal_amount) for row in Tenant.select(
+                Tenant.active, Tenant.beg_bal_amount, Payment.date_posted).
+                where(Payment.date_posted >= dt_obj_first).
+                where(Payment.date_posted <= dt_obj_last).
+                where(Tenant.active=='True').
+                join(Payment).namedtuples()]      
+
+        return sum(sum_beg_bal_all)
+
+    def match_tp_db_to_df(self, df=None):
+        sum_this_month_db = sum([float(row.amount) for row in 
+            Payment.select(Payment.amount).
+            where(Payment.date_posted >= dt_obj_first).
+            where(Payment.date_posted <= dt_obj_last)])
+
+        sum_this_month_df = sum(tenant_payment_df['amount'].astype(float).tolist())
+        assert sum_this_month_db == sum_this_month_df
+
+        return sum_this_month_db, sum_this_month_df
