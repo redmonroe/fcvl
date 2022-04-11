@@ -267,7 +267,7 @@ class TestDB:
         summary_total = float(sum(sum_beg_bal_all))
         assert summary_total == 793.0
 
-        ''' this is state of balance at start at end of loop(march 2020), so tj should not be in it'''
+        ''' this is state of balance at end of loop(march 2020), so tj should not be in it'''
         sum_beg_bal_all = [row.beg_bal_amount for row in Tenant.select(Tenant.active, Tenant.beg_bal_amount).where(Tenant.active=='True').namedtuples()] 
         summary_total = float(sum(sum_beg_bal_all))
         assert summary_total == 795.0
@@ -281,14 +281,53 @@ class TestDB:
         processed_dates_and_paths.sort()
         
         for date, path in processed_dates_and_paths:
-            df = populate.payment_load_full(filename=path)
-            breakpoint()
+            grand_total, ntp, tenant_payment_df = populate.payment_load_full(filename=path)
+            if date == '2022-01':
+                all_p = [float(rec.amount) for rec in Payment.select()]
+                assert ntp + sum(all_p) == grand_total
+
+                detail_beg_bal_all = [(row.tenant_name, row.amount, row.beg_bal_amount) for row in Tenant.select(Tenant.tenant_name, Tenant.beg_bal_amount, Payment.amount).join(Payment).namedtuples()] 
+
+                #check for duplicate payments
+                pay_names = [row[0] for row in detail_beg_bal_all]
+                if len(pay_names) != len(set(pay_names)):
+                    different_names = [name for name in pay_names if pay_names.count(name) > 1]
+                    # yancy: 279 and 18
+                detail_one = [row for row in detail_beg_bal_all if row[0] == different_names[0]]
+                assert detail_one == [('yancy, claude', '279.00', Decimal('-9')), ('yancy, claude', '18.00', Decimal('-9'))]
+                # check beg_bal_amount again
+                sum_beg_bal_all = [row.beg_bal_amount for row in Tenant.select(Tenant.active, Tenant.beg_bal_amount).where(Tenant.active=='True').namedtuples()] 
+                summary_total = float(sum(sum_beg_bal_all))
+                assert summary_total == 795.0
+
+                # check total tenant payments sum
+                sum_this_month = sum([float(row.amount) for row in 
+                    Payment.select(Payment.amount).
+                    # where(Payment.payment_date.contains(date))]
+                    where(Payment.date_posted >= datetime.date(2022, 1, 1)).
+                    where(Payment.date_posted <= datetime.date(2022, 1, 31))])
+                # summary_total = float(sum(sum_beg_bal_all))
+                # assert summary_total == 793.0
+                # check end jan end balances
+                # check between dates
+
+            #  sum_payment_list_jan = list(set([(rec.tenant_name, rec.beg_bal_amount, rec.total_payments) for rec in Tenant.select(
+            # Tenant.tenant_name, 
+            # Tenant.beg_bal_amount, 
+            # Payment.payment_amount, 
+            # fn.SUM(Payment.payment_amount).over(partition_by=[Tenant.tenant_name]).alias('total_payments')).
+            # where(Payment.payment_date >= datetime.date(2022, 1, 1)).
+            # where(Payment.payment_date <= datetime.date(2022, 1, 31)).
+            # join(Payment).namedtuples()]))
+       
+                breakpoint()
 
         # target_payment_file = path.joinpath(target_pay_load_file)
         # could also do a check on vacants: vacants as of when??
         # what about transfers?
         
         # do realistic month of payments load
+        # where do ntp goes in database?
         # do charges class
         # damages and other charges list
 

@@ -116,45 +116,22 @@ class PopulateTable:
         df = self.read_excel_payments(path=filename)
         df = self.remove_nan_lines(df=df)
         grand_total = self.grand_total(df=df)
-        df, ntp = self.return_and_remove_ntp(df=df, col='unit', remove_str=0)
+        tenant_payment_df, ntp = self.return_and_remove_ntp(df=df, col='unit', remove_str=0)
 
         ntp = sum(ntp['amount'].astype(float).tolist())  # can split up ntp further here
-        breakpoint()
-        # ntp = self.group_df(df=ntp, just_return_total=True)
+        insert_many_list = [{
+            'tenant': name.lower(),
+            'amount': amount, 
+            'date_posted': datetime.datetime.strptime(date_posted, '%m/%d/%Y'),  
+            'date_code': date_code, 
+            'unit': unit, 
+            'deposit_id': deposit_id, 
+             } for (deposit_id, unit, name, date_posted, amount, date_code) in tenant_payment_df.values]
 
+        query = Payment.insert_many(insert_many_list)
+        query.execute()
 
-        return grand_total, ntp, df
-
-        
-
-        
-
-        # insert_many_list = []
-        # for index, row in self.df.iterrows():
-        #     tup = ()
-        #     tup = (row['name'].lower(), row['amount'], row['date_posted'], int(row['date_code']), row['unit'], int(row['deposit_id']))
-        #     insert_many_list.append(tup)
-
-        # insert_many_list1 = [{
-        #     'tenant': name, 
-        #     'amount': amount, 
-        #     'date_posted': date_posted, 
-        #     'date_code': dt_code,
-        #     'unit': unit,
-        #     'deposit_id': deposit_id,
-
-        #      } for (name, amount, date_posted, dt_code, unit, deposit_id) in insert_many_list]
-        # breakpoint()
-
-        # query = Payment.insert_many(insert_many_list1)
-        # query.execute()
-
-
-        
-        return self.df
-        # insert_many_list = [{'tenant': name, 'payment_date': date, 'payment_amount': amount} for (name, date, amount) in insert_many_list1]
-        # query = Payment.insert_many(insert_many_list)
-        # query.execute()
+        return grand_total, ntp, tenant_payment_df
 
     def read_excel_payments(self, path):
         df = pd.read_excel(path, header=9)
