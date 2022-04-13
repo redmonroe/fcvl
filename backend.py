@@ -87,22 +87,6 @@ class PopulateTable:
         nt_list, total_tenant_charges, explicit_move_outs = self.init_load_ten_unit_ten_rent(filename=filename, date=date)
 
         return nt_list, total_tenant_charges, explicit_move_outs
-    # def rent_roll_load_wrapper(self, path=None, date=None):
-
-    #     period_start_tenant_names = set([name.tenant_name for name in Tenant.select().where(Tenant.active==True).namedtuples()])
-
-    #     if date == self.init_cutoff_date: # skip compare on init month
-    #     else: 
-    #         nt_list = self.basic_load(filename=path, mode='tenant_rent_only', date=date)
-        
-    #     rent_roll_set = set([row.name for row in nt_list])
-
-    #     if date != self.init_cutoff_date: # this is the main loop
-    #         mis, mos = self.find_mi_and_mo(start_set=period_start_tenant_names,end_set=rent_roll_set)
-    #         self.insert_move_ins(move_ins=mis)
-    #         self.deactivate_move_outs(move_outs=mos)
-
-    #     return nt_list, rent_roll_set, period_start_tenant_names
 
     def init_load_ten_unit_ten_rent(self, filename=None, date=None):
         fill_item = '0'
@@ -129,24 +113,14 @@ class PopulateTable:
 
         return nt_list, total_tenant_charges, explicit_move_outs
 
-
-    def nt_from_df(self, df, date, fill_item):
-        Row = namedtuple('row', 'name unit rent mo date')
-        explicit_move_outs = []
-        nt_list = []
-        for index, rec in df.iterrows():
-            if rec['Move out'] != fill_item:
-                explicit_move_outs.append(rec['Move out'])
-            row = Row(rec['Name'].lower(), rec['Unit'], rec['Actual Rent Charge'], rec['Move out'] , datetime.datetime.strptime(date, '%Y-%m'))
-            nt_list.append(row)
-
-        return nt_list, explicit_move_outs
-
-    def return_nt_list_with_no_vacants(self, keyword=None, nt_list=None):
-        return [row for row in nt_list if row.name != keyword]
-
-
     def after_jan_load(self, filename=None, date=None):
+
+        ''' order matters'''
+        ''' get tenants from jan end/feb start'''
+        ''' get rent roll from feb end in nt_list from df'''
+
+        period_start_tenant_names = [name.tenant_name for name in Tenant.select().where(Tenant.active==True).namedtuples()]
+        
         fill_item = '0'
         df = pd.read_excel(filename, header=16)
         df = df.fillna(fill_item)
@@ -154,69 +128,30 @@ class PopulateTable:
 
         total_tenant_charges = float(((nt_list.pop(-1)).rent).replace(',', ''))
 
-        nt_list = self.return_nt_list_with_no_vacants(keyword='vacant', nt_list=nt_list)
+        period_end_tenant_names = [row.name for row in self.return_nt_list_with_no_vacants(keyword='vacant', nt_list=nt_list)]
+
+        mis, computed_mos = self.find_rent_roll_changes_by_comparison(start_set=set(period_start_tenant_names), end_set=set(period_end_tenant_names))
+        cleaned_mos = self.merge_move_outs(explicit_move_outs=explicit_move_outs, computed_mos=computed_mos)
+        self.insert_move_ins(move_ins=mis)
+
+        if cleaned_mos != []:
+            self.deactivate_move_outs(move_outs=cleaned_mos)
+
+        ''' now we should have updated list of active tenants'''
+        cleaned_nt_list = [row for row in self.return_nt_list_with_no_vacants(keyword='vacant', nt_list=nt_list)]
+
+        insert_many_rent = [{'t_name': row.name, 'unit': row.unit, 'rent_amount': row.rent, 'rent_date': row.date} for row in cleaned_nt_list]  
+
+        query = TenantRent.insert_many(insert_many_rent)
+        query.execute()
         breakpoint()
 
-
-    def basic_load(self, filename, mode=None, date=None):
-
-        fill_item = '0'
-        df = pd.read_excel(filename, header=16)
-        df = df.fillna(fill_item)
-
-        Row = namedtuple('row', 'name unit rent mo date')
-        explicit_move_outs = []
-        nt_list = []
-        for index, rec in df.iterrows():
-            if rec['Move out'] != fill_item:
-                explicit_move_outs.append(rec['Move out'])
-            row = Row(rec['Name'].lower(), rec['Unit'], rec['Actual Rent Charge'], rec['Move out'] , datetime.datetime.strptime(date, '%Y-%m'))
-            nt_list.append(row)
-
-        actual_rent_sum_to_bal = float(((nt_list.pop(-1)).rent).replace(',', ''))
-        mo_rent_addbacks = 0
-        mo_len_list = list(set([row.mo for row in nt_list if row.mo != fill_item]))
-        # rent_roll_dict = {row.name: row.unit for row in nt_list if row.name != fill_item}
-        if len(mo_len_list) > 0:
-            admin_mo, actual_mo = self.catch_move_outs_in_target_file(nt_list=nt_list, fill_item=fill_item)
-
-            if admin_mo != []:
-                print(f'You have a likely admin move out or move outs see {admin_mo}')
-
-            if actual_mo != []:
-                nt_list, mo_rent_addbacks = self.remove_actual_move_outs_from_target_rent_roll(nt_list=nt_list, actual_mo=actual_mo)
-       
-        nt_list = [row for row in nt_list if row.name != 'vacant']
-
-        insert_many_list = [{'tenant_name': row.name} for row in nt_list if row.name != 'vacant']
-        insert_many_list_units = [{'unit_name': row.unit, 'tenant': row.name} for row in nt_list if row.name != 'vacant']
-  
-        actual_rent_charged  = sum([float(row.rent) for row in nt_list])
-        if mo_rent_addbacks:
-            actual_rent_charged += mo_rent_addbacks
-        # if actual_rent_charged != actual_rent_sum_to_bal:
-        insert_many_rent = [{'t_name': row.name, 'unit': row.unit, 'rent_amount': row.rent, 'rent_date': row.date} for row in nt_list if row.name != 'vacant']  
-
-        if mode == 'execute':
-            query = Tenant.insert_many(insert_many_list)
-            query.execute()
-            query = TenantRent.insert_many(insert_many_rent)
-            query.execute()
-            query = Unit.insert_many(insert_many_list_units)
-            query.execute()
-
-        else:
-            # pass
-            query = TenantRent.insert_many(insert_many_rent)
-            query.execute()
-            # try:
-            # for item in insert_many_rent:
-            #     rent = TenantRent.create(**item)
-            #     logging.debug(rent)
-            #     print(rent.tenant)
-            #     rent.save()
-        
-        return nt_list
+    def merge_move_outs(self, explicit_move_outs=None, computed_mos=None):
+        explicit_move_outs = [name for name in explicit_move_outs if name != 'vacant']
+        cleaned_mos = []
+        if explicit_move_outs != []:
+            cleaned_mos = explicit_move_outs + computed_mos
+        return cleaned_mos
 
     def balance_load(self, filename):
         df = pd.read_excel(filename)
@@ -287,6 +222,21 @@ class PopulateTable:
 
         return self.df
 
+    def nt_from_df(self, df, date, fill_item):
+        Row = namedtuple('row', 'name unit rent mo date')
+        explicit_move_outs = []
+        nt_list = []
+        for index, rec in df.iterrows():
+            if rec['Move out'] != fill_item:
+                explicit_move_outs.append(rec['Name'].lower())
+            row = Row(rec['Name'].lower(), rec['Unit'], rec['Actual Rent Charge'], rec['Move out'] , datetime.datetime.strptime(date, '%Y-%m'))
+            nt_list.append(row)
+
+        return nt_list, explicit_move_outs
+
+    def return_nt_list_with_no_vacants(self, keyword=None, nt_list=None):
+        return [row for row in nt_list if row.name != keyword]
+    
     def grand_total(self, df):
         grand_total = sum(df['amount'].astype(float).tolist())
         return grand_total
@@ -336,7 +286,7 @@ class PopulateTable:
 
         return rent_roll_dict
 
-    def find_mi_and_mo(self, start_set=None, end_set=None):
+    def find_rent_roll_changes_by_comparison(self, start_set=None, end_set=None):
         '''compares list of tenants at start of month to those at end'''
         '''explicit move-outs from excel have been removed from end of month rent_roll_dict 
         and should initiated a discrepancy in the following code by making end list diverge from start list'''
@@ -352,10 +302,8 @@ class PopulateTable:
             nt.save()
 
     def catch_move_outs_in_target_file(self, nt_list=None, fill_item=None):
-         # catch 'VACANT': '02/06/2022'
 
         vacant_move_out_iter = [(row.name, row.unit, row.mo) for row in nt_list if row.name == 'vacant' and row.mo != fill_item]
-        
 
         occupied_move_out_iter = [(row.name, row.unit, row.mo) for row in nt_list if row.name != 'vacant' and row.mo != fill_item]
 

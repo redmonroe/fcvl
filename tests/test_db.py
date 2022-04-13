@@ -61,6 +61,7 @@ class TestDB:
         '''DEFINE FUNCTION INIT_LOAD: DO NOT WRAP IT IN TOO MANY FUNC LAYERS'''
 
         nt_list, total_tenant_charges, explicit_move_outs = populate.init_tenant_load(filename=january_rent_roll_path, date='2022-01')
+        breakpoint()
 
         # sheet side checks
         assert len(nt_list) == 64
