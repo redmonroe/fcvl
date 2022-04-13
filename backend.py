@@ -1,14 +1,22 @@
+import calendar
 import datetime
 import logging
+import math
 import os
-
+from collections import namedtuple
+from decimal import ROUND_DOWN, ROUND_UP, Decimal
+from pathlib import Path
+from sqlite3 import IntegrityError
 import pandas as pd
+import pytest
 from numpy import nan
 from peewee import *
-import math
+from peewee import JOIN, fn
 
-from config import Config
 from build_rs import BuildRS
+from checklist import Checklist
+from config import Config
+from file_indexer import FileIndexer
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
@@ -40,7 +48,8 @@ class Unit(BaseModel):
         return vacant_list
 
 class TenantRent(BaseModel):
-    tenant = ForeignKeyField(Tenant, backref='rent')
+    # tenant = CharField()
+    t_name = ForeignKeyField(Tenant, backref='charge')
     unit = CharField()
     rent_amount = DecimalField(default=0.00)
     rent_date = DateField()
@@ -74,26 +83,70 @@ class PopulateTable:
 
     init_cutoff_date = '2022-01'
 
-    def rent_roll_load_wrapper(self, path=None, date=None):
+    def init_tenant_load(self, filename=None, date=None):
+        nt_list, total_tenant_charges, explicit_move_outs = self.init_load_ten_unit_ten_rent(filename=filename, date=date)
 
-        period_start_tenant_names = set([name.tenant_name for name in Tenant.select().where(Tenant.active==True).namedtuples()])
+        return nt_list, total_tenant_charges, explicit_move_outs
+    # def rent_roll_load_wrapper(self, path=None, date=None):
 
-        if date == self.init_cutoff_date: # skip compare on init month
-            nt_list = self.basic_load(filename=path, mode='execute', date=date)
-        else: 
-            nt_list = self.basic_load(filename=path, mode='tenant_rent_only', date=date)
+    #     period_start_tenant_names = set([name.tenant_name for name in Tenant.select().where(Tenant.active==True).namedtuples()])
+
+    #     if date == self.init_cutoff_date: # skip compare on init month
+    #     else: 
+    #         nt_list = self.basic_load(filename=path, mode='tenant_rent_only', date=date)
         
-        rent_roll_set = set([row.name for row in nt_list])
+    #     rent_roll_set = set([row.name for row in nt_list])
 
-        if date != self.init_cutoff_date: # this is the main loop
-            mis, mos = self.find_mi_and_mo(start_set=period_start_tenant_names,end_set=rent_roll_set)
-            self.insert_move_ins(move_ins=mis)
-            self.deactivate_move_outs(move_outs=mos)
+    #     if date != self.init_cutoff_date: # this is the main loop
+    #         mis, mos = self.find_mi_and_mo(start_set=period_start_tenant_names,end_set=rent_roll_set)
+    #         self.insert_move_ins(move_ins=mis)
+    #         self.deactivate_move_outs(move_outs=mos)
 
-        return nt_list, rent_roll_set, period_start_tenant_names
+    #     return nt_list, rent_roll_set, period_start_tenant_names
+
+    def init_load_ten_unit_ten_rent(self, filename=None, date=None):
+        fill_item = '0'
+        df = pd.read_excel(filename, header=16)
+        df = df.fillna(fill_item)
+        nt_list, explicit_move_outs = self.nt_from_df(df=df, date=date, fill_item=fill_item)
+
+        total_tenant_charges = float(((nt_list.pop(-1)).rent).replace(',', ''))
+
+        nt_list = self.return_nt_list_with_no_vacants(keyword='vacant', nt_list=nt_list)
+
+        ten_insert_many = [{'tenant_name': row.name} for row in nt_list]
+        
+        units_insert_many = [{'unit_name': row.unit, 'tenant': row.name} for row in nt_list]
+
+        rent_insert_many = [{'t_name': row.name, 'unit': row.unit, 'rent_amount': row.rent, 'rent_date': row.date} for row in nt_list]  
+
+        query = Tenant.insert_many(ten_insert_many)
+        query.execute()
+        query = TenantRent.insert_many(rent_insert_many)
+        query.execute()
+        query = Unit.insert_many(units_insert_many)
+        query.execute()
+
+        return nt_list, total_tenant_charges, explicit_move_outs
+
+
+    def nt_from_df(self, df, date, fill_item):
+        Row = namedtuple('row', 'name unit rent mo date')
+        explicit_move_outs = []
+        nt_list = []
+        for index, rec in df.iterrows():
+            if rec['Move out'] != fill_item:
+                explicit_move_outs.append(rec['Move out'])
+            row = Row(rec['Name'].lower(), rec['Unit'], rec['Actual Rent Charge'], rec['Move out'] , datetime.datetime.strptime(date, '%Y-%m'))
+            nt_list.append(row)
+
+        return nt_list, explicit_move_outs
+
+    def return_nt_list_with_no_vacants(self, keyword=None, nt_list=None):
+        return [row for row in nt_list if row.name != keyword]
+
 
     def basic_load(self, filename, mode=None, date=None):
-        from collections import namedtuple
 
         fill_item = '0'
         df = pd.read_excel(filename, header=16)
@@ -129,18 +182,27 @@ class PopulateTable:
         actual_rent_charged  = sum([float(row.rent) for row in nt_list])
         if mo_rent_addbacks:
             actual_rent_charged += mo_rent_addbacks
-        if actual_rent_charged != actual_rent_sum_to_bal:
-            breakpoint()
-        insert_many_rent = [{'tenant': row.name, 'unit': row.unit, 'rent_amount': row.rent, 'rent_date': row.date} for row in nt_list if row.name != 'vacant']  
-     
+        # if actual_rent_charged != actual_rent_sum_to_bal:
+        insert_many_rent = [{'t_name': row.name, 'unit': row.unit, 'rent_amount': row.rent, 'rent_date': row.date} for row in nt_list if row.name != 'vacant']  
 
         if mode == 'execute':
             query = Tenant.insert_many(insert_many_list)
             query.execute()
-            query = Unit.insert_many(insert_many_list_units)
-            query.execute()
             query = TenantRent.insert_many(insert_many_rent)
             query.execute()
+            query = Unit.insert_many(insert_many_list_units)
+            query.execute()
+
+        else:
+            # pass
+            query = TenantRent.insert_many(insert_many_rent)
+            query.execute()
+            # try:
+            # for item in insert_many_rent:
+            #     rent = TenantRent.create(**item)
+            #     logging.debug(rent)
+            #     print(rent.tenant)
+            #     rent.save()
         
         return nt_list
 
@@ -387,10 +449,57 @@ class PopulateTable:
         return end_bal_list
 
     def get_total_collections_by_month(self, dt_obj_first=None, dt_obj_last=None):
-        breakpoint()
+        # breakpoint()
         total_collections = sum([float(row.rent_amount) for row in TenantRent().
         select(TenantRent.rent_amount).
         where(TenantRent.rent_date >= dt_obj_first).
         where(TenantRent.rent_date <= dt_obj_last)])
 
         return total_collections
+
+class Operation(PopulateTable):
+
+    create_tables_list = [Tenant, Unit, Payment, NTPayment, TenantRent]
+
+    path = Config.TEST_RS_PATH
+    findex_db = Config.test_findex_db
+    findex_tablename = Config.test_findex_name
+    checkl_db = Config. test_checklist_db 
+    checkl_tablename = Config.test_checklist_name
+    populate = PopulateTable()
+    tenant = Tenant()
+    unit = Unit()
+    checkl = Checklist(checkl_db, checkl_tablename)
+    findex = FileIndexer(path=path, db=findex_db, table=findex_tablename, checklist_obj=checkl)
+    init_cutoff_date = '2022-01'
+
+    def run(self):
+        db.connect()
+        db.drop_tables(models=self.create_tables_list)
+        db.create_tables(self.create_tables_list)
+        self.findex.build_index_runner()
+        records = self.findex.ventilate_table()
+        rent_roll_list = [(item['fn'], item['period'], item['status'], item['path']) for item in records if item['fn'].split('_')[0] == 'rent' and item['status'] == 'processed']
+        processed_rentr_dates_and_paths = [(item[1], item[3]) for item in rent_roll_list]
+        processed_rentr_dates_and_paths.sort()
+
+        for date, path in processed_rentr_dates_and_paths:
+            nt_list, rent_roll_set, period_start_tenant_names = self.rent_roll_load_wrapper(path=path, date=date)
+
+            # for item in Tenant().select().where(Tenant.active=='True').join(Unit):
+            #     print(date, item.tenant_name)
+
+            for item in TenantRent().select():
+                print(date, 'RENT', item.tenant, item.rent_amount)
+
+            for item in nt_list:
+                print(date, item)
+
+            # dt_obj_first, dt_obj_last = self.make_first_and_last_dates(date_str=date)
+            # total_collections = self.get_total_collections_by_month(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
+
+            # assert total_collections == 15469.0
+
+
+# operation = Operation()
+# operation.run()
