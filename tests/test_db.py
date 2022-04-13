@@ -62,31 +62,50 @@ class TestDB:
 
         nt_list, total_tenant_charges, explicit_move_outs = populate.init_tenant_load(filename=january_rent_roll_path, date='2022-01')
 
+        # sheet side checks
         assert len(nt_list) == 64
         assert total_tenant_charges == 15469.0
         assert explicit_move_outs == []
 
-        breakpoint()
-
-    #     populate.basic_load(filename=january_rent_roll_path, mode='execute', date='2022-01')  
-
-    # def test_query_tables(self):
-    #     ten_list = Tenant.select().order_by(Tenant.tenant_name).namedtuples()
-    #     unpacked_tenants = [name for name in ten_list]
-        
-    #     assert unpacked_tenants[0].tenant_name == 'alexander, charles'
-
-    #     ten_count = Tenant.select().count()
-    #     assert ten_count == 64
-
-    #     unit_list = Unit.select().order_by(Unit.unit_name).namedtuples()
-    #     unit_list = [name for name in unit_list]
-    #     occupied_unit_count = Unit.select().count()
-    #     assert occupied_unit_count == 64 
-
-    def test_find_vacants(self):
+        # db side checks
+        assert len(Tenant.select()) == 64
+        assert len(TenantRent.select()) == 64
+        unit_list = Unit.select().order_by(Unit.unit_name).namedtuples()
+        unit_list = [name for name in unit_list]
+        occupied_unit_count = Unit.select().count()
+        assert occupied_unit_count == 64 
         vacant_units = Unit.find_vacants()
         assert 'PT-201' and 'CD-115' and 'CD-101' in vacant_units
+
+        beg_bal_sum = Tenant.select(fn.Sum(Tenant.beg_bal_amount).alias('sum')).get().sum
+        assert beg_bal_sum == 0
+
+        # now load beginning balances from sheet
+        dir_items = [item.name for item in path.iterdir()]
+        target_balance_file = path.joinpath(target_bal_load_file)
+
+        populate.balance_load(filename=target_balance_file)
+
+        # test loaded beginning balances
+        jan_end_bal_sum = Tenant.select(fn.Sum(Tenant.beg_bal_amount).alias('sum')).get().sum
+        assert jan_end_bal_sum == 793
+
+    def test_load_remaining_months_rent(self):
+        records = findex.ventilate_table()
+        rent_roll_list = [(item['fn'], item['period'], item['status'], item['path']) for item in records if item['fn'].split('_')[0] == 'rent' and item['status'] == 'processed']
+
+        paths_except_jan = rent_roll_list[1:]
+        processed_rentr_dates_and_paths = [(item[1], item[3]) for item in paths_except_jan]
+        processed_rentr_dates_and_paths.sort()
+
+        for date, filename in processed_rentr_dates_and_paths:
+            populate.after_jan_load(filename=filename, date=date)
+            
+
+
+
+
+
 
     # def test_compare_feb_rent_roll(self):
     #     records = findex.ventilate_table()
@@ -164,12 +183,6 @@ class TestDB:
     # def test_init_balance_reload(self):
     #     assert path == Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/audit 2022/test_rent_sheets_data_sources')
 
-    #     dir_items = [item.name for item in path.iterdir()]
-    #     assert target_bal_load_file in dir_items
-
-    #     target_balance_file = path.joinpath(target_bal_load_file)
-
-    #     populate.balance_load(filename=target_balance_file)
 
     #     ''' this is state of balance at start of jan 2022, so tj should be in it'''
     #     sum_beg_bal_all = [row.beg_bal_amount for row in Tenant.select(Tenant.beg_bal_amount).namedtuples()] 

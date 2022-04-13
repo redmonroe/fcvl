@@ -118,7 +118,7 @@ class PopulateTable:
         
         units_insert_many = [{'unit_name': row.unit, 'tenant': row.name} for row in nt_list]
 
-        rent_insert_many = [{'t_name': row.name, 'unit': row.unit, 'rent_amount': row.rent, 'rent_date': row.date} for row in nt_list]  
+        rent_insert_many = [{'t_name': row.name, 'unit': row.unit, 'rent_amount': row.rent, 'rent_date': row.date} for row in nt_list if row.name != 'vacant']  
 
         query = Tenant.insert_many(ten_insert_many)
         query.execute()
@@ -144,6 +144,18 @@ class PopulateTable:
 
     def return_nt_list_with_no_vacants(self, keyword=None, nt_list=None):
         return [row for row in nt_list if row.name != keyword]
+
+
+    def after_jan_load(self, filename=None, date=None):
+        fill_item = '0'
+        df = pd.read_excel(filename, header=16)
+        df = df.fillna(fill_item)
+        nt_list, explicit_move_outs = self.nt_from_df(df=df, date=date, fill_item=fill_item)
+
+        total_tenant_charges = float(((nt_list.pop(-1)).rent).replace(',', ''))
+
+        nt_list = self.return_nt_list_with_no_vacants(keyword='vacant', nt_list=nt_list)
+        breakpoint()
 
 
     def basic_load(self, filename, mode=None, date=None):
