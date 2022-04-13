@@ -26,6 +26,7 @@ tenant = Tenant()
 unit = Unit()
 checkl = Checklist(checkl_db, checkl_tablename)
 findex = FileIndexer(path=path, db=findex_db, table=findex_tablename, checklist_obj=checkl)
+init_cutoff_date = '2022-01'
 
 @pytest.mark.testing_db
 class TestDB:
@@ -115,19 +116,8 @@ class TestDB:
         processed_rentr_dates_and_paths.sort()
 
         for date, path in processed_rentr_dates_and_paths:
-            # get initial tenant list in iter period
-            period_start_tenant_names = set([name.tenant_name for name in Tenant.select().where(Tenant.active==True).namedtuples()])
-            # get end tenant list in iter period
-            if date == '2022-01': # skip compare on init month
-                nt_list = populate.basic_load(filename=path, mode='execute', date=date)
-            else: 
-                nt_list = populate.basic_load(filename=path, mode='return_only', date=date)
-            dipstick = (date, 'start:', len(period_start_tenant_names), 'end:', len(nt_list), path)
-            rent_roll_set = set([row.name for row in nt_list])
-            if date != '2022-01': # this is the main loop
-                mis, mos = populate.find_mi_and_mo(start_set=period_start_tenant_names,end_set=rent_roll_set)
-                populate.insert_move_ins(move_ins=mis)
-                populate.deactivate_move_outs(move_outs=mos)
+
+            nt_list, rent_roll_set, period_start_tenant_names = populate.rent_roll_load_wrapper(path=path, date=date)
 
             if date == '2022-02':
                 assert 'johnson, thomas' in [row.name for row in nt_list]
@@ -141,7 +131,6 @@ class TestDB:
                 tj_row = [row for row in all_rows if row[0] == 'johnson, thomas'][0]
                 assert tj_row[1] == 'False'
     
-        
     def test_init_balance_reload(self):
         assert path == Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/audit 2022/test_rent_sheets_data_sources')
 

@@ -72,6 +72,26 @@ class NTPayment(BaseModel):
 
 class PopulateTable:
 
+    init_cutoff_date = '2022-01'
+
+    def rent_roll_load_wrapper(self, path=None, date=None):
+
+        period_start_tenant_names = set([name.tenant_name for name in Tenant.select().where(Tenant.active==True).namedtuples()])
+
+        if date == self.init_cutoff_date: # skip compare on init month
+            nt_list = self.basic_load(filename=path, mode='execute', date=date)
+        else: 
+            nt_list = self.basic_load(filename=path, mode='return_only', date=date)
+        
+        rent_roll_set = set([row.name for row in nt_list])
+
+        if date != self.init_cutoff_date: # this is the main loop
+            mis, mos = self.find_mi_and_mo(start_set=period_start_tenant_names,end_set=rent_roll_set)
+            self.insert_move_ins(move_ins=mis)
+            self.deactivate_move_outs(move_outs=mos)
+
+        return nt_list, rent_roll_set, period_start_tenant_names
+
     def basic_load(self, filename, mode=None, date=None):
         from collections import namedtuple
 

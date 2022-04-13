@@ -55,7 +55,6 @@ def autors(mode=None):
     dev_path = Config.DEV_RS_PATH
     dev_discard_pile = Config.DEV_MOVE_PATH # is this used?  
 
-
     dev_findex_db = Config.findex_dev_db
     dev_findex_tablename = Config.findex_dev_name
 
