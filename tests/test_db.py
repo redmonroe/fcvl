@@ -117,7 +117,15 @@ class TestDB:
 
         for date, path in processed_rentr_dates_and_paths:
 
+            dt_obj_first, dt_obj_last = populate.make_first_and_last_dates(date_str=date)
+
             nt_list, rent_roll_set, period_start_tenant_names = populate.rent_roll_load_wrapper(path=path, date=date)
+
+            if date == '2022-01':
+                total_collections = populate.get_total_collections_by_month(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
+
+                assert total_collections == 15469.0
+                breakpoint()
 
             if date == '2022-02':
                 assert 'johnson, thomas' in [row.name for row in nt_list]

@@ -161,7 +161,6 @@ class PopulateTable:
 
         # could also use bulk update query: https://docs.peewee-orm.com/en/latest/peewee/api.html
 
-  
     def payment_load_full(self, filename):
         df = self.read_excel_payments(path=filename)
         df = self.remove_nan_lines(df=df)
@@ -386,3 +385,11 @@ class PopulateTable:
         sum_payment_list = self.get_sum_tp_by_tenant(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
         end_bal_list = [(rec[0], float(rec[1]) - rec[2]) for rec in sum_payment_list]
         return end_bal_list
+
+    def get_total_collections_by_month(self, dt_obj_first=None, dt_obj_last=None):
+        total_collections = sum([float(row.rent_amount) for row in TenantRent().
+        select(TenantRent.rent_amount).
+        where(TenantRent.rent_date >= dt_obj_first).
+        where(TenantRent.rent_date <= dt_obj_last)])
+
+        return total_collections
