@@ -81,7 +81,7 @@ class PopulateTable:
         if date == self.init_cutoff_date: # skip compare on init month
             nt_list = self.basic_load(filename=path, mode='execute', date=date)
         else: 
-            nt_list = self.basic_load(filename=path, mode='return_only', date=date)
+            nt_list = self.basic_load(filename=path, mode='tenant_rent_only', date=date)
         
         rent_roll_set = set([row.name for row in nt_list])
 
@@ -387,6 +387,7 @@ class PopulateTable:
         return end_bal_list
 
     def get_total_collections_by_month(self, dt_obj_first=None, dt_obj_last=None):
+        breakpoint()
         total_collections = sum([float(row.rent_amount) for row in TenantRent().
         select(TenantRent.rent_amount).
         where(TenantRent.rent_date >= dt_obj_first).
