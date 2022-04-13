@@ -41,7 +41,7 @@ class Unit(BaseModel):
 
 class TenantRent(BaseModel):
     tenant = ForeignKeyField(Tenant, backref='rent')
-    unit = ForeignKeyField(Unit, backref='unit')
+    unit = CharField()
     rent_amount = DecimalField(default=0.00)
     rent_date = DateField()
 
@@ -85,35 +85,44 @@ class PopulateTable:
         for index, rec in df.iterrows():
             if rec['Move out'] != fill_item:
                 explicit_move_outs.append(rec['Move out'])
-            row = Row(rec['Name'].lower(), rec['Unit'], rec['Actual Rent Charge'], rec['Move out'] , date)
+            row = Row(rec['Name'].lower(), rec['Unit'], rec['Actual Rent Charge'], rec['Move out'] , datetime.datetime.strptime(date, '%Y-%m'))
             nt_list.append(row)
 
-        
+        actual_rent_sum_to_bal = float(((nt_list.pop(-1)).rent).replace(',', ''))
+        mo_rent_addbacks = 0
         mo_len_list = list(set([row.mo for row in nt_list if row.mo != fill_item]))
-        rent_roll_dict = {row.name: row.unit for row in nt_list if row.name != fill_item}
+        # rent_roll_dict = {row.name: row.unit for row in nt_list if row.name != fill_item}
         if len(mo_len_list) > 0:
-            breakpoint()
             admin_mo, actual_mo = self.catch_move_outs_in_target_file(nt_list=nt_list, fill_item=fill_item)
 
             if admin_mo != []:
                 print(f'You have a likely admin move out or move outs see {admin_mo}')
-            if actual_mo != []:
-                rent_roll_dict = self.remove_actual_move_outs_from_target_rent_roll(rr_dict=rent_roll_dict, actual_mo=actual_mo)
-       
-        breakpoint()
-        
-        rent_roll_dict = {k: v for k, v in rent_roll_dict.items() if k != 'vacant'}
 
-        insert_many_list = [{'tenant_name': name} for (name, unit) in rent_roll_dict.items()]
-        insert_many_list_units = [{'unit_name': unit, 'tenant': name} for (name, unit) in rent_roll_dict.items()]
+            if actual_mo != []:
+                nt_list, mo_rent_addbacks = self.remove_actual_move_outs_from_target_rent_roll(nt_list=nt_list, actual_mo=actual_mo)
+       
+        nt_list = [row for row in nt_list if row.name != 'vacant']
+
+        insert_many_list = [{'tenant_name': row.name} for row in nt_list if row.name != 'vacant']
+        insert_many_list_units = [{'unit_name': row.unit, 'tenant': row.name} for row in nt_list if row.name != 'vacant']
+  
+        actual_rent_charged  = sum([float(row.rent) for row in nt_list])
+        if mo_rent_addbacks:
+            actual_rent_charged += mo_rent_addbacks
+        if actual_rent_charged != actual_rent_sum_to_bal:
+            breakpoint()
+        insert_many_rent = [{'tenant': row.name, 'unit': row.unit, 'rent_amount': row.rent, 'rent_date': row.date} for row in nt_list if row.name != 'vacant']  
+     
 
         if mode == 'execute':
             query = Tenant.insert_many(insert_many_list)
             query.execute()
             query = Unit.insert_many(insert_many_list_units)
             query.execute()
-
-        return rent_roll_dict
+            query = TenantRent.insert_many(insert_many_rent)
+            query.execute()
+        
+        return nt_list
 
     def balance_load(self, filename):
         df = pd.read_excel(filename)
@@ -256,19 +265,20 @@ class PopulateTable:
         
 
         occupied_move_out_iter = [(row.name, row.unit, row.mo) for row in nt_list if row.name != 'vacant' and row.mo != fill_item]
-        
-        breakpoint()
-        # [(row['Name'].lower(), row['Unit'], row['Move out']) for (index, row) in move_out_df.iterrows() if row['Name'] != 'VACANT' and row['Move out'] != '0']
 
         return vacant_move_out_iter, occupied_move_out_iter
 
-    def remove_actual_move_outs_from_target_rent_roll(self, rr_dict=None, actual_mo=None):
+    def remove_actual_move_outs_from_target_rent_roll(self, nt_list=None, actual_mo=None):
         '''removes from rent roll dict insertion'''
-        for row in actual_mo:
-            if row[0] in rr_dict:
-                del rr_dict[row[0]]
+        removed_charges_list = []
 
-        return rr_dict
+        for row in nt_list:
+            for rec in actual_mo:
+                if row.name == rec[0]:
+                    removed_charges_list.append(float(row.rent))
+                    nt_list.remove(row)
+        
+        return nt_list, sum(removed_charges_list)
 
     def deactivate_move_outs(self, move_outs=None):
         for row in move_outs:

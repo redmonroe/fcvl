@@ -53,7 +53,6 @@ class TestDB:
         assert january_rent_roll_path == '/mnt/c/Users/joewa/Google Drive/fall creek village I/audit 2022/test_rent_sheets_data_sources/rent_roll_01_2022.xls'
         populate.basic_load(filename=january_rent_roll_path, mode='execute', date='2022-01')  
 
-
     def test_query_tables(self):
         ten_list = Tenant.select().order_by(Tenant.tenant_name).namedtuples()
         unpacked_tenants = [name for name in ten_list]
@@ -83,9 +82,10 @@ class TestDB:
         jan_tenant_from_db = set([name.tenant_name for name in Tenant.select().where(Tenant.active==True).namedtuples()])
         assert len(jan_tenant_from_db) == 64
         
-        rent_roll_dict_feb = populate.basic_load(filename=feb_rent_roll_path, mode='return_only') 
-        feb_tenant_from_sheet = set([name for name in rent_roll_dict_feb.keys()])
-        assert len(feb_tenant_from_sheet) == 65
+        nt_list = populate.basic_load(filename=feb_rent_roll_path, mode='return_only', date='2022-02') 
+        feb_tenant_from_sheet = set([row.name for row in nt_list])
+        assert 65 == len(feb_tenant_from_sheet)
+
         # this should be moved to backend: last months - this month
         feb_move_ins = list(feb_tenant_from_sheet - jan_tenant_from_db) # catches move in
         feb_move_outs = list(jan_tenant_from_db - feb_tenant_from_sheet) # catches move out
@@ -119,24 +119,23 @@ class TestDB:
             period_start_tenant_names = set([name.tenant_name for name in Tenant.select().where(Tenant.active==True).namedtuples()])
             # get end tenant list in iter period
             if date == '2022-01': # skip compare on init month
-                rent_roll_dict = populate.basic_load(filename=path, mode='execute', date=date)
+                nt_list = populate.basic_load(filename=path, mode='execute', date=date)
             else: 
-                rent_roll_dict = populate.basic_load(filename=path, mode='return_only', date=date)
-            dipstick = (date, 'start:', len(period_start_tenant_names), 'end:', len(rent_roll_dict), path)
-            rent_roll_set = set([name for name in rent_roll_dict.keys()])
+                nt_list = populate.basic_load(filename=path, mode='return_only', date=date)
+            dipstick = (date, 'start:', len(period_start_tenant_names), 'end:', len(nt_list), path)
+            rent_roll_set = set([row.name for row in nt_list])
             if date != '2022-01': # this is the main loop
                 mis, mos = populate.find_mi_and_mo(start_set=period_start_tenant_names,end_set=rent_roll_set)
                 populate.insert_move_ins(move_ins=mis)
                 populate.deactivate_move_outs(move_outs=mos)
-                # are move-ins active??q
 
             if date == '2022-02':
-                assert 'johnson, thomas' in rent_roll_dict.keys()
-                assert len(rent_roll_dict) == 65
+                assert 'johnson, thomas' in [row.name for row in nt_list]
+                assert len(nt_list) == 65
 
             if date == '2022-03':
-                assert 'johnson, thomas' not in rent_roll_dict.keys()
-                assert len(rent_roll_dict) == 64
+                assert 'johnson, thomas' not in [row.name for row in nt_list]
+                assert len(nt_list) == 64
                 all_rows = [(tow.tenant_name, tow.active, tow.beg_bal_amount, tow.unit_name) for tow in Tenant.select(Tenant.tenant_name, Tenant.active, Tenant.beg_bal_amount, Unit.unit_name).join(Unit).namedtuples()]
 
                 tj_row = [row for row in all_rows if row[0] == 'johnson, thomas'][0]
@@ -245,14 +244,15 @@ class TestDB:
         rent_roll_list = [(item['fn'], item['period'], item['status'], item['path']) for item in records if item['fn'].split('_')[0] == 'rent' and item['status'] == 'processed']
 
         processed_rentr_dates_and_paths = [(item[1], item[3]) for item in rent_roll_list]
+        breakpoint()
         processed_rentr_dates_and_paths.sort()
 
         # for date, path in processed_rentr_dates_and_paths:
             # rent_roll_dict = populate.basic_load
         # final_charges = [charge for charge in TenantRent()]
-        breakpoint()
         # period_start_tenant_names = set([name.tenant_name for name in Tenant.select().where(Tenant.active==True).namedtuples()])
 
+            # are move-ins active??q
         # class TenantRent(BaseModel):
         #     tenant = ForeignKeyField(Tenant, backref='rent')
         #     unit = ForeignKeyField(Unit, backref='rent')
