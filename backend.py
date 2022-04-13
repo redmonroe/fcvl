@@ -5,6 +5,7 @@ import os
 import pandas as pd
 from numpy import nan
 from peewee import *
+import math
 
 from config import Config
 from build_rs import BuildRS
@@ -40,10 +41,9 @@ class Unit(BaseModel):
 
 class TenantRent(BaseModel):
     tenant = ForeignKeyField(Tenant, backref='rent')
-    unit = ForeignKeyField(Unit, backref='rent')
+    unit = ForeignKeyField(Unit, backref='unit')
     rent_amount = DecimalField(default=0.00)
-    rent_date = DateField(default='2022-01-01')
-    date_code = IntegerField()
+    rent_date = DateField()
 
 class SubsidyRent(BaseModel):
     pass
@@ -72,26 +72,35 @@ class NTPayment(BaseModel):
 
 class PopulateTable:
 
-    def basic_load(self, filename, mode=None):
+    def basic_load(self, filename, mode=None, date=None):
+        from collections import namedtuple
+
+        fill_item = '0'
         df = pd.read_excel(filename, header=16)
+        df = df.fillna(fill_item)
 
-        t_name = df['Name'].tolist()
-        unit = df['Unit'].tolist()
-        explicit_move_outs = df['Move out'].fillna(value='0').tolist()
+        Row = namedtuple('row', 'name unit rent mo date')
+        explicit_move_outs = []
+        nt_list = []
+        for index, rec in df.iterrows():
+            if rec['Move out'] != fill_item:
+                explicit_move_outs.append(rec['Move out'])
+            row = Row(rec['Name'].lower(), rec['Unit'], rec['Actual Rent Charge'], rec['Move out'] , date)
+            nt_list.append(row)
 
-        rent_roll_dict = dict(zip(t_name, unit))
-        rent_roll_dict = {k.lower(): v for k, v in rent_roll_dict.items() if k is not nan}
         
-        mo_len_list = list(set([it for it in explicit_move_outs]))
-        if len(mo_len_list) > 1:
-            admin_mo, actual_mo = self.catch_move_outs_in_target_file(t_name=t_name, unit=unit, explicit_move_outs=explicit_move_outs)
+        mo_len_list = list(set([row.mo for row in nt_list if row.mo != fill_item]))
+        rent_roll_dict = {row.name: row.unit for row in nt_list if row.name != fill_item}
+        if len(mo_len_list) > 0:
+            breakpoint()
+            admin_mo, actual_mo = self.catch_move_outs_in_target_file(nt_list=nt_list, fill_item=fill_item)
 
             if admin_mo != []:
                 print(f'You have a likely admin move out or move outs see {admin_mo}')
             if actual_mo != []:
                 rent_roll_dict = self.remove_actual_move_outs_from_target_rent_roll(rr_dict=rent_roll_dict, actual_mo=actual_mo)
        
-        all_units_dict = {k: v for k, v in rent_roll_dict.items()}
+        breakpoint()
         
         rent_roll_dict = {k: v for k, v in rent_roll_dict.items() if k != 'vacant'}
 
@@ -123,6 +132,7 @@ class PopulateTable:
 
         # could also use bulk update query: https://docs.peewee-orm.com/en/latest/peewee/api.html
 
+  
     def payment_load_full(self, filename):
         df = self.read_excel_payments(path=filename)
         df = self.remove_nan_lines(df=df)
@@ -209,6 +219,7 @@ class PopulateTable:
 
         t_name = df['Name'].tolist()
         unit = df['Unit'].tolist()
+        breakpoint()
 
         rent_roll_dict = dict(zip(t_name, unit))
         rent_roll_dict = {k.lower(): v for k, v in rent_roll_dict.items() if k is not nan}
@@ -238,17 +249,16 @@ class PopulateTable:
             nt = Tenant.create(tenant_name=new_tenant)
             nt.save()
 
-    def catch_move_outs_in_target_file(self, t_name=None, unit=None, explicit_move_outs=None):
+    def catch_move_outs_in_target_file(self, nt_list=None, fill_item=None):
          # catch 'VACANT': '02/06/2022'
-        move_out_df = pd.DataFrame(
-                        {'Name': t_name,
-                        'Unit': unit,
-                        'Move out': explicit_move_outs, 
-                        })
 
-        vacant_move_out_iter = [(row['Name'], row['Unit'], row['Move out']) for (index, row) in move_out_df.iterrows() if row['Name'] == 'VACANT' and row['Move out'] != '0']
+        vacant_move_out_iter = [(row.name, row.unit, row.mo) for row in nt_list if row.name == 'vacant' and row.mo != fill_item]
+        
 
-        occupied_move_out_iter = [(row['Name'].lower(), row['Unit'], row['Move out']) for (index, row) in move_out_df.iterrows() if row['Name'] != 'VACANT' and row['Move out'] != '0']
+        occupied_move_out_iter = [(row.name, row.unit, row.mo) for row in nt_list if row.name != 'vacant' and row.mo != fill_item]
+        
+        breakpoint()
+        # [(row['Name'].lower(), row['Unit'], row['Move out']) for (index, row) in move_out_df.iterrows() if row['Name'] != 'VACANT' and row['Move out'] != '0']
 
         return vacant_move_out_iter, occupied_move_out_iter
 

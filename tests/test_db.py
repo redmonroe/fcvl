@@ -40,7 +40,7 @@ class TestDB:
         db.drop_tables(models=create_tables_list)
         db.create_tables(create_tables_list)
         assert db.database == '/home/joe/local_dev_projects/fcvl/sqlite/test_pw_db.db'
-        assert db.get_tables() == ['tenantrent', 'ntpayment', 'payment', 'tenant', 'unit']
+        assert sorted(db.get_tables()) == sorted(['tenantrent', 'ntpayment', 'payment', 'tenant', 'unit'])
         assert [*db.get_columns(table='payment')[0]._asdict().keys()] == ['name', 'data_type', 'null', 'primary_key', 'table', 'default']
 
     def test_load_rent_roll_from_real_sheet(self):
@@ -51,7 +51,7 @@ class TestDB:
         # try load one month of rent_roll from sheets
         january_rent_roll_path = rent_roll_list[0][3]
         assert january_rent_roll_path == '/mnt/c/Users/joewa/Google Drive/fall creek village I/audit 2022/test_rent_sheets_data_sources/rent_roll_01_2022.xls'
-        populate.basic_load(filename=january_rent_roll_path, mode='execute')  
+        populate.basic_load(filename=january_rent_roll_path, mode='execute', date='2022-01')  
 
 
     def test_query_tables(self):
@@ -119,9 +119,9 @@ class TestDB:
             period_start_tenant_names = set([name.tenant_name for name in Tenant.select().where(Tenant.active==True).namedtuples()])
             # get end tenant list in iter period
             if date == '2022-01': # skip compare on init month
-                rent_roll_dict = populate.basic_load(filename=path, mode='execute')
+                rent_roll_dict = populate.basic_load(filename=path, mode='execute', date=date)
             else: 
-                rent_roll_dict = populate.basic_load(filename=path, mode='return_only')
+                rent_roll_dict = populate.basic_load(filename=path, mode='return_only', date=date)
             dipstick = (date, 'start:', len(period_start_tenant_names), 'end:', len(rent_roll_dict), path)
             rent_roll_set = set([name for name in rent_roll_dict.keys()])
             if date != '2022-01': # this is the main loop
@@ -240,7 +240,18 @@ class TestDB:
 
                 '''asserts for end_bal_list_no_dec no necessary until I put in rent & charges'''
                 
-                breakpoint()
+    def test_real_charges(self):
+        records = findex.ventilate_table()
+        rent_roll_list = [(item['fn'], item['period'], item['status'], item['path']) for item in records if item['fn'].split('_')[0] == 'rent' and item['status'] == 'processed']
+
+        processed_rentr_dates_and_paths = [(item[1], item[3]) for item in rent_roll_list]
+        processed_rentr_dates_and_paths.sort()
+
+        # for date, path in processed_rentr_dates_and_paths:
+            # rent_roll_dict = populate.basic_load
+        # final_charges = [charge for charge in TenantRent()]
+        breakpoint()
+        # period_start_tenant_names = set([name.tenant_name for name in Tenant.select().where(Tenant.active==True).namedtuples()])
 
         # class TenantRent(BaseModel):
         #     tenant = ForeignKeyField(Tenant, backref='rent')
