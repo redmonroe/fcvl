@@ -365,8 +365,11 @@ class PopulateTable:
 
         return sum_this_month_db, sum_this_month_df
 
-    def get_sum_tp_by_tenant(self, dt_obj_first=None, dt_obj_last=None):   
+    def get_payments_by_tenant_by_period(self, dt_obj_first=None, dt_obj_last=None):   
         '''what happens on a moveout'''
+        '''why do I have to get rid of duplicates here?  THEY SHOULD NOT BE IN DATABASE TO BEGIN WITH'''
+        '''for example, yancy made two payments for 18 and 279 but instead we have two payments in db for 297'''
+        '''I do not want to have to filter duplicates on output'''
 
         payment_list_by_period = list(set([(rec.tenant_name, rec.beg_bal_amount, rec.total_payments) for rec in Tenant.select(
         Tenant.tenant_name, 
@@ -392,7 +395,7 @@ class PopulateTable:
         return charges_detail_by_period 
 
     def get_end_bal_by_tenant(self, dt_obj_first=None, dt_obj_last=None):
-        sum_payment_list = self.get_sum_tp_by_tenant(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
+        sum_payment_list = self.get_payments_by_tenant_by_period(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
         end_bal_list = [(rec[0], float(rec[1]) - rec[2]) for rec in sum_payment_list]
         return end_bal_list
 

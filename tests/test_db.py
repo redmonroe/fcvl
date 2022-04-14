@@ -133,7 +133,9 @@ class TestDB:
 
             if date1 == '2022-01':
                 # check db commited ten payments and ntp against df
-                all_tp, all_ntp = populate.check_db_tp_and_ntp(grand_total=grand_total, dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)      
+                all_tp, all_ntp = populate.check_db_tp_and_ntp(grand_total=grand_total, dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last) 
+
+                # breakpoint()     
 
                 # get beginning balance by tenant and check for duplicate payments
                 detail_beg_bal_all = populate.get_all_tenants_beg_bal()
@@ -152,7 +154,7 @@ class TestDB:
                 tp_sum_by_period_db, tp_sum_by_period_df = populate.match_tp_db_to_df(df=tenant_payment_df, dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
 
                 # sum tenant payments by tenant
-                sum_payment_list = populate.get_sum_tp_by_tenant(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
+                sum_payment_list = populate.get_payments_by_tenant_by_period(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
 
                 yancy_jan = [row for row in sum_payment_list if row[0] == 'yancy, claude'][0]
                 assert yancy_jan[2] == float(Decimal('297.00'))
@@ -186,7 +188,7 @@ class TestDB:
 
                 tp_sum_by_period_db, tp_sum_by_period_df = populate.match_tp_db_to_df(df=tenant_payment_df, dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
         
-                sum_payment_list = populate.get_sum_tp_by_tenant(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
+                sum_payment_list = populate.get_payments_by_tenant_by_period(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
 
                 test_feb = [row for row in sum_payment_list if row[0] == 'coleman, william'][0]
                 assert test_feb[2] == float(Decimal('384.00'))
@@ -252,10 +254,16 @@ class TestDB:
         
         tenant_rent_total_jan = [float(row[1]) for row in populate.get_rent_charges_by_tenant_by_period(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)]
         assert sum(tenant_rent_total_jan) == 15469.0
+
+        '''payments'''
+        payments_jan = [float(row[2]) for row in populate.get_payments_by_tenant_by_period(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)]
+        assert sum(payments_jan) == 14975.0
+
+        '''end jan balances'''
+        computed_jan_end_bal = start_bal_sum + sum(tenant_rent_total_jan) - sum(payments_jan)
         breakpoint()
 
         jan_end_bal_detail = populate.get_end_bal_by_tenant(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
-
         jan_end_bal_list = sum([float(row[1]) for row in jan_end_bal_detail])
 
         assert x == 14975
