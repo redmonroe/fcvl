@@ -110,13 +110,28 @@ class TestDB:
                 dt_obj_first, dt_obj_last = populate.make_first_and_last_dates(date_str=date)
                 total_rent_charges = populate.get_total_rent_charges_by_month(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
                 assert total_rent_charges == 15972.0 
-                breakpoint()
-                # assert 'johnson, thomas' not in [row.name for row in nt_list]
-                # assert len(nt_list) == 64
-                # all_rows = [(tow.tenant_name, tow.active, tow.beg_bal_amount, tow.unit_name) for tow in Tenant.select(Tenant.tenant_name, Tenant.active, Tenant.beg_bal_amount, Unit.unit_name).join(Unit).namedtuples()]
 
-                # tj_row = [row for row in all_rows if row[0] == 'johnson, thomas'][0]
-                # assert tj_row[1] == 'False'
+        '''tests after loop is completed'''
+
+        # sheet side testing
+        # is thomas johnson marked as false at end of loop mos
+        assert 'johnson, thomas' in [row for row in cleaned_mos]
+   
+        # db side testing
+        # is thomas johnson marked as inactive at end of loop
+        former_tenants = [row.tenant_name for row in Tenant.select().where(Tenant.active=='False')]
+        assert 'johnson, thomas' in [row for row in cleaned_mos]
+
+        # what is total rent charges year to date
+        total_rent_charges = [row.rent_amount for row in Tenant.select(Tenant.tenant_name, TenantRent.rent_amount).join(TenantRent)]
+
+
+        breakpoint()
+        # assert len(nt_list) == 64
+        all_rows = [(tow.tenant_name, tow.active, tow.beg_bal_amount, tow.unit_name) for tow in Tenant.select(Tenant.tenant_name, Tenant.active, Tenant.beg_bal_amount, Unit.unit_name).join(Unit).namedtuples()]
+
+        tj_row = [row for row in all_rows if row[0] == 'johnson, thomas'][0]
+        assert tj_row[1] == 'False'
 
 
 
