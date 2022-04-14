@@ -117,7 +117,8 @@ class PopulateTable:
         ''' get tenants from jan end/feb start'''
         ''' get rent roll from feb end in nt_list from df'''
 
-        period_start_tenant_names = [name.tenant_name for name in Tenant.select().where(Tenant.active==True).namedtuples()]
+        period_start_tenant_names = [(name.tenant_name, name.unit_name) for name in Tenant.select(Tenant.tenant_name, Unit.unit_name).where(Tenant.active==True).join(Unit).namedtuples()]
+
         
         fill_item = '0'
         df = pd.read_excel(filename, header=16)
@@ -126,11 +127,13 @@ class PopulateTable:
 
         total_tenant_charges = float(((nt_list.pop(-1)).rent).replace(',', ''))
 
-        period_end_tenant_names = [row.name for row in self.return_nt_list_with_no_vacants(keyword='vacant', nt_list=nt_list)]
+        period_end_tenant_names = [(row.name, row.unit) for row in self.return_nt_list_with_no_vacants(keyword='vacant', nt_list=nt_list)]
 
-        mis, computed_mos = self.find_rent_roll_changes_by_comparison(start_set=set(period_start_tenant_names), end_set=set(period_end_tenant_names))
+
+        computed_mis, computed_mos = self.find_rent_roll_changes_by_comparison(start_set=set(period_start_tenant_names), end_set=set(period_end_tenant_names))
+        # breakpoint()
         cleaned_mos = self.merge_move_outs(explicit_move_outs=explicit_move_outs, computed_mos=computed_mos)
-        self.insert_move_ins(move_ins=mis)
+        self.insert_move_ins(move_ins=computed_mis)
 
         if cleaned_mos != []:
             self.deactivate_move_outs(move_outs=cleaned_mos)
@@ -296,9 +299,23 @@ class PopulateTable:
         return move_ins, move_outs
 
     def insert_move_ins(self, move_ins=None):
-        for new_tenant in move_ins:
-            nt = Tenant.create(tenant_name=new_tenant)
+        for name, unit in move_ins:
+            nt = Tenant.create(tenant_name=name)
+            unit = Unit.create(unit_name=unit, status='occupied', tenant=name)
+
             nt.save()
+            unit.save()
+
+    def deactivate_move_outs(self, move_outs=None):
+        for name in move_outs:
+            tenant = Tenant.get(Tenant.tenant_name == name)
+            tenant.active = False
+            tenant.save()
+
+            unit_to_deactivate = Unit.get(Unit.tenant == name)
+            # breakpoint()
+
+            unit_to_deactivate.delete_instance()
 
     def catch_move_outs_in_target_file(self, nt_list=None, fill_item=None):
 
@@ -320,11 +337,6 @@ class PopulateTable:
         
         return nt_list, sum(removed_charges_list)
 
-    def deactivate_move_outs(self, move_outs=None):
-        for row in move_outs:
-            tenant = Tenant.get(Tenant.tenant_name == row)
-            tenant.active = False
-            tenant.save()
 
     def make_first_and_last_dates(self, date_str=None):
         import calendar

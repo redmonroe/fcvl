@@ -106,11 +106,18 @@ class TestDB:
                 total_rent_charges = populate.get_total_rent_charges_by_month(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
                 assert total_rent_charges == 15968.0 
 
+                # get snapshot of vacants @ march end (after greiner mi)
+                vacant_snapshot_loop_end = Unit.find_vacants()
+                assert sorted(vacant_snapshot_loop_end) == sorted(['CD-101', 'CD-115'])
+
             if date == '2022-03':
                 dt_obj_first, dt_obj_last = populate.make_first_and_last_dates(date_str=date)
                 total_rent_charges = populate.get_total_rent_charges_by_month(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
                 assert total_rent_charges == 15972.0 
 
+                vacant_snapshot_loop_end = Unit.find_vacants()
+                assert sorted(vacant_snapshot_loop_end) == sorted(['CD-101', 'CD-115', 'PT-211'])
+                
         '''tests after loop is completed'''
 
         # sheet side testing
@@ -123,10 +130,14 @@ class TestDB:
         assert 'johnson, thomas' in [row for row in cleaned_mos]
 
         # what is total rent charges year to date
-        total_rent_charges = [row.rent_amount for row in Tenant.select(Tenant.tenant_name, TenantRent.rent_amount).join(TenantRent)]
+        total_rent_charges_ytd = sum([float(row.rent_amount) for row in Tenant.select(Tenant.tenant_name, TenantRent.rent_amount).join(TenantRent).namedtuples()])
+        assert total_rent_charges_ytd == 47409.0    
 
+        # vacant_snapshot_loop_end = Unit.find_vacants()
+        # breakpoint()
+        # assert vacant_snapshot_loop_end == ['CD-101', 'CD-115', 'PT-211']
 
-        breakpoint()
+    def remainders(self):
         # assert len(nt_list) == 64
         all_rows = [(tow.tenant_name, tow.active, tow.beg_bal_amount, tow.unit_name) for tow in Tenant.select(Tenant.tenant_name, Tenant.active, Tenant.beg_bal_amount, Unit.unit_name).join(Unit).namedtuples()]
 
