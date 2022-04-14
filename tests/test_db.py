@@ -100,9 +100,9 @@ class TestDB:
 
         for date, filename in processed_rentr_dates_and_paths:
             cleaned_nt_list, total_tenant_charges, cleaned_mos = populate.after_jan_load(filename=filename, date=date)
+            dt_obj_first, dt_obj_last = populate.make_first_and_last_dates(date_str=date)
 
             if date == '2022-02':
-                dt_obj_first, dt_obj_last = populate.make_first_and_last_dates(date_str=date)
                 total_rent_charges = populate.get_total_rent_charges_by_month(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
                 assert total_rent_charges == 15968.0 
 
@@ -111,31 +111,12 @@ class TestDB:
                 assert sorted(vacant_snapshot_loop_end) == sorted(['CD-101', 'CD-115'])
 
             if date == '2022-03':
-                dt_obj_first, dt_obj_last = populate.make_first_and_last_dates(date_str=date)
+                # dt_obj_first, dt_obj_last = populate.make_first_and_last_dates(date_str=date)
                 total_rent_charges = populate.get_total_rent_charges_by_month(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
                 assert total_rent_charges == 15972.0 
 
                 vacant_snapshot_loop_end = Unit.find_vacants()
                 assert sorted(vacant_snapshot_loop_end) == sorted(['CD-101', 'CD-115', 'PT-211'])
-
-        '''tests after loop is completed'''
-
-        # sheet side testing
-        # is thomas johnson marked as false at end of loop mos
-        assert 'johnson, thomas' in [row for row in cleaned_mos]
-   
-        # db side testing
-        # is thomas johnson marked as inactive at end of loop
-        former_tenants = [row.tenant_name for row in Tenant.select().where(Tenant.active=='False')]
-        assert 'johnson, thomas' in [row for row in cleaned_mos]
-
-        # what is total rent charges year to date
-        total_rent_charges_ytd = sum([float(row.rent_amount) for row in Tenant.select(Tenant.tenant_name, TenantRent.rent_amount).join(TenantRent).namedtuples()])
-        assert total_rent_charges_ytd == 47409.0    
-
-        # what are vacants at end of loop?
-        vacant_snapshot_loop_end = Unit.find_vacants()
-        assert sorted(vacant_snapshot_loop_end) == sorted(['CD-101', 'CD-115', 'PT-211'])
 
     def test_real_payments(self):
         records = findex.ventilate_table()
@@ -143,14 +124,12 @@ class TestDB:
         
         processed_dates_and_paths = [(item[1], item[3]) for item in file_list]
         processed_dates_and_paths.sort()
-        breakpoint()
         
         for date1, path in processed_dates_and_paths:
             grand_total, ntp, tenant_payment_df = populate.payment_load_full(filename=path)
-            if date1 == '2022-01':
-                # get first and last dates in date
-                dt_obj_first, dt_obj_last = populate.make_first_and_last_dates(date_str=date1)
+            dt_obj_first, dt_obj_last = populate.make_first_and_last_dates(date_str=date1)
 
+            if date1 == '2022-01':
                 # check db commited ten payments and ntp against df
                 all_tp, all_ntp = populate.check_db_tp_and_ntp(grand_total=grand_total, dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)      
 
@@ -215,6 +194,53 @@ class TestDB:
 
                 '''asserts for end_bal_list_no_dec no necessary until I put in rent & charges'''
    
+    def test_end_of_loop_state(self):
+        '''tests after loop is completed'''
+
+        '''former tenants'''
+        '''active tenants'''
+        '''vacant units'''
+        '''occupied units'''
+        '''unit accounting equals 67'''
+        '''all charges'''
+        '''all payments'''
+
+        '''ideas: 
+        1. I can make mi list by adding mi column to Tenant
+        '''
+
+   
+        '''former tenants'''
+        # is thomas johnson marked as inactive at end of loop
+        former_tenants = [row.tenant_name for row in Tenant.select().where(Tenant.active=='False')]
+        assert 'johnson, thomas' in [row for row in former_tenants]
+
+        '''active tenants'''
+        current_tenants = [row.tenant_name for row in Tenant.select().where(Tenant.active=='True')]
+        assert len(current_tenants) == 64
+        assert 'greiner, richard' in [row for row in current_tenants]        
+        
+        '''vacant units'''
+        vacant_snapshot_loop_end = Unit.find_vacants()
+        assert sorted(vacant_snapshot_loop_end) == sorted(['CD-101', 'CD-115', 'PT-211'])
+
+        '''occupied units'''
+        occupied_loop_end = [unit for unit in Unit().select()]
+        assert len(occupied_loop_end) == 64
+
+        '''unit accounting equals 67'''
+        assert len(occupied_loop_end) + len(vacant_snapshot_loop_end) == 67
+
+        '''all charges'''
+        total_rent_charges_ytd = sum([float(row.rent_amount) for row in Tenant.select(Tenant.tenant_name, TenantRent.rent_amount).join(TenantRent).namedtuples()])
+        assert total_rent_charges_ytd == 47409.0    
+
+        '''all payments'''
+        total_payments_ytd = sum([float(row.amount) for row in Payment.select(Payment.amount).namedtuples()])
+        assert total_payments_ytd == 30180.0
+
+        breakpoint()
+
     def remainders(self):
         # assert len(nt_list) == 64
         all_rows = [(tow.tenant_name, tow.active, tow.beg_bal_amount, tow.unit_name) for tow in Tenant.select(Tenant.tenant_name, Tenant.active, Tenant.beg_bal_amount, Unit.unit_name).join(Unit).namedtuples()]
