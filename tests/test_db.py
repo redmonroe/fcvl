@@ -61,7 +61,6 @@ class TestDB:
         '''DEFINE FUNCTION INIT_LOAD: DO NOT WRAP IT IN TOO MANY FUNC LAYERS'''
 
         nt_list, total_tenant_charges, explicit_move_outs = populate.init_tenant_load(filename=january_rent_roll_path, date='2022-01')
-        breakpoint()
 
         # sheet side checks
         assert len(nt_list) == 64
@@ -100,9 +99,24 @@ class TestDB:
         processed_rentr_dates_and_paths.sort()
 
         for date, filename in processed_rentr_dates_and_paths:
-            populate.after_jan_load(filename=filename, date=date)
-            
+            cleaned_nt_list, total_tenant_charges, cleaned_mos = populate.after_jan_load(filename=filename, date=date)
 
+            if date == '2022-02':
+                dt_obj_first, dt_obj_last = populate.make_first_and_last_dates(date_str=date)
+                total_rent_charges = populate.get_total_rent_charges_by_month(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
+                assert total_rent_charges == 15968.0 
+
+            if date == '2022-03':
+                dt_obj_first, dt_obj_last = populate.make_first_and_last_dates(date_str=date)
+                total_rent_charges = populate.get_total_rent_charges_by_month(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
+                assert total_rent_charges == 15972.0 
+                breakpoint()
+                # assert 'johnson, thomas' not in [row.name for row in nt_list]
+                # assert len(nt_list) == 64
+                # all_rows = [(tow.tenant_name, tow.active, tow.beg_bal_amount, tow.unit_name) for tow in Tenant.select(Tenant.tenant_name, Tenant.active, Tenant.beg_bal_amount, Unit.unit_name).join(Unit).namedtuples()]
+
+                # tj_row = [row for row in all_rows if row[0] == 'johnson, thomas'][0]
+                # assert tj_row[1] == 'False'
 
 
 
@@ -138,11 +152,7 @@ class TestDB:
     #     assert len(feb_tenant_from_db) == 65
     #     assert 'greiner, richard' in feb_tenant_from_db     
 
-    # def test_reset_test_for_looping(self):
-    #     db.drop_tables(models=create_tables_list)
-    #     db.create_tables(create_tables_list)
-    #     findex.drop_tables()
-    #     findex.build_index_runner()
+
     
     # def test_compare_rent_rolls_loop(self):
     #     records = findex.ventilate_table()
@@ -155,31 +165,7 @@ class TestDB:
 
     #         nt_list, rent_roll_set, period_start_tenant_names = populate.rent_roll_load_wrapper(path=path, date=date)
 
-    #         if date == '2022-01':
-            
-    #             dt_obj_first, dt_obj_last = populate.make_first_and_last_dates(date_str=date)
-    #             total_collections = populate.get_total_collections_by_month(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
 
-
-    #             assert total_collections == 15469.0
-
-    #         if date == '2022-02':
-    #             # breakpoint()
-    #             # breakpoint()
-    #             dt_obj_first, dt_obj_last = populate.make_first_and_last_dates(date_str=date)
-    #             total_collections = populate.get_total_collections_by_month(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
-
-    #             # assert total_collections == 15469.0
-    #             assert 'johnson, thomas' in [row.name for row in nt_list]
-    #             assert len(nt_list) == 65
-
-    #         if date == '2022-03':
-    #             assert 'johnson, thomas' not in [row.name for row in nt_list]
-    #             assert len(nt_list) == 64
-    #             all_rows = [(tow.tenant_name, tow.active, tow.beg_bal_amount, tow.unit_name) for tow in Tenant.select(Tenant.tenant_name, Tenant.active, Tenant.beg_bal_amount, Unit.unit_name).join(Unit).namedtuples()]
-
-    #             tj_row = [row for row in all_rows if row[0] == 'johnson, thomas'][0]
-    #             assert tj_row[1] == 'False'
     
     # def test_init_balance_reload(self):
     #     assert path == Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/audit 2022/test_rent_sheets_data_sources')

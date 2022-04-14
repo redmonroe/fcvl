@@ -81,8 +81,6 @@ class NTPayment(BaseModel):
 
 class PopulateTable:
 
-    init_cutoff_date = '2022-01'
-
     def init_tenant_load(self, filename=None, date=None):
         nt_list, total_tenant_charges, explicit_move_outs = self.init_load_ten_unit_ten_rent(filename=filename, date=date)
 
@@ -144,7 +142,8 @@ class PopulateTable:
 
         query = TenantRent.insert_many(insert_many_rent)
         query.execute()
-        breakpoint()
+        '''Units: now we should check whether end of period '''
+        return cleaned_nt_list, total_tenant_charges, cleaned_mos
 
     def merge_move_outs(self, explicit_move_outs=None, computed_mos=None):
         explicit_move_outs = [name for name in explicit_move_outs if name != 'vacant']
@@ -408,7 +407,7 @@ class PopulateTable:
         end_bal_list = [(rec[0], float(rec[1]) - rec[2]) for rec in sum_payment_list]
         return end_bal_list
 
-    def get_total_collections_by_month(self, dt_obj_first=None, dt_obj_last=None):
+    def get_total_rent_charges_by_month(self, dt_obj_first=None, dt_obj_last=None):
         # breakpoint()
         total_collections = sum([float(row.rent_amount) for row in TenantRent().
         select(TenantRent.rent_amount).
