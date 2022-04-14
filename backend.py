@@ -297,6 +297,8 @@ class PopulateTable:
 
             unit_to_deactivate.delete_instance()
 
+
+    '''these should be moved to a QueryX class'''
     def make_first_and_last_dates(self, date_str=None):
         dt_obj = datetime.datetime.strptime(date_str, '%Y-%m')
         dt_obj_first = dt_obj.replace(day = 1)
@@ -304,7 +306,12 @@ class PopulateTable:
 
         return dt_obj_first, dt_obj_last
 
-    '''these should be moved to a QueryX class'''
+    def get_all_tenants_beg_bal(self):
+        '''returns a list of all tenants and their all time beginning balances'''
+        '''does not consider active status at this point'''
+        detail_beg_bal_all = [(row.tenant_name, row.amount, row.beg_bal_amount) for row in Tenant.select(Tenant.tenant_name, Tenant.beg_bal_amount, Payment.amount).join(Payment).namedtuples()] 
+
+        return detail_beg_bal_all
 
     def check_db_tp_and_ntp(self, grand_total=None, dt_obj_first=None, dt_obj_last=None):
         '''checks if there are any payments in the database for the month'''
@@ -319,13 +326,6 @@ class PopulateTable:
         assert sum(all_ntp) + sum(all_tp) == grand_total
 
         return all_tp, all_ntp
-
-    def get_all_tenants_beg_bal(self):
-        '''returns a list of all tenants and their all time beginning balances'''
-        '''does not consider active status at this point'''
-        detail_beg_bal_all = [(row.tenant_name, row.amount, row.beg_bal_amount) for row in Tenant.select(Tenant.tenant_name, Tenant.beg_bal_amount, Payment.amount).join(Payment).namedtuples()] 
-
-        return detail_beg_bal_all
 
     def check_for_multiple_payments(self, detail_beg_bal_all=None, dt_obj_first=None, dt_obj_last=None):
         pay_names = [row.tenant for row in Payment().
@@ -365,9 +365,10 @@ class PopulateTable:
 
         return sum_this_month_db, sum_this_month_df
 
-    def get_sum_tp_by_tenant(self, dt_obj_first=None, dt_obj_last=None):
+    def get_sum_tp_by_tenant(self, dt_obj_first=None, dt_obj_last=None):   
         '''what happens on a moveout'''
-        sum_payment_list = list(set([(rec.tenant_name, rec.beg_bal_amount, rec.total_payments) for rec in Tenant.select(
+
+        payment_list_by_period = list(set([(rec.tenant_name, rec.beg_bal_amount, rec.total_payments) for rec in Tenant.select(
         Tenant.tenant_name, 
         Tenant.beg_bal_amount, 
         fn.SUM(Payment.amount).over(partition_by=[Tenant.tenant_name]).alias('total_payments')).
@@ -375,7 +376,20 @@ class PopulateTable:
         where(Payment.date_posted <= dt_obj_last).
         join(Payment).namedtuples()]))
 
-        return sum_payment_list
+        return payment_list_by_period 
+
+    def get_rent_charges_by_tenant_by_period(self, dt_obj_first=None, dt_obj_last=None):   
+        '''what happens on a moveout'''
+
+        charges_detail_by_period = [(rec.tenant_name, rec.rent_amount) for rec in Tenant.select(
+        Tenant.tenant_name, 
+        TenantRent.rent_amount,
+        fn.SUM(TenantRent.rent_amount).over(partition_by=[Tenant.tenant_name]).alias('total_payments')).
+        where(TenantRent.rent_date >= dt_obj_first).
+        where(TenantRent.rent_date <= dt_obj_last).
+        join(TenantRent).namedtuples()]
+
+        return charges_detail_by_period 
 
     def get_end_bal_by_tenant(self, dt_obj_first=None, dt_obj_last=None):
         sum_payment_list = self.get_sum_tp_by_tenant(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)

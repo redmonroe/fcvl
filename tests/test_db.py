@@ -241,9 +241,26 @@ class TestDB:
         '''jan, feb, mar payments subtotal'''
         '''be aware of dates and active status'''
 
+        '''jan: start_bal_sum = 793, tenant_rent = 15469, payments_made = 14975, end_bal_sum = 1287'''
 
+        '''jan start bal = 793'''
+        test_date = '2022-01'
+        dt_obj_first, dt_obj_last = populate.make_first_and_last_dates(date_str=test_date)
+
+        start_bal_sum = Tenant.select(fn.Sum(Tenant.beg_bal_amount).alias('sum')).get().sum
+        assert start_bal_sum == 793.0
         
+        tenant_rent_total_jan = [float(row[1]) for row in populate.get_rent_charges_by_tenant_by_period(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)]
+        assert sum(tenant_rent_total_jan) == 15469.0
         breakpoint()
+
+        jan_end_bal_detail = populate.get_end_bal_by_tenant(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
+
+        jan_end_bal_list = sum([float(row[1]) for row in jan_end_bal_detail])
+
+        assert x == 14975
+
+
 
     def remainders(self):
         # assert len(nt_list) == 64
