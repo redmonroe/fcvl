@@ -268,26 +268,6 @@ class PopulateTable:
         query = Unit.insert_many(insert_many_list)
         query.execute()
 
-    def load_tenants(self, filename):
-        df = pd.read_excel(filename, header=16)
-
-        t_name = df['Name'].tolist()
-        unit = df['Unit'].tolist()
-        breakpoint()
-
-        rent_roll_dict = dict(zip(t_name, unit))
-        rent_roll_dict = {k.lower(): v for k, v in rent_roll_dict.items() if k is not nan}
-        rent_roll_dict = {k: v for k, v in rent_roll_dict.items() if k != 'vacant'}
-        insert_many_list = [{'tenant_name': name, 'unit': unit} for (name, unit) in rent_roll_dict.items()]
-        insert_many_list_units = [{'unit_name': unit, 'tenant': name, 'status': 'occupied'} for (name, unit) in rent_roll_dict.items()]
-
-        query = Tenant.insert_many(insert_many_list)
-        query.execute()
-        query = Unit.insert_many(insert_many_list_units)
-        query.execute()
-
-        return rent_roll_dict
-
     def find_rent_roll_changes_by_comparison(self, start_set=None, end_set=None):
         '''compares list of tenants at start of month to those at end'''
         '''explicit move-outs from excel have been removed from end of month rent_roll_dict 
@@ -317,36 +297,18 @@ class PopulateTable:
 
             unit_to_deactivate.delete_instance()
 
-    def catch_move_outs_in_target_file(self, nt_list=None, fill_item=None):
-
-        vacant_move_out_iter = [(row.name, row.unit, row.mo) for row in nt_list if row.name == 'vacant' and row.mo != fill_item]
-
-        occupied_move_out_iter = [(row.name, row.unit, row.mo) for row in nt_list if row.name != 'vacant' and row.mo != fill_item]
-
-        return vacant_move_out_iter, occupied_move_out_iter
-
-    def remove_actual_move_outs_from_target_rent_roll(self, nt_list=None, actual_mo=None):
-        '''removes from rent roll dict insertion'''
-        removed_charges_list = []
-
-        for row in nt_list:
-            for rec in actual_mo:
-                if row.name == rec[0]:
-                    removed_charges_list.append(float(row.rent))
-                    nt_list.remove(row)
-        
-        return nt_list, sum(removed_charges_list)
-
-
     def make_first_and_last_dates(self, date_str=None):
-        import calendar
         dt_obj = datetime.datetime.strptime(date_str, '%Y-%m')
         dt_obj_first = dt_obj.replace(day = 1)
         dt_obj_last = dt_obj.replace(day = calendar.monthrange(dt_obj.year, dt_obj.month)[1])
 
         return dt_obj_first, dt_obj_last
 
+    '''these should be moved to a QueryX class'''
+
     def check_db_tp_and_ntp(self, grand_total=None, dt_obj_first=None, dt_obj_last=None):
+        '''checks if there are any payments in the database for the month'''
+        '''contains its own assertion; this is an important part of the process'''
         all_tp = [float(rec.amount) for rec in Payment.select().
                 where(Payment.date_posted >= dt_obj_first).
                 where(Payment.date_posted <= dt_obj_last)]
@@ -359,7 +321,8 @@ class PopulateTable:
         return all_tp, all_ntp
 
     def get_all_tenants_beg_bal(self):
-        # doesn't need tenant active at this point
+        '''returns a list of all tenants and their all time beginning balances'''
+        '''does not consider active status at this point'''
         detail_beg_bal_all = [(row.tenant_name, row.amount, row.beg_bal_amount) for row in Tenant.select(Tenant.tenant_name, Tenant.beg_bal_amount, Payment.amount).join(Payment).namedtuples()] 
 
         return detail_beg_bal_all

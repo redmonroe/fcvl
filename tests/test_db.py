@@ -44,6 +44,8 @@ class TestDB:
         assert sorted(db.get_tables()) == sorted(['tenantrent', 'ntpayment', 'payment', 'tenant', 'unit'])
         assert [*db.get_columns(table='payment')[0]._asdict().keys()] == ['name', 'data_type', 'null', 'primary_key', 'table', 'default']
 
+        findex.drop_tables()
+
     def test_initial_tenant_load(self):
         '''JANUARY IS DIFFERENT'''
         '''we know this at least has to be correct'''
@@ -179,7 +181,6 @@ class TestDB:
                     detail_one = [row for row in detail_beg_bal_all if row[0] == different_names[0]]
                     assert detail_one == [('coleman, william', '192.0', Decimal('-24')), ('coleman, william', '192.0', Decimal('-24'))]
       
-                '''this doesn't work; not able to get beginning balance for february; wait till I put in rent & charges'''
                 beg_bal_sum_by_period = populate.get_beg_bal_sum_by_period(style='initial')
                 assert beg_bal_sum_by_period == 795.0
 
@@ -191,8 +192,6 @@ class TestDB:
                 assert test_feb[2] == float(Decimal('384.00'))
 
                 end_bal_list_no_dec = populate.get_end_bal_by_tenant(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
-
-                '''asserts for end_bal_list_no_dec no necessary until I put in rent & charges'''
    
     def test_end_of_loop_state(self):
         '''tests after loop is completed'''
@@ -204,11 +203,11 @@ class TestDB:
         '''unit accounting equals 67'''
         '''all charges'''
         '''all payments'''
+        '''jan, feb, mar payments subtotal'''
 
         '''ideas: 
         1. I can make mi list by adding mi column to Tenant
         '''
-
    
         '''former tenants'''
         # is thomas johnson marked as inactive at end of loop
@@ -237,8 +236,13 @@ class TestDB:
 
         '''all payments'''
         total_payments_ytd = sum([float(row.amount) for row in Payment.select(Payment.amount).namedtuples()])
-        assert total_payments_ytd == 30180.0
+        assert total_payments_ytd == 46686.0
 
+        '''jan, feb, mar payments subtotal'''
+        '''be aware of dates and active status'''
+
+
+        
         breakpoint()
 
     def remainders(self):
