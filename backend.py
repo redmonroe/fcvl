@@ -7,11 +7,14 @@ from collections import namedtuple
 from decimal import ROUND_DOWN, ROUND_UP, Decimal
 from pathlib import Path
 from sqlite3 import IntegrityError
+
 import pandas as pd
 import pytest
 from numpy import nan
 from peewee import *
 from peewee import JOIN, fn
+from recordtype import \
+    recordtype  # i edit the source code here, so requirements won't work if this is ever published, after 3.10, collection.abc change
 
 from build_rs import BuildRS
 from checklist import Checklist
@@ -303,12 +306,6 @@ class PopulateTable:
 
         return dt_obj_first, dt_obj_last
 
-    def get_all_tenants_beg_bal(self):
-        '''returns a list of all tenants and their all time beginning balances'''
-        '''does not consider active status at this point'''
-        detail_beg_bal_all = [(row.tenant_name, row.amount, row.beg_bal_amount) for row in Tenant.select(Tenant.tenant_name, Tenant.beg_bal_amount, Payment.amount).join(Payment).namedtuples()] 
-
-        return detail_beg_bal_all
 
     def check_db_tp_and_ntp(self, grand_total=None, dt_obj_first=None, dt_obj_last=None):
         '''checks if there are any payments in the database for the month'''
@@ -335,6 +332,13 @@ class PopulateTable:
             return different_names
         return []
 
+    def get_all_tenants_beg_bal(self):
+        '''returns a list of all tenants and their all time beginning balances'''
+        '''does not consider active status at this point'''
+        detail_beg_bal_all = [(row.tenant_name, row.amount, row.beg_bal_amount) for row in Tenant.select(Tenant.tenant_name, Tenant.beg_bal_amount, Payment.amount).join(Payment).namedtuples()] 
+
+        return detail_beg_bal_all
+
     def get_beg_bal_sum_by_period(self, style=None, dt_obj_first=None, dt_obj_last=None):
         if style == 'initial':
             sum_beg_bal_all = [float(row.beg_bal_amount) for row in Tenant.select(
@@ -350,6 +354,21 @@ class PopulateTable:
                 join(Payment).namedtuples()]      
 
         return sum(sum_beg_bal_all)
+
+    def get_prior_month_beg_bal(self, dt_obj_first=None, dt_obj_last=None):
+        '''we want 1287, we want detail, we can use cumsum from prior month right? '''
+        pass
+
+    def get_end_bal_by_tenant(self, dt_obj_first=None, dt_obj_last=None):
+        sum_payment_list = self.get_payments_by_tenant_by_period(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
+        end_bal_list = [(rec[0], float(rec[1]) - rec[2]) for rec in sum_payment_list]
+        return end_bal_list
+
+    def get_beg_bal_by_tenant(self):
+        beg_bal_all = [(row.tenant_name, float(row.beg_bal_amount)) for row in Tenant.select(Tenant.tenant_name, Tenant.beg_bal_amount).
+            namedtuples()]
+        
+        return beg_bal_all
 
     def match_tp_db_to_df(self, df=None, dt_obj_first=None, dt_obj_last=None):
         sum_this_month_db = sum([float(row.amount) for row in 
@@ -391,10 +410,14 @@ class PopulateTable:
 
         return charges_detail_by_period 
 
-    def get_end_bal_by_tenant(self, dt_obj_first=None, dt_obj_last=None):
-        sum_payment_list = self.get_payments_by_tenant_by_period(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
-        end_bal_list = [(rec[0], float(rec[1]) - rec[2]) for rec in sum_payment_list]
-        return end_bal_list
+    def get_total_rent_charges_by_month(self, dt_obj_first=None, dt_obj_last=None):
+
+        total_collections = sum([float(row.rent_amount) for row in TenantRent().
+        select(TenantRent.rent_amount).
+        where(TenantRent.rent_date >= dt_obj_first).
+        where(TenantRent.rent_date <= dt_obj_last)])
+
+        return total_collections
 
     def record_type_loader(self, rtype, func1, list1, hash_no):
         '''really nice for loading up the recordtypes used here'''
@@ -405,24 +428,19 @@ class PopulateTable:
 
         return rtype
 
-    def get_beg_bal_by_tenant(self):
-        beg_bal_all = [(row.tenant_name, float(row.beg_bal_amount)) for row in Tenant.select(Tenant.tenant_name, Tenant.beg_bal_amount).
-            namedtuples()]
-
-        return beg_bal_all
 
     def net_position_by_tenant_by_month(self, dt_obj_first=None, dt_obj_last=None):
 
         '''am I trying to a current balance or just a snapshot, how does this play out'''
-        from recordtype import recordtype # i edit the source code here, so requirements won't work if this is every published, after 3.10
 
-        Position = recordtype('Position', 'name alltime_beg_bal payment_total charges_total end_bal start_date end_date', default=0)
+        Position = recordtype('Position', 'name alltime_beg_bal period_beg_bal payment_total charges_total end_bal start_date end_date', default=0)
 
         tenant_list = [name.tenant_name for name in Tenant.select()]
         position_list1 = [Position(name=name, start_date=dt_obj_first, end_date=dt_obj_last) for name in tenant_list]
 
-        beg_bal_all = self.get_beg_bal_by_tenant()
-        position_list1 = self.record_type_loader(position_list1, 'alltime_beg_bal', beg_bal_all, 1)
+        alltime_beg_bal = self.get_beg_bal_by_tenant()
+        # breakpoint()
+        position_list1 = self.record_type_loader(position_list1, 'alltime_beg_bal', alltime_beg_bal, 1)
 
         payment_list_by_period = self.get_payments_by_tenant_by_period(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)        
         position_list1 = self.record_type_loader(position_list1, 'payment_total', payment_list_by_period, 2)
@@ -430,6 +448,9 @@ class PopulateTable:
         charges_detail_by_period = self.get_rent_charges_by_tenant_by_period(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
         position_list1 = self.record_type_loader(position_list1, 'charges_total', charges_detail_by_period, 1)
 
+        last_month_position_list1, lm_cumsum = self.net_position_by_tenant_by_month(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
+
+        breakpoint() # feb is not balancing yet, NEED TO DO MATH AGAINST PERIOD START BAL AND NOT ALLTIME START BALL, CAN i GET RID OF ALLTIME BEG BAL?
         for row in position_list1:
             row.end_bal = row.alltime_beg_bal + row.charges_total - row.payment_total
 
@@ -437,18 +458,9 @@ class PopulateTable:
         for row in position_list1:
             cumsum += row.end_bal
 
-        breakpoint() # feb is not balancing yet, NEED TO DO MATH AGAINST PERIOD START BAL AND NOT ALLTIME START BALL, CAN i GET RID OF ALLTIME BEG BAL?
 
         return position_list1, cumsum
 
-    def get_total_rent_charges_by_month(self, dt_obj_first=None, dt_obj_last=None):
-
-        total_collections = sum([float(row.rent_amount) for row in TenantRent().
-        select(TenantRent.rent_amount).
-        where(TenantRent.rent_date >= dt_obj_first).
-        where(TenantRent.rent_date <= dt_obj_last)])
-
-        return total_collections
 
 class Operation(PopulateTable):
 
