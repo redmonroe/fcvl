@@ -286,9 +286,9 @@ class TestDB:
         payments_jan = [float(row[2]) for row in populate.get_payments_by_tenant_by_period(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)]
         assert sum(payments_jan) == 15205.0
 
-        '''feb jan balances'''
-        tenant_activity_recordtype, cumsum_endbal= populate.net_position_by_tenant_by_month(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
-        assert cumsum_endbal == 2649.0
+        '''feb jan balances: THIS DOES NOT YET REFLECT DAMAGES: 599 FOR MIKE'''
+        tenant_activity_recordtype, cumsum_endbal= populate.net_position_by_tenant_by_month(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last, after_first_month=True)
+        assert cumsum_endbal == 2050.0  # 
 
     def remainders(self):
         # assert len(nt_list) == 64
