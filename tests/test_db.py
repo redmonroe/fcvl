@@ -268,12 +268,9 @@ class TestDB:
 
         '''pick some tenants to check?????'''
 
-        # pprint(sorted(computed_balances))
-        # pprint(sorted(disagg_balances))
-        breakpoint()
-
-        assert x == 14975
-
+        assert tenant_activity_recordtype[0].name == 'woods, leon'
+        assert tenant_activity_recordtype[-1].end_bal == 0.0
+        assert len(tenant_activity_recordtype) == 65
 
 
     def remainders(self):
