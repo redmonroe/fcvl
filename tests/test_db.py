@@ -271,7 +271,7 @@ class TestDB:
         assert tenant_activity_recordtype[-1].end_bal == 0.0
         assert len(tenant_activity_recordtype) == 65
 
-        '''feb: ACTIVE_TENANT_ALL_TIME_START_BAL_SUM = 795? PERIOD_start_bal_sum = 1287, tenant_rent = 15968, payments_made = , end_bal_sum = 1287'''
+        '''feb: ACTIVE_TENANT_ALL_TIME_START_BAL_SUM = 795? PERIOD_start_bal_sum = 1287, tenant_rent = 15968, payments_made = 15205 , end_bal_sum = 2050'''
         test_date = '2022-02'
         dt_obj_first, dt_obj_last = populate.make_first_and_last_dates(date_str=test_date)
 
@@ -289,6 +289,14 @@ class TestDB:
         '''feb jan balances: THIS DOES NOT YET REFLECT DAMAGES: 599 FOR MIKE'''
         tenant_activity_recordtype, cumsum_endbal= populate.net_position_by_tenant_by_month(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last, after_first_month=True)
         assert cumsum_endbal == 2050.0  # 
+
+        '''march: relevant alltime beg bal = , tenant_rent = 15968, payments_made = 15205 , end_bal_sum = 2050'''
+        '''how does this work with thomas johnson??'''
+        '''need to make a decision with actual rent sheet; how do we notate thomas johnson's balance at end of move-out month as'''
+
+        '''how do we handle endbal of tenant that have moved out mid month AND who is still showing up on the sheets? go back to the economic reality'''
+
+
 
     def remainders(self):
         # assert len(nt_list) == 64
