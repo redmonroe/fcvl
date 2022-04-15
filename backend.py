@@ -293,10 +293,7 @@ class PopulateTable:
             tenant.save()
 
             unit_to_deactivate = Unit.get(Unit.tenant == name)
-            # breakpoint()
-
             unit_to_deactivate.delete_instance()
-
 
     '''these should be moved to a QueryX class'''
     def make_first_and_last_dates(self, date_str=None):
@@ -399,8 +396,51 @@ class PopulateTable:
         end_bal_list = [(rec[0], float(rec[1]) - rec[2]) for rec in sum_payment_list]
         return end_bal_list
 
+    def record_type_loader(self, rtype, func1, list1, hash_no):
+        '''really nice for loading up the recordtypes used here'''
+        for rec in rtype:
+            for item in list1:
+                if item[0] == rec.name:
+                    setattr(rec, func1, float(item[hash_no]))
+
+        return rtype
+
+    def get_beg_bal_by_tenant(self):
+        beg_bal_all = [(row.tenant_name, float(row.beg_bal_amount)) for row in Tenant.select(Tenant.tenant_name, Tenant.beg_bal_amount).
+            namedtuples()]
+
+        return beg_bal_all
+
+    def net_position_by_tenant_by_month(self, dt_obj_first=None, dt_obj_last=None):
+
+        '''am I trying to a current balance or just a snapshot, how does this play out'''
+        from recordtype import recordtype # i edit the source code here, so requirements won't work if this is every published, after 3.10
+
+        Position = recordtype('Position', 'name beg_bal payment_total charges_total end_bal', default=0)
+
+        tenant_list = [name.tenant_name for name in Tenant.select()]
+        position_list1 = [Position(name=name) for name in tenant_list]
+
+        beg_bal_all = self.get_beg_bal_by_tenant()
+        position_list1 = self.record_type_loader(position_list1, 'beg_bal', beg_bal_all, 1)
+
+        payment_list_by_period = self.get_payments_by_tenant_by_period(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)        
+        position_list1 = self.record_type_loader(position_list1, 'payment_total', payment_list_by_period, 2)
+
+        charges_detail_by_period = self.get_rent_charges_by_tenant_by_period(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
+        position_list1 = self.record_type_loader(position_list1, 'charges_total', charges_detail_by_period, 1)
+
+        for row in position_list1:
+            row.end_bal = row.beg_bal + row.charges_total - row.payment_total
+
+        cumsum = 0
+        for row in position_list1:
+            cumsum += row.end_bal
+            
+        return position_list1, cumsum
+
     def get_total_rent_charges_by_month(self, dt_obj_first=None, dt_obj_last=None):
-        # breakpoint()
+
         total_collections = sum([float(row.rent_amount) for row in TenantRent().
         select(TenantRent.rent_amount).
         where(TenantRent.rent_date >= dt_obj_first).

@@ -2,6 +2,7 @@ import calendar
 import datetime
 from decimal import ROUND_DOWN, ROUND_UP, Decimal
 from pathlib import Path
+from pprint import pprint
 
 import pytest
 from backend import Payment, PopulateTable, Tenant, Unit, NTPayment, TenantRent, db
@@ -261,10 +262,15 @@ class TestDB:
 
         '''end jan balances'''
         computed_jan_end_bal = start_bal_sum + sum(tenant_rent_total_jan) - sum(payments_jan)
-        breakpoint()
 
-        jan_end_bal_detail = populate.get_end_bal_by_tenant(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
-        jan_end_bal_list = sum([float(row[1]) for row in jan_end_bal_detail])
+        tenant_activity_recordtype, cumsum_endbal= populate.net_position_by_tenant_by_month(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
+        assert cumsum_endbal == 1287.0
+
+        '''pick some tenants to check?????'''
+
+        # pprint(sorted(computed_balances))
+        # pprint(sorted(disagg_balances))
+        breakpoint()
 
         assert x == 14975
 
