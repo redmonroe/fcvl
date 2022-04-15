@@ -266,12 +266,29 @@ class TestDB:
         tenant_activity_recordtype, cumsum_endbal= populate.net_position_by_tenant_by_month(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
         assert cumsum_endbal == 1287.0
 
-        '''pick some tenants to check?????'''
-
+        '''pick some tenants to check'''
         assert tenant_activity_recordtype[0].name == 'woods, leon'
         assert tenant_activity_recordtype[-1].end_bal == 0.0
         assert len(tenant_activity_recordtype) == 65
 
+        '''feb: ACTIVE_TENANT_ALL_TIME_START_BAL_SUM = 795? PERIOD_start_bal_sum = 1287, tenant_rent = 15968, payments_made = , end_bal_sum = 1287'''
+        test_date = '2022-02'
+        dt_obj_first, dt_obj_last = populate.make_first_and_last_dates(date_str=test_date)
+
+        active_tenant_start_bal_sum = Tenant.select(fn.Sum(Tenant.beg_bal_amount).alias('sum')).where(Tenant.active=='True').get().sum
+        assert start_bal_sum == 793.0
+
+        '''charges'''
+        tenant_rent_total_jan = [float(row[1]) for row in populate.get_rent_charges_by_tenant_by_period(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)]
+        assert sum(tenant_rent_total_jan) == 15968.0
+
+        '''payments'''
+        payments_jan = [float(row[2]) for row in populate.get_payments_by_tenant_by_period(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)]
+        assert sum(payments_jan) == 15205.0
+
+        '''feb jan balances'''
+        tenant_activity_recordtype, cumsum_endbal= populate.net_position_by_tenant_by_month(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
+        assert cumsum_endbal == 2649.0
 
     def remainders(self):
         # assert len(nt_list) == 64

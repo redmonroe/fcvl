@@ -437,6 +437,8 @@ class PopulateTable:
         for row in position_list1:
             cumsum += row.end_bal
 
+        breakpoint() # feb is not balancing yet, NEED TO DO MATH AGAINST PERIOD START BAL AND NOT ALLTIME START BALL, CAN i GET RID OF ALLTIME BEG BAL?
+
         return position_list1, cumsum
 
     def get_total_rent_charges_by_month(self, dt_obj_first=None, dt_obj_last=None):
