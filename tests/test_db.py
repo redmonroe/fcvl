@@ -15,8 +15,6 @@ create_tables_list = [Tenant, Unit, Payment, NTPayment, TenantRent]
 
 # target_tenant_load_file = 'rent_roll_01_2022.xls'
 target_bal_load_file = 'beginning_balance_2022.xlsx'
-target_pay_load_file = 'sample_payment_2022.xlsx'
-sleep1 = 0
 path = Config.TEST_RS_PATH
 findex_db = Config.test_findex_db
 findex_tablename = Config.test_findex_name
@@ -32,11 +30,6 @@ init_cutoff_date = '2022-01'
 @pytest.mark.testing_db
 class TestDB:
 
-    test_message = 'hi'
-
-    def test_init(self):
-        assert self.test_message == 'hi'
-
     def test_db(self):
         db.connect()
         db.drop_tables(models=create_tables_list)
@@ -49,19 +42,14 @@ class TestDB:
 
     def test_initial_tenant_load(self):
         '''JANUARY IS DIFFERENT'''
-        '''we know this at least has to be correct'''
-        '''get db state at end of jan to assert'''
 
         findex.build_index_runner()
         records = findex.ventilate_table()
         rent_roll_list = [(item['fn'], item['period'], item['status'], item['path']) for item in records if item['fn'].split('_')[0] == 'rent' and item['status'] == 'processed']
 
-        # try load one month of rent_roll from sheets
         january_rent_roll_path = rent_roll_list[0][3]
 
         assert january_rent_roll_path == '/mnt/c/Users/joewa/Google Drive/fall creek village I/audit 2022/test_rent_sheets_data_sources/rent_roll_01_2022.xls'
-
-        '''DEFINE FUNCTION INIT_LOAD: DO NOT WRAP IT IN TOO MANY FUNC LAYERS'''
 
         nt_list, total_tenant_charges, explicit_move_outs = populate.init_tenant_load(filename=january_rent_roll_path, date='2022-01')
 
@@ -135,8 +123,6 @@ class TestDB:
             if date1 == '2022-01':
                 # check db commited ten payments and ntp against df
                 all_tp, all_ntp = populate.check_db_tp_and_ntp(grand_total=grand_total, dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last) 
-
-                # breakpoint()     
 
                 # get beginning balance by tenant and check for duplicate payments
                 detail_beg_bal_all = populate.get_all_tenants_beg_bal()
@@ -287,11 +273,34 @@ class TestDB:
         assert sum(payments_jan) == 15205.0
 
         '''feb jan balances: THIS DOES NOT YET REFLECT DAMAGES: 599 FOR MIKE'''
-        tenant_activity_recordtype, cumsum_endbal= populate.net_position_by_tenant_by_month(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last, after_first_month=True)
-        assert cumsum_endbal == 2050.0  # 
+        tenant_activity_recordtype, cumsum_endbal= populate.net_position_by_tenant_by_month(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
+        assert cumsum_endbal == 2050.0  
 
-        '''march: relevant alltime beg bal = , tenant_rent = 15968, payments_made = 15205 , end_bal_sum = 2050'''
+        '''march: relevant alltime beg bal = , tenant_rent = 15957, payments_made = 16506, end_bal_sum = 2100 - 599'''
+
+        test_date = '2022-03'
+        dt_obj_first, dt_obj_last = populate.make_first_and_last_dates(date_str=test_date)
+
         '''how does this work with thomas johnson??'''
+        '''so on move-out we just grab what the report says the prorated balance is; we would find a discrepancy on a month-crossing retroactive move-out bc would not be picked up on the sheet'''
+        active_tenant_start_bal_sum = Tenant.select(fn.Sum(Tenant.beg_bal_amount).alias('sum')).where(Tenant.active=='True').get().sum
+        assert active_tenant_start_bal_sum == 795.0
+
+        '''charges'''
+        tenant_rent_total_mar = [float(row[1]) for row in populate.get_rent_charges_by_tenant_by_period(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)]
+        assert sum(tenant_rent_total_mar) == 15972.0
+
+        '''payments'''
+        payments_jan = [float(row[2]) for row in populate.get_payments_by_tenant_by_period(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)]
+        assert sum(payments_jan) == 16506.0
+
+        tenant_activity_recordtype, cumsum_endbal= populate.net_position_by_tenant_by_month(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
+
+        cumsum_check = 2115.0 - 599.0
+
+        # breakpoint()
+
+        assert cumsum_endbal == cumsum_check
         '''need to make a decision with actual rent sheet; how do we notate thomas johnson's balance at end of move-out month as'''
 
         '''how do we handle endbal of tenant that have moved out mid month AND who is still showing up on the sheets? go back to the economic reality'''

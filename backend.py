@@ -431,6 +431,8 @@ class PopulateTable:
         return rtype
 
     def sum_lifetime_tenant_payments(self, dt_obj_last=None):
+        '''ugly workaround hidden in here: yancy double pay fix, prevents real lifetime balance from getting through'''
+
         all_tenant_payments_by_tenant = list(set([(rec.tenant_name, rec.beg_bal_amount, rec.total_payments) for rec in Tenant.select(
         Tenant.tenant_name, 
         Tenant.beg_bal_amount, 
@@ -461,13 +463,12 @@ class PopulateTable:
         tenant_list = [name.tenant_name for name in Tenant.select()]
         position_list1 = [Position(name=name, start_date=dt_obj_first, end_date=dt_obj_last) for name in tenant_list]
 
-        alltime_beg_bal = self.get_beg_bal_by_tenant()
+        alltime_beg_bal = self.get_beg_bal_by_tenant() # ALLTIME STARING BEG BALANCES
 
         position_list1 = self.record_type_loader(position_list1, 'alltime_beg_bal', alltime_beg_bal, 1)
 
         all_tenant_payments_by_tenant = self.sum_lifetime_tenant_payments(dt_obj_last=dt_obj_last)
 
-     
         position_list1 = self.record_type_loader(position_list1, 'payment_total', all_tenant_payments_by_tenant, 2)
 
         all_tenant_charges_by_tenant = self.sum_lifetime_tenant_charges(dt_obj_last=dt_obj_last)
@@ -480,6 +481,11 @@ class PopulateTable:
         cumsum = 0
         for row in position_list1:
             cumsum += row.end_bal
+
+        tenpay_lifetime = sum([row[2] for row in all_tenant_payments_by_tenant])
+        tenchar_lifetime = sum([row[1] for row in all_tenant_charges_by_tenant])
+
+        # breakpoint()
        
         return position_list1, cumsum
 
