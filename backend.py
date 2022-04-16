@@ -95,6 +95,13 @@ class NTPayment(BaseModel):
     genus = CharField(default='other')    
     deposit_id = IntegerField()
 
+class OpCash(BaseModel):
+    date = DateField()
+    rr = CharField()
+    hap = CharField()
+    dep_sum = CharField()
+    dep_detail = CharField()
+
 class QueryHC():
 
     def make_first_and_last_dates(self, date_str=None):
