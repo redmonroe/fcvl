@@ -67,20 +67,17 @@ class ContractRent(BaseModel):
 
 class Damages(BaseModel):
     tenant = ForeignKeyField(Tenant, backref='damage')
-    dam_date = DateField()
     dam_amount = CharField()
+    dam_date = DateField()
     dam_type = CharField()
-    
+
     @staticmethod
-    def find_vacants():
-        all_units = Config.units
-        # get all units
-        query = [unit for unit in Unit.select().namedtuples()]
-        unit_status = [unit.unit_name for unit in Unit.select().namedtuples()]
-        vacant_list = list(set(all_units) - set(unit_status))
-
-        return vacant_list
-
+    def load_damages():
+        damages_2022 = Config.damages_2022
+        for item in damages_2022:
+            for name, packet in item.items():
+                dam = Damages(tenant=name, dam_amount=packet[0], dam_date=packet[1], dam_type=packet[2]) 
+                dam.save()
 
 class Payment(BaseModel):
     tenant = ForeignKeyField(Tenant, backref='payments')
@@ -209,7 +206,6 @@ class QueryHC():
             for item in list1:
                 if item[0] == rec.name:
                     setattr(rec, func1, float(item[hash_no]))
-
         return rtype
 
     def sum_lifetime_tenant_payments(self, dt_obj_last=None):
@@ -230,13 +226,22 @@ class QueryHC():
         where(TenantRent.rent_date <= dt_obj_last).
         join(TenantRent).namedtuples()]
 
+    def sum_lifetime_tenant_damages(self, dt_obj_last=None):
+
+        return [(rec.tenant_name, rec.total_damages) for rec in Tenant.select(
+        Tenant.tenant_name, 
+        Damages.dam_amount,
+        fn.SUM(Damages.dam_amount).over(partition_by=[Tenant.tenant_name]).alias('total_damages')).
+        where(Damages.dam_date <= dt_obj_last).
+        join(Damages).namedtuples()]
+
     def net_position_by_tenant_by_month(self, first_dt=None, last_dt=None, after_first_month=None):
 
         '''heaviest business logic here'''
         '''returns relatively hefty object with everything you'd need to write the report/make the sheets'''
         '''model we are using now is do alltime payments, charges, and alltime beg_bal'''
 
-        Position = recordtype('Position', 'name alltime_beg_bal payment_total charges_total end_bal start_date end_date', default=0)
+        Position = recordtype('Position', 'name alltime_beg_bal payment_total charges_total damages_total end_bal start_date end_date', default=0)
 
         tenant_list = [name.tenant_name for name in Tenant.select()]
         position_list1 = [Position(name=name, start_date=first_dt, end_date=last_dt) for name in tenant_list]
@@ -253,15 +258,15 @@ class QueryHC():
 
         position_list1 = self.record_type_loader(position_list1, 'charges_total', all_tenant_charges_by_tenant, 1)
 
+        all_tenant_damages_by_tenant = self.sum_lifetime_tenant_damages(dt_obj_last=last_dt)
+        position_list1 = self.record_type_loader(position_list1, 'damages_total', all_tenant_damages_by_tenant, 1)
+
         for row in position_list1:
-            row.end_bal = row.alltime_beg_bal + row.charges_total - row.payment_total
+            row.end_bal = row.alltime_beg_bal + row.charges_total + row.damages_total - row.payment_total
 
         cumsum = 0
         for row in position_list1:
             cumsum += row.end_bal
-
-        tenpay_lifetime = sum([row[2] for row in all_tenant_payments_by_tenant])
-        tenchar_lifetime = sum([row[1] for row in all_tenant_charges_by_tenant])
        
         return position_list1, cumsum
 

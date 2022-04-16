@@ -5,13 +5,13 @@ from pathlib import Path
 from pprint import pprint
 
 import pytest
-from backend import Payment, PopulateTable, Tenant, Unit, NTPayment, TenantRent, db
+from backend import Payment, PopulateTable, Tenant, Unit, NTPayment, TenantRent, Damages, db
 from checklist import Checklist
 from config import Config
 from file_indexer import FileIndexer
 from peewee import JOIN, fn
 
-create_tables_list = [Tenant, Unit, Payment, NTPayment, TenantRent]
+create_tables_list = [Damages, Tenant, Unit, Payment, NTPayment, TenantRent]
 
 # target_tenant_load_file = 'rent_roll_01_2022.xls'
 target_bal_load_file = 'beginning_balance_2022.xlsx'
@@ -29,13 +29,15 @@ init_cutoff_date = '2022-01'
 
 @pytest.mark.testing_db
 class TestDB:
+    '''basic idea: db connect > findex.build_index_runner > get_processed > '''
+
 
     def test_db(self):
         db.connect()
         db.drop_tables(models=create_tables_list)
         db.create_tables(create_tables_list)
         assert db.database == '/home/joe/local_dev_projects/fcvl/sqlite/test_pw_db.db'
-        assert sorted(db.get_tables()) == sorted(['tenantrent', 'ntpayment', 'payment', 'tenant', 'unit'])
+        assert sorted(db.get_tables()) == sorted(['damages', 'tenantrent', 'ntpayment', 'payment', 'tenant', 'unit'])
         assert [*db.get_columns(table='payment')[0]._asdict().keys()] == ['name', 'data_type', 'null', 'primary_key', 'table', 'default']
 
         findex.drop_tables()
@@ -51,6 +53,7 @@ class TestDB:
 
         assert january_rent_roll_path == '/mnt/c/Users/joewa/Google Drive/fall creek village I/audit 2022/test_rent_sheets_data_sources/rent_roll_01_2022.xls'
 
+        '''init is almost half of business logic'''
         nt_list, total_tenant_charges, explicit_move_outs = populate.init_tenant_load(filename=january_rent_roll_path, date='2022-01')
 
         # sheet side checks
@@ -61,23 +64,20 @@ class TestDB:
         # db side checks
         assert len(Tenant.select()) == 64
         assert len(TenantRent.select()) == 64
-        unit_list = Unit.select().order_by(Unit.unit_name).namedtuples()
-        unit_list = [name for name in unit_list]
+        unit_list = [name for name in Unit.select().order_by(Unit.unit_name).namedtuples()]
         occupied_unit_count = Unit.select().count()
         assert occupied_unit_count == 64 
+
+        '''test vacants after init tenant load'''
         vacant_units = Unit.find_vacants()
         assert 'PT-201' and 'CD-115' and 'CD-101' in vacant_units
 
-        beg_bal_sum = Tenant.select(fn.Sum(Tenant.beg_bal_amount).alias('sum')).get().sum
-        assert beg_bal_sum == 0
-
-        # now load beginning balances from sheet
+        '''load initial balances at 01012022'''
         dir_items = [item.name for item in path.iterdir()]
         target_balance_file = path.joinpath(target_bal_load_file)
-
         populate.balance_load(filename=target_balance_file)
 
-        # test loaded beginning balances
+        '''test that balances loaded okay'''
         jan_end_bal_sum = Tenant.select(fn.Sum(Tenant.beg_bal_amount).alias('sum')).get().sum
         assert jan_end_bal_sum == 793
 
@@ -181,6 +181,11 @@ class TestDB:
                 assert test_feb[2] == float(Decimal('384.00'))
 
                 end_bal_list_no_dec = populate.get_end_bal_by_tenant(first_dt=first_dt, last_dt=last_dt)
+
+    def test_load_damages(self):
+        Damages.load_damages()
+        assert [row.tenant.tenant_name for row in Damages().select()][0] == 'morris, michael'
+        # breakpoint()
    
     def test_end_of_loop_state(self):
         '''tests after loop is completed'''
@@ -274,7 +279,7 @@ class TestDB:
 
         '''feb jan balances: THIS DOES NOT YET REFLECT DAMAGES: 599 FOR MIKE'''
         tenant_activity_recordtype, cumsum_endbal= populate.net_position_by_tenant_by_month(first_dt=first_dt, last_dt=last_dt)
-        assert cumsum_endbal == 2050.0  
+        assert cumsum_endbal == 2649.0  
 
         '''march: relevant alltime beg bal = , tenant_rent = 15957, payments_made = 16506, end_bal_sum = 2100 - 599'''
 
@@ -296,21 +301,20 @@ class TestDB:
 
         tenant_activity_recordtype, cumsum_endbal= populate.net_position_by_tenant_by_month(first_dt=first_dt, last_dt=last_dt)
 
-        cumsum_check = 2115.0 - 599.0
+        cumsum_check = 2115.0
         
         assert cumsum_endbal == cumsum_check
 
-    def test_load_damages(self):
-        pass
-
+        # test NTPayments
+        # class OpCash
+        # class Operation
         # class SubsidyRent(BaseModel):
         #     pass
 
         # class ContractRent(BaseModel):
         #     pass
 
-        # class Damages(BaseModel):
-        #     pass
+
 
 
 
