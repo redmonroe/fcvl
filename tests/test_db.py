@@ -183,19 +183,23 @@ class TestDB:
 
                 end_bal_list_no_dec = populate.get_end_bal_by_tenant(first_dt=first_dt, last_dt=last_dt)
 
-    def test_load_nt_payments_and_typ(self):
+    def test_load_nt_payments_and_type(self):
         test_date = '2022-01'
         first_dt, last_dt = populate.make_first_and_last_dates(date_str=test_date)
 
         ntp = [item for item in NTPayment.select().where(NTPayment.date_posted <= last_dt).namedtuples()]
         assert ntp[0].amount == '501.71'
         assert ntp[0].payee == 'laundry cd'
+
         test_date = '2022-02'
         first_dt, last_dt = populate.make_first_and_last_dates(date_str=test_date)
 
         ntp = [item for item in NTPayment.select().
         where(NTPayment.date_posted >= first_dt).
         where(NTPayment.date_posted <= last_dt).namedtuples()]
+        assert ntp[0].amount == '700.0'
+        assert ntp[1].payee == 'laundry pt'
+        breakpoint()
 
     def test_load_damages(self):
         Damages.load_damages()
@@ -320,6 +324,7 @@ class TestDB:
         
         assert cumsum_endbal == cumsum_check
 
+    
         # test NTPayments
         # class OpCash
         # class Operation
