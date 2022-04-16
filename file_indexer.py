@@ -1,17 +1,20 @@
-import os
 import json
+import os
+import shutil
+from datetime import datetime
+from pathlib import Path
 from pprint import pprint
-from utils import Utils
-from db_utils import DBUtils
-from pdf import StructDataExtract
+
+import dataset
+import numpy as np
+import pandas as pd
+
 from checklist import Checklist
 from config import Config
-from pathlib import Path
-from datetime import datetime
-import dataset
-import pandas as pd
-import numpy as np
-import shutil
+from db_utils import DBUtils
+from pdf import StructDataExtract
+from utils import Utils
+
 
 class FileIndexer:
 

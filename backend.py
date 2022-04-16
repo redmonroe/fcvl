@@ -66,7 +66,21 @@ class ContractRent(BaseModel):
     pass
 
 class Damages(BaseModel):
-    pass
+    tenant = ForeignKeyField(Tenant, backref='damage')
+    dam_date = DateField()
+    dam_amount = CharField()
+    dam_type = CharField()
+    
+    @staticmethod
+    def find_vacants():
+        all_units = Config.units
+        # get all units
+        query = [unit for unit in Unit.select().namedtuples()]
+        unit_status = [unit.unit_name for unit in Unit.select().namedtuples()]
+        vacant_list = list(set(all_units) - set(unit_status))
+
+        return vacant_list
+
 
 class Payment(BaseModel):
     tenant = ForeignKeyField(Tenant, backref='payments')
@@ -84,7 +98,174 @@ class NTPayment(BaseModel):
     genus = CharField(default='other')    
     deposit_id = IntegerField()
 
-class PopulateTable:
+class QueryHC():
+
+    def make_first_and_last_dates(self, date_str=None):
+        dt_obj = datetime.datetime.strptime(date_str, '%Y-%m')
+        dt_obj_first = dt_obj.replace(day = 1)
+        dt_obj_last = dt_obj.replace(day = calendar.monthrange(dt_obj.year, dt_obj.month)[1])
+
+        return dt_obj_first, dt_obj_last
+
+    def check_db_tp_and_ntp(self, grand_total=None, first_dt=None, last_dt=None):
+        '''checks if there are any payments in the database for the month'''
+        '''contains its own assertion; this is an important part of the process'''
+        all_tp = [float(rec.amount) for rec in Payment.select().
+                where(Payment.date_posted >= first_dt).
+                where(Payment.date_posted <= last_dt)]
+        all_ntp = [float(rec.amount) for rec in NTPayment.select().
+                where(NTPayment.date_posted >= first_dt).
+                where(NTPayment.date_posted <= last_dt)]
+
+        assert sum(all_ntp) + sum(all_tp) == grand_total
+
+        return all_tp, all_ntp
+
+    def check_for_multiple_payments(self, detail_beg_bal_all=None, first_dt=None, last_dt=None):
+        pay_names = [row.tenant for row in Payment().
+                select().
+                where(Payment.date_posted >= first_dt).
+                where(Payment.date_posted <= last_dt).
+                join(Tenant).namedtuples()]
+        if len(pay_names) != len(set(pay_names)):
+            different_names = [name for name in pay_names if pay_names.count(name) > 1]
+            return different_names
+        return []
+
+    def get_all_tenants_beg_bal(self):
+        '''returns a list of all tenants and their all time beginning balances'''
+        '''does not consider active status at this point'''
+        return [(row.tenant_name, row.amount, row.beg_bal_amount) for row in Tenant.select(Tenant.tenant_name, Tenant.beg_bal_amount, Payment.amount).join(Payment).namedtuples()] 
+
+    def get_beg_bal_sum_by_period(self, style=None, first_dt=None, last_dt=None):
+        if style == 'initial':
+            sum_beg_bal_all = [float(row.beg_bal_amount) for row in Tenant.select(
+                Tenant.active, Tenant.beg_bal_amount).
+                where(Tenant.active=='True').
+                namedtuples()]     
+        else:
+            sum_beg_bal_all = [float(row.beg_bal_amount) for row in Tenant.select(
+                Tenant.active, Tenant.beg_bal_amount, Payment.date_posted).
+                where(Payment.date_posted >= first_dt).
+                where(Payment.date_posted <= last_dt).
+                where(Tenant.active=='True').
+                join(Payment).namedtuples()]      
+
+        return sum(sum_beg_bal_all)
+
+    def get_end_bal_by_tenant(self, first_dt=None, last_dt=None):
+        sum_payment_list = self.get_payments_by_tenant_by_period(first_dt=first_dt, last_dt=last_dt)
+        return [(rec[0], float(rec[1]) - rec[2]) for rec in sum_payment_list]
+
+    def get_beg_bal_by_tenant(self):
+        return [(row.tenant_name, float(row.beg_bal_amount)) for row in Tenant.select(Tenant.tenant_name, Tenant.beg_bal_amount).
+            namedtuples()]
+
+    def match_tp_db_to_df(self, df=None, first_dt=None, last_dt=None):
+        sum_this_month_db = sum([float(row.amount) for row in 
+            Payment.select(Payment.amount).
+            where(Payment.date_posted >= first_dt).
+            where(Payment.date_posted <= last_dt)])
+
+        sum_this_month_df = sum(df['amount'].astype(float).tolist())
+        assert sum_this_month_db == sum_this_month_df
+
+        return sum_this_month_db, sum_this_month_df
+
+    def get_payments_by_tenant_by_period(self, first_dt=None, last_dt=None):   
+        '''what happens on a moveout'''
+        '''why do I have to get rid of duplicates here?  THEY SHOULD NOT BE IN DATABASE TO BEGIN WITH'''
+        '''for example, yancy made two payments for 18 and 279 but instead we have two payments in db for 297'''
+        '''I do not want to have to filter duplicates on output'''
+
+        return list(set([(rec.tenant_name, rec.beg_bal_amount, rec.total_payments) for rec in Tenant.select(
+        Tenant.tenant_name, 
+        Tenant.beg_bal_amount, 
+        fn.SUM(Payment.amount).over(partition_by=[Tenant.tenant_name]).alias('total_payments')).
+        where(Payment.date_posted >= first_dt).
+        where(Payment.date_posted <= last_dt).
+        join(Payment).namedtuples()]))
+
+    def get_rent_charges_by_tenant_by_period(self, first_dt=None, last_dt=None):   
+        '''what happens on a moveout'''
+
+        return [(rec.tenant_name, rec.rent_amount) for rec in Tenant.select(
+        Tenant.tenant_name, 
+        TenantRent.rent_amount,
+        fn.SUM(TenantRent.rent_amount).over(partition_by=[Tenant.tenant_name]).alias('total_payments')).
+        where(TenantRent.rent_date >= first_dt).
+        where(TenantRent.rent_date <= last_dt).
+        join(TenantRent).namedtuples()]
+
+    def get_total_rent_charges_by_month(self, first_dt=None, last_dt=None):
+        return sum([float(row.rent_amount) for row in TenantRent().
+        select(TenantRent.rent_amount).
+        where(TenantRent.rent_date >= first_dt).
+        where(TenantRent.rent_date <= last_dt)])
+
+    def record_type_loader(self, rtype, func1, list1, hash_no):
+        '''really nice for loading up the recordtypes used here'''
+        for rec in rtype:
+            for item in list1:
+                if item[0] == rec.name:
+                    setattr(rec, func1, float(item[hash_no]))
+
+        return rtype
+
+    def sum_lifetime_tenant_payments(self, dt_obj_last=None):
+        '''ugly workaround hidden in here: yancy double pay fix, prevents real lifetime balance from getting through'''
+
+        return list(set([(rec.tenant_name, rec.beg_bal_amount, rec.total_payments) for rec in Tenant.select(
+        Tenant.tenant_name, 
+        Tenant.beg_bal_amount, 
+        fn.SUM(Payment.amount).over(partition_by=[Tenant.tenant_name]).alias('total_payments')).
+        where(Payment.date_posted <= dt_obj_last).
+        join(Payment).namedtuples()]))
+
+    def sum_lifetime_tenant_charges(self, dt_obj_last=None):
+        return [(rec.tenant_name, rec.total_charges) for rec in Tenant.select(
+        Tenant.tenant_name, 
+        TenantRent.rent_amount,
+        fn.SUM(TenantRent.rent_amount).over(partition_by=[Tenant.tenant_name]).alias('total_charges')).
+        where(TenantRent.rent_date <= dt_obj_last).
+        join(TenantRent).namedtuples()]
+
+    def net_position_by_tenant_by_month(self, first_dt=None, last_dt=None, after_first_month=None):
+
+        '''heaviest business logic here'''
+        '''returns relatively hefty object with everything you'd need to write the report/make the sheets'''
+        '''model we are using now is do alltime payments, charges, and alltime beg_bal'''
+
+        Position = recordtype('Position', 'name alltime_beg_bal payment_total charges_total end_bal start_date end_date', default=0)
+
+        tenant_list = [name.tenant_name for name in Tenant.select()]
+        position_list1 = [Position(name=name, start_date=first_dt, end_date=last_dt) for name in tenant_list]
+
+        alltime_beg_bal = self.get_beg_bal_by_tenant() # ALLTIME STARING BEG BALANCES
+
+        position_list1 = self.record_type_loader(position_list1, 'alltime_beg_bal', alltime_beg_bal, 1)
+
+        all_tenant_payments_by_tenant = self.sum_lifetime_tenant_payments(dt_obj_last=last_dt)
+
+        position_list1 = self.record_type_loader(position_list1, 'payment_total', all_tenant_payments_by_tenant, 2)
+
+        all_tenant_charges_by_tenant = self.sum_lifetime_tenant_charges(dt_obj_last=last_dt)
+
+        position_list1 = self.record_type_loader(position_list1, 'charges_total', all_tenant_charges_by_tenant, 1)
+
+        for row in position_list1:
+            row.end_bal = row.alltime_beg_bal + row.charges_total - row.payment_total
+
+        cumsum = 0
+        for row in position_list1:
+            cumsum += row.end_bal
+
+        tenpay_lifetime = sum([row[2] for row in all_tenant_payments_by_tenant])
+        tenchar_lifetime = sum([row[1] for row in all_tenant_charges_by_tenant])
+       
+        return position_list1, cumsum
+
+class PopulateTable(QueryHC):
 
     def init_tenant_load(self, filename=None, date=None):
         nt_list, total_tenant_charges, explicit_move_outs = self.init_load_ten_unit_ten_rent(filename=filename, date=date)
@@ -123,7 +304,6 @@ class PopulateTable:
         ''' get rent roll from feb end in nt_list from df'''
 
         period_start_tenant_names = [(name.tenant_name, name.unit_name) for name in Tenant.select(Tenant.tenant_name, Unit.unit_name).where(Tenant.active==True).join(Unit).namedtuples()]
-
         
         fill_item = '0'
         df = pd.read_excel(filename, header=16)
@@ -133,7 +313,6 @@ class PopulateTable:
         total_tenant_charges = float(((nt_list.pop(-1)).rent).replace(',', ''))
 
         period_end_tenant_names = [(row.name, row.unit) for row in self.return_nt_list_with_no_vacants(keyword='vacant', nt_list=nt_list)]
-
 
         computed_mis, computed_mos = self.find_rent_roll_changes_by_comparison(start_set=set(period_start_tenant_names), end_set=set(period_end_tenant_names))
         # breakpoint()
@@ -245,8 +424,7 @@ class PopulateTable:
         return [row for row in nt_list if row.name != keyword]
     
     def grand_total(self, df):
-        grand_total = sum(df['amount'].astype(float).tolist())
-        return grand_total
+        return sum(df['amount'].astype(float).tolist())
 
     def return_and_remove_ntp(self, df, col=None, remove_str=None):
         ntp_item = df.loc[df[col] == remove_str]
@@ -299,195 +477,6 @@ class PopulateTable:
 
             unit_to_deactivate = Unit.get(Unit.tenant == name)
             unit_to_deactivate.delete_instance()
-
-    '''these should be moved to a QueryX class'''
-    def make_first_and_last_dates(self, date_str=None):
-        dt_obj = datetime.datetime.strptime(date_str, '%Y-%m')
-        dt_obj_first = dt_obj.replace(day = 1)
-        dt_obj_last = dt_obj.replace(day = calendar.monthrange(dt_obj.year, dt_obj.month)[1])
-
-        return dt_obj_first, dt_obj_last
-
-
-    def check_db_tp_and_ntp(self, grand_total=None, dt_obj_first=None, dt_obj_last=None):
-        '''checks if there are any payments in the database for the month'''
-        '''contains its own assertion; this is an important part of the process'''
-        all_tp = [float(rec.amount) for rec in Payment.select().
-                where(Payment.date_posted >= dt_obj_first).
-                where(Payment.date_posted <= dt_obj_last)]
-        all_ntp = [float(rec.amount) for rec in NTPayment.select().
-                where(NTPayment.date_posted >= dt_obj_first).
-                where(NTPayment.date_posted <= dt_obj_last)]
-
-        assert sum(all_ntp) + sum(all_tp) == grand_total
-
-        return all_tp, all_ntp
-
-    def check_for_multiple_payments(self, detail_beg_bal_all=None, dt_obj_first=None, dt_obj_last=None):
-        pay_names = [row.tenant for row in Payment().
-                select().
-                where(Payment.date_posted >= dt_obj_first).
-                where(Payment.date_posted <= dt_obj_last).
-                join(Tenant).namedtuples()]
-        if len(pay_names) != len(set(pay_names)):
-            different_names = [name for name in pay_names if pay_names.count(name) > 1]
-            return different_names
-        return []
-
-    def get_all_tenants_beg_bal(self):
-        '''returns a list of all tenants and their all time beginning balances'''
-        '''does not consider active status at this point'''
-        detail_beg_bal_all = [(row.tenant_name, row.amount, row.beg_bal_amount) for row in Tenant.select(Tenant.tenant_name, Tenant.beg_bal_amount, Payment.amount).join(Payment).namedtuples()] 
-
-        return detail_beg_bal_all
-
-    def get_beg_bal_sum_by_period(self, style=None, dt_obj_first=None, dt_obj_last=None):
-        if style == 'initial':
-            sum_beg_bal_all = [float(row.beg_bal_amount) for row in Tenant.select(
-                Tenant.active, Tenant.beg_bal_amount).
-                where(Tenant.active=='True').
-                namedtuples()]     
-        else:
-            sum_beg_bal_all = [float(row.beg_bal_amount) for row in Tenant.select(
-                Tenant.active, Tenant.beg_bal_amount, Payment.date_posted).
-                where(Payment.date_posted >= dt_obj_first).
-                where(Payment.date_posted <= dt_obj_last).
-                where(Tenant.active=='True').
-                join(Payment).namedtuples()]      
-
-        return sum(sum_beg_bal_all)
-
-    def get_prior_month_beg_bal(self, dt_obj_first=None, dt_obj_last=None):
-        '''we want 1287, we want detail, we can use cumsum from prior month right? '''
-        pass
-
-    def get_end_bal_by_tenant(self, dt_obj_first=None, dt_obj_last=None):
-        sum_payment_list = self.get_payments_by_tenant_by_period(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
-        end_bal_list = [(rec[0], float(rec[1]) - rec[2]) for rec in sum_payment_list]
-        return end_bal_list
-
-    def get_beg_bal_by_tenant(self):
-        beg_bal_all = [(row.tenant_name, float(row.beg_bal_amount)) for row in Tenant.select(Tenant.tenant_name, Tenant.beg_bal_amount).
-            namedtuples()]
-        
-        return beg_bal_all
-
-    def match_tp_db_to_df(self, df=None, dt_obj_first=None, dt_obj_last=None):
-        sum_this_month_db = sum([float(row.amount) for row in 
-            Payment.select(Payment.amount).
-            where(Payment.date_posted >= dt_obj_first).
-            where(Payment.date_posted <= dt_obj_last)])
-
-        sum_this_month_df = sum(df['amount'].astype(float).tolist())
-        assert sum_this_month_db == sum_this_month_df
-
-        return sum_this_month_db, sum_this_month_df
-
-    def get_payments_by_tenant_by_period(self, dt_obj_first=None, dt_obj_last=None):   
-        '''what happens on a moveout'''
-        '''why do I have to get rid of duplicates here?  THEY SHOULD NOT BE IN DATABASE TO BEGIN WITH'''
-        '''for example, yancy made two payments for 18 and 279 but instead we have two payments in db for 297'''
-        '''I do not want to have to filter duplicates on output'''
-
-        payment_list_by_period = list(set([(rec.tenant_name, rec.beg_bal_amount, rec.total_payments) for rec in Tenant.select(
-        Tenant.tenant_name, 
-        Tenant.beg_bal_amount, 
-        fn.SUM(Payment.amount).over(partition_by=[Tenant.tenant_name]).alias('total_payments')).
-        where(Payment.date_posted >= dt_obj_first).
-        where(Payment.date_posted <= dt_obj_last).
-        join(Payment).namedtuples()]))
-
-        return payment_list_by_period 
-
-    def get_rent_charges_by_tenant_by_period(self, dt_obj_first=None, dt_obj_last=None):   
-        '''what happens on a moveout'''
-
-        charges_detail_by_period = [(rec.tenant_name, rec.rent_amount) for rec in Tenant.select(
-        Tenant.tenant_name, 
-        TenantRent.rent_amount,
-        fn.SUM(TenantRent.rent_amount).over(partition_by=[Tenant.tenant_name]).alias('total_payments')).
-        where(TenantRent.rent_date >= dt_obj_first).
-        where(TenantRent.rent_date <= dt_obj_last).
-        join(TenantRent).namedtuples()]
-
-        return charges_detail_by_period 
-
-    def get_total_rent_charges_by_month(self, dt_obj_first=None, dt_obj_last=None):
-
-        total_collections = sum([float(row.rent_amount) for row in TenantRent().
-        select(TenantRent.rent_amount).
-        where(TenantRent.rent_date >= dt_obj_first).
-        where(TenantRent.rent_date <= dt_obj_last)])
-
-        return total_collections
-
-    def record_type_loader(self, rtype, func1, list1, hash_no):
-        '''really nice for loading up the recordtypes used here'''
-        for rec in rtype:
-            for item in list1:
-                if item[0] == rec.name:
-                    setattr(rec, func1, float(item[hash_no]))
-
-        return rtype
-
-    def sum_lifetime_tenant_payments(self, dt_obj_last=None):
-        '''ugly workaround hidden in here: yancy double pay fix, prevents real lifetime balance from getting through'''
-
-        all_tenant_payments_by_tenant = list(set([(rec.tenant_name, rec.beg_bal_amount, rec.total_payments) for rec in Tenant.select(
-        Tenant.tenant_name, 
-        Tenant.beg_bal_amount, 
-        fn.SUM(Payment.amount).over(partition_by=[Tenant.tenant_name]).alias('total_payments')).
-        where(Payment.date_posted <= dt_obj_last).
-        join(Payment).namedtuples()]))
-
-        return all_tenant_payments_by_tenant
-
-    def sum_lifetime_tenant_charges(self, dt_obj_last=None):
-        all_tenant_charges_by_tenant = [(rec.tenant_name, rec.total_charges) for rec in Tenant.select(
-        Tenant.tenant_name, 
-        TenantRent.rent_amount,
-        fn.SUM(TenantRent.rent_amount).over(partition_by=[Tenant.tenant_name]).alias('total_charges')).
-        where(TenantRent.rent_date <= dt_obj_last).
-        join(TenantRent).namedtuples()]
-
-        return all_tenant_charges_by_tenant
-
-    def net_position_by_tenant_by_month(self, dt_obj_first=None, dt_obj_last=None, after_first_month=None):
-
-        '''heaviest business logic here'''
-        '''returns relatively hefty object with everything you'd need to write the report/make the sheets'''
-        '''model we are using now is do alltime payments, charges, and alltime beg_bal'''
-
-        Position = recordtype('Position', 'name alltime_beg_bal payment_total charges_total end_bal start_date end_date', default=0)
-
-        tenant_list = [name.tenant_name for name in Tenant.select()]
-        position_list1 = [Position(name=name, start_date=dt_obj_first, end_date=dt_obj_last) for name in tenant_list]
-
-        alltime_beg_bal = self.get_beg_bal_by_tenant() # ALLTIME STARING BEG BALANCES
-
-        position_list1 = self.record_type_loader(position_list1, 'alltime_beg_bal', alltime_beg_bal, 1)
-
-        all_tenant_payments_by_tenant = self.sum_lifetime_tenant_payments(dt_obj_last=dt_obj_last)
-
-        position_list1 = self.record_type_loader(position_list1, 'payment_total', all_tenant_payments_by_tenant, 2)
-
-        all_tenant_charges_by_tenant = self.sum_lifetime_tenant_charges(dt_obj_last=dt_obj_last)
-
-        position_list1 = self.record_type_loader(position_list1, 'charges_total', all_tenant_charges_by_tenant, 1)
-
-        for row in position_list1:
-            row.end_bal = row.alltime_beg_bal + row.charges_total - row.payment_total
-
-        cumsum = 0
-        for row in position_list1:
-            cumsum += row.end_bal
-
-        tenpay_lifetime = sum([row[2] for row in all_tenant_payments_by_tenant])
-        tenchar_lifetime = sum([row[1] for row in all_tenant_charges_by_tenant])
-
-        # breakpoint()
-       
-        return position_list1, cumsum
 
 class Operation(PopulateTable):
 

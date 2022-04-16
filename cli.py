@@ -43,6 +43,7 @@ def timer(func):
 def cli():
     pass
 
+'''
 @click.command()
 @click.option('--mode', required=True)
 # @timer
@@ -116,6 +117,7 @@ def autors(mode=None):
         for item in findex_records:
             print(item['id'], '*', item['fn'], item['period'], item['status'], item['indexed'], item['hap'])
 
+'''
 '''
 @click.command()
 def rent_receipts():

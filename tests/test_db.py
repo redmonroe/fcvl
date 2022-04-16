@@ -91,10 +91,10 @@ class TestDB:
 
         for date, filename in processed_rentr_dates_and_paths:
             cleaned_nt_list, total_tenant_charges, cleaned_mos = populate.after_jan_load(filename=filename, date=date)
-            dt_obj_first, dt_obj_last = populate.make_first_and_last_dates(date_str=date)
+            first_dt, last_dt = populate.make_first_and_last_dates(date_str=date)
 
             if date == '2022-02':
-                total_rent_charges = populate.get_total_rent_charges_by_month(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
+                total_rent_charges = populate.get_total_rent_charges_by_month(first_dt=first_dt, last_dt=last_dt)
                 assert total_rent_charges == 15968.0 
 
                 # get snapshot of vacants @ march end (after greiner mi)
@@ -103,7 +103,7 @@ class TestDB:
 
             if date == '2022-03':
                 # dt_obj_first, dt_obj_last = populate.make_first_and_last_dates(date_str=date)
-                total_rent_charges = populate.get_total_rent_charges_by_month(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
+                total_rent_charges = populate.get_total_rent_charges_by_month(first_dt=first_dt, last_dt=last_dt)
                 assert total_rent_charges == 15972.0 
 
                 vacant_snapshot_loop_end = Unit.find_vacants()
@@ -118,16 +118,16 @@ class TestDB:
         
         for date1, path in processed_dates_and_paths:
             grand_total, ntp, tenant_payment_df = populate.payment_load_full(filename=path)
-            dt_obj_first, dt_obj_last = populate.make_first_and_last_dates(date_str=date1)
+            first_dt, last_dt = populate.make_first_and_last_dates(date_str=date1)
 
             if date1 == '2022-01':
                 # check db commited ten payments and ntp against df
-                all_tp, all_ntp = populate.check_db_tp_and_ntp(grand_total=grand_total, dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last) 
+                all_tp, all_ntp = populate.check_db_tp_and_ntp(grand_total=grand_total, first_dt=first_dt, last_dt=last_dt) 
 
                 # get beginning balance by tenant and check for duplicate payments
                 detail_beg_bal_all = populate.get_all_tenants_beg_bal()
 
-                different_names = populate.check_for_multiple_payments(detail_beg_bal_all=detail_beg_bal_all, dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
+                different_names = populate.check_for_multiple_payments(detail_beg_bal_all=detail_beg_bal_all, first_dt=first_dt, last_dt=last_dt)
 
                 if len(different_names) > 0:
                     detail_one = [row for row in detail_beg_bal_all if row[0] == different_names[0]]
@@ -138,16 +138,16 @@ class TestDB:
                 assert beg_bal_sum_by_period == 795.0
                 # check total tenant payments sum db-side
                 # check total tenant payments from dataframe against what I committed to db
-                tp_sum_by_period_db, tp_sum_by_period_df = populate.match_tp_db_to_df(df=tenant_payment_df, dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
+                tp_sum_by_period_db, tp_sum_by_period_df = populate.match_tp_db_to_df(df=tenant_payment_df, first_dt=first_dt, last_dt=last_dt)
 
                 # sum tenant payments by tenant
-                sum_payment_list = populate.get_payments_by_tenant_by_period(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
+                sum_payment_list = populate.get_payments_by_tenant_by_period(first_dt=first_dt, last_dt=last_dt)
 
                 yancy_jan = [row for row in sum_payment_list if row[0] == 'yancy, claude'][0]
                 assert yancy_jan[2] == float(Decimal('297.00'))
 
                 # check jan ending balances by tenant
-                end_bal_list_no_dec = populate.get_end_bal_by_tenant(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
+                end_bal_list_no_dec = populate.get_end_bal_by_tenant(first_dt=first_dt, last_dt=last_dt)
 
                 tj_row = [row for row in end_bal_list_no_dec if row[0] == 'johnson, thomas'][0]
                 yancy_row = [row for row in end_bal_list_no_dec if row[0] == 'yancy, claude'][0]
@@ -157,14 +157,14 @@ class TestDB:
                 assert jack_row == ('davis, jacki', -211.0)
 
             if date1 == '2022-02':
-                dt_obj_first, dt_obj_last = populate.make_first_and_last_dates(date_str=date1)
-                all_tp, all_ntp = populate.check_db_tp_and_ntp(grand_total=grand_total, dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)           
+                first_dt, last_dt = populate.make_first_and_last_dates(date_str=date1)
+                all_tp, all_ntp = populate.check_db_tp_and_ntp(grand_total=grand_total, first_dt=first_dt, last_dt=last_dt)           
 
-                beg_bal_sum_by_period = populate.get_beg_bal_sum_by_period(style='other', dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
+                beg_bal_sum_by_period = populate.get_beg_bal_sum_by_period(style='other', first_dt=first_dt, last_dt=last_dt)
 
                 detail_beg_bal_all = populate.get_all_tenants_beg_bal()
 
-                different_names = populate.check_for_multiple_payments(detail_beg_bal_all=detail_beg_bal_all, dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
+                different_names = populate.check_for_multiple_payments(detail_beg_bal_all=detail_beg_bal_all, first_dt=first_dt, last_dt=last_dt)
            
                 if len(different_names) > 0:
                     detail_one = [row for row in detail_beg_bal_all if row[0] == different_names[0]]
@@ -173,14 +173,14 @@ class TestDB:
                 beg_bal_sum_by_period = populate.get_beg_bal_sum_by_period(style='initial')
                 assert beg_bal_sum_by_period == 795.0
 
-                tp_sum_by_period_db, tp_sum_by_period_df = populate.match_tp_db_to_df(df=tenant_payment_df, dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
+                tp_sum_by_period_db, tp_sum_by_period_df = populate.match_tp_db_to_df(df=tenant_payment_df, first_dt=first_dt, last_dt=last_dt)
         
-                sum_payment_list = populate.get_payments_by_tenant_by_period(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
+                sum_payment_list = populate.get_payments_by_tenant_by_period(first_dt=first_dt, last_dt=last_dt)
 
                 test_feb = [row for row in sum_payment_list if row[0] == 'coleman, william'][0]
                 assert test_feb[2] == float(Decimal('384.00'))
 
-                end_bal_list_no_dec = populate.get_end_bal_by_tenant(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
+                end_bal_list_no_dec = populate.get_end_bal_by_tenant(first_dt=first_dt, last_dt=last_dt)
    
     def test_end_of_loop_state(self):
         '''tests after loop is completed'''
@@ -234,22 +234,22 @@ class TestDB:
 
         '''jan start bal = 793'''
         test_date = '2022-01'
-        dt_obj_first, dt_obj_last = populate.make_first_and_last_dates(date_str=test_date)
+        first_dt, last_dt = populate.make_first_and_last_dates(date_str=test_date)
 
         start_bal_sum = Tenant.select(fn.Sum(Tenant.beg_bal_amount).alias('sum')).get().sum
         assert start_bal_sum == 793.0
         
-        tenant_rent_total_jan = [float(row[1]) for row in populate.get_rent_charges_by_tenant_by_period(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)]
+        tenant_rent_total_jan = [float(row[1]) for row in populate.get_rent_charges_by_tenant_by_period(first_dt=first_dt, last_dt=last_dt)]
         assert sum(tenant_rent_total_jan) == 15469.0
 
         '''payments'''
-        payments_jan = [float(row[2]) for row in populate.get_payments_by_tenant_by_period(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)]
+        payments_jan = [float(row[2]) for row in populate.get_payments_by_tenant_by_period(first_dt=first_dt, last_dt=last_dt)]
         assert sum(payments_jan) == 14975.0
 
         '''end jan balances'''
         computed_jan_end_bal = start_bal_sum + sum(tenant_rent_total_jan) - sum(payments_jan)
 
-        tenant_activity_recordtype, cumsum_endbal= populate.net_position_by_tenant_by_month(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
+        tenant_activity_recordtype, cumsum_endbal= populate.net_position_by_tenant_by_month(first_dt=first_dt, last_dt=last_dt)
         assert cumsum_endbal == 1287.0
 
         '''pick some tenants to check'''
@@ -259,27 +259,27 @@ class TestDB:
 
         '''feb: ACTIVE_TENANT_ALL_TIME_START_BAL_SUM = 795? PERIOD_start_bal_sum = 1287, tenant_rent = 15968, payments_made = 15205 , end_bal_sum = 2050'''
         test_date = '2022-02'
-        dt_obj_first, dt_obj_last = populate.make_first_and_last_dates(date_str=test_date)
+        first_dt, last_dt = populate.make_first_and_last_dates(date_str=test_date)
 
         active_tenant_start_bal_sum = Tenant.select(fn.Sum(Tenant.beg_bal_amount).alias('sum')).where(Tenant.active=='True').get().sum
         assert start_bal_sum == 793.0
 
         '''charges'''
-        tenant_rent_total_jan = [float(row[1]) for row in populate.get_rent_charges_by_tenant_by_period(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)]
+        tenant_rent_total_jan = [float(row[1]) for row in populate.get_rent_charges_by_tenant_by_period(first_dt=first_dt, last_dt=last_dt)]
         assert sum(tenant_rent_total_jan) == 15968.0
 
         '''payments'''
-        payments_jan = [float(row[2]) for row in populate.get_payments_by_tenant_by_period(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)]
+        payments_jan = [float(row[2]) for row in populate.get_payments_by_tenant_by_period(first_dt=first_dt, last_dt=last_dt)]
         assert sum(payments_jan) == 15205.0
 
         '''feb jan balances: THIS DOES NOT YET REFLECT DAMAGES: 599 FOR MIKE'''
-        tenant_activity_recordtype, cumsum_endbal= populate.net_position_by_tenant_by_month(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
+        tenant_activity_recordtype, cumsum_endbal= populate.net_position_by_tenant_by_month(first_dt=first_dt, last_dt=last_dt)
         assert cumsum_endbal == 2050.0  
 
         '''march: relevant alltime beg bal = , tenant_rent = 15957, payments_made = 16506, end_bal_sum = 2100 - 599'''
 
         test_date = '2022-03'
-        dt_obj_first, dt_obj_last = populate.make_first_and_last_dates(date_str=test_date)
+        first_dt, last_dt = populate.make_first_and_last_dates(date_str=test_date)
 
         '''how does this work with thomas johnson??'''
         '''so on move-out we just grab what the report says the prorated balance is; we would find a discrepancy on a month-crossing retroactive move-out bc would not be picked up on the sheet'''
@@ -287,51 +287,21 @@ class TestDB:
         assert active_tenant_start_bal_sum == 795.0
 
         '''charges'''
-        tenant_rent_total_mar = [float(row[1]) for row in populate.get_rent_charges_by_tenant_by_period(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)]
+        tenant_rent_total_mar = [float(row[1]) for row in populate.get_rent_charges_by_tenant_by_period(first_dt=first_dt, last_dt=last_dt)]
         assert sum(tenant_rent_total_mar) == 15972.0
 
         '''payments'''
-        payments_jan = [float(row[2]) for row in populate.get_payments_by_tenant_by_period(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)]
+        payments_jan = [float(row[2]) for row in populate.get_payments_by_tenant_by_period(first_dt=first_dt, last_dt=last_dt)]
         assert sum(payments_jan) == 16506.0
 
-        tenant_activity_recordtype, cumsum_endbal= populate.net_position_by_tenant_by_month(dt_obj_first=dt_obj_first, dt_obj_last=dt_obj_last)
+        tenant_activity_recordtype, cumsum_endbal= populate.net_position_by_tenant_by_month(first_dt=first_dt, last_dt=last_dt)
 
         cumsum_check = 2115.0 - 599.0
-
-        # breakpoint()
-
+        
         assert cumsum_endbal == cumsum_check
-        '''need to make a decision with actual rent sheet; how do we notate thomas johnson's balance at end of move-out month as'''
 
-        '''how do we handle endbal of tenant that have moved out mid month AND who is still showing up on the sheets? go back to the economic reality'''
-
-
-
-    def remainders(self):
-        # assert len(nt_list) == 64
-        all_rows = [(tow.tenant_name, tow.active, tow.beg_bal_amount, tow.unit_name) for tow in Tenant.select(Tenant.tenant_name, Tenant.active, Tenant.beg_bal_amount, Unit.unit_name).join(Unit).namedtuples()]
-
-        tj_row = [row for row in all_rows if row[0] == 'johnson, thomas'][0]
-        assert tj_row[1] == 'False'
-   
-        ''' this is state of balance at start of jan 2022, so tj should be in it'''
-        sum_beg_bal_all = [row.beg_bal_amount for row in Tenant.select(Tenant.beg_bal_amount).namedtuples()] 
-        summary_total = float(sum(sum_beg_bal_all))
-        assert summary_total == 793.0
-
-        ''' this is state of balance at end of loop(march 2020), so tj should not be in it'''
-        sum_beg_bal_all = [row.beg_bal_amount for row in Tenant.select(Tenant.active, Tenant.beg_bal_amount).where(Tenant.active=='True').namedtuples()] 
-        summary_total = float(sum(sum_beg_bal_all))
-        assert summary_total == 795.0
-                
-
- 
-        # class TenantRent(BaseModel):
-        #     tenant = ForeignKeyField(Tenant, backref='rent')
-        #     unit = ForeignKeyField(Unit, backref='rent')
-        #     rent_amount = DecimalField(default=0.00)
-        #     rent_date = DateField(default='2022-01-01')
-        #     date_code = IntegerField()
+    def test_load_damages(self):
+        pass
 
         # class SubsidyRent(BaseModel):
         #     pass
