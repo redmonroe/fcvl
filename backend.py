@@ -276,6 +276,8 @@ class QueryHC():
 
 class PopulateTable(QueryHC):
 
+    ntp_cases = ['laundry', 'insurance', 'other', 'sd']
+
     def init_tenant_load(self, filename=None, date=None):
         nt_list, total_tenant_charges, explicit_move_outs = self.init_load_ten_unit_ten_rent(filename=filename, date=date)
 
@@ -369,7 +371,7 @@ class PopulateTable(QueryHC):
         df = self.read_excel_payments(path=filename)
         df = self.remove_nan_lines(df=df)
         grand_total = self.grand_total(df=df)
-        tenant_payment_df, ntp_df = self.return_and_remove_ntp(df=df, col='unit', remove_str=0)
+        tenant_payment_df, ntp_df = self.return_and_remove_ntp(df=df, col='unit', remove_str=0, drop_col='description')
 
         ntp_sum = sum(ntp_df['amount'].astype(float).tolist())  # can split up ntp further here
 
@@ -393,32 +395,70 @@ class PopulateTable(QueryHC):
         return grand_total, ntp_sum, tenant_payment_df
 
     def ntp_split(self, ntp_df=None):
-        
-        insert_iter = [{
-            'payee': name.lower(),
-            'amount': amount, 
-            'date_posted': datetime.datetime.strptime(date_posted, '%m/%d/%Y'),  
-            'date_code': date_code, 
-            'genus': genus, 
-            'deposit_id': deposit_id, 
-            } for (deposit_id, genus, name, date_posted, amount, date_code) in ntp_df.values]
+
+        '''4 types that cover 99% of cases:
+            - payments from current tenants
+            - laundry
+            - insurance
+            - sd(if not sure, use other)
+            - other
+            '''
+
+        insert_iter = []
+        for (deposit_id, genus, name, date_posted, amount, date_code, description) in ntp_df.values:
+            for item in description.split(' '):
+                if item in self.ntp_cases:
+                    insert_iter.append({
+                        'payee': description.lower(), 
+                        'amount': amount, 
+                        'date_posted': datetime.datetime.strptime(date_posted, '%m/%d/%Y'),  
+                        'date_code': date_code, 
+                        'genus': description, 
+                        'deposit_id': deposit_id, 
+                        })
+
+        # try: 
+        #     for item in insert_iter:
+        #         if 'laundry' in item['payee'].split(' '):
+        #             item['payee'] = 'laundry'
+        #         elif item['payee'] == 'laundry':
+        #             item['payee'] = 'laundry'
+        #         elif 'insurance' in item['payee'].split(' '):
+        #             item['payee'] = 'insurance'
+        #         elif item['payee'] == 'insurance':
+        #             item['payee'] = 'insurance'
+        #         elif 'security' in item['payee'].split(' '):
+        #             item['payee'] = 'sd'
+        #         elif item['payee'] == 'sd':
+        #             item['payee'] = 'sd'
+        #         elif item['payee'] == 'security deposit':
+        #             item['payee'] = 'sd'
+        #         elif item['payee'] == 'security':
+        #             item['payee'] = 'sd'
+        #         else:
+        #             item['payee'] = 'other'
+        # except Exception as e:
+        #     item['payee'] = 'other'
+        #     print(e)
+        #     breakpoint()
 
         return insert_iter
 
     def read_excel_payments(self, path):
         df = pd.read_excel(path, header=9)
 
-        columns = ['deposit_id', 'unit', 'name', 'date_posted', 'amount', 'date_code']
+        columns = ['deposit_id', 'unit', 'name', 'date_posted', 'amount', 'date_code', 'description']
         
         bde = df['BDEPID'].tolist()
         unit = df['Unit'].tolist()
         name = df['Name'].tolist()
         date = df['Date Posted'].tolist()
         pay = df['Amount'].tolist()
+        description = df['Description'].str.lower().tolist()
         dt_code = [datetime.datetime.strptime(item, '%m/%d/%Y') for item in date if type(item) == str]
         dt_code = [str(datetime.datetime.strftime(item, '%m')) for item in dt_code]
 
-        zipped = zip(bde, unit, name, date, pay, dt_code)
+        zipped = zip(bde, unit, name, date, pay, dt_code, description)
         self.df = pd.DataFrame(zipped, columns=columns)
 
         return self.df
@@ -441,10 +481,12 @@ class PopulateTable(QueryHC):
     def grand_total(self, df):
         return sum(df['amount'].astype(float).tolist())
 
-    def return_and_remove_ntp(self, df, col=None, remove_str=None):
+    def return_and_remove_ntp(self, df, col=None, remove_str=None, drop_col=None):
         ntp_item = df.loc[df[col] == remove_str]
         for item in ntp_item.index:
             df.drop(labels=item, inplace=True)
+
+        df = df.drop(drop_col, axis=1)
         return df, ntp_item
 
     def group_df(self, df, just_return_total=False):

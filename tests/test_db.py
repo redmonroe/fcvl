@@ -189,15 +189,13 @@ class TestDB:
 
         ntp = [item for item in NTPayment.select().where(NTPayment.date_posted <= last_dt).namedtuples()]
         assert ntp[0].amount == '501.71'
-        assert ntp[0].payee == 'laundry income, laundry income'
-
+        assert ntp[0].payee == 'laundry cd'
         test_date = '2022-02'
         first_dt, last_dt = populate.make_first_and_last_dates(date_str=test_date)
 
         ntp = [item for item in NTPayment.select().
         where(NTPayment.date_posted >= first_dt).
         where(NTPayment.date_posted <= last_dt).namedtuples()]
-        breakpoint()
 
     def test_load_damages(self):
         Damages.load_damages()
