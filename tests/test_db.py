@@ -31,7 +31,6 @@ init_cutoff_date = '2022-01'
 class TestDB:
     '''basic idea: db connect > findex.build_index_runner > get_processed > '''
 
-
     def test_db(self):
         db.connect()
         db.drop_tables(models=create_tables_list)
@@ -81,6 +80,7 @@ class TestDB:
         jan_end_bal_sum = Tenant.select(fn.Sum(Tenant.beg_bal_amount).alias('sum')).get().sum
         assert jan_end_bal_sum == 793
 
+
     def test_load_remaining_months_rent(self):
         records = findex.ventilate_table()
         rent_roll_list = [(item['fn'], item['period'], item['status'], item['path']) for item in records if item['fn'].split('_')[0] == 'rent' and item['status'] == 'processed']
@@ -108,6 +108,7 @@ class TestDB:
 
                 vacant_snapshot_loop_end = Unit.find_vacants()
                 assert sorted(vacant_snapshot_loop_end) == sorted(['CD-101', 'CD-115', 'PT-211'])
+    
 
     def test_real_payments(self):
         records = findex.ventilate_table()
@@ -181,6 +182,22 @@ class TestDB:
                 assert test_feb[2] == float(Decimal('384.00'))
 
                 end_bal_list_no_dec = populate.get_end_bal_by_tenant(first_dt=first_dt, last_dt=last_dt)
+
+    def test_load_nt_payments_and_typ(self):
+        test_date = '2022-01'
+        first_dt, last_dt = populate.make_first_and_last_dates(date_str=test_date)
+
+        ntp = [item for item in NTPayment.select().where(NTPayment.date_posted <= last_dt).namedtuples()]
+        assert ntp[0].amount == '501.71'
+        assert ntp[0].payee == 'laundry income, laundry income'
+
+        test_date = '2022-02'
+        first_dt, last_dt = populate.make_first_and_last_dates(date_str=test_date)
+
+        ntp = [item for item in NTPayment.select().
+        where(NTPayment.date_posted >= first_dt).
+        where(NTPayment.date_posted <= last_dt).namedtuples()]
+        breakpoint()
 
     def test_load_damages(self):
         Damages.load_damages()

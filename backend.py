@@ -261,6 +261,7 @@ class QueryHC():
         all_tenant_damages_by_tenant = self.sum_lifetime_tenant_damages(dt_obj_last=last_dt)
         position_list1 = self.record_type_loader(position_list1, 'damages_total', all_tenant_damages_by_tenant, 1)
 
+        '''this is the work right here'''
         for row in position_list1:
             row.end_bal = row.alltime_beg_bal + row.charges_total + row.damages_total - row.payment_total
 
@@ -269,6 +270,9 @@ class QueryHC():
             cumsum += row.end_bal
        
         return position_list1, cumsum
+
+    def nt_payments(self):
+        pass
 
 class PopulateTable(QueryHC):
 
@@ -368,16 +372,9 @@ class PopulateTable(QueryHC):
         tenant_payment_df, ntp_df = self.return_and_remove_ntp(df=df, col='unit', remove_str=0)
 
         ntp_sum = sum(ntp_df['amount'].astype(float).tolist())  # can split up ntp further here
-        
+
         if len(ntp_df) > 0:
-            insert_nt_list = [{
-                'payee': name.lower(),
-                'amount': amount, 
-                'date_posted': datetime.datetime.strptime(date_posted, '%m/%d/%Y'),  
-                'date_code': date_code, 
-                'genus': genus, 
-                'deposit_id': deposit_id, 
-                } for (deposit_id, genus, name, date_posted, amount, date_code) in ntp_df.values]
+            insert_nt_list = self.ntp_split(ntp_df=ntp_df)
             query = NTPayment.insert_many(insert_nt_list)
             query.execute()
         
@@ -394,6 +391,19 @@ class PopulateTable(QueryHC):
         query.execute()
 
         return grand_total, ntp_sum, tenant_payment_df
+
+    def ntp_split(self, ntp_df=None):
+        
+        insert_iter = [{
+            'payee': name.lower(),
+            'amount': amount, 
+            'date_posted': datetime.datetime.strptime(date_posted, '%m/%d/%Y'),  
+            'date_code': date_code, 
+            'genus': genus, 
+            'deposit_id': deposit_id, 
+            } for (deposit_id, genus, name, date_posted, amount, date_code) in ntp_df.values]
+
+        return insert_iter
 
     def read_excel_payments(self, path):
         df = pd.read_excel(path, header=9)
