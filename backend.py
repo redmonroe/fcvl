@@ -430,6 +430,26 @@ class PopulateTable:
 
         return rtype
 
+    def sum_lifetime_tenant_payments(self, dt_obj_last=None):
+        all_tenant_payments_by_tenant = list(set([(rec.tenant_name, rec.beg_bal_amount, rec.total_payments) for rec in Tenant.select(
+        Tenant.tenant_name, 
+        Tenant.beg_bal_amount, 
+        fn.SUM(Payment.amount).over(partition_by=[Tenant.tenant_name]).alias('total_payments')).
+        where(Payment.date_posted <= dt_obj_last).
+        join(Payment).namedtuples()]))
+
+        return all_tenant_payments_by_tenant
+
+    def sum_lifetime_tenant_charges(self, dt_obj_last=None):
+        all_tenant_charges_by_tenant = [(rec.tenant_name, rec.total_charges) for rec in Tenant.select(
+        Tenant.tenant_name, 
+        TenantRent.rent_amount,
+        fn.SUM(TenantRent.rent_amount).over(partition_by=[Tenant.tenant_name]).alias('total_charges')).
+        where(TenantRent.rent_date <= dt_obj_last).
+        join(TenantRent).namedtuples()]
+
+        return all_tenant_charges_by_tenant
+
     def net_position_by_tenant_by_month(self, dt_obj_first=None, dt_obj_last=None, after_first_month=None):
 
         '''heaviest business logic here'''
@@ -445,21 +465,12 @@ class PopulateTable:
 
         position_list1 = self.record_type_loader(position_list1, 'alltime_beg_bal', alltime_beg_bal, 1)
 
-        all_tenant_payments_by_tenant = list(set([(rec.tenant_name, rec.beg_bal_amount, rec.total_payments) for rec in Tenant.select(
-        Tenant.tenant_name, 
-        Tenant.beg_bal_amount, 
-        fn.SUM(Payment.amount).over(partition_by=[Tenant.tenant_name]).alias('total_payments')).
-        where(Payment.date_posted <= dt_obj_last).
-        join(Payment).namedtuples()]))
+        all_tenant_payments_by_tenant = self.sum_lifetime_tenant_payments(dt_obj_last=dt_obj_last)
+
      
         position_list1 = self.record_type_loader(position_list1, 'payment_total', all_tenant_payments_by_tenant, 2)
 
-        all_tenant_charges_by_tenant = [(rec.tenant_name, rec.total_charges) for rec in Tenant.select(
-        Tenant.tenant_name, 
-        TenantRent.rent_amount,
-        fn.SUM(TenantRent.rent_amount).over(partition_by=[Tenant.tenant_name]).alias('total_charges')).
-        where(TenantRent.rent_date <= dt_obj_last).
-        join(TenantRent).namedtuples()]
+        all_tenant_charges_by_tenant = self.sum_lifetime_tenant_charges(dt_obj_last=dt_obj_last)
 
         position_list1 = self.record_type_loader(position_list1, 'charges_total', all_tenant_charges_by_tenant, 1)
 
