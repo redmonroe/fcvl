@@ -20,7 +20,6 @@ from recordtype import \
     recordtype  # i edit the source code here, so requirements won't work if this is ever published, after 3.10, collection.abc change
 
 from build_rs import BuildRS
-from checklist import Checklist
 from config import Config
 from file_indexer import FileIndexer
 
@@ -564,14 +563,10 @@ class Operation(PopulateTable):
     path = Config.TEST_RS_PATH
     findex_db = Config.test_findex_db
     findex_tablename = Config.test_findex_name
-    checkl_db = Config. test_checklist_db 
-    checkl_tablename = Config.test_checklist_name
     populate = PopulateTable()
     tenant = Tenant()
     unit = Unit()
-    checkl = Checklist(checkl_db, checkl_tablename)
-    findex = FileIndexer(path=path, db=findex_db, table=findex_tablename, checklist_obj=checkl)
-    init_cutoff_date = '2022-01'
+    findex = FileIndexer(path=path, db=findex_db, table=findex_tablename)
 
     def run(self):
         db.connect()

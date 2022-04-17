@@ -6,26 +6,20 @@ from pprint import pprint
 
 import pytest
 from backend import Payment, PopulateTable, Tenant, Unit, NTPayment, TenantRent, Damages, OpCash, OpCashDetail, db
-from checklist import Checklist
 from config import Config
 from file_indexer import FileIndexer
 from peewee import JOIN, fn
 
 create_tables_list = [OpCash, OpCashDetail, Damages, Tenant, Unit, Payment, NTPayment, TenantRent]
 
-# target_tenant_load_file = 'rent_roll_01_2022.xls'
 target_bal_load_file = 'beginning_balance_2022.xlsx'
 path = Config.TEST_RS_PATH
 findex_db = Config.test_findex_db
 findex_tablename = Config.test_findex_name
-checkl_db = Config. test_checklist_db 
-checkl_tablename = Config.test_checklist_name
 populate = PopulateTable()
 tenant = Tenant()
 unit = Unit()
-checkl = Checklist(checkl_db, checkl_tablename)
-findex = FileIndexer(path=path, db=findex_db, table=findex_tablename, checklist_obj=checkl)
-init_cutoff_date = '2022-01'
+findex = FileIndexer(path=path, db=findex_db, table=findex_tablename)
 
 @pytest.mark.testing_db
 class TestDB:

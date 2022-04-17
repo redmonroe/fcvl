@@ -5,6 +5,9 @@ import pandas as pd
 from datetime import datetime
 from dateutil.parser import parse
 
+
+'''THIS IS MARKED FOR REMOVAL'''
+
 class Checklist:
 
     def __init__(self, db, tablename):

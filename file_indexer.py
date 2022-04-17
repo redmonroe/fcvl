@@ -9,7 +9,6 @@ import dataset
 import numpy as np
 import pandas as pd
 
-from checklist import Checklist
 from config import Config
 from db_utils import DBUtils
 from pdf import StructDataExtract
@@ -18,7 +17,7 @@ from utils import Utils
 
 class FileIndexer:
 
-    def __init__(self, checklist_obj=None, path=None, discard_pile=None, db=None, mode=None, table=None):
+    def __init__(self, path=None, discard_pile=None, db=None, mode=None, table=None):
         
         self.mode = mode
         self.path = path
@@ -33,7 +32,6 @@ class FileIndexer:
         self.check_tables = None
         self.processed_files = []
         self.pdf = StructDataExtract()
-        self.checklist = checklist_obj
         self.hap_list = []
         self.rr_list = []
         self.dep_list = []
@@ -178,7 +176,6 @@ class FileIndexer:
             self.write_deplist_to_db(hap_iter_one_month, rr_iter_one_month, dep_iter_one_month, deposit_and_date_iter_one_month, stmt_date)
             
             self.processed_files.append((op_cash_stmt_path.name, ''.join(stmt_date.split(' '))))
-            self.checklist.check_opcash(date=stmt_date)  ## I dont like this being stuck here
 
         return self.processed_files
 

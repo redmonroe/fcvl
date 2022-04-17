@@ -45,15 +45,15 @@ build_tablename = Config.test_build_name
 service = oauth(Config.my_scopes, 'sheet', mode='testing')
 calls = GoogleApiCalls()
 checklist = Checklist(db=cl_test_db, tablename=cl_test_tn)
-findex = FileIndexer(path=path, discard_pile=discard_pile, db=findex_test_db, table=Config.test_findex_name, checklist_obj=checklist)
+findex = FileIndexer(path=path, discard_pile=discard_pile, db=findex_test_db, table=Config.test_findex_name)
 ms = MonthSheet(full_sheet=test_workbook, path=path, mode='testing', sleep=sleep1, test_service=service)
-ys = YearSheet(full_sheet=test_workbook, mode='testing', checklist=checklist, test_service=service, sleep=sleep1)
+ys = YearSheet(full_sheet=test_workbook, mode='testing', test_service=service, sleep=sleep1)
 
 error_codes = 429
 # invokce a test func marked @pytest.mark.production with pytest -v -m production
 # invoke test class with: pytest -q -m testing
 
-@pytest.mark.testing_rs
+@pytest.mark.skip
 class TestProduction:
 
     test_message = 'hi'
