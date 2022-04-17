@@ -329,10 +329,15 @@ class TestOpcash:
         records = findex.ventilate_table()
         file_list = [(item['fn'], item['period'], item['status'], item['path'], item['hap'], item['rr'], item['depsum'], item['dep_list']) for item in records if item['fn'].split('_')[1] == 'cash' and item['status'] == 'processed']
 
-        output = populate.transfer_opcash_to_db(file_list=file_list)
+        populate.transfer_opcash_to_db(file_list=file_list)
+
+        test_date = '2022-01'
+        first_dt, last_dt = populate.make_first_and_last_dates(date_str=test_date)
+
+        iter1 = populate.get_opcash_by_period(first_dt=first_dt, last_dt=last_dt)
+
+        iter2 = populate.get_opcashdetail_by_stmt(stmt_key=iter1[0][0])
         
-        
-        print('hi')
         breakpoint()
 
         # class OpCash

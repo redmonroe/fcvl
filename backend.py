@@ -1,5 +1,6 @@
 import calendar
 import datetime
+import json
 import logging
 import math
 import os
@@ -96,7 +97,7 @@ class OpCash(BaseModel):
 
 class OpCashDetail(BaseModel):
     stmt_key = ForeignKeyField(OpCash, backref='detail')
-    date = DateField()
+    date1 = DateField()
     amount = CharField(default='0')
 
 class NTPayment(BaseModel):
@@ -170,6 +171,14 @@ class QueryHC():
         return [(row.tenant_name, float(row.beg_bal_amount)) for row in Tenant.select(Tenant.tenant_name, Tenant.beg_bal_amount).
             namedtuples()]
 
+    def get_opcash_by_period(self, first_dt=None, last_dt=None):
+        return [(row.stmt_key, row.date, row.rr, row.hap, row.dep_sum) for row in OpCash.select(OpCash.stmt_key, OpCash.date, OpCash.rr, OpCash.hap, OpCash.dep_sum).
+        where(OpCash.date >= first_dt).
+        where(OpCash.date <= last_dt).namedtuples()]
+
+    def get_opcashdetail_by_stmt(self, stmt_key=None):
+        return [row for row in OpCashDetail.select().join(OpCash).where(OpCashDetail.stmt_key == stmt_key).namedtuples()]
+
     def match_tp_db_to_df(self, df=None, first_dt=None, last_dt=None):
         sum_this_month_db = sum([float(row.amount) for row in 
             Payment.select(Payment.amount).
@@ -197,7 +206,6 @@ class QueryHC():
 
     def get_rent_charges_by_tenant_by_period(self, first_dt=None, last_dt=None):   
         '''what happens on a moveout'''
-
         return [(rec.tenant_name, rec.rent_amount) for rec in Tenant.select(
         Tenant.tenant_name, 
         TenantRent.rent_amount,
@@ -222,7 +230,6 @@ class QueryHC():
 
     def sum_lifetime_tenant_payments(self, dt_obj_last=None):
         '''ugly workaround hidden in here: yancy double pay fix, prevents real lifetime balance from getting through'''
-
         return list(set([(rec.tenant_name, rec.beg_bal_amount, rec.total_payments) for rec in Tenant.select(
         Tenant.tenant_name, 
         Tenant.beg_bal_amount, 
@@ -239,7 +246,6 @@ class QueryHC():
         join(TenantRent).namedtuples()]
 
     def sum_lifetime_tenant_damages(self, dt_obj_last=None):
-
         return [(rec.tenant_name, rec.total_damages) for rec in Tenant.select(
         Tenant.tenant_name, 
         Damages.dam_amount,
@@ -248,7 +254,6 @@ class QueryHC():
         join(Damages).namedtuples()]
 
     def net_position_by_tenant_by_month(self, first_dt=None, last_dt=None, after_first_month=None):
-
         '''heaviest business logic here'''
         '''returns relatively hefty object with everything you'd need to write the report/make the sheets'''
         '''model we are using now is do alltime payments, charges, and alltime beg_bal'''
@@ -318,7 +323,6 @@ class PopulateTable(QueryHC):
         return nt_list, total_tenant_charges, explicit_move_outs
 
     def after_jan_load(self, filename=None, date=None):
-
         ''' order matters'''
         ''' get tenants from jan end/feb start'''
         ''' get rent roll from feb end in nt_list from df'''
@@ -545,16 +549,13 @@ class PopulateTable(QueryHC):
             unit_to_deactivate.delete_instance()
 
     def transfer_opcash_to_db(self, file_list=None):
-        import json
         for item in file_list:
             oc = OpCash.create(stmt_key=item[0], date=datetime.datetime.strptime(item[1], '%Y-%m'), rr=item[5], hap=item[4], dep_sum=item[6])
             oc.save()
 
             for lst in json.loads(item[7])[0]:
-                ocd = OpCashDetail.create(stmt_key=item[0], date=datetime.datetime.strptime(lst[0], '%m/%d/%Y'), amount=lst[1])
+                ocd = OpCashDetail.create(stmt_key=item[0], date1=datetime.datetime.strptime(lst[0], '%m/%d/%Y'), amount=lst[1])
                 ocd.save()
-                # breakpoint()
-
 
 class Operation(PopulateTable):
 
