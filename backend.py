@@ -87,6 +87,18 @@ class Payment(BaseModel):
     unit = CharField()
     deposit_id = IntegerField()
 
+class OpCash(BaseModel):
+    stmt_key = CharField(primary_key=True, unique=True)
+    date = DateField()
+    rr = CharField(default='0')
+    hap = CharField(default='0')
+    dep_sum = CharField(default='0')
+
+class OpCashDetail(BaseModel):
+    stmt_key = ForeignKeyField(OpCash, backref='detail')
+    date = DateField()
+    amount = CharField(default='0')
+
 class NTPayment(BaseModel):
     payee = CharField()
     amount = CharField()
@@ -95,12 +107,6 @@ class NTPayment(BaseModel):
     genus = CharField(default='other')    
     deposit_id = IntegerField()
 
-class OpCash(BaseModel):
-    date = DateField()
-    rr = CharField()
-    hap = CharField()
-    dep_sum = CharField()
-    dep_detail = CharField()
 
 class QueryHC():
 
@@ -277,9 +283,6 @@ class QueryHC():
             cumsum += row.end_bal
        
         return position_list1, cumsum
-
-    def nt_payments(self):
-        pass
 
 class PopulateTable(QueryHC):
 
@@ -541,6 +544,12 @@ class PopulateTable(QueryHC):
 
             unit_to_deactivate = Unit.get(Unit.tenant == name)
             unit_to_deactivate.delete_instance()
+
+    def transfer_opcash_to_db(self, file_list=None):
+        for item in file_list:
+            oc = OCash.create(date=datetime.datetime.strptime(item[1], '%Y-%m'), rr=item[5], hap=item[4], dep_sum=item[6])
+            oc.save()
+            breakpoint()
 
 class Operation(PopulateTable):
 

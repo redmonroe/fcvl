@@ -5,13 +5,13 @@ from pathlib import Path
 from pprint import pprint
 
 import pytest
-from backend import Payment, PopulateTable, Tenant, Unit, NTPayment, TenantRent, Damages, db
+from backend import Payment, PopulateTable, Tenant, Unit, NTPayment, TenantRent, Damages, OCash, db
 from checklist import Checklist
 from config import Config
 from file_indexer import FileIndexer
 from peewee import JOIN, fn
 
-create_tables_list = [Damages, Tenant, Unit, Payment, NTPayment, TenantRent]
+create_tables_list = [OCash, Damages, Tenant, Unit, Payment, NTPayment, TenantRent]
 
 # target_tenant_load_file = 'rent_roll_01_2022.xls'
 target_bal_load_file = 'beginning_balance_2022.xlsx'
@@ -36,7 +36,7 @@ class TestDB:
         db.drop_tables(models=create_tables_list)
         db.create_tables(create_tables_list)
         assert db.database == '/home/joe/local_dev_projects/fcvl/sqlite/test_pw_db.db'
-        assert sorted(db.get_tables()) == sorted(['damages', 'tenantrent', 'ntpayment', 'payment', 'tenant', 'unit'])
+        assert sorted(db.get_tables()) == sorted(['ocash', 'damages', 'tenantrent', 'ntpayment', 'payment', 'tenant', 'unit'])
         assert [*db.get_columns(table='payment')[0]._asdict().keys()] == ['name', 'data_type', 'null', 'primary_key', 'table', 'default']
 
         findex.drop_tables()
@@ -199,12 +199,10 @@ class TestDB:
         where(NTPayment.date_posted <= last_dt).namedtuples()]
         assert ntp[0].amount == '700.0'
         assert ntp[1].payee == 'laundry pt'
-        breakpoint()
 
     def test_load_damages(self):
         Damages.load_damages()
         assert [row.tenant.tenant_name for row in Damages().select()][0] == 'morris, michael'
-        # breakpoint()
    
     def test_end_of_loop_state(self):
         '''tests after loop is completed'''
@@ -324,8 +322,19 @@ class TestDB:
         
         assert cumsum_endbal == cumsum_check
 
-    
-        # test NTPayments
+@pytest.mark.testing_db
+class TestOpcash:
+
+    def test_opcash_load(self):
+        records = findex.ventilate_table()
+        file_list = [(item['fn'], item['period'], item['status'], item['path'], item['hap'], item['rr'], item['depsum'], item['dep_list']) for item in records if item['fn'].split('_')[1] == 'cash' and item['status'] == 'processed']
+
+        output = populate.transfer_opcash_to_db(file_list=file_list)
+        
+        
+        print('hi')
+        breakpoint()
+
         # class OpCash
         # class Operation
         # class SubsidyRent(BaseModel):
