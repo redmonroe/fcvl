@@ -551,7 +551,7 @@ class PopulateTable(QueryHC):
             oc.save()
 
             for lst in json.loads(item[7])[0]:
-                ocd = OpCashDetail.create(stmt_key=item[0], date=datetime.datetime.strptime(lst[0], '%m/%d'), amount=lst[1])
+                ocd = OpCashDetail.create(stmt_key=item[0], date=datetime.datetime.strptime(lst[0], '%m/%d/%Y'), amount=lst[1])
                 ocd.save()
                 # breakpoint()
 

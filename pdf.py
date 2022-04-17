@@ -200,18 +200,21 @@ class StructDataExtract:
         line = [line for count, line in line]
         deposit_lines = [line.split(' ') for line in line]
         for hap_line in deposit_lines:
+            stmt_date = self.get_stmt_date(index)
+            stmt_year = stmt_date[-4:]
             target = self.get_cleaned_target_line(hap_line)
             target_date = self.get_date_from_line(hap_line)
+            target_date = target_date + '/' + stmt_year
+
             date_list.append(target_date)
             line_list.append(target[0])
-            stmt_date = self.get_stmt_date(index)
 
         line_list.pop(0)
         date_list.pop(0)
         combined_list = list(zip(date_list, line_list))
         if style =='dep_detail':
             self.deposits_list = []
-            self.deposits_list.append({stmt_date: combined_list}) 
+            self.deposits_list.append({stmt_date: combined_list})
             return self.deposits_list
         return stmt_date, sum(line_list)
 
