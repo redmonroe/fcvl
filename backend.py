@@ -107,7 +107,6 @@ class NTPayment(BaseModel):
     genus = CharField(default='other')    
     deposit_id = IntegerField()
 
-
 class QueryHC():
 
     def make_first_and_last_dates(self, date_str=None):
@@ -546,10 +545,16 @@ class PopulateTable(QueryHC):
             unit_to_deactivate.delete_instance()
 
     def transfer_opcash_to_db(self, file_list=None):
+        import json
         for item in file_list:
-            oc = OCash.create(date=datetime.datetime.strptime(item[1], '%Y-%m'), rr=item[5], hap=item[4], dep_sum=item[6])
+            oc = OpCash.create(stmt_key=item[0], date=datetime.datetime.strptime(item[1], '%Y-%m'), rr=item[5], hap=item[4], dep_sum=item[6])
             oc.save()
-            breakpoint()
+
+            for lst in json.loads(item[7])[0]:
+                ocd = OpCashDetail.create(stmt_key=item[0], date=datetime.datetime.strptime(lst[0], '%m/%d'), amount=lst[1])
+                ocd.save()
+                # breakpoint()
+
 
 class Operation(PopulateTable):
 
