@@ -7,6 +7,7 @@ from db_utils import DBUtils
 from google_api_calls_abstract import GoogleApiCalls
 from auth_work import oauth
 from file_indexer import FileIndexer
+from records import record
 from checklist import Checklist
 from setup_year import YearSheet
 from setup_month import MonthSheet
@@ -14,8 +15,8 @@ import dataset
 import pandas as pd
 from google_api_calls_abstract import GoogleApiCalls
 
-class BuildRS(MonthSheet):
-    def __init__(self, sleep, full_sheet=None, path=None, mode=None, discard_pile=None, db=None, rs_tablename=None, findex_table=None, findex_obj=None, checklist_obj=None, mformat_obj=None, test_service=None, checklist=None, findex_db=None, mformat=None):
+class BuildRS(MonthSheet, FileIndexer):
+    def __init__(self, sleep=None, full_sheet=None, path=None, mode=None, discard_pile=None, db=None, rs_tablename=None, findex_table=None, findex_obj=None, checklist_obj=None, mformat_obj=None, test_service=None, checklist=None, findex_db=None, mformat=None):
         if mode == 'testing':
             self.db = Config.test_build_db
             self.mode = 'testing'
@@ -27,7 +28,7 @@ class BuildRS(MonthSheet):
             self.mformat = mformat_obj
             self.calls = GoogleApiCalls()
             self.sleep = sleep
-        elif mode == 'dev':
+        else:
             self.db = db
             self.full_sheet = full_sheet
             self.service = oauth(my_scopes, 'sheet')
@@ -37,6 +38,7 @@ class BuildRS(MonthSheet):
             self.tablename = rs_tablename 
             self.calls = GoogleApiCalls() 
             self.sleep = sleep
+            self.path = path
 
         self.wrange_pay = '!K2:K68'
         self.wrange_ntp = '!K71:K71'
@@ -53,6 +55,15 @@ class BuildRS(MonthSheet):
         self.good_dep_list = []
         self.good_hap_list = []
         self.good_dep_detail_list = []
+
+    def __repr__(self):
+        return f'BuildRS object path: {self.file_input_path} write sheet: {self.full_sheet} service:{self.service}'
+    
+    @record
+    def new_auto_build(self):
+        print('new_auto_build')
+        print('ignore checklist and automation; yagni')
+        self.build_index_runner()
 
     def automatic_build(self, checklist_mode=None, key=None):
         '''this is the hook into the program for the checklist routine'''

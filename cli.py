@@ -4,6 +4,7 @@ import pytest
 from receipts import RentReceipts
 from db_utils import pg_dump_one
 from checklist import Checklist
+from records import record
 from setup_month import MonthSheet
 from setup_year import YearSheet
 from build_rs import BuildRS
@@ -43,6 +44,13 @@ def timer(func):
 def cli():
     pass
 
+@click.command()
+@record
+def autors():
+    print('hi')
+    dev_path = Config.DEV_RS_PATH
+    build = BuildRS(path=dev_path)
+    build.new_auto_build()
 '''
 @click.command()
 @click.option('--mode', required=True)
@@ -53,7 +61,6 @@ def autors(mode=None):
     
     sleep1 = 8
     dev_full_sheet = Config.dev_rs
-    dev_path = Config.DEV_RS_PATH
     dev_discard_pile = Config.DEV_MOVE_PATH # is this used?  
 
     dev_findex_db = Config.findex_dev_db
@@ -70,11 +77,15 @@ def autors(mode=None):
     prod_rs_db = Config.test_build_db
     prod_rs_tablename = 'build_dev'
 
-    checklist = Checklist(db=dev_cl_db, tablename=dev_cl_tablename)#
     findex = FileIndexer(checklist, path=dev_path, discard_pile=dev_discard_pile, db=dev_findex_db, table=dev_findex_tablename)
     mformat = MonthSheet(full_sheet=dev_full_sheet, path=dev_path, sleep=sleep)
 
     build = BuildRS(sleep1, full_sheet=dev_full_sheet, path=dev_path, mode='dev', db=dev_build_db, rs_tablename=dev_build_tablename, sleep=sleep, checklist=checklist, findex_db=dev_findex_db, findex_table=dev_findex_tablename, findex_obj=findex, mformat=mformat)    
+    
+    """
+    NEED TO KEEP CHECKLIST IN ORDER TO DROP THAT TABLE
+    """
+
 
     breakpoint()
 

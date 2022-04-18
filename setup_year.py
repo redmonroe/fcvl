@@ -1,7 +1,6 @@
 from config import Config, my_scopes
 from auth_work import oauth
 from utils import Utils
-from checklist import Checklist
 from db_utils import DBUtils
 from google_api_calls_abstract import GoogleApiCalls
 import pathlib
@@ -40,7 +39,7 @@ class YearSheet:
     grand_total = ["GRAND TOTAL"]
     
 
-    def __init__(self, full_sheet=None, month_range=None, mode=None, test_service=None, checklist=None, sleep=None):
+    def __init__(self, full_sheet=None, month_range=None, mode=None, test_service=None, sleep=None):
         self.test_message = 'hi_from_year_sheets!'
         self.full_sheet = full_sheet
         self.calls = GoogleApiCalls()
@@ -50,13 +49,11 @@ class YearSheet:
             self.shmonths = None
             self.service = test_service
             # self.shmonths = ['jan', 'feb'] # list of months generated programmatically
-            self.checklist = checklist 
         else:
             self.service = oauth(my_scopes, 'sheet')
             self.full_sheet = full_sheet
             self.all_shmonths = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
             self.shmonths = month_range
-            self.checklist = checklist
             self.sleep = sleep
         
         self.base_month = 'base'
@@ -118,21 +115,7 @@ class YearSheet:
         for title, id1 in titles_dict.items():
             if title == 'base 2022':
                 self.source_id = id1      
-
-        checklist = self.get_checklist()
-        self.update_checklist(checklist, sheet_names)
         return sheet_names
-
-    def update_checklist(self, checklist, sheet_names):
-        insert_index = 2
-        for name in sheet_names:
-            insert_index += 1
-            mdate, ydate = name.split(' ')
-            self.calls.api_duplicate_sheet(self.service, self.full_sheet, source_id=self.source_id, insert_index=insert_index, title=name)
-            for item in checklist:
-                if item['month'] == mdate:
-                    data = dict(id=item['id'], rs_exist=True, yfor=True)
-                    checklist.update(data, ['id'])
 
     def formatting_runner(self):
 
@@ -215,37 +198,4 @@ class YearSheet:
                     G_SHEETS_PREVIOUS_BALANCE = [f"='{prev_month}'!L2"]
                     self.calls.write_formula_column(self.service, self.full_sheet, G_SHEETS_PREVIOUS_BALANCE, f'{current_month}!D2:D2')
 
-    def get_checklist(self):
-        checklist = self.checklist.get_checklist()
-        return checklist
-
-
-'''
-def test_func():
-
-    calls = GoogleApiCalls()
-
-    full_sheet = Config.TEST_RS
-    service = oauth(my_scopes, 'sheet')
-
-    titles_dict = Utils.get_existing_sheets(service, full_sheet)
-
-    titles_dict = {name:id2 for name, id2 in titles_dict.items() if name != 'intake'}
-
-    titles_list1 = list(titles_dict)
-    titles_list1 = titles_list1[1:]
-
-    actual_titles_list = list(titles_dict)
-
-    prev_bal_dict = dict(zip(actual_titles_list, titles_list1))
-
-    # self.prev_bal_dict = prev_bal_dict        
-        
-        
-                
-                # G_SHEETS_PREVIOUS_BALANCE = [f"='{prev_month}'!L2"]
-
-test_func()
-
-'''
 

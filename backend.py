@@ -22,6 +22,7 @@ from recordtype import \
 from build_rs import BuildRS
 from config import Config
 from file_indexer import FileIndexer
+from records import record
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 

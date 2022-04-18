@@ -9,6 +9,7 @@ from backend import Payment, PopulateTable, Tenant, Unit, NTPayment, TenantRent,
 from config import Config
 from file_indexer import FileIndexer
 from peewee import JOIN, fn
+from records import record
 
 create_tables_list = [OpCash, OpCashDetail, Damages, Tenant, Unit, Payment, NTPayment, TenantRent]
 
@@ -35,6 +36,7 @@ class TestDB:
 
         findex.drop_tables()
 
+    @record
     def test_initial_tenant_load(self):
         '''JANUARY IS DIFFERENT'''
 

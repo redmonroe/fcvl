@@ -16,7 +16,7 @@ from setup_month import MonthSheet
 from file_indexer import FileIndexer
 from build_rs import BuildRS
 from checklist import Checklist
-from records import RecordHandler
+
 from google_api_calls_abstract import GoogleApiCalls
 from googleapiclient.errors import HttpError
 from errors import retry_google_api
