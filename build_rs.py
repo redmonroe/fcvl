@@ -1,44 +1,49 @@
+import json
 import time
 from calendar import month_name
-import json
 from datetime import datetime
-from config import Config, my_scopes
-from db_utils import DBUtils
-from google_api_calls_abstract import GoogleApiCalls
-from auth_work import oauth
-from file_indexer import FileIndexer
-from records import record
-from checklist import Checklist
-from setup_year import YearSheet
-from setup_month import MonthSheet
+
 import dataset
 import pandas as pd
+from peewee import JOIN, fn
+
+from auth_work import oauth
+from backend import (Damages, NTPayment, OpCash, OpCashDetail, Payment,
+                     PopulateTable, Tenant, TenantRent, Unit, db)
+
+from checklist import Checklist
+from config import Config, my_scopes
+from db_utils import DBUtils
+from file_indexer import FileIndexer
 from google_api_calls_abstract import GoogleApiCalls
+from records import record
+from setup_month import MonthSheet
+from setup_year import YearSheet
+
 
 class BuildRS(MonthSheet, FileIndexer):
-    def __init__(self, sleep=None, full_sheet=None, path=None, mode=None, discard_pile=None, db=None, rs_tablename=None, findex_table=None, findex_obj=None, checklist_obj=None, mformat_obj=None, test_service=None, checklist=None, findex_db=None, mformat=None):
+    def __init__(self, sleep=None, full_sheet=None, path=None, mode=None, discard_pile=None, main_db=None, rs_tablename=None, findex_tablename=None, mformat_obj=None, test_service=None, findex_db=None, mformat=None):
         if mode == 'testing':
             self.db = Config.test_build_db
             self.mode = 'testing'
             self.full_sheet = Config.TEST_RS
-            self.findex = findex_obj
-            self.checklist = checklist_obj
             self.tablename = rs_tablename 
             self.service = test_service
             self.mformat = mformat_obj
             self.calls = GoogleApiCalls()
             self.sleep = sleep
         else:
-            self.db = db
+            self.main_db = main_db
+            self.findex_db = findex_db
+            self.findex_tablename = findex_tablename
             self.full_sheet = full_sheet
             self.service = oauth(my_scopes, 'sheet')
-            self.findex = findex_obj
-            self.checklist = checklist
             self.mformat = mformat
-            self.tablename = rs_tablename 
             self.calls = GoogleApiCalls() 
             self.sleep = sleep
             self.path = path
+            self.create_tables_list = [OpCash, OpCashDetail, Damages, Tenant, Unit, Payment, NTPayment, TenantRent]
+
 
         self.wrange_pay = '!K2:K68'
         self.wrange_ntp = '!K71:K71'
@@ -55,6 +60,7 @@ class BuildRS(MonthSheet, FileIndexer):
         self.good_dep_list = []
         self.good_hap_list = []
         self.good_dep_detail_list = []
+        self.unindexed_files = []
 
     def __repr__(self):
         return f'BuildRS object path: {self.file_input_path} write sheet: {self.full_sheet} service:{self.service}'
@@ -63,7 +69,16 @@ class BuildRS(MonthSheet, FileIndexer):
     def new_auto_build(self):
         print('new_auto_build')
         print('ignore checklist and automation; yagni')
-        self.build_index_runner()
+        self.build_index_runner() # this is a findex method
+
+        self.main_db.connect()
+        self.main_db.drop_tables(models=self.create_tables_list)
+        self.main_db.create_tables(self.create_tables_list)
+        assert db.database == '/home/joe/local_dev_projects/fcvl/sqlite/test_pw_db.db'
+        assert [*db.get_columns(table='payment')[0]._asdict().keys()] == ['name', 'data_type', 'null', 'primary_key', 'table', 'default']
+
+        self.drop_tables() # this may have multiple inheritance problems
+        breakpoint()
 
     def automatic_build(self, checklist_mode=None, key=None):
         '''this is the hook into the program for the checklist routine'''

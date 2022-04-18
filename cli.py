@@ -1,20 +1,23 @@
+import os
 import time
+
 import click
 import pytest
-from receipts import RentReceipts
-from db_utils import pg_dump_one
+
+from auth_work import oauth
+from build_rs import BuildRS
 from checklist import Checklist
+from config import Config, my_scopes
+from db_utils import pg_dump_one
+from file_indexer import FileIndexer
+from file_manager import path_to_statements, write_hap
+from receipts import RentReceipts
 from records import record
 from setup_month import MonthSheet
 from setup_year import YearSheet
-from build_rs import BuildRS
-from file_indexer import FileIndexer
 from tests.test_combined_formatting import TestChecklist
-from file_manager import path_to_statements, write_hap
-import click
-from auth_work import oauth
-from config import my_scopes, Config
 
+from peewee import *
 
 '''
 MAKE MODE EXPLICIT: DEV PROD TESTING
@@ -31,30 +34,27 @@ MAKE MODE EXPLICIT: DEV PROD TESTING
     # get year to date to run with a full rebuild and teardown each time WITH sleeps, then focus on speeding up process
         # skipping proc if checklist items are True
 
-    # this would be faster in production but in this stage of testing I don't have this list in memory
-
-def timer(func):
-    start_time = time.time()
-    # func(mode)
-    runtime = time.time() - start_time
-    print(runtime)
-    # print(f"n = {n} rec: --- %s seconds ---" % (rec_func_time))
+    # this would be faster in production but in this stage of testing I don't have this 
 
 @click.group()
 def cli():
     pass
 
 @click.command()
+@click.option('--mode', required=True)
 @record
-def autors():
-    print('hi')
-    dev_path = Config.DEV_RS_PATH
-    build = BuildRS(path=dev_path)
+def autors(mode=None):
+    if mode == 'testing':
+        basedir = os.path.abspath(os.path.dirname(__file__))
+        path = Config.TEST_RS_PATH
+        f_db = Config.test_findex_db
+        f_name = Config.test_findex_name
+        pw_db = SqliteDatabase(f'{basedir}/sqlite/test_pw_db.db', pragmas={'foreign_keys': 1})
+    build = BuildRS(path=path, main_db=pw_db, findex_db=f_db, findex_tablename=f_name)
     build.new_auto_build()
 '''
 @click.command()
 @click.option('--mode', required=True)
-# @timer
 def autors(mode=None):
     click.echo(f'starting **autors*** in mode: {mode}')
     click.echo('\nmust explicitly set mode: testing, dev, prod')

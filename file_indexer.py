@@ -79,7 +79,7 @@ class FileIndexer:
                     exit()
 
     def check_findex_exist(self):
-        items_in_db = self.show_checklist()
+        items_in_db = self.show_findex_db()
         self.items_in_db = items_in_db
         if len(items_in_db) == 0:
             self.init_findex_status = 'empty'
@@ -89,7 +89,7 @@ class FileIndexer:
         return self.init_findex_status
 
     def show_unchecked_files(self, verbose=None):
-        db_records = [item['fn'] for item in self.db[self.tablename]]
+        db_records = [item['fn'] for item in self.findex_db[self.findex_tablename]]
         cur_dir = [item.name for item in self.directory_contents]
 
         for f in cur_dir:
@@ -277,9 +277,9 @@ class FileIndexer:
         return processed_check_for_test
 
     def drop_tables(self):
-        print(f'\ndropping {self.tablename}')
-        db = self.db    
-        tablename = self.tablename
+        print(f'\ndropping {self.findex_tablename}')
+        db = self.findex_db    
+        tablename = self.findex_tablename
         
         table = db[tablename]
         table.drop()
@@ -303,10 +303,10 @@ class FileIndexer:
 
         return results
 
-    def show_checklist(self, verbose=None, col_str=None):
+    def show_findex_db(self, verbose=None, col_str=None):
         return_list = []
         try:
-            check_items = [item for item in self.db[self.tablename]]
+            check_items = [item for item in self.findex_db[self.findex_tablename]]
         except TypeError as e:
             print(e, 'FileIndexer.show_checklist() returned None likely because no db or table has been set')
             raise

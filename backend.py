@@ -19,7 +19,6 @@ from peewee import JOIN, fn
 from recordtype import \
     recordtype  # i edit the source code here, so requirements won't work if this is ever published, after 3.10, collection.abc change
 
-from build_rs import BuildRS
 from config import Config
 from file_indexer import FileIndexer
 from records import record
