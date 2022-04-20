@@ -16,6 +16,20 @@ def pg_restore_one(infile, testing=True):
 class DBUtils:
 
     @staticmethod
+    def dump_sqlite(path_to_existing_db=None, path_to_backup=None):
+        import sqlite3, os
+        backup_time = dt.now()
+        db_name = path_to_existing_db.split('/')[-1]
+        db_name = db_name.split('.')[0]
+        filename = db_name + str(backup_time.year) + str(backup_time.month) + str(backup_time.day) + '.sql'
+        write_path = path_to_backup + '/' + filename
+
+        con = sqlite3.connect(path_to_existing_db)
+        with open(write_path, 'w') as f:
+            for line in con.iterdump():
+                f.write('%s\n' % line)
+
+    @staticmethod
     def get_tables(self, db):
         return db.tables
 
@@ -41,3 +55,4 @@ class DBUtils:
                 print(f'You chose to delete option {selection}: {v}')
                 table = db[v]
                 table.drop()
+    

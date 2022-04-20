@@ -150,10 +150,6 @@ def annual_financials():
     click.echo('extracting data to prepare periodic income reports')
  
 
-@click.command()
-def pgdump():
-    click.echo('Dumping current tables to pg_backup folder.')
-    pg_dump_one()
 
 
 @click.command()
@@ -167,7 +163,14 @@ cli.add_command(merchants)
 cli.add_command(nbofi)
 cli.add_command(workorders_todo)
 '''
+@click.command()
+def sqlite_dump():
+    click.echo('Dumping current tables to sqlite folder on GDrive.')
+    from db_utils import DBUtils
+    DBUtils.dump_sqlite(path_to_existing_db='/home/joe/local_dev_projects/fcvl/sqlite/test_pw_db.db', path_to_backup=Config.sqlite_dump_path)
+
 cli.add_command(autors)
+cli.add_command(sqlite_dump)
 
 if __name__ == '__main__':
     cli()
