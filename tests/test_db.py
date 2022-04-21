@@ -30,9 +30,10 @@ class TestDB:
     def test_db(self):
         db.connect()
         db.drop_tables(models=create_tables_list)
+        # breakpoint()
         db.create_tables(create_tables_list)
         assert db.database == '/home/joe/local_dev_projects/fcvl/sqlite/test_pw_db.db'
-        # assert sorted(db.get_tables()) == sorted(['opcash', 'opcashdetail', 'damages', 'tenantrent', 'ntpayment', 'payment', 'tenant', 'unit'])
+        assert sorted(db.get_tables()) == sorted(['opcash', 'opcashdetail', 'damages', 'tenantrent', 'ntpayment', 'payment', 'tenant', 'unit'])
         assert [*db.get_columns(table='payment')[0]._asdict().keys()] == ['name', 'data_type', 'null', 'primary_key', 'table', 'default']
 
         findex.drop_tables()
