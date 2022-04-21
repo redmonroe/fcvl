@@ -318,6 +318,9 @@ class TestDB:
         
         assert cumsum_endbal == cumsum_check
 
+    def test_db_backup(self):
+        pass
+
 @pytest.mark.testing_db
 class TestOpcash:
 

@@ -36,10 +36,6 @@ class FileIndexer:
         self.rr_list = []
         self.dep_list = []
         self.deposit_and_date_list = []
-        self.TEST_RR_FILE = 'rent_roll_01_2022.xls'
-        self.TEST_DEP_FILE = 'deposits_01_2022.xls'
-        self.GENERATED_RR_FILE = 'TEST_RENTROLL_012022.xls'
-        self.GENERATED_DEP_FILE = 'TEST_DEP_012022.xls' 
         self.init_findex_status = None
         self.items_in_db = None
         self.unindexed_files = []
@@ -277,9 +273,9 @@ class FileIndexer:
         return processed_check_for_test
 
     def drop_tables(self):
-        print(f'\ndropping {self.findex_tablename}')
-        db = self.findex_db    
-        tablename = self.findex_tablename
+        print(f'\ndropping {self.tablename}')
+        db = self.db    
+        tablename = self.tablename
         
         table = db[tablename]
         table.drop()
@@ -306,7 +302,7 @@ class FileIndexer:
     def show_findex_db(self, verbose=None, col_str=None):
         return_list = []
         try:
-            check_items = [item for item in self.findex_db[self.findex_tablename]]
+            check_items = [item for item in self.db[self.tablename]]
         except TypeError as e:
             print(e, 'FileIndexer.show_checklist() returned None likely because no db or table has been set')
             raise
