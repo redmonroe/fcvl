@@ -44,8 +44,7 @@ class BuildRS(MonthSheet):
             self.path = path
             self.create_tables_list = [OpCash, OpCashDetail, Damages, Tenant, Unit, Payment, NTPayment, TenantRent]
 
-
-        self.index_dict = {}
+        self.target_bal_load_file = 'beginning_balance_2022.xlsx'
         self.wrange_pay = '!K2:K68'
         self.wrange_ntp = '!K71:K71'
         self.file_input_path = path
@@ -61,7 +60,6 @@ class BuildRS(MonthSheet):
         self.good_dep_list = []
         self.good_hap_list = []
         self.good_dep_detail_list = []
-        self.unindexed_files = []
 
     def __repr__(self):
         return f'BuildRS object path: {self.file_input_path} write sheet: {self.full_sheet} service:{self.service}'
@@ -70,10 +68,12 @@ class BuildRS(MonthSheet):
     def new_auto_build(self):
         print('new_auto_build')
         print('ignore checklist and automation; yagni')
+        populate = PopulateTable()
+        unit = Unit()
         findex = FileIndexer(path=self.path, db=self.findex_db, tablename=self.findex_tablename)
+        findex.drop_tables() # this may have multiple inheritance problems
 
 
-        self.findex_drop_tables() # this may have multiple inheritance problems
         self.main_db.connect()
         self.main_db.drop_tables(models=self.create_tables_list)
         self.main_db.create_tables(self.create_tables_list)
@@ -86,8 +86,19 @@ class BuildRS(MonthSheet):
         rent_roll_list = [(item['fn'], item['period'], item['status'], item['path']) for item in records if item['fn'].split('_')[0] == 'rent' and item['status'] == 'processed']
 
         january_rent_roll_path = rent_roll_list[0][3]
-        breakpoint()
+
+        # business logic to load inital tenants; cutoff '2022-01'
+        nt_list, total_tenant_charges, explicit_move_outs = populate.init_tenant_load(filename=january_rent_roll_path, date='2022-01')
+
+        vacant_units = Unit.find_vacants()
+        assert 'PT-201' and 'CD-115' and 'CD-101' in vacant_units
+
+        # load tenant balances at 01012022
+        dir_items = [item.name for item in self.path.iterdir()]
+        target_balance_file = self.path.joinpath(self.target_bal_load_file)
+        populate.balance_load(filename=target_balance_file)
         
+        breakpoint()
 
     def automatic_build(self, checklist_mode=None, key=None):
         '''this is the hook into the program for the checklist routine'''
