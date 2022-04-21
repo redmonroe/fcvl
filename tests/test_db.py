@@ -8,6 +8,7 @@ import pytest
 from backend import Payment, PopulateTable, Tenant, Unit, NTPayment, TenantRent, Damages, OpCash, OpCashDetail, db
 from config import Config
 from file_indexer import FileIndexer
+from db_utils import DBUtils
 from peewee import JOIN, fn
 from records import record
 
@@ -319,8 +320,12 @@ class TestDB:
         assert cumsum_endbal == cumsum_check
 
     def test_db_backup(self):
-        pass
+        
+        DBUtils.dump_sqlite(path_to_existing_db=Config.sqlite_test_db_path, path_to_backup=Config.sqlite_dump_path)
+        match_bool = DBUtils.find_sqlite(path_to_existing_db=Config.sqlite_test_db_path, path_to_backup=Config.sqlite_dump_path)
 
+        assert match_bool == True
+        
 @pytest.mark.testing_db
 class TestOpcash:
 
@@ -337,7 +342,7 @@ class TestOpcash:
 
         iter2 = populate.get_opcashdetail_by_stmt(stmt_key=iter1[0][0])
         
-        breakpoint()
+        # breakpoint()
 
         # class OpCash
         # class Operation

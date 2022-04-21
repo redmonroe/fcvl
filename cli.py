@@ -167,7 +167,7 @@ cli.add_command(workorders_todo)
 def sqlite_dump():
     click.echo('Dumping current tables to sqlite folder on GDrive.')
     from db_utils import DBUtils
-    DBUtils.dump_sqlite(path_to_existing_db='/home/joe/local_dev_projects/fcvl/sqlite/test_pw_db.db', path_to_backup=Config.sqlite_dump_path)
+    DBUtils.dump_sqlite(path_to_existing_db=Config.sqlite_test_db_path, path_to_backup=Config.sqlite_dump_path)
 
 cli.add_command(autors)
 cli.add_command(sqlite_dump)

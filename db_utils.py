@@ -1,33 +1,43 @@
-from datetime import datetime as dt
-from config import Config
 import os
+from datetime import datetime as dt
+from pathlib import Path
 
-
-def pg_dump_one():
-    bu_time = dt.now()
-    print(bu_time)
-    os.system(f'pg_dump --dbname={Config.PG_DUMPS_URI} > "{Config.DB_BACKUPS}\loaderdump{bu_time.month}{bu_time.day}{bu_time.year}{bu_time.hour}.sql"')
-
-def pg_restore_one(infile, testing=True):
-    print('infile name:', infile)
-    os.system(f'psql -d fcvfin_tables -U postgres -f "{infile}') #just need the relative path, should be in working directory of fcvfin here
+from config import Config
 
 
 class DBUtils:
 
     @staticmethod
     def dump_sqlite(path_to_existing_db=None, path_to_backup=None):
-        import sqlite3, os
+        import sqlite3
         backup_time = dt.now()
         db_name = path_to_existing_db.split('/')[-1]
         db_name = db_name.split('.')[0]
-        filename = db_name + str(backup_time.year) + str(backup_time.month) + str(backup_time.day) + '.sql'
+        filename = db_name + '_' + str(backup_time.year) + str(backup_time.month) + str(backup_time.day) + '.sql'
         write_path = path_to_backup + '/' + filename
 
         con = sqlite3.connect(path_to_existing_db)
         with open(write_path, 'w') as f:
             for line in con.iterdump():
                 f.write('%s\n' % line)
+
+    @staticmethod
+    def find_sqlite(path_to_existing_db=None, path_to_backup=None):
+        path_to_backup= Path(path_to_backup)
+        dir_contents = [item for item in path_to_backup.iterdir() if item.suffix != '.ini'] 
+
+        backup_time = dt.now()
+        db_name = path_to_existing_db.split('/')[-1]
+        db_name = db_name.split('.')[0]
+        target_file_name = db_name + '_' + str(backup_time.year) + str(backup_time.month) + str(backup_time.day)
+        fn_list = [filename.stem for filename in dir_contents]
+
+        if target_file_name in fn_list:
+            match_bool = True
+        else:
+            match_bool = False
+
+        return match_bool
 
     @staticmethod
     def get_tables(self, db):
@@ -56,3 +66,11 @@ class DBUtils:
                 table = db[v]
                 table.drop()
     
+    def pg_dump_one():
+        bu_time = dt.now()
+        print(bu_time)
+        os.system(f'pg_dump --dbname={Config.PG_DUMPS_URI} > "{Config.DB_BACKUPS}\loaderdump{bu_time.month}{bu_time.day}{bu_time.year}{bu_time.hour}.sql"')
+
+    def pg_restore_one(infile, testing=True):
+        print('infile name:', infile)
+        os.system(f'psql -d fcvfin_tables -U postgres -f "{infile}') #just need the relative path, should be in working directory of fcvfin here
