@@ -23,26 +23,30 @@ from setup_year import YearSheet
 
 class BuildRS(MonthSheet):
     def __init__(self, sleep=None, full_sheet=None, path=None, mode=None, discard_pile=None, main_db=None, rs_tablename=None, findex_tablename=None, mformat_obj=None, test_service=None, findex_db=None, mformat=None):
-        if mode == 'testing':
-            self.db = Config.test_build_db
-            self.mode = 'testing'
-            self.full_sheet = Config.TEST_RS
-            self.tablename = rs_tablename 
-            self.service = test_service
-            self.mformat = mformat_obj
-            self.calls = GoogleApiCalls()
-            self.sleep = sleep
-        else:
-            self.main_db = main_db
-            self.findex_db = findex_db
-            self.findex_tablename = findex_tablename
-            self.full_sheet = full_sheet
+        # if mode == 'testing':
+        #     self.db = Config.test_build_db
+        #     self.mode = 'testing'
+        #     self.full_sheet = Config.TEST_RS
+        #     self.tablename = rs_tablename 
+        #     self.service = test_service
+        #     self.mformat = mformat_obj
+        #     self.calls = GoogleApiCalls()
+        #     self.sleep = sleep
+        # else:
+        self.main_db = main_db
+        self.findex_db = findex_db
+        self.findex_tablename = findex_tablename
+        self.full_sheet = full_sheet
+        try:
             self.service = oauth(my_scopes, 'sheet')
-            self.mformat = mformat
-            self.calls = GoogleApiCalls() 
-            self.sleep = sleep
-            self.path = path
-            self.create_tables_list = [OpCash, OpCashDetail, Damages, Tenant, Unit, Payment, NTPayment, TenantRent]
+        except FileNotFoundError as e:
+            print(e, 'using testing configuration for Google Api Calls')
+            self.service = oauth(Config.my_scopes, 'sheet', mode='testing')
+        self.mformat = mformat
+        self.calls = GoogleApiCalls() 
+        self.sleep = sleep
+        self.path = path
+        self.create_tables_list = [OpCash, OpCashDetail, Damages, Tenant, Unit, Payment, NTPayment, TenantRent]
 
         self.target_bal_load_file = 'beginning_balance_2022.xlsx'
         self.wrange_pay = '!K2:K68'
@@ -72,7 +76,6 @@ class BuildRS(MonthSheet):
         unit = Unit()
         findex = FileIndexer(path=self.path, db=self.findex_db, tablename=self.findex_tablename)
         findex.drop_tables() 
-
         self.main_db.connect()
         self.main_db.drop_tables(models=self.create_tables_list)
         self.main_db.create_tables(self.create_tables_list)
@@ -132,8 +135,7 @@ class BuildRS(MonthSheet):
         file_list = [(item['fn'], item['period'], item['status'], item['path'], item['hap'], item['rr'], item['depsum'], item['dep_list']) for item in records if item['fn'].split('_')[1] == 'cash' and item['status'] == 'processed']
 
         populate.transfer_opcash_to_db(file_list=file_list)
-        
-        # breakpoint()
+        self.main_db.close()
 
     def automatic_build(self, checklist_mode=None, key=None):
         '''this is the hook into the program for the checklist routine'''
@@ -606,6 +608,7 @@ class BuildRS(MonthSheet):
         return self.final_to_process_list
 
     def summary_assertion_at_period(self, test_date):
+        self.main_db.connect()
         test_date = test_date
         populate = PopulateTable()
         first_dt, last_dt = populate.make_first_and_last_dates(date_str=test_date)
@@ -626,6 +629,7 @@ class BuildRS(MonthSheet):
         cumsum_check = 2115.0
         
         assert cumsum_endbal == cumsum_check
+        self.main_db.close()
     
 
 

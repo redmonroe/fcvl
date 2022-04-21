@@ -1,5 +1,6 @@
 import calendar
 import datetime
+import os
 from decimal import ROUND_DOWN, ROUND_UP, Decimal
 from pathlib import Path
 from pprint import pprint
@@ -7,6 +8,7 @@ from pprint import pprint
 import pytest
 from backend import (Damages, NTPayment, OpCash, OpCashDetail, Payment,
                      PopulateTable, Tenant, TenantRent, Unit, db)
+from build_rs import BuildRS
 from config import Config
 from db_utils import DBUtils
 from file_indexer import FileIndexer
@@ -367,11 +369,20 @@ class TestOpcash:
         assert iter1 == [('op_cash_2022_03.pdf', datetime.date(2022, 3, 1), '3950.91', '38672.0', '16778.95')]
 
         assert iter2[0].id == 13
-        breakpoint()
+    
+    def test_close_db(self):
+        if db.is_closed() == False:
+            breakpoint()
+            db.close()
 
 @pytest.mark.testing_db
 class TestBuild:
-    pass
+    '''what do we want this to look like that '''
+    basedir = os.path.abspath(os.path.dirname(__file__))
+    build = BuildRS(path=path, main_db=db, findex_db=findex_db, findex_tablename=findex_tablename)
+    build.new_auto_build()
+    build.summary_assertion_at_period(test_date='2022-03')
+        
         # breakpoint()
 
         # class Operation
