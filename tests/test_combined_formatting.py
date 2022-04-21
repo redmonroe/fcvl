@@ -36,7 +36,7 @@ discard_pile = Config.TEST_MOVE_PATH
 monkeypatch = MonkeyPatch()
 service = oauth(Config.my_scopes, 'sheet', mode='testing')
 calls = GoogleApiCalls()
-findex = FileIndexer(path=test_path, discard_pile=discard_pile, db=Config.test_findex_db, table='findex')
+findex = FileIndexer(path=test_path, discard_pile=discard_pile, db=Config.test_findex_db, tablename='findex')
 ys = YearSheet(full_sheet=test_workbook, mode='testing', test_service=service)
 build = BuildRS(sleep1, full_sheet=test_workbook, path=test_path, mode='testing', test_service=service)
 

@@ -21,7 +21,7 @@ from setup_month import MonthSheet
 from setup_year import YearSheet
 
 
-class BuildRS(MonthSheet, FileIndexer):
+class BuildRS(MonthSheet):
     def __init__(self, sleep=None, full_sheet=None, path=None, mode=None, discard_pile=None, main_db=None, rs_tablename=None, findex_tablename=None, mformat_obj=None, test_service=None, findex_db=None, mformat=None):
         if mode == 'testing':
             self.db = Config.test_build_db
@@ -45,6 +45,7 @@ class BuildRS(MonthSheet, FileIndexer):
             self.create_tables_list = [OpCash, OpCashDetail, Damages, Tenant, Unit, Payment, NTPayment, TenantRent]
 
 
+        self.index_dict = {}
         self.wrange_pay = '!K2:K68'
         self.wrange_ntp = '!K71:K71'
         self.file_input_path = path
@@ -69,16 +70,24 @@ class BuildRS(MonthSheet, FileIndexer):
     def new_auto_build(self):
         print('new_auto_build')
         print('ignore checklist and automation; yagni')
-        self.build_index_runner() # this is a findex method
-
         self.main_db.connect()
         self.main_db.drop_tables(models=self.create_tables_list)
         self.main_db.create_tables(self.create_tables_list)
         assert db.database == '/home/joe/local_dev_projects/fcvl/sqlite/test_pw_db.db'
         assert [*db.get_columns(table='payment')[0]._asdict().keys()] == ['name', 'data_type', 'null', 'primary_key', 'table', 'default']
 
-        self.drop_tables() # this may have multiple inheritance problems
+
+        findex = FileIndexer(path=self.path, db=self.findex_db, tablename=self.findex_tablename)
+        # self.findex_drop_tables() # this may have multiple inheritance problems
+        
+        # load initial tenants
+        findex.build_index_runner() # this is a findex method
+        records = findex.ventilate_table()
+        rent_roll_list = [(item['fn'], item['period'], item['status'], item['path']) for item in records if item['fn'].split('_')[0] == 'rent' and item['status'] == 'processed']
         breakpoint()
+
+        january_rent_roll_path = rent_roll_list[0][3]
+        
 
     def automatic_build(self, checklist_mode=None, key=None):
         '''this is the hook into the program for the checklist routine'''

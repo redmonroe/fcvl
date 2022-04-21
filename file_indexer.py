@@ -17,13 +17,13 @@ from utils import Utils
 
 class FileIndexer:
 
-    def __init__(self, path=None, discard_pile=None, db=None, mode=None, table=None):
+    def __init__(self, path=None, discard_pile=None, db=None, mode=None, tablename=None):
         
         self.mode = mode
         self.path = path
         self.discard_pile = discard_pile
-        self.db = db
-        self.tablename = table 
+        self.findex_db = db
+        self.findex_tablename = tablename 
         self.directory_contents = []
         self.index_dict = {}
         self.test_list = []
@@ -211,19 +211,8 @@ class FileIndexer:
             
         return return_list, date
 
-    def get_more_metadata(self):
-        target_file = os.path.join(self.path, target)
-        # SO GET MOST RECENT FILE, MAKE CHANGES BUT PRESERVE TIMING FOR EVENTUAL DISPLAY
-        target_dir = os.listdir(self.path)
-        date_dict = {}
-        for item in target_dir:
-            td = os.path.join(self.path, item)
-            file_stat = os.stat(td)
-            date_time = datetime. datetime.fromtimestamp(file_stat.st_ctime)
-            print(item, date_time)
-
     def build_raw_index(self, autodrop=None, verbose=None):
-        table = self.db[self.tablename]
+        table = self.findex_db[self.findex_tablename]
         if autodrop:
             table.drop()
         self.directory_contents = []
@@ -237,21 +226,21 @@ class FileIndexer:
         return table
 
     def update_index_for_processed(self, verbose=None):
-        for item in self.db[self.tablename]:
+        for item in self.findex_db[self.findex_tablename]:
             for proc_file in self.processed_files:
                 if item['fn'] == proc_file[0]:                 
                     proc_date = self.normalize_dates(proc_file[1])
                     data = dict(id=item['id'], status='processed', period=proc_date)
-                    self.db[self.tablename].update(data, ['id'])
+                    self.findex_db[self.findex_tablename].update(data, ['id'])
         if verbose:
             self.show_table()
 
     def mark_as_checked(self, verbose=None):
-        for item in self.db[self.tablename]:
+        for item in self.findex_db[self.findex_tablename]:
             for path in self.index_dict:
                 if item['fn'] == path.name:                 
                     data = dict(id=item['id'], indexed='true')
-                    self.db[self.tablename].update(data, ['id'])
+                    self.findex_db[self.findex_tablename].update(data, ['id'])
         if verbose:
             self.show_table()
 
@@ -272,10 +261,10 @@ class FileIndexer:
 
         return processed_check_for_test
 
-    def drop_tables(self):
-        print(f'\ndropping {self.tablename}')
-        db = self.db    
-        tablename = self.tablename
+    def findex_drop_tables(self):
+        print(f'\ndropping {self.findex_tablename}')
+        db = self.findex_db    
+        tablename = self.findex_tablename
         
         table = db[tablename]
         table.drop()
@@ -290,7 +279,7 @@ class FileIndexer:
         DBUtils.delete_table(self, self.db)
 
     def ventilate_table(self):
-        return [item for item in self.db[self.tablename]    ]
+        return [item for item in self.findex_db[self.findex_tablename]    ]
 
     def show_table(self):
         print(f'\n contents of {self.db}\n')
@@ -302,7 +291,7 @@ class FileIndexer:
     def show_findex_db(self, verbose=None, col_str=None):
         return_list = []
         try:
-            check_items = [item for item in self.db[self.tablename]]
+            check_items = [item for item in self.findex_db[self.findex_tablename]]
         except TypeError as e:
             print(e, 'FileIndexer.show_checklist() returned None likely because no db or table has been set')
             raise

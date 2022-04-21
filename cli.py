@@ -8,7 +8,6 @@ from auth_work import oauth
 from build_rs import BuildRS
 from checklist import Checklist
 from config import Config, my_scopes
-from db_utils import pg_dump_one
 from file_indexer import FileIndexer
 from file_manager import path_to_statements, write_hap
 from receipts import RentReceipts

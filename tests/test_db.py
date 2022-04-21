@@ -342,10 +342,12 @@ class TestOpcash:
         iter1 = populate.get_opcash_by_period(first_dt=first_dt, last_dt=last_dt)
 
         iter2 = populate.get_opcashdetail_by_stmt(stmt_key=iter1[0][0])
-        
+
+@pytest.mark.testing_db
+class TestBuild:
+    pass
         # breakpoint()
 
-        # class OpCash
         # class Operation
         # class SubsidyRent(BaseModel):
         #     pass
