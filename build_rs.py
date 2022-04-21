@@ -79,9 +79,10 @@ class BuildRS(MonthSheet):
         assert db.database == '/home/joe/local_dev_projects/fcvl/sqlite/test_pw_db.db'
         assert [*db.get_columns(table='payment')[0]._asdict().keys()] == ['name', 'data_type', 'null', 'primary_key', 'table', 'default']
 
-        # load initial tenants
         findex.build_index_runner() # this is a findex method
         records = findex.ventilate_table()
+
+        # load initial tenants
         rent_roll_list = [(item['fn'], item['period'], item['status'], item['path']) for item in records if item['fn'].split('_')[0] == 'rent' and item['status'] == 'processed']
 
         january_rent_roll_path = rent_roll_list[0][3]
@@ -132,7 +133,7 @@ class BuildRS(MonthSheet):
 
         populate.transfer_opcash_to_db(file_list=file_list)
         
-        breakpoint()
+        # breakpoint()
 
     def automatic_build(self, checklist_mode=None, key=None):
         '''this is the hook into the program for the checklist routine'''
@@ -603,6 +604,28 @@ class BuildRS(MonthSheet):
         self.final_to_process_list = sorted(self.final_to_process_list, key=lambda m: datetime.strptime(m, "%b"))
 
         return self.final_to_process_list
+
+    def summary_assertion_at_period(self, test_date):
+        test_date = test_date
+        populate = PopulateTable()
+        first_dt, last_dt = populate.make_first_and_last_dates(date_str=test_date)
+
+        active_tenant_start_bal_sum = Tenant.select(fn.Sum(Tenant.beg_bal_amount).alias('sum')).where(Tenant.active=='True').get().sum
+        assert active_tenant_start_bal_sum == 795.0
+
+        '''charges'''
+        tenant_rent_total_mar = [float(row[1]) for row in populate.get_rent_charges_by_tenant_by_period(first_dt=first_dt, last_dt=last_dt)]
+        assert sum(tenant_rent_total_mar) == 15972.0
+
+        '''payments'''
+        payments_jan = [float(row[2]) for row in populate.get_payments_by_tenant_by_period(first_dt=first_dt, last_dt=last_dt)]
+        assert sum(payments_jan) == 16506.0
+
+        tenant_activity_recordtype, cumsum_endbal= populate.net_position_by_tenant_by_month(first_dt=first_dt, last_dt=last_dt)
+
+        cumsum_check = 2115.0
+        
+        assert cumsum_endbal == cumsum_check
     
 
 
