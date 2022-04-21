@@ -71,8 +71,7 @@ class BuildRS(MonthSheet):
         populate = PopulateTable()
         unit = Unit()
         findex = FileIndexer(path=self.path, db=self.findex_db, tablename=self.findex_tablename)
-        findex.drop_tables() # this may have multiple inheritance problems
-
+        findex.drop_tables() 
 
         self.main_db.connect()
         self.main_db.drop_tables(models=self.create_tables_list)
@@ -97,6 +96,41 @@ class BuildRS(MonthSheet):
         dir_items = [item.name for item in self.path.iterdir()]
         target_balance_file = self.path.joinpath(self.target_bal_load_file)
         populate.balance_load(filename=target_balance_file)
+
+        rent_roll_list = [(item['fn'], item['period'], item['status'], item['path']) for item in records if item['fn'].split('_')[0] == 'rent' and item['status'] == 'processed']
+
+        # load remaining months rent
+        paths_except_jan = rent_roll_list[1:]
+        processed_rentr_dates_and_paths = [(item[1], item[3]) for item in paths_except_jan]
+        processed_rentr_dates_and_paths.sort()
+
+        # iterate over dep
+        for date, filename in processed_rentr_dates_and_paths:
+            cleaned_nt_list, total_tenant_charges, cleaned_mos = populate.after_jan_load(filename=filename, date=date)
+            first_dt, last_dt = populate.make_first_and_last_dates(date_str=date)
+
+            if date == '2022-03':
+                # dt_obj_first, dt_obj_last = populate.make_first_and_last_dates(date_str=date)
+                total_rent_charges = populate.get_total_rent_charges_by_month(first_dt=first_dt, last_dt=last_dt)
+                assert total_rent_charges == 15972.0 
+
+                vacant_snapshot_loop_end = Unit.find_vacants()
+                assert sorted(vacant_snapshot_loop_end) == sorted(['CD-101', 'CD-115', 'PT-211'])
+
+        file_list = [(item['fn'], item['period'], item['status'], item['path']) for item in records if item['fn'].split('_')[0] == 'deposits' and item['status'] == 'processed']
+        
+        processed_dates_and_paths = [(item[1], item[3]) for item in file_list]
+        processed_dates_and_paths.sort()
+        
+        for date1, path in processed_dates_and_paths:
+            grand_total, ntp, tenant_payment_df = populate.payment_load_full(filename=path)
+            first_dt, last_dt = populate.make_first_and_last_dates(date_str=date1)
+
+        Damages.load_damages()
+
+        file_list = [(item['fn'], item['period'], item['status'], item['path'], item['hap'], item['rr'], item['depsum'], item['dep_list']) for item in records if item['fn'].split('_')[1] == 'cash' and item['status'] == 'processed']
+
+        populate.transfer_opcash_to_db(file_list=file_list)
         
         breakpoint()
 

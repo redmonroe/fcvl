@@ -5,10 +5,11 @@ from pathlib import Path
 from pprint import pprint
 
 import pytest
-from backend import Payment, PopulateTable, Tenant, Unit, NTPayment, TenantRent, Damages, OpCash, OpCashDetail, db
+from backend import (Damages, NTPayment, OpCash, OpCashDetail, Payment,
+                     PopulateTable, Tenant, TenantRent, Unit, db)
 from config import Config
-from file_indexer import FileIndexer
 from db_utils import DBUtils
+from file_indexer import FileIndexer
 from peewee import JOIN, fn
 from records import record
 
@@ -30,7 +31,6 @@ class TestDB:
     def test_db(self):
         db.connect()
         db.drop_tables(models=create_tables_list)
-        # breakpoint()
         db.create_tables(create_tables_list)
         assert db.database == '/home/joe/local_dev_projects/fcvl/sqlite/test_pw_db.db'
         assert sorted(db.get_tables()) == sorted(['opcash', 'opcashdetail', 'damages', 'tenantrent', 'ntpayment', 'payment', 'tenant', 'unit'])
@@ -342,6 +342,32 @@ class TestOpcash:
         iter1 = populate.get_opcash_by_period(first_dt=first_dt, last_dt=last_dt)
 
         iter2 = populate.get_opcashdetail_by_stmt(stmt_key=iter1[0][0])
+
+        assert iter1 == [('op_cash_2022_01.pdf', datetime.date(2022, 1, 1), '15576.54', '30990.0', '15491.71')]
+
+        assert iter2[0].id == 1
+
+        test_date = '2022-02'
+        first_dt, last_dt = populate.make_first_and_last_dates(date_str=test_date)
+        iter1 = populate.get_opcash_by_period(first_dt=first_dt, last_dt=last_dt)
+
+        iter2 = populate.get_opcashdetail_by_stmt(stmt_key=iter1[0][0])
+        
+        assert iter1 == [('op_cash_2022_02.pdf', datetime.date(2022, 2, 1), '0.0', '31739.0', '15931.3')]
+
+        assert iter2[0].id == 7
+
+        test_date = '2022-03'
+        first_dt, last_dt = populate.make_first_and_last_dates(date_str=test_date)
+
+        iter1 = populate.get_opcash_by_period(first_dt=first_dt, last_dt=last_dt)
+
+        iter2 = populate.get_opcashdetail_by_stmt(stmt_key=iter1[0][0])
+        
+        assert iter1 == [('op_cash_2022_03.pdf', datetime.date(2022, 3, 1), '3950.91', '38672.0', '16778.95')]
+
+        assert iter2[0].id == 13
+        breakpoint()
 
 @pytest.mark.testing_db
 class TestBuild:
