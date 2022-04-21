@@ -21,7 +21,7 @@ findex_tablename = Config.test_findex_name
 populate = PopulateTable()
 tenant = Tenant()
 unit = Unit()
-findex = FileIndexer(path=path, db=findex_db, table=findex_tablename)
+findex = FileIndexer(path=path, db=findex_db, tablename=findex_tablename)
 
 @pytest.mark.testing_db
 class TestDB:

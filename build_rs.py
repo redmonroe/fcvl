@@ -70,23 +70,23 @@ class BuildRS(MonthSheet):
     def new_auto_build(self):
         print('new_auto_build')
         print('ignore checklist and automation; yagni')
+        findex = FileIndexer(path=self.path, db=self.findex_db, tablename=self.findex_tablename)
+
+
+        self.findex_drop_tables() # this may have multiple inheritance problems
         self.main_db.connect()
         self.main_db.drop_tables(models=self.create_tables_list)
         self.main_db.create_tables(self.create_tables_list)
         assert db.database == '/home/joe/local_dev_projects/fcvl/sqlite/test_pw_db.db'
         assert [*db.get_columns(table='payment')[0]._asdict().keys()] == ['name', 'data_type', 'null', 'primary_key', 'table', 'default']
 
-
-        findex = FileIndexer(path=self.path, db=self.findex_db, tablename=self.findex_tablename)
-        # self.findex_drop_tables() # this may have multiple inheritance problems
-        
         # load initial tenants
         findex.build_index_runner() # this is a findex method
         records = findex.ventilate_table()
         rent_roll_list = [(item['fn'], item['period'], item['status'], item['path']) for item in records if item['fn'].split('_')[0] == 'rent' and item['status'] == 'processed']
-        breakpoint()
 
         january_rent_roll_path = rent_roll_list[0][3]
+        breakpoint()
         
 
     def automatic_build(self, checklist_mode=None, key=None):

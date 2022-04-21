@@ -41,38 +41,15 @@ class FileIndexer:
         self.unindexed_files = []
 
     def build_index_runner(self):
-        
-        '''if item is checked, do index again'''
-        '''if item is processed, do not process again'''
-        '''do not mark on cl main in body of a function that does something else'''
 
-        findex_status = self.check_findex_exist()
-        if findex_status == 'empty':
-            self.build_raw_index(verbose=False)
-            self.directory_contents = self.articulate_directory()
-            self.index_dict = self.sort_directory_by_extension(verbose=False)
-            self.mark_as_checked(verbose=False)
-            self.processed_files = self.rename_by_content_xls()
-            self.processed_files = self.rename_by_content_pdf()
-            self.update_index_for_processed()
-        elif findex_status == 'proceed':
-            print('findex already exists')
-            # new files: THIS IS INCOMPLETE
-            self.directory_contents = self.articulate_directory()
-            self.unindexed_files = self.show_unchecked_files()
-            if self.unindexed_files != []:                
-                # choice = input(f'do you want to processs: {self.unindexed_files} y/n?')
-                choice = 'y'
-                if choice == 'y':
-                    print('adding new files to findex')
-                    self.directory_contents = self.articulate_directory()
-                    self.index_dict = self.sort_directory_by_extension(verbose=False)
-                    self.mark_as_checked(verbose=False)
-                    self.processed_files = self.rename_by_content_xls()
-                    self.processed_files = self.rename_by_content_pdf()
-                    self.update_index_for_processed()
-                else:
-                    exit()
+        self.build_raw_index(verbose=False)
+        self.directory_contents = self.articulate_directory()
+        self.index_dict = self.sort_directory_by_extension(verbose=False)
+        # breakpoint()
+        self.mark_as_checked(verbose=False)
+        self.processed_files = self.rename_by_content_xls()
+        self.processed_files = self.rename_by_content_pdf()
+        self.update_index_for_processed()
 
     def check_findex_exist(self):
         items_in_db = self.show_findex_db()
@@ -177,7 +154,7 @@ class FileIndexer:
 
     def write_deplist_to_db(self, hap_iter, rr_iter, depsum_iter, deposit_iter, stmt_date):
         print('Writing deposit list to db')
-        db_records = [item for item in self.db[self.tablename] if 'cash' in item['fn'].split('_')]
+        db_records = [item for item in self.findex_db[self.findex_tablename] if 'cash' in item['fn'].split('_')]
         for record in db_records:
             if self.get_date_from_opcash_name(record) == [*deposit_iter[0]][0]:
                 proc_date = stmt_date
@@ -186,7 +163,7 @@ class FileIndexer:
                 depsum = [*depsum_iter[0].values()][0][0]
                 dep_list = json.dumps([*deposit_iter[0].values()])
                 data = dict(id=record['id'], status='processed', period=proc_date, hap=hap, rr=rr, depsum=depsum, dep_list=dep_list)
-                self.db[self.tablename].update(data, ['id'])
+                self.findex_db[self.findex_tablename].update(data, ['id'])
 
     def get_date_from_opcash_name(self, record):
         date_list = record['fn'].split('.')[0].split('_')[2:]
@@ -252,8 +229,8 @@ class FileIndexer:
 
     def get_list_of_processed(self):
         processed_check_for_test = []
-        print(f'\ngetting list of processed in {self.tablename}')
-        for item in self.db[self.tablename]:
+        print(f'\ngetting list of processed in {self.findex_tablename}')
+        for item in self.findex_db[self.findex_tablename]:
             if item['status'] == 'processed':
                 print(item)
                 processed_check_for_test.append(item['fn'])
@@ -261,7 +238,7 @@ class FileIndexer:
 
         return processed_check_for_test
 
-    def findex_drop_tables(self):
+    def drop_tables(self):
         print(f'\ndropping {self.findex_tablename}')
         db = self.findex_db    
         tablename = self.findex_tablename
@@ -270,13 +247,9 @@ class FileIndexer:
         table.drop()
         
     def get_tables(self):
-        self.check_tables = DBUtils.get_tables(self, self.db)
+        self.check_tables = DBUtils.get_tables(self, self.findex_db)
         print(self.check_tables)
-        print(len(self.db[self.tablename]))
-
-    def delete_table(self):
-        db = Config
-        DBUtils.delete_table(self, self.db)
+        print(len(self.findex_db[self.findex_tablename]))
 
     def ventilate_table(self):
         return [item for item in self.findex_db[self.findex_tablename]    ]
