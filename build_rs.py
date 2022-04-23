@@ -111,10 +111,9 @@ class BuildRS(MonthSheet):
         # iterate over dep
         for date, filename in processed_rentr_dates_and_paths:
             cleaned_nt_list, total_tenant_charges, cleaned_mos = populate.after_jan_load(filename=filename, date=date)
+            
             first_dt, last_dt = populate.make_first_and_last_dates(date_str=date)
-
             if date == '2022-03':
-                # dt_obj_first, dt_obj_last = populate.make_first_and_last_dates(date_str=date)
                 total_rent_charges = populate.get_total_rent_charges_by_month(first_dt=first_dt, last_dt=last_dt)
                 assert total_rent_charges == 15972.0 
 

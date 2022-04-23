@@ -372,7 +372,6 @@ class TestOpcash:
     
     def test_close_db(self):
         if db.is_closed() == False:
-            breakpoint()
             db.close()
 
 @pytest.mark.testing_db
