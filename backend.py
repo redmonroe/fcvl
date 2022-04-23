@@ -4,7 +4,9 @@ import json
 import logging
 import math
 import os
+from calendar import monthrange
 from collections import namedtuple
+from datetime import datetime
 from decimal import ROUND_DOWN, ROUND_UP, Decimal
 from pathlib import Path
 from pprint import pprint
@@ -116,18 +118,49 @@ class StatusRS(BaseModel):
     # if we are mid-month and prior months is closed then we should be able to try to use
         # nbofi mid month scrape
 
-    def set_current_date(self):
+    def set_current_date(self, mode=None):
+        if mode == 'autodrop':
+            db.connect()
+            # breakpoint()
+            db.drop_tables(models=[StatusRS])
+            db.create_tables(models=[StatusRS])
         date1 = datetime.datetime.now()
         query = StatusRS.create(current_date=date1)
         query.save()   
 
     def show(self):
         most_recent_status = [item.current_date for item in StatusRS().select().order_by(StatusRS.current_date).namedtuples()][0]
+
+        months_ytd = self.months_in_ytd()
+
         if most_recent_status:
             print(f'current date: {most_recent_status}')
+        if months_ytd:
+            print(f'current month: {months_ytd[-1]}')
+            print(f'months ytd {Config.current_year}: {months_ytd}')
         
+        breakpoint()
         # breakpoint()
         return most_recent_status 
+
+    def months_in_ytd(self, style=None):
+        range_month = datetime.now().strftime('%m')
+        str_month = datetime.now().strftime('%b').lower()
+        date_info = monthrange(int(Config.current_year), int(range_month))
+        last_day = date_info[1]
+        
+        if style == 'three_letter_month':
+            month_list = pd.date_range(f'{Config.current_year}-01-01',f'{Config.current_year}-{range_month}-{last_day}',freq='MS').strftime("%b").tolist()
+            month_list = [item.lower() for item in month_list]
+        else:
+            month_list = pd.date_range(f'{Config.current_year}-01-01',f'{Config.current_year}-{range_month}-{last_day}',freq='MS').strftime("%Y-%m").tolist()
+            month_list = [item for item in month_list]
+
+        return month_list
+
+    '''
+    def limit_date(self):
+    '''
         
 
 class QueryHC():

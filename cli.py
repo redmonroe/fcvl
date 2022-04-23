@@ -64,7 +64,7 @@ def autors(mode=None):
 
     if mode == 'status':
         status = StatusRS()
-        status.set_current_date()
+        status.set_current_date(mode='autodrop')
         status.show()
         # print('return status')
 
