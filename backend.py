@@ -107,6 +107,29 @@ class NTPayment(BaseModel):
     genus = CharField(default='other')    
     deposit_id = IntegerField()
 
+class StatusRS(BaseModel):
+    current_date = DateField()
+    # what months are ready to write
+        # what is the threshold?
+    # what files have been processed?
+    # what is reconciling? what is not?  How do we fix this? 
+    # if we are mid-month and prior months is closed then we should be able to try to use
+        # nbofi mid month scrape
+
+    def set_current_date(self):
+        date1 = datetime.datetime.now()
+        query = StatusRS.create(current_date=date1)
+        query.save()   
+
+    def show(self):
+        most_recent_status = [item.current_date for item in StatusRS().select().order_by(StatusRS.current_date).namedtuples()][0]
+        if most_recent_status:
+            print(f'current date: {most_recent_status}')
+        
+        # breakpoint()
+        return most_recent_status 
+        
+
 class QueryHC():
 
     def make_first_and_last_dates(self, date_str=None):

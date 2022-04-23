@@ -5,8 +5,8 @@ import click
 import pytest
 
 from auth_work import oauth
+from backend import StatusRS
 from build_rs import BuildRS
-from checklist import Checklist
 from config import Config, my_scopes
 from file_indexer import FileIndexer
 from file_manager import path_to_statements, write_hap
@@ -14,7 +14,6 @@ from receipts import RentReceipts
 from records import record
 from setup_month import MonthSheet
 from setup_year import YearSheet
-from tests.test_combined_formatting import TestChecklist
 
 from peewee import *
 
@@ -64,7 +63,10 @@ def autors(mode=None):
         build.summary_assertion_at_period(test_date='2022-03')
 
     if mode == 'status':
-        print('return status')
+        status = StatusRS()
+        status.set_current_date()
+        status.show()
+        # print('return status')
 
 @click.command()
 def sqlite_dump():
