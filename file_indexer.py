@@ -1,94 +1,86 @@
 import json
 import os
-import shutil
 from datetime import datetime
 from pathlib import Path
 from pprint import pprint
 
-import dataset
 import numpy as np
 import pandas as pd
 
 from config import Config
-from db_utils import DBUtils
 from pdf import StructDataExtract
-from utils import Utils
+from backend import Findexer
 
 
-class FileIndexer:
+class FileIndexer2:
 
-    def __init__(self, path=None, discard_pile=None, db=None, mode=None, tablename=None):
-        
-        self.mode = mode
+    create_findex_list = [Findexer]
+    index_dict = {}
+    raw_list = []
+    op_cash_list = []
+    pdf = StructDataExtract()
+    hap_list = []
+    rr_list = []
+    dep_list = []
+    deposit_and_date_list = []
+
+    def __init__(self, path=None, db=None, mode=None):
         self.path = path
-        self.discard_pile = discard_pile
-        self.findex_db = db
-        self.findex_tablename = tablename 
-        self.directory_contents = []
-        self.index_dict = {}
-        self.test_list = []
-        self.xls_list = []
-        self.pdf_list = []
-        self.check_tables = None
-        self.processed_files = []
-        self.pdf = StructDataExtract()
-        self.hap_list = []
-        self.rr_list = []
-        self.dep_list = []
-        self.deposit_and_date_list = []
-        self.init_findex_status = None
-        self.items_in_db = None
-        self.unindexed_files = []
+        self.db = db
+        self.mode = mode
 
     def build_index_runner(self):
-
-        self.build_raw_index(verbose=False)
+        self.connect_to_db(mode='autodrop')
         self.directory_contents = self.articulate_directory()
-        self.index_dict = self.sort_directory_by_extension(verbose=False)
-        # breakpoint()
-        self.mark_as_checked(verbose=False)
-        self.processed_files = self.rename_by_content_xls()
-        self.processed_files = self.rename_by_content_pdf()
-        self.update_index_for_processed()
+        self.index_dict = self.sort_directory_by_extension(verbose=True)
+        self.load_what_is_in_dir()
 
-    def check_findex_exist(self):
-        items_in_db = self.show_findex_db()
-        self.items_in_db = items_in_db
-        if len(items_in_db) == 0:
-            self.init_findex_status = 'empty'
-        elif len(items_in_db) > 0:
-            self.init_findex_status = 'proceed'
-        
-        return self.init_findex_status
+        self.make_a_list_of_raw(mode='xls')
+        if self.raw_list:
+            self.find_by_content(style='rent', target_string='Affordable Rent Roll Detail/ GPR Report')
+            self.find_by_content(style='deposits', target_string='BANK DEPOSIT DETAILS')
 
-    def show_unchecked_files(self, verbose=None):
-        db_records = [item['fn'] for item in self.findex_db[self.findex_tablename]]
-        cur_dir = [item.name for item in self.directory_contents]
+        self.make_a_list_of_raw(mode='pdf')
+        if self.raw_list:
+            self.find_opcashes()
+            self.type_opcashes()
+            self.rename_by_content_pdf()
 
-        for f in cur_dir:
-            if f not in db_records:
-                self.unindexed_files.append(f)
-                if verbose:
-                    print(item)
-        return self.unindexed_files           
+    def connect_to_db(self, mode=None):
+        self.db.connect()
+        if mode == 'autodrop':
+            self.db.drop_tables(models=self.create_findex_list)
+        self.db.create_tables(models=self.create_findex_list)
 
     def articulate_directory(self):
         self.directory_contents = [item for item in self.path.iterdir() if item.suffix != '.ini'] 
         return self.directory_contents
-            
+
     def sort_directory_by_extension(self, verbose=None):
         for item in self.directory_contents:
-            sub_item = Path(item)
-            filename = sub_item.parts[-1]
-            f_ext = filename.split('.')
-            f_ext = f_ext[-1]
-            self.index_dict[sub_item] = f_ext
+            full_path = Path(item)
+            if item.name != 'desktop.ini':
+                self.index_dict[full_path] = (item.suffix, item.name)
         
         if verbose:
             pprint(self.index_dict)
         return self.index_dict
 
-    def find_by_content(self, style, target_string=None, ):
+    def load_what_is_in_dir(self, autodrop=None, verbose=None):
+        insert_dir_contents = [{'path': path, 'fn': name, 'indexed': 'false', 'file_ext': suffix} for path, (suffix, name) in self.index_dict.items()]
+        query = Findexer.insert_many(insert_dir_contents)
+        query.execute()
+
+    def make_a_list_of_raw(self, mode=None):
+        '''instead of making this from a list in memory (faster), I will make the list from db, so that I can control whether to process it or reprocessed it; otherwise, everything that is in dir will just be fully processed again'''
+        if mode == 'xls':   
+            self.raw_list = [(item.path, item.doc_id) for item in Findexer().select().where(Findexer.status=='raw').where(
+                (Findexer.file_ext == '.xlsx') | (Findexer.file_ext == '.xls')).namedtuples()]
+
+        if mode == 'pdf':   
+            self.raw_list = [(item.path, item.doc_id) for item in Findexer().select().where(Findexer.status=='raw').where(Findexer.file_ext == '.pdf').namedtuples()]
+
+    def find_by_content(self, style, target_string=None):
         if style == 'rent':
             get_col = 0
             split_col = 11
@@ -101,40 +93,47 @@ class FileIndexer:
             split_type = '/'
             date_split = 0
 
-        for item in self.xls_list:
-            part_list = (item.stem).split('_')
+        for path, doc_id in self.raw_list:
+            part_list = ((Path(path).stem)).split('_')
             if style in part_list:
-                df = pd.read_excel(item)
+                df = pd.read_excel(path)
                 df = df.iloc[:, 0].to_list()
                 if target_string in df:
-                    period = self.df_date_wrapper(item, get_col=get_col, split_col=split_col, split_type=split_type, date_split=date_split)
-                    self.processed_files.append((item.name, period))     
+                    period = self.df_date_wrapper(path, get_col=get_col, split_col=split_col, split_type=split_type, date_split=date_split)
+                    find_change = Findexer.get(Findexer.doc_id==doc_id)
+                    find_change.period = period
+                    find_change.status = 'processed'
+                    find_change.doc_type = style
+                    find_change.save()
 
-    def rename_by_content_xls(self):
-        '''find rent roll by content'''
-        for name, extension in self.index_dict.items():
-            if extension == 'xls' or extension == 'xlsx':
-                self.xls_list.append(name)
+    def df_date_wrapper(self, item, get_col=None, split_col=None, split_type=None, date_split=None):
+        df_date = pd.read_excel(item)
+        df_date = df_date.iloc[:, get_col].to_list()
+        df_date = df_date[split_col].split(split_type)
+        period = df_date[date_split]
+        period = period.rstrip()
+        period = period.lstrip()        
+        month = period[:-4]
+        year = period[-4:]
+        period = year + '-' + month
 
-        self.find_by_content(style='rent', target_string='Affordable Rent Roll Detail/ GPR Report')
+        return period
 
-        self.find_by_content(style='deposits', target_string='BANK DEPOSIT DETAILS')
-
-        return self.processed_files
-
-    def rename_by_content_pdf(self):
-        '''index opcashes'''
-        for name, extension in self.index_dict.items():
-            if extension == 'pdf':
-                self.pdf_list.append(name)
-
-        op_cash_list = []
-        for item in self.pdf_list:
+    def find_opcashes(self):
+        for item, doc_id in self.raw_list:
             op_cash_path = self.pdf.select_stmt_by_str(path=item, target_str=' XXXXXXX1891')
             if op_cash_path != None:
-                op_cash_list.append(op_cash_path)
+                self.op_cash_list.append(op_cash_path)
 
-        for op_cash_stmt_path in op_cash_list:
+    def type_opcashes(self):
+        for path in self.op_cash_list:
+            doc_id = [item.doc_id for item in Findexer().select().where(Findexer.path == path).namedtuples()][0]
+            find_change = Findexer.get(Findexer.doc_id==doc_id)
+            find_change.doc_type = 'opcash'
+            find_change.save()
+
+    def rename_by_content_pdf(self):
+        for op_cash_stmt_path in self.op_cash_list:
             hap_iter_one_month, stmt_date = self.extract_deposits_by_type(op_cash_stmt_path, style='hap', target_str='QUADEL')
             rr_iter_one_month, stmt_date1 = self.extract_deposits_by_type(op_cash_stmt_path, style='rr', target_str='Incoming Wire')
             dep_iter_one_month, stmt_date2 = self.extract_deposits_by_type(op_cash_stmt_path, style='dep', target_str='Deposit')
@@ -147,29 +146,6 @@ class FileIndexer:
             self.deposit_and_date_list.append(deposit_and_date_iter_one_month)
 
             self.write_deplist_to_db(hap_iter_one_month, rr_iter_one_month, dep_iter_one_month, deposit_and_date_iter_one_month, stmt_date)
-            
-            self.processed_files.append((op_cash_stmt_path.name, ''.join(stmt_date.split(' '))))
-
-        return self.processed_files
-
-    def write_deplist_to_db(self, hap_iter, rr_iter, depsum_iter, deposit_iter, stmt_date):
-        print('Writing deposit list to db')
-        db_records = [item for item in self.findex_db[self.findex_tablename] if 'cash' in item['fn'].split('_')]
-        for record in db_records:
-            if self.get_date_from_opcash_name(record) == [*deposit_iter[0]][0]:
-                proc_date = stmt_date
-                rr = [*rr_iter[0].values()][0][0]
-                hap = [*hap_iter[0].values()][0][0] 
-                depsum = [*depsum_iter[0].values()][0][0]
-                dep_list = json.dumps([*deposit_iter[0].values()])
-                data = dict(id=record['id'], status='processed', period=proc_date, hap=hap, rr=rr, depsum=depsum, dep_list=dep_list)
-                self.findex_db[self.findex_tablename].update(data, ['id'])
-
-    def get_date_from_opcash_name(self, record):
-        date_list = record['fn'].split('.')[0].split('_')[2:]
-        date_list.reverse()
-        date_list = ' '.join(date_list)
-        return date_list
 
     def extract_deposits_by_type(self, path, style=None, target_str=None):
         return_list = []
@@ -183,143 +159,61 @@ class FileIndexer:
         elif style == 'dep_detail':
             depdet_list = self.pdf.nbofi_pdf_extract_deposit(path, style=style, target_str=target_str)
             return depdet_list
+
         kdict[str(date)] = [amount, path, style]
-        return_list.append(kdict)
-            
+        return_list.append(kdict)            
         return return_list, date
+    
+    def write_deplist_to_db(self, hap_iter, rr_iter, depsum_iter, deposit_iter, stmt_date):
+        print('Writing deposit list to db')
+        opcash_records = [(item.fn, item.doc_id) for item in Findexer().
+            select().
+            where(Findexer.doc_type=='opcash').
+            namedtuples()]
 
-    def build_raw_index(self, autodrop=None, verbose=None):
-        table = self.findex_db[self.findex_tablename]
-        if autodrop:
-            table.drop()
-        self.directory_contents = []
-        self.articulate_directory()
-        for item in self.directory_contents:
-            if item.name != 'desktop.ini':
-                table.insert(dict(fn=item.name, path=str(item), status='raw', indexed='false'))
-        if verbose:
-            self.show_table()
+        for name, doc_id in opcash_records:
+            if self.get_date_from_opcash_name(name) == [*deposit_iter[0]][0]:
+                proc_date = stmt_date
+                rr = [*rr_iter[0].values()][0][0]
+                hap = [*hap_iter[0].values()][0][0] 
+                depsum = [*depsum_iter[0].values()][0][0]
+                deplist = json.dumps([*deposit_iter[0].values()])
+                
+                find_change = Findexer.get(Findexer.doc_id==doc_id)
+                find_change.status = 'processed'
+                find_change.period = self.helper_fix_date(proc_date)
+                find_change.hap = hap
+                find_change.rr = rr
+                find_change.depsum = depsum
+                find_change.deplist = deplist
+                find_change.save()
 
-        return table
+    def get_date_from_opcash_name(self, record):
+        date_list = record.split('.')[0].split('_')[2:]
+        date_list.reverse()
+        date_list = ' '.join(date_list)
+        return date_list
 
-    def update_index_for_processed(self, verbose=None):
-        for item in self.findex_db[self.findex_tablename]:
-            for proc_file in self.processed_files:
-                if item['fn'] == proc_file[0]:                 
-                    proc_date = self.normalize_dates(proc_file[1])
-                    data = dict(id=item['id'], status='processed', period=proc_date)
-                    self.findex_db[self.findex_tablename].update(data, ['id'])
-        if verbose:
-            self.show_table()
-
-    def mark_as_checked(self, verbose=None):
-        for item in self.findex_db[self.findex_tablename]:
-            for path in self.index_dict:
-                if item['fn'] == path.name:                 
-                    data = dict(id=item['id'], indexed='true')
-                    self.findex_db[self.findex_tablename].update(data, ['id'])
-        if verbose:
-            self.show_table()
-
-    def normalize_dates(self, raw_date=None):    
-        if raw_date:
-            f_date = datetime.strptime(raw_date, '%m%Y')
-            f_date = f_date.strftime('%Y-%m')
-            return f_date
-
-    def get_list_of_processed(self):
-        processed_check_for_test = []
-        print(f'\ngetting list of processed in {self.findex_tablename}')
-        for item in self.findex_db[self.findex_tablename]:
-            if item['status'] == 'processed':
-                print(item)
-                processed_check_for_test.append(item['fn'])
-                processed_check_for_test.append(item['period'])
-
-        return processed_check_for_test
-
-    def drop_tables(self):
-        print(f'\ndropping {self.findex_tablename}')
-        db = self.findex_db    
-        tablename = self.findex_tablename
-        
-        table = db[tablename]
-        table.drop()
-        
-    def get_tables(self):
-        self.check_tables = DBUtils.get_tables(self, self.findex_db)
-        print(self.check_tables)
-        print(len(self.findex_db[self.findex_tablename]))
+    def helper_fix_date(self, raw_date):    
+        f_date = datetime.strptime(raw_date, '%m %Y')
+        f_date = f_date.strftime('%Y-%m')
+        return f_date
 
     def ventilate_table(self):
-        return [item for item in self.findex_db[self.findex_tablename]    ]
+        pass
 
-    def show_table(self):
-        print(f'\n contents of {self.db}\n')
-        for results in self.db[self.tablename]:
-            print(results)
+# fi = FileIndexer2(path=Config.TEST_RS_PATH, db=Config.TEST_DB)
+# fi.build_index_runner()
 
-        return results
 
-    def show_findex_db(self, verbose=None, col_str=None):
-        return_list = []
-        try:
-            check_items = [item for item in self.findex_db[self.findex_tablename]]
-        except TypeError as e:
-            print(e, 'FileIndexer.show_checklist() returned None likely because no db or table has been set')
-            raise
-        if col_str:
-            for item in check_items:
-                print(item)
-                return_list.append(item[col_str])
-            return check_items, return_list
-        if verbose:
-            for item in check_items:
-                print(item)
-        return check_items
-    
-    def get_file_names_kw(self, dir1):
 
-        for item in dir1.iterdir():
-            sub_item = Path(item)
-            filename = sub_item.parts[-1]
-            f_ext = filename.split('.')
-            f_ext = f_ext[-1]
-            self.test_list.append(filename)
 
-        return self.test_list
-    
-    def df_date_wrapper(self, item, get_col=None, split_col=None, split_type=None, date_split=None):
-        df_date = pd.read_excel(item)
-        df_date = df_date.iloc[:, get_col].to_list()
-        df_date = df_date[split_col].split(split_type)
-        period = df_date[date_split]
-        period = period.rstrip()
-        period = period.lstrip()
-    
-        return period
 
-    def reset_files_for_testing(self):
-        should_continue_dep = self.remove_generated_file_from_dir(path1=self.path, file1=self.GENERATED_DEP_FILE)
-        should_continue_rr = self.remove_generated_file_from_dir(path1=self.path, file1=self.GENERATED_RR_FILE)
-        if should_continue_dep:
-            self.move_original_back_to_dir(discard_dir=self.discard_pile, target_file=self.TEST_DEP_FILE, target_dir=self.path)
-        if should_continue_rr:
-            self.move_original_back_to_dir(discard_dir=self.discard_pile, target_file=self.TEST_RR_FILE, target_dir=self.path)
 
-    def remove_generated_file_from_dir(self, path1=None, file1=None):
-        try:
-            os.remove(os.path.join(str(path1), file1))
-        except FileNotFoundError as e:
-            print(e, f'{file1} NOT found in test_data_repository, make sure you are looking for the right name')
-            return False
-    
-    def move_original_back_to_dir(self, discard_dir=None, target_file=None, target_dir=None):
-        self.get_file_names_kw(discard_dir)
-        for item in self.test_list:
-            if item == target_file:
-                try:
-                    shutil.move(os.path.join(str(discard_dir), item), target_dir)
-                except:
-                    print('Error occurred copying file: jw')
+
+
+
+
+
+
 

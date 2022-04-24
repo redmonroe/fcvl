@@ -7,11 +7,11 @@ from pprint import pprint
 
 import pytest
 from backend import (Damages, NTPayment, OpCash, OpCashDetail, Payment,
-                     PopulateTable, Tenant, TenantRent, Unit, db)
+                     PopulateTable, Tenant, TenantRent, Unit, Findexer, db)
 from build_rs import BuildRS
 from config import Config
 from db_utils import DBUtils
-from file_indexer import FileIndexer
+from file_indexer import FileIndexer2
 from peewee import JOIN, fn
 from records import record
 
@@ -19,13 +19,27 @@ create_tables_list = [OpCash, OpCashDetail, Damages, Tenant, Unit, Payment, NTPa
 
 target_bal_load_file = 'beginning_balance_2022.xlsx'
 path = Config.TEST_RS_PATH
-findex_db = Config.test_findex_db
-findex_tablename = Config.test_findex_name
+# findex_db = Config.test_findex_db
+# findex_tablename = Config.test_findex_name
 populate = PopulateTable()
 tenant = Tenant()
 unit = Unit()
-findex = FileIndexer(path=path, db=findex_db, tablename=findex_tablename)
 
+@pytest.mark.testing_fi
+class TestFileIndexer:
+
+    def test_fi_db(self):
+        db.close()
+        findex = FileIndexer2(path=path, db=Config.TEST_DB)
+        findex.build_index_runner()
+
+        db_items = [item.fn for item in Findexer().select()]
+        dir_contents = [item for item in findex.path.iterdir() if item.suffix != '.ini'] 
+        assert len(dir_contents) == len(db_items)
+
+        # breakpoint()
+
+"""
 @pytest.mark.testing_db
 class TestDB:
     '''basic idea: db connect > findex.build_index_runner > get_processed > '''
@@ -377,10 +391,13 @@ class TestOpcash:
 @pytest.mark.testing_db
 class TestBuild:
     '''what do we want this to look like that '''
+    db.close()
     basedir = os.path.abspath(os.path.dirname(__file__))
     build = BuildRS(path=path, main_db=db, findex_db=findex_db, findex_tablename=findex_tablename)
     build.new_auto_build()
     build.summary_assertion_at_period(test_date='2022-03')
+"""
+
         
         # breakpoint()
 

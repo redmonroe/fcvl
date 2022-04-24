@@ -22,12 +22,11 @@ from recordtype import \
     recordtype  # i edit the source code here, so requirements won't work if this is ever published, after 3.10, collection.abc change
 
 from config import Config
-from file_indexer import FileIndexer
 from records import record
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
-db = SqliteDatabase(f'{basedir}/sqlite/test_pw_db.db', pragmas={'foreign_keys': 1})
+db = Config.TEST_DB
 
 class BaseModel(Model):
     class Meta:
@@ -109,6 +108,21 @@ class NTPayment(BaseModel):
     genus = CharField(default='other')    
     deposit_id = IntegerField()
 
+class Findexer(BaseModel):
+    doc_id = AutoField()
+    path = CharField()
+    fn = CharField()
+    file_ext = CharField(default='0')
+    doc_type = CharField(default='untyped`')
+    status = CharField(default='raw')
+    indexed = CharField(default='false')
+    period = CharField(default='0')
+    hap = CharField(default='0')
+    rr = CharField(default='0')
+    depsum = CharField(default='0')
+    deplist = CharField(default='0')
+
+
 class StatusRS(BaseModel):
     current_date = DateField()
     # what months are ready to write
@@ -133,13 +147,14 @@ class StatusRS(BaseModel):
 
         months_ytd = self.months_in_ytd()
 
+        # SOMETHING = self.get_processed_by_month(month_list=months_ytd)
+
         if most_recent_status:
             print(f'current date: {most_recent_status}')
         if months_ytd:
             print(f'current month: {months_ytd[-1]}')
             print(f'months ytd {Config.current_year}: {months_ytd}')
         
-        breakpoint()
         # breakpoint()
         return most_recent_status 
 
@@ -158,9 +173,10 @@ class StatusRS(BaseModel):
 
         return month_list
 
-    '''
-    def limit_date(self):
-    '''
+    # def get_processed_by_month(self, month_list=None):
+    #     for month in month_list:
+    #         reports_by_month = [rec[.fn for rec in ]
+    #         breakpoint()
         
 
 class QueryHC():
