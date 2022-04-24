@@ -138,7 +138,7 @@ class StatusRS(BaseModel):
             # breakpoint()
             db.drop_tables(models=[StatusRS])
             db.create_tables(models=[StatusRS])
-        date1 = datetime.datetime.now()
+        date1 = datetime.now()
         query = StatusRS.create(current_date=date1)
         query.save()   
 
@@ -147,14 +147,23 @@ class StatusRS(BaseModel):
 
         months_ytd = self.months_in_ytd()
 
-        # SOMETHING = self.get_processed_by_month(month_list=months_ytd)
+        report_list = self.get_processed_by_month(month_list=months_ytd)
+        # breakpoint()
 
         if most_recent_status:
             print(f'current date: {most_recent_status}')
+
         if months_ytd:
             print(f'current month: {months_ytd[-1]}')
             print(f'months ytd {Config.current_year}: {months_ytd}')
-        
+
+        if report_list:
+            look_list = []
+            for month, item in zip(months_ytd, report_list):
+                look_dict = {fn: (tup[0], tup[1], tup[2]) for fn, tup in item.items() if month == tup[0]}
+                look_list.append(look_dict)
+                print(f'for period {month} these files have been processed {[*look_dict.keys()]}')
+    
         # breakpoint()
         return most_recent_status 
 
@@ -173,10 +182,12 @@ class StatusRS(BaseModel):
 
         return month_list
 
-    # def get_processed_by_month(self, month_list=None):
-    #     for month in month_list:
-    #         reports_by_month = [rec[.fn for rec in ]
-    #         breakpoint()
+    def get_processed_by_month(self, month_list=None):
+        report_list = []
+        for month in month_list:
+            reports_by_month = {rec.fn: (month, rec.path, rec.doc_type) for rec in Findexer().select().where(Findexer.period==month).where(Findexer.status=='processed').namedtuples()}
+            report_list.append(reports_by_month)
+        return report_list
         
 
 class QueryHC():

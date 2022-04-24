@@ -436,8 +436,7 @@ class TestOpcash:
 
     def test_teardown(self):
         db.drop_tables(models=create_tables_list)
-        db.close()
-    
+        db.close()    
 
     def test_close_db(self):
         if db.is_closed() == False:
