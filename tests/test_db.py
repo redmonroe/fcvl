@@ -446,12 +446,22 @@ class TestOpcash:
 @pytest.mark.testing_db
 class TestBuild:
     '''what do we want this to look like that '''
-    basedir = os.path.abspath(os.path.dirname(__file__))
-    build = BuildRS(path=path, main_db=db)
-    build.new_auto_build()
-    build.summary_assertion_at_period(test_date='2022-03')
+
+    def test_generic_build(self):
+        basedir = os.path.abspath(os.path.dirname(__file__))
+        build = BuildRS(path=path, main_db=db)
+        build.new_auto_build()
+        build.summary_assertion_at_period(test_date='2022-03')
     
 
+    def test_teardown(self):
+        db.drop_tables(models=create_tables_list)
+        db.close()
+    
+
+    def test_close_db(self):
+        if db.is_closed() == False:
+            db.close()
         # class SubsidyRent(BaseModel):
         #     pass
 
