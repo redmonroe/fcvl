@@ -11,7 +11,7 @@ from backend import (Damages, NTPayment, OpCash, OpCashDetail, Payment,
 from build_rs import BuildRS
 from config import Config
 from db_utils import DBUtils
-from file_indexer import FileIndexer2
+from file_indexer import FileIndexer
 from peewee import JOIN, fn
 from records import record
 
@@ -19,25 +19,62 @@ create_tables_list = [OpCash, OpCashDetail, Damages, Tenant, Unit, Payment, NTPa
 
 target_bal_load_file = 'beginning_balance_2022.xlsx'
 path = Config.TEST_RS_PATH
-# findex_db = Config.test_findex_db
-# findex_tablename = Config.test_findex_name
 populate = PopulateTable()
 tenant = Tenant()
 unit = Unit()
+findex = FileIndexer(path=path, db=Config.TEST_DB)
 
 @pytest.mark.testing_fi
 class TestFileIndexer:
 
     def test_fi_db(self):
-        db.close()
-        findex = FileIndexer2(path=path, db=Config.TEST_DB)
         findex.build_index_runner()
 
         db_items = [item.fn for item in Findexer().select()]
         dir_contents = [item for item in findex.path.iterdir() if item.suffix != '.ini'] 
         assert len(dir_contents) == len(db_items)
 
-        # breakpoint()
+    def test_drop_fi_db(self):
+        findex.drop_findex_table()
+
+        '''assert table is dropped, might need to show that only findexer is dropped if other tables need to live on'''
+        assert Config.TEST_DB.get_tables() == []
+
+        findex.close_findex_table()
+        assert Config.TEST_DB.is_closed() == True
+
+    def test_connection(self):
+        findex.connect_to_db()
+        assert Config.TEST_DB.is_closed() == False
+
+    def test_dir_contents(self):
+        findex.articulate_directory()
+        assert len(findex.directory_contents) == 10
+        
+    def test_index_dict(self):
+        findex.sort_directory_by_extension()
+        assert list(findex.index_dict)[0].stem == 'beginning_balance_2022'
+        assert list(findex.index_dict)[9].stem == 'rent_roll_03_2022'
+
+    def test_load_what_is_in_dir(self):
+        findex.load_what_is_in_dir()
+        db_items = [item.fn for item in Findexer().select()]
+        dir_contents = [item for item in findex.path.iterdir() if item.suffix != '.ini'] 
+        assert len(dir_contents) == len(db_items)
+
+    def test_xls_list(self):
+        findex.make_a_list_of_raw(mode='xls')
+        assert len(findex.raw_list) == 7
+        assert findex.raw_list[0][1] == 1
+   
+    def test_pdf_list(self):
+        findex.make_a_list_of_raw(mode='pdf')
+        assert len(findex.raw_list) == 3
+        assert findex.raw_list[-1][-1] == 7
+
+    def test_close(self):
+        findex.close_findex_table()
+        assert Config.TEST_DB.is_closed() == True
 
 """
 @pytest.mark.testing_db

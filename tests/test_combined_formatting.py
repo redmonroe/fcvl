@@ -32,11 +32,10 @@ sleep1 = 1
 test_workbook = Config.TEST_RS
 path = Config.TEST_RS_PATH
 test_path = Config.TEST_RS_PATH
-discard_pile = Config.TEST_MOVE_PATH
 monkeypatch = MonkeyPatch()
 service = oauth(Config.my_scopes, 'sheet', mode='testing')
 calls = GoogleApiCalls()
-findex = FileIndexer(path=test_path, discard_pile=discard_pile, db=Config.test_findex_db, tablename='findex')
+findex = FileIndexer(path=path, db=Config.TEST_DB)
 ys = YearSheet(full_sheet=test_workbook, mode='testing', test_service=service)
 build = BuildRS(sleep1, full_sheet=test_workbook, path=test_path, mode='testing', test_service=service)
 

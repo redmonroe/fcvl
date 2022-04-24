@@ -12,7 +12,7 @@ from pdf import StructDataExtract
 from backend import Findexer
 
 
-class FileIndexer2:
+class FileIndexer:
 
     create_findex_list = [Findexer]
     index_dict = {}
@@ -32,7 +32,7 @@ class FileIndexer2:
     def build_index_runner(self):
         self.connect_to_db(mode='autodrop')
         self.directory_contents = self.articulate_directory()
-        self.index_dict = self.sort_directory_by_extension(verbose=True)
+        self.index_dict = self.sort_directory_by_extension(verbose=True) # this doesn't do the sorting anymore but we still use it
         self.load_what_is_in_dir()
 
         self.make_a_list_of_raw(mode='xls')
@@ -202,8 +202,13 @@ class FileIndexer2:
     def ventilate_table(self):
         pass
 
-# fi = FileIndexer2(path=Config.TEST_RS_PATH, db=Config.TEST_DB)
-# fi.build_index_runner()
+    def drop_findex_table(self):
+        self.db.drop_tables(models=self.create_findex_list)
+
+    def close_findex_table(self):
+        self.db.close()
+
+
 
 
 

@@ -35,17 +35,12 @@ from errors import retry_google_api
 sleep1 = 2
 test_workbook = Config.TEST_RS
 path = Config.TEST_RS_PATH
-discard_pile = Config.TEST_MOVE_PATH
-# cl_test_db = Config.test_checklist_db
-# cl_test_tn = Config.test_checklist_name
-findex_test_db = Config.test_findex_db
 build_test_db = Config.test_build_db
 build_tablename = Config.test_build_name
 # monkeypatch = MonkeyPatch()
 service = oauth(Config.my_scopes, 'sheet', mode='testing')
 calls = GoogleApiCalls()
-# checklist = Checklist(db=cl_test_db, tablename=cl_test_tn)
-findex = FileIndexer(path=path, discard_pile=discard_pile, db=findex_test_db, tablename=Config.test_findex_name)
+findex = FileIndexer(path=path, db=Config.TEST_DB)
 ms = MonthSheet(full_sheet=test_workbook, path=path, mode='testing', sleep=sleep1, test_service=service)
 ys = YearSheet(full_sheet=test_workbook, mode='testing', test_service=service, sleep=sleep1)
 
