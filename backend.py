@@ -89,7 +89,7 @@ class Payment(BaseModel):
     deposit_id = IntegerField()
 
 class OpCash(BaseModel):
-    stmt_key = CharField(primary_key=True, unique=True)
+    stmt_key = CharField(primary_key=True, unique=True)    
     date = DateField()
     rr = CharField(default='0')
     hap = CharField(default='0')
@@ -182,7 +182,7 @@ class StatusRS(BaseModel):
 class QueryHC():
 
     def make_first_and_last_dates(self, date_str=None):
-        dt_obj = datetime.datetime.strptime(date_str, '%Y-%m')
+        dt_obj = datetime.strptime(date_str, '%Y-%m')
         dt_obj_first = dt_obj.replace(day = 1)
         dt_obj_last = dt_obj.replace(day = calendar.monthrange(dt_obj.year, dt_obj.month)[1])
 
@@ -467,7 +467,7 @@ class PopulateTable(QueryHC):
         insert_many_list = [{
             'tenant': name.lower(),
             'amount': amount, 
-            'date_posted': datetime.datetime.strptime(date_posted, '%m/%d/%Y'),  
+            'date_posted': datetime.strptime(date_posted, '%m/%d/%Y'),  
             'date_code': date_code, 
             'unit': unit, 
             'deposit_id': deposit_id, 
@@ -495,36 +495,11 @@ class PopulateTable(QueryHC):
                     insert_iter.append({
                         'payee': description.lower(), 
                         'amount': amount, 
-                        'date_posted': datetime.datetime.strptime(date_posted, '%m/%d/%Y'),  
+                        'date_posted': datetime.strptime(date_posted, '%m/%d/%Y'),  
                         'date_code': date_code, 
                         'genus': description, 
                         'deposit_id': deposit_id, 
                         })
-
-        # try: 
-        #     for item in insert_iter:
-        #         if 'laundry' in item['payee'].split(' '):
-        #             item['payee'] = 'laundry'
-        #         elif item['payee'] == 'laundry':
-        #             item['payee'] = 'laundry'
-        #         elif 'insurance' in item['payee'].split(' '):
-        #             item['payee'] = 'insurance'
-        #         elif item['payee'] == 'insurance':
-        #             item['payee'] = 'insurance'
-        #         elif 'security' in item['payee'].split(' '):
-        #             item['payee'] = 'sd'
-        #         elif item['payee'] == 'sd':
-        #             item['payee'] = 'sd'
-        #         elif item['payee'] == 'security deposit':
-        #             item['payee'] = 'sd'
-        #         elif item['payee'] == 'security':
-        #             item['payee'] = 'sd'
-        #         else:
-        #             item['payee'] = 'other'
-        # except Exception as e:
-        #     item['payee'] = 'other'
-        #     print(e)
-        #     breakpoint()
 
         return insert_iter
 
@@ -539,8 +514,8 @@ class PopulateTable(QueryHC):
         date = df['Date Posted'].tolist()
         pay = df['Amount'].tolist()
         description = df['Description'].str.lower().tolist()
-        dt_code = [datetime.datetime.strptime(item, '%m/%d/%Y') for item in date if type(item) == str]
-        dt_code = [str(datetime.datetime.strftime(item, '%m')) for item in dt_code]
+        dt_code = [datetime.strptime(item, '%m/%d/%Y') for item in date if type(item) == str]
+        dt_code = [str(datetime.strftime(item, '%m')) for item in dt_code]
 
         zipped = zip(bde, unit, name, date, pay, dt_code, description)
         self.df = pd.DataFrame(zipped, columns=columns)
@@ -621,10 +596,10 @@ class PopulateTable(QueryHC):
 
     def transfer_opcash_to_db(self, file_list=None):
         for item in file_list:
-            oc = OpCash.create(stmt_key=item[0], date=datetime.datetime.strptime(item[1], '%Y-%m'), rr=item[5], hap=item[4], dep_sum=item[6])
+            oc = OpCash.create(stmt_key=item[0], date=datetime.strptime(item[1], '%Y-%m'), rr=item[4], hap=item[3], dep_sum=item[5])
             oc.save()
 
-            for lst in json.loads(item[7])[0]:
-                ocd = OpCashDetail.create(stmt_key=item[0], date1=datetime.datetime.strptime(lst[0], '%m/%d/%Y'), amount=lst[1])
+            for lst in json.loads(item[6])[0]:
+                ocd = OpCashDetail.create(stmt_key=item[0], date1=datetime.strptime(lst[0], '%m/%d/%Y'), amount=lst[1])
                 ocd.save()
 

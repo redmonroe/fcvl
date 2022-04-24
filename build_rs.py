@@ -9,7 +9,7 @@ from peewee import JOIN, fn
 
 from auth_work import oauth
 from backend import (StatusRS, Damages, NTPayment, OpCash, OpCashDetail, Payment,
-                     PopulateTable, Tenant, TenantRent, Unit, db)
+                     PopulateTable, Tenant, TenantRent, Unit, Findexer, db)
 
 from checklist import Checklist
 from config import Config, my_scopes
@@ -22,21 +22,11 @@ from setup_year import YearSheet
 
 
 class BuildRS(MonthSheet):
-    def __init__(self, sleep=None, full_sheet=None, path=None, mode=None, discard_pile=None, main_db=None, rs_tablename=None, findex_tablename=None, mformat_obj=None, test_service=None, findex_db=None, mformat=None):
-        # if mode == 'testing':
-        #     self.db = Config.test_build_db
-        #     self.mode = 'testing'
-        #     self.full_sheet = Config.TEST_RS
-        #     self.tablename = rs_tablename 
-        #     self.service = test_service
-        #     self.mformat = mformat_obj
-        #     self.calls = GoogleApiCalls()
-        #     self.sleep = sleep
-        # else:
+    def __init__(self, sleep=None, full_sheet=None, path=None, mode=None, main_db=None, rs_tablename=None, mformat_obj=None, test_service=None, mformat=None):
+
         self.main_db = main_db
-        self.findex_db = findex_db
-        self.findex_tablename = findex_tablename
         self.full_sheet = full_sheet
+        self.path = path
         try:
             self.service = oauth(my_scopes, 'sheet')
         except FileNotFoundError as e:
@@ -45,7 +35,6 @@ class BuildRS(MonthSheet):
         self.mformat = mformat
         self.calls = GoogleApiCalls() 
         self.sleep = sleep
-        self.path = path
         self.create_tables_list = [StatusRS, OpCash, OpCashDetail, Damages, Tenant, Unit, Payment, NTPayment, TenantRent]
 
         self.target_bal_load_file = 'beginning_balance_2022.xlsx'
@@ -74,24 +63,29 @@ class BuildRS(MonthSheet):
         print('ignore checklist and automation; yagni')
         populate = PopulateTable()
         unit = Unit()
-        findex = FileIndexer(path=self.path, db=self.findex_db, tablename=self.findex_tablename)
-        findex.drop_tables() 
-        self.main_db.connect()
+        findex = FileIndexer(path=self.path, db=self.main_db)
+        findex.drop_findex_table() 
+        if self.main_db.is_closed() == True:
+            self.main_db.connect()
         self.main_db.drop_tables(models=self.create_tables_list)
         self.main_db.create_tables(self.create_tables_list)
         assert db.database == '/home/joe/local_dev_projects/fcvl/sqlite/test_pw_db.db'
         assert [*db.get_columns(table='payment')[0]._asdict().keys()] == ['name', 'data_type', 'null', 'primary_key', 'table', 'default']
 
         findex.build_index_runner() # this is a findex method
-        records = findex.ventilate_table()
 
         # load initial tenants
-        rent_roll_list = [(item['fn'], item['period'], item['status'], item['path']) for item in records if item['fn'].split('_')[0] == 'rent' and item['status'] == 'processed']
+        records = [(item.fn, item.period, item.path) for item in Findexer().select().
+            where(Findexer.doc_type == 'rent').
+            where(Findexer.status == 'processed').
+            where(Findexer.period == '2022-01').
+            namedtuples()]
 
-        january_rent_roll_path = rent_roll_list[0][3]
+        january_rent_roll_path = records[0][2]
+        jan_date = records[0][1]
 
         # business logic to load inital tenants; cutoff '2022-01'
-        nt_list, total_tenant_charges, explicit_move_outs = populate.init_tenant_load(filename=january_rent_roll_path, date='2022-01')
+        nt_list, total_tenant_charges, explicit_move_outs = populate.init_tenant_load(filename=january_rent_roll_path, date=jan_date)
 
         vacant_units = Unit.find_vacants()
         assert 'PT-201' and 'CD-115' and 'CD-101' in vacant_units
@@ -101,11 +95,14 @@ class BuildRS(MonthSheet):
         target_balance_file = self.path.joinpath(self.target_bal_load_file)
         populate.balance_load(filename=target_balance_file)
 
-        rent_roll_list = [(item['fn'], item['period'], item['status'], item['path']) for item in records if item['fn'].split('_')[0] == 'rent' and item['status'] == 'processed']
-
         # load remaining months rent
-        paths_except_jan = rent_roll_list[1:]
-        processed_rentr_dates_and_paths = [(item[1], item[3]) for item in paths_except_jan]
+        rent_roll_list = [(item.fn, item.period, item.path) for item in Findexer().select().
+            where(Findexer.doc_type == 'rent').
+            where(Findexer.status == 'processed').
+            where(Findexer.period != '2022-01').
+            namedtuples()]
+
+        processed_rentr_dates_and_paths = [(item[1], item[2]) for item in rent_roll_list]
         processed_rentr_dates_and_paths.sort()
 
         # iterate over dep
@@ -120,9 +117,12 @@ class BuildRS(MonthSheet):
                 vacant_snapshot_loop_end = Unit.find_vacants()
                 assert sorted(vacant_snapshot_loop_end) == sorted(['CD-101', 'CD-115', 'PT-211'])
 
-        file_list = [(item['fn'], item['period'], item['status'], item['path']) for item in records if item['fn'].split('_')[0] == 'deposits' and item['status'] == 'processed']
+        file_list = [(item.fn, item.period, item.path) for item in Findexer().select().
+            where(Findexer.doc_type == 'deposits').
+            where(Findexer.status == 'processed').
+            namedtuples()]
         
-        processed_dates_and_paths = [(item[1], item[3]) for item in file_list]
+        processed_dates_and_paths = [(item[1], item[2]) for item in file_list]
         processed_dates_and_paths.sort()
         
         for date1, path in processed_dates_and_paths:
@@ -131,7 +131,10 @@ class BuildRS(MonthSheet):
 
         Damages.load_damages()
 
-        file_list = [(item['fn'], item['period'], item['status'], item['path'], item['hap'], item['rr'], item['depsum'], item['dep_list']) for item in records if item['fn'].split('_')[1] == 'cash' and item['status'] == 'processed']
+        file_list = [(item.fn, item.period, item.path, item.hap, item.rr, item.depsum, item.deplist) for item in Findexer().select().
+            where(Findexer.doc_type == 'opcash').
+            where(Findexer.status == 'processed').
+            namedtuples()]
 
         populate.transfer_opcash_to_db(file_list=file_list)
         self.main_db.close()

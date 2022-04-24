@@ -89,7 +89,7 @@ class TestDB:
     def test_db(self):
         db.create_tables(create_tables_list)
         assert db.database == '/home/joe/local_dev_projects/fcvl/sqlite/test_pw_db.db'
-        assert sorted(db.get_tables()) == sorted(['opcash', 'opcashdetail', 'damages', 'tenantrent', 'ntpayment', 'payment', 'tenant', 'unit'])
+        assert sorted(db.get_tables()) == sorted(['opcash', 'opcashdetail', 'damages', 'tenantrent', 'ntpayment', 'payment', 'tenant', 'unit', 'statusrs'])
         assert [*db.get_columns(table='payment')[0]._asdict().keys()] == ['name', 'data_type', 'null', 'primary_key', 'table', 'default']
 
         findex.drop_findex_table()
@@ -139,17 +139,15 @@ class TestDB:
         jan_end_bal_sum = Tenant.select(fn.Sum(Tenant.beg_bal_amount).alias('sum')).get().sum
         assert jan_end_bal_sum == 793
 
-    def test_teardown(self):
-        db.drop_tables(models=create_tables_list)
-        db.close()
-"""
 
     def test_load_remaining_months_rent(self):
-        records = findex.ventilate_table()
-        rent_roll_list = [(item['fn'], item['period'], item['status'], item['path']) for item in records if item['fn'].split('_')[0] == 'rent' and item['status'] == 'processed']
+        rent_roll_list = [(item.fn, item.period, item.path) for item in Findexer().select().
+            where(Findexer.doc_type == 'rent').
+            where(Findexer.status == 'processed').
+            where(Findexer.period != '2022-01').
+            namedtuples()]
 
-        paths_except_jan = rent_roll_list[1:]
-        processed_rentr_dates_and_paths = [(item[1], item[3]) for item in paths_except_jan]
+        processed_rentr_dates_and_paths = [(item[1], item[2]) for item in rent_roll_list]
         processed_rentr_dates_and_paths.sort()
 
         for date, filename in processed_rentr_dates_and_paths:
@@ -165,7 +163,6 @@ class TestDB:
                 assert sorted(vacant_snapshot_loop_end) == sorted(['CD-101', 'CD-115'])
 
             if date == '2022-03':
-                # dt_obj_first, dt_obj_last = populate.make_first_and_last_dates(date_str=date)
                 total_rent_charges = populate.get_total_rent_charges_by_month(first_dt=first_dt, last_dt=last_dt)
                 assert total_rent_charges == 15972.0 
 
@@ -174,10 +171,12 @@ class TestDB:
     
 
     def test_real_payments(self):
-        records = findex.ventilate_table()
-        file_list = [(item['fn'], item['period'], item['status'], item['path']) for item in records if item['fn'].split('_')[0] == 'deposits' and item['status'] == 'processed']
+        file_list = [(item.fn, item.period, item.path) for item in Findexer().select().
+            where(Findexer.doc_type == 'deposits').
+            where(Findexer.status == 'processed').
+            namedtuples()]
         
-        processed_dates_and_paths = [(item[1], item[3]) for item in file_list]
+        processed_dates_and_paths = [(item[1], item[2]) for item in file_list]
         processed_dates_and_paths.sort()
         
         for date1, path in processed_dates_and_paths:
@@ -396,8 +395,10 @@ class TestDB:
 class TestOpcash:
 
     def test_opcash_load(self):
-        records = findex.ventilate_table()
-        file_list = [(item['fn'], item['period'], item['status'], item['path'], item['hap'], item['rr'], item['depsum'], item['dep_list']) for item in records if item['fn'].split('_')[1] == 'cash' and item['status'] == 'processed']
+        file_list = [(item.fn, item.period, item.path, item.hap, item.rr, item.depsum, item.deplist) for item in Findexer().select().
+            where(Findexer.doc_type == 'opcash').
+            where(Findexer.status == 'processed').
+            namedtuples()]
 
         populate.transfer_opcash_to_db(file_list=file_list)
 
@@ -418,7 +419,7 @@ class TestOpcash:
 
         iter2 = populate.get_opcashdetail_by_stmt(stmt_key=iter1[0][0])
         
-        assert iter1 == [('op_cash_2022_02.pdf', datetime.date(2022, 2, 1), '0.0', '31739.0', '15931.3')]
+        assert iter1 == [('op_cash_2022_02.pdf', datetime.date(2022, 2, 1), '0', '31739.0', '15931.3')]
 
         assert iter2[0].id == 7
 
@@ -432,7 +433,12 @@ class TestOpcash:
         assert iter1 == [('op_cash_2022_03.pdf', datetime.date(2022, 3, 1), '3950.91', '38672.0', '16778.95')]
 
         assert iter2[0].id == 13
+
+    def test_teardown(self):
+        db.drop_tables(models=create_tables_list)
+        db.close()
     
+
     def test_close_db(self):
         if db.is_closed() == False:
             db.close()
@@ -440,17 +446,12 @@ class TestOpcash:
 @pytest.mark.testing_db
 class TestBuild:
     '''what do we want this to look like that '''
-    db.close()
     basedir = os.path.abspath(os.path.dirname(__file__))
-    build = BuildRS(path=path, main_db=db, findex_db=findex_db, findex_tablename=findex_tablename)
+    build = BuildRS(path=path, main_db=db)
     build.new_auto_build()
     build.summary_assertion_at_period(test_date='2022-03')
-"""
+    
 
-        
-        # breakpoint()
-
-        # class Operation
         # class SubsidyRent(BaseModel):
         #     pass
 
