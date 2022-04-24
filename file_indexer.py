@@ -47,7 +47,8 @@ class FileIndexer:
             self.rename_by_content_pdf()
 
     def connect_to_db(self, mode=None):
-        self.db.connect()
+        if self.db.is_closed():
+            self.db.connect()
         if mode == 'autodrop':
             self.db.drop_tables(models=self.create_findex_list)
         self.db.create_tables(models=self.create_findex_list)

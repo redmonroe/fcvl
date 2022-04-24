@@ -110,7 +110,6 @@ class NTPayment(BaseModel):
 
 class Findexer(BaseModel):
     doc_id = AutoField()
-    path = CharField()
     fn = CharField()
     file_ext = CharField(default='0')
     doc_type = CharField(default='untyped`')
@@ -121,6 +120,7 @@ class Findexer(BaseModel):
     rr = CharField(default='0')
     depsum = CharField(default='0')
     deplist = CharField(default='0')
+    path = CharField()
 
 
 class StatusRS(BaseModel):
@@ -554,7 +554,7 @@ class PopulateTable(QueryHC):
         for index, rec in df.iterrows():
             if rec['Move out'] != fill_item:
                 explicit_move_outs.append(rec['Name'].lower())
-            row = Row(rec['Name'].lower(), rec['Unit'], rec['Actual Rent Charge'], rec['Move out'] , datetime.datetime.strptime(date, '%Y-%m'))
+            row = Row(rec['Name'].lower(), rec['Unit'], rec['Actual Rent Charge'], rec['Move out'] , datetime.strptime(date, '%Y-%m'))
             nt_list.append(row)
 
         return nt_list, explicit_move_outs

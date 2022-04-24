@@ -24,7 +24,8 @@ tenant = Tenant()
 unit = Unit()
 findex = FileIndexer(path=path, db=Config.TEST_DB)
 
-@pytest.mark.testing_fi
+# @pytest.mark.testing_fi
+@pytest.mark.testing_db
 class TestFileIndexer:
 
     def test_fi_db(self):
@@ -38,7 +39,7 @@ class TestFileIndexer:
         findex.drop_findex_table()
 
         '''assert table is dropped, might need to show that only findexer is dropped if other tables need to live on'''
-        assert Config.TEST_DB.get_tables() == []
+        assert 'findexer' not in Config.TEST_DB.get_tables()
 
         findex.close_findex_table()
         assert Config.TEST_DB.is_closed() == True
@@ -73,38 +74,45 @@ class TestFileIndexer:
         assert findex.raw_list[-1][-1] == 7
 
     def test_close(self):
+        findex.drop_findex_table()
         findex.close_findex_table()
         assert Config.TEST_DB.is_closed() == True
 
-"""
 @pytest.mark.testing_db
 class TestDB:
     '''basic idea: db connect > findex.build_index_runner > get_processed > '''
 
-    def test_db(self):
+    def test_reset_all(self):
         db.connect()
         db.drop_tables(models=create_tables_list)
+
+    def test_db(self):
         db.create_tables(create_tables_list)
         assert db.database == '/home/joe/local_dev_projects/fcvl/sqlite/test_pw_db.db'
         assert sorted(db.get_tables()) == sorted(['opcash', 'opcashdetail', 'damages', 'tenantrent', 'ntpayment', 'payment', 'tenant', 'unit'])
         assert [*db.get_columns(table='payment')[0]._asdict().keys()] == ['name', 'data_type', 'null', 'primary_key', 'table', 'default']
 
-        findex.drop_tables()
+        findex.drop_findex_table()
+
 
     @record
     def test_initial_tenant_load(self):
         '''JANUARY IS DIFFERENT'''
 
         findex.build_index_runner()
-        records = findex.ventilate_table()
-        rent_roll_list = [(item['fn'], item['period'], item['status'], item['path']) for item in records if item['fn'].split('_')[0] == 'rent' and item['status'] == 'processed']
+        records = [(item.fn, item.period, item.path) for item in Findexer().select().
+            where(Findexer.doc_type == 'rent').
+            where(Findexer.status == 'processed').
+            where(Findexer.period == '2022-01').
+            namedtuples()]
 
-        january_rent_roll_path = rent_roll_list[0][3]
+        january_rent_roll_path = records[0][2]
+        jan_date = records[0][1]
 
         assert january_rent_roll_path == '/mnt/c/Users/joewa/Google Drive/fall creek village I/audit 2022/test_rent_sheets_data_sources/rent_roll_01_2022.xls'
 
         '''init is almost half of business logic'''
-        nt_list, total_tenant_charges, explicit_move_outs = populate.init_tenant_load(filename=january_rent_roll_path, date='2022-01')
+        nt_list, total_tenant_charges, explicit_move_outs = populate.init_tenant_load(filename=january_rent_roll_path, date=jan_date)
 
         # sheet side checks
         assert len(nt_list) == 64
@@ -131,6 +139,10 @@ class TestDB:
         jan_end_bal_sum = Tenant.select(fn.Sum(Tenant.beg_bal_amount).alias('sum')).get().sum
         assert jan_end_bal_sum == 793
 
+    def test_teardown(self):
+        db.drop_tables(models=create_tables_list)
+        db.close()
+"""
 
     def test_load_remaining_months_rent(self):
         records = findex.ventilate_table()
