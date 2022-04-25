@@ -33,19 +33,14 @@ class MonthSheet:
 
     def __init__(self, full_sheet, path, sleep, mode=None, test_service=None):
 
-        self.test_message = 'hi'
         self.full_sheet = full_sheet
         if mode == 'testing':
             self.service = test_service
             self.sleep = sleep
         else:
             self.service = oauth(my_scopes, 'sheet')
-            self.sleep = sleep
-        self.db = Config.db_rs
-        self.user_choice = None
-        self.text_snippet = ''
+        
         self.file_input_path = path
-        self.user_text = f'Options:\n PRESS 1 to show current sheets in RENT SHEETS \n PRESS 2 TO VIEW ITEMS IN {self.file_input_path} \n PRESS 3 for MONTHLY FORMATTING, PART ONE (that is, update intake sheet in {self.file_input_path} (xlsx) \n PRESS 4 for MONTHLY FORMATTING, PART TWO: format rent roll & subsidy by month and sheet\n >>>'
         self.wrange_unit = self.wrange_unit1
         self.wrange_t_name = self.wrange_t_name1
         self.wrange_k_rent = self.wrange_k_rent1 
@@ -59,27 +54,21 @@ class MonthSheet:
         self.t_rent = []
         self.sheet_choice = None
         self.gc = GoogleApiCalls()
+
+    def auto_control(self):
+        self.export_month_format(sheet_choice)
+        self.month_write_col(sheet_choice)
        
-    def control(self):
-        if self.user_choice == 1:
-            self.show_current_sheets(interactive=False)
-        elif self.user_choice == 2:
-            self.walk_download_folder()
-        elif self.user_choice == 3:
-            self.push_to_intake()
-        elif self.user_choice == 4:
-            sheet_choice, selection = self.show_current_sheets(interactive=True)
-            self.set_user_choice_push(sheet=sheet_choice)
-            if self.user_choice == 1:
-                self.export_month_format(sheet_choice)
-                self.month_write_col(sheet_choice)
-
-    def set_user_choice(self):
-        self.user_choice = int(input(self.user_text))
-
-    def set_user_choice_push(self, sheet):
-        print(f'\n You have chosen to work with: {sheet}')
-        self.user_choice = int(input(self.user_text2))
+    def export_month_format(self, sheet_choice):
+        gc = GoogleApiCalls()
+        time.sleep(self.sleep)
+        gc.format_row(self.service, self.full_sheet, f'{sheet_choice}!A1:M1', "ROWS", self.HEADER_NAMES)
+        gc.write_formula_column(self.service, self.full_sheet, self.G_SUM_KRENT, f'{sheet_choice}!E69:E69')
+        gc.write_formula_column(self.service, self.full_sheet, self.G_SUM_ACTSUBSIDY, f'{sheet_choice}!F69:F69')
+        gc.write_formula_column(self.service, self.full_sheet, self.G_SUM_ACTRENT, f'{sheet_choice}!H69:H69')
+        gc.write_formula_column(self.service, self.full_sheet, self.G_PAYMENT_MADE, f'{sheet_choice}!K69:K69')
+        gc.write_formula_column(self.service, self.full_sheet, self.G_CURBAL, f'{sheet_choice}!L69:L69')
+        print(f'exported month format to {sheet_choice} with wait time of {self.sleep} seconds')
 
     def show_current_sheets(self, interactive=False):
         print('showing current sheets')
@@ -149,18 +138,18 @@ class MonthSheet:
         gc.simple_batch_update(self.service, self.full_sheet, self.wrange_subsidy, self.subsidy, 'COLUMNS')
         gc.simple_batch_update(self.service, self.full_sheet, self.wrange_t_rent, self.t_rent, 'COLUMNS')
 
-    def push_to_intake(self):
-        print('pushing selected excel to intake', '| Path:', self.file_input_path)
-        self.file_input_path = Utils.sheet_finder(path=self.file_input_path, function='mformat')
-        self.t_name, self.unit, self.k_rent, self.subsidy, self.t_rent = self.read_excel_ms(verbose=False)
-        self.write_to_rs()
+    # def push_to_intake(self):
+    #     print('pushing selected excel to intake', '| Path:', self.file_input_path)
+    #     self.file_input_path = Utils.sheet_finder(path=self.file_input_path, function='mformat')
+    #     self.t_name, self.unit, self.k_rent, self.subsidy, self.t_rent = self.read_excel_ms(verbose=False)
+    #     self.write_to_rs()
 
-    def push_one_to_intake(self, input_file_path=None):
-        self.file_input_path = input_file_path
-        print('pushing selected excel to intake', '| Path:', self.file_input_path) 
-        self.t_name, self.unit, self.k_rent, self.subsidy, self.t_rent = self.read_excel_ms(verbose=False)
-        assert len(self.unit) == 67, 'fcvl: rentroll has too many entries, you will need to manually edit your rent roll file or find a programming solution.'
-        self.write_to_rs()
+    # def push_one_to_intake(self, input_file_path=None):
+    #     self.file_input_path = input_file_path
+    #     print('pushing selected excel to intake', '| Path:', self.file_input_path) 
+    #     self.t_name, self.unit, self.k_rent, self.subsidy, self.t_rent = self.read_excel_ms(verbose=False)
+    #     assert len(self.unit) == 67, 'fcvl: rentroll has too many entries, you will need to manually edit your rent roll file or find a programming solution.'
+    #     self.write_to_rs()
 
     def month_write_col(self, sheet_choice):
         gc = GoogleApiCalls()
@@ -179,16 +168,6 @@ class MonthSheet:
         tenant_rent = gc.batch_get(self.service, self.full_sheet, f'{self.ui_sheet}!A1:Z100', 4)
         gc.update_int(self.service, self.full_sheet, tenant_rent, f'{sheet_choice}!H2:H68', value_input_option='USER_ENTERED')
 
-    def export_month_format(self, sheet_choice):
-        gc = GoogleApiCalls()
-        time.sleep(self.sleep)
-        gc.format_row(self.service, self.full_sheet, f'{sheet_choice}!A1:M1', "ROWS", self.HEADER_NAMES)
-        gc.write_formula_column(self.service, self.full_sheet, self.G_SUM_KRENT, f'{sheet_choice}!E69:E69')
-        gc.write_formula_column(self.service, self.full_sheet, self.G_SUM_ACTSUBSIDY, f'{sheet_choice}!F69:F69')
-        gc.write_formula_column(self.service, self.full_sheet, self.G_SUM_ACTRENT, f'{sheet_choice}!H69:H69')
-        gc.write_formula_column(self.service, self.full_sheet, self.G_PAYMENT_MADE, f'{sheet_choice}!K69:K69')
-        gc.write_formula_column(self.service, self.full_sheet, self.G_CURBAL, f'{sheet_choice}!L69:L69')
-        print(f'exported month format to {sheet_choice} with wait time of {self.sleep} seconds')
 
     def export_deposit_detail(self, data):
         time.sleep(self.sleep)

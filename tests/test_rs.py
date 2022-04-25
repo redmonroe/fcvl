@@ -27,9 +27,6 @@ from setup_year import YearSheet
 sleep1 = 2
 test_workbook = Config.TEST_RS
 path = Config.TEST_RS_PATH
-build_test_db = Config.test_build_db
-build_tablename = Config.test_build_name
-# monkeypatch = MonkeyPatch()
 service = oauth(Config.my_scopes, 'sheet', mode='testing')
 calls = GoogleApiCalls()
 findex = FileIndexer(path=path, db=Config.TEST_DB)
@@ -37,11 +34,7 @@ ms = MonthSheet(full_sheet=test_workbook, path=path, mode='testing', sleep=sleep
 ys = YearSheet(full_sheet=test_workbook, mode='testing', test_service=service, sleep=sleep1)
 create_tables_list = [Findexer, StatusObject, StatusRS, OpCash, OpCashDetail, Damages, Tenant, Unit, Payment, NTPayment, TenantRent]
 
-
 error_codes = 429
-
-
-
 
 @pytest.mark.testing_rs
 class TestWrite:
@@ -69,7 +62,7 @@ class TestWrite:
         # breakpoint()
         assert proc_file[0] == {'deposits_01_2022.xls': '2022-01'}
 
-    @retry_google_api(3, sleep1, error_codes)
+    # @retry_google_api(3, sleep1, error_codes)
     def test_setup_sheet_prime(self):
         title_dict = ys.show_current_sheets()
         for name, id2, in title_dict.items():
@@ -79,7 +72,7 @@ class TestWrite:
         title_dict = ys.show_current_sheets()
         assert [*title_dict.items()] == [('intake', 1226016565)]
 
-    @retry_google_api(3, sleep1, error_codes)
+    # @retry_google_api(3, sleep1, error_codes)
     def test_compare_base_docs_true_to_grand_total_true(self):
         month_list = [rec.month for rec in StatusObject().select().where(StatusObject.tenant_reconciled==1).namedtuples()]
         ys.shmonths = month_list
