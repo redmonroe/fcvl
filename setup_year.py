@@ -1,14 +1,13 @@
-from config import Config, my_scopes
-from auth_work import oauth
-from utils import Utils
-from db_utils import DBUtils
-from google_api_calls_abstract import GoogleApiCalls
 import pathlib
 import time
 from time import sleep
 
+from auth_work import oauth
+from config import Config, my_scopes
+from db_utils import DBUtils
+from google_api_calls_abstract import GoogleApiCalls
+from utils import Utils
 
-# if I have a cli component here, it should be from auto_control, not ui entered control if possible, or at least the presumption should be for auto_control
 
 class YearSheet:
 
@@ -47,6 +46,7 @@ class YearSheet:
             self.mode = mode
             self.sleep = sleep
             self.shmonths = None
+            self.shmonths = month_range
             self.service = test_service
             # self.shmonths = ['jan', 'feb'] # list of months generated programmatically
         else:
@@ -84,14 +84,12 @@ class YearSheet:
             pass
         else:
             self.make_base_sheet() ## we aren't necessarily going to always write more than one sheet at a time, we might normally just write one, hence iterative build
+            breakpoint()
             self.formatting_runner()
             shnames = self.duplicate_formatted_sheets()
             self.remove_base_sheet()
             self.make_shifted_list_for_prev_bal()
             return shnames
-
-    def semi_auto(self):
-       pass
 
     def set_user_choice(self):
         self.user_choice = int(input(self.user_text))

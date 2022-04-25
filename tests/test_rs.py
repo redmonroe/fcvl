@@ -1,36 +1,28 @@
-import sys
+import json
 import os
+import sys
 import time
-import pytest
 from datetime import datetime
+
+import pytest
+
 current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
 sys.path.append(parent)
-from config import Config
-from auth_work import oauth
-# from utils import Utils
-# from db_utils import DBUtils
 from pathlib import Path
-from setup_year import YearSheet
-from setup_month import MonthSheet
-from file_indexer import FileIndexer
-from build_rs import BuildRS
-from checklist import Checklist
 
+from auth_work import oauth
+from backend import (Damages, Findexer, NTPayment, OpCash, OpCashDetail,
+                     Payment, PopulateTable, StatusObject, StatusRS, Tenant,
+                     TenantRent, Unit, db)
+from build_rs import BuildRS
+from config import Config
+from errors import retry_google_api
+from file_indexer import FileIndexer
 from google_api_calls_abstract import GoogleApiCalls
 from googleapiclient.errors import HttpError
-from errors import retry_google_api
-# from _pytest.monkeypatch import MonkeyPatch
-# import shutil
-# import pdb
-# import dataset
-
-
-# TEST_RR_FILE = 'TEST_rent_roll_01_2022.xls'
-# TEST_DEP_FILE = 'TEST_deposits_01_2022.xls'
-# GENERATED_RR_FILE = 'TEST_RENTROLL_012022.xls'
-# GENERATED_DEP_FILE = 'TEST_DEP_012022.xls'
-
+from setup_month import MonthSheet
+from setup_year import YearSheet
 
 sleep1 = 2
 test_workbook = Config.TEST_RS
@@ -43,15 +35,39 @@ calls = GoogleApiCalls()
 findex = FileIndexer(path=path, db=Config.TEST_DB)
 ms = MonthSheet(full_sheet=test_workbook, path=path, mode='testing', sleep=sleep1, test_service=service)
 ys = YearSheet(full_sheet=test_workbook, mode='testing', test_service=service, sleep=sleep1)
+create_tables_list = [Findexer, StatusObject, StatusRS, OpCash, OpCashDetail, Damages, Tenant, Unit, Payment, NTPayment, TenantRent]
+
 
 error_codes = 429
-# invokce a test func marked @pytest.mark.production with pytest -v -m production
-# invoke test class with: pytest -q -m testing
 
-@pytest.mark.skip
-class TestProduction:
 
-    test_message = 'hi'
+
+
+@pytest.mark.testing_rs
+class TestWrite:
+
+    def test_assert_all_db_empty_and_connections_closed(self):
+        assert db.get_tables() == []
+
+    def test_statusrs_starts_empty(self):
+        status = StatusRS()
+        status.set_current_date(mode='autodrop')
+        status.show(mode='just_asserting_empty')
+        most_recent_status = [item for item in StatusRS().select().order_by(-StatusRS.status_id).namedtuples()][0]
+        proc_file = json.loads(most_recent_status.proc_file)
+        assert proc_file == []
+
+    def test_generic_build(self):
+        basedir = os.path.abspath(os.path.dirname(__file__))
+        build = BuildRS(path=path, main_db=db)
+        build.new_auto_build()
+        build.summary_assertion_at_period(test_date='2022-03')
+
+    def test_end_status(self):
+        most_recent_status = [item for item in StatusRS().select().order_by(-StatusRS.status_id).namedtuples()][0]
+        proc_file = json.loads(most_recent_status.proc_file)
+        # breakpoint()
+        assert proc_file[0] == {'deposits_01_2022.xls': '2022-01'}
 
     @retry_google_api(3, sleep1, error_codes)
     def test_setup_sheet_prime(self):
@@ -62,6 +78,57 @@ class TestProduction:
         calls.clear_sheet(service, test_workbook, f'intake!A1:ZZ100')
         title_dict = ys.show_current_sheets()
         assert [*title_dict.items()] == [('intake', 1226016565)]
+
+    def test_make_base_sheet(self):
+        ys.make_base_sheet()
+
+    def test_compare_base_docs_true_to_grand_total_true(self):
+        '''on first pass this should show empty lists bc no month is complete'''
+        # get is reconciled list
+        month_list = [rec.month for rec in StatusObject().select().where(StatusObject.tenant_reconciled==1).namedtuples()]
+        ys.month_range = month_list
+        ys.formatting_runner()
+        breakpoint()
+
+
+    def test_reconciliation_in_status(self):
+        '''dont bother to write if it doesn't reconcile'''
+    
+
+
+
+        # final_to_process_set = build.compare_base_docs_true_to_grand_total_true()
+        # assert build.month_complete_is_true_list == []
+        # assert final_to_process_set == {'2022-01', '2022-02'}
+        # assert type(final_to_process_set) == set
+
+    #     build.final_to_process_list = list(final_to_process_set.difference(set(build.month_complete_is_true_list)))
+    #     assert'2022-01' and '2022-02' in build.final_to_process_list
+
+    # def test_sort_final_to_process_list(self):
+    #     build.final_to_process_list = build.sort_and_adj_final_to_process_list()
+    #     ftp = build.final_to_process_list
+    #     assert ftp == ['jan', 'feb']  ## ORDER MATTERS HERE
+
+    # def test_init_yearsheet_and_set_month_range(self):
+    #     ys.shmonths = build.final_to_process_list
+    #     assert ys.shmonths == ['jan', 'feb']
+
+
+    def test_teardown(self):
+        db.drop_tables(models=create_tables_list)
+        db.close()    
+
+    def test_close_db(self):
+        if db.is_closed() == False:
+            db.close()
+"""
+
+@pytest.mark.skip
+class TestProduction:
+
+    test_message = 'hi'
+
 
     def test_setup(self):
         '''basic checks for environment and configuration'''
@@ -328,6 +395,6 @@ class TestProduction:
         # assert result == []   
         # assert result2 == []   
 
-
+"""
         
     

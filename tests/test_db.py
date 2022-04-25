@@ -19,19 +19,14 @@ from records import record
 
 create_tables_list = [Findexer, StatusObject, StatusRS, OpCash, OpCashDetail, Damages, Tenant, Unit, Payment, NTPayment, TenantRent]
 
+
+
 target_bal_load_file = 'beginning_balance_2022.xlsx'
 path = Config.TEST_RS_PATH
 populate = PopulateTable()
 tenant = Tenant()
 unit = Unit()
 findex = FileIndexer(path=path, db=Config.TEST_DB)
-
-# @pytest.mark.testing_fi
-# @pytest.mark.testing_db
-# class TestGenericSetup:
-
-#     def test_setup(self):
-#         db
 
 @pytest.mark.testing_db
 class TestFileIndexer:
