@@ -122,7 +122,6 @@ class Findexer(BaseModel):
     deplist = CharField(default='0')
     path = CharField()
 
-
 class StatusRS(BaseModel):
     status_id = AutoField()
     current_date = DateField()
@@ -139,13 +138,13 @@ class StatusRS(BaseModel):
             db.connect()
         if mode == 'autodrop':
             print(f'StatusRS set to {mode}')
-            db.drop_tables(models=[StatusRS, Findexer])
-            db.create_tables(models=[StatusRS, Findexer])
+            db.drop_tables(models=[StatusRS, StatusObject, Findexer])
+            db.create_tables(models=[StatusRS, StatusObject, Findexer])
         date1 = datetime.now()
         query = StatusRS.create(current_date=date1)
         query.save()   
 
-    def show(self):
+    def show(self, mode=None):
         most_recent_status = [item for item in StatusRS().select().order_by(-StatusRS.status_id).namedtuples()][0]
 
         months_ytd = self.months_in_ytd()
@@ -153,6 +152,9 @@ class StatusRS(BaseModel):
         report_list = self.get_processed_by_month(month_list=months_ytd)
 
         self.write_processed_to_db(ref_rec=most_recent_status, report_list=report_list)
+
+        if mode != 'just_asserting_empty':
+            self.assert_reconcile_payments(month_list=months_ytd, ref_rec=most_recent_status)
 
         if most_recent_status:
             print(f'current date: {most_recent_status.current_date}\n')
@@ -224,6 +226,34 @@ class StatusRS(BaseModel):
 
         mr_status.proc_file = json.dumps(dump_list)
         mr_status.save()
+
+    def assert_reconcile_payments(self, month_list=None, ref_rec=None):
+        populate = PopulateTable()
+        for month in month_list:
+            first_dt, last_dt = populate.make_first_and_last_dates(date_str=month)
+        
+            ten_payments = sum([float(row[2]) for row in populate.get_payments_by_tenant_by_period(first_dt=first_dt, last_dt=last_dt)])
+            ntp = sum(populate.get_ntp_by_period(first_dt=first_dt, last_dt=last_dt))
+            opcash = populate.get_opcash_by_period(first_dt=first_dt, last_dt=last_dt)
+
+            if opcash != []:
+                opcash_deposits = float(opcash[0][4])
+                sum_from_payments = ten_payments + ntp
+
+                if opcash_deposits == sum_from_payments:
+                    mr_status = StatusRS().get(StatusRS.status_id==ref_rec.status_id)                
+                    s_object = StatusObject.create(key=mr_status.status_id, month=month, processed=True, tenant_reconciled=True)
+                    s_object.save()
+            else:
+                mr_status = StatusRS().get(StatusRS.status_id==ref_rec.status_id)                
+                s_object = StatusObject.create(key=mr_status.status_id, month=month, processed=False, tenant_reconciled=False)
+                s_object.save()
+
+class StatusObject(BaseModel):
+    key = ForeignKeyField(StatusRS, backref='zzzzzz')
+    month = CharField(default='0')
+    processed = BooleanField(default=False)
+    tenant_reconciled = BooleanField(default=False)
         
 class QueryHC():
 
@@ -320,6 +350,13 @@ class QueryHC():
         where(Payment.date_posted >= first_dt).
         where(Payment.date_posted <= last_dt).
         join(Payment).namedtuples()]))
+
+    def get_ntp_by_period(self, first_dt=None, last_dt=None):   
+        return list([float(rec.amount) for rec in NTPayment().
+        select(NTPayment.amount).
+        where(NTPayment.date_posted >= first_dt).
+        where(NTPayment.date_posted <= last_dt).
+        namedtuples()])
 
     def get_rent_charges_by_tenant_by_period(self, first_dt=None, last_dt=None):   
         '''what happens on a moveout'''

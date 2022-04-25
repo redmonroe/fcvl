@@ -8,7 +8,7 @@ import pandas as pd
 from peewee import JOIN, fn
 
 from auth_work import oauth
-from backend import (StatusRS, Damages, NTPayment, OpCash, OpCashDetail, Payment,
+from backend import (StatusRS, StatusObject, Damages, NTPayment, OpCash, OpCashDetail, Payment,
                      PopulateTable, Tenant, TenantRent, Unit, Findexer, db)
 
 from checklist import Checklist
@@ -35,7 +35,7 @@ class BuildRS(MonthSheet):
         self.mformat = mformat
         self.calls = GoogleApiCalls() 
         self.sleep = sleep
-        self.create_tables_list = [StatusRS, OpCash, OpCashDetail, Damages, Tenant, Unit, Payment, NTPayment, TenantRent, Findexer]
+        self.create_tables_list = [StatusRS, StatusObject, OpCash, OpCashDetail, Damages, Tenant, Unit, Payment, NTPayment, TenantRent, Findexer]
 
         self.target_bal_load_file = 'beginning_balance_2022.xlsx'
         self.wrange_pay = '!K2:K68'

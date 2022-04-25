@@ -8,7 +8,7 @@ from pprint import pprint
 
 import pytest
 from backend import (Damages, Findexer, NTPayment, OpCash, OpCashDetail,
-                     Payment, PopulateTable, StatusRS, Tenant, TenantRent,
+                     Payment, PopulateTable, StatusRS, StatusObject, Tenant, TenantRent,
                      Unit, db)
 from build_rs import BuildRS
 from config import Config
@@ -17,7 +17,7 @@ from file_indexer import FileIndexer
 from peewee import JOIN, fn
 from records import record
 
-create_tables_list = [Findexer, StatusRS, OpCash, OpCashDetail, Damages, Tenant, Unit, Payment, NTPayment, TenantRent]
+create_tables_list = [Findexer, StatusObject, StatusRS, OpCash, OpCashDetail, Damages, Tenant, Unit, Payment, NTPayment, TenantRent]
 
 target_bal_load_file = 'beginning_balance_2022.xlsx'
 path = Config.TEST_RS_PATH
@@ -97,7 +97,7 @@ class TestDB:
     def test_db(self):
         db.create_tables(create_tables_list)
         assert db.database == '/home/joe/local_dev_projects/fcvl/sqlite/test_pw_db.db'
-        assert sorted(db.get_tables()) == sorted(['opcash', 'opcashdetail', 'damages', 'tenantrent', 'ntpayment', 'payment', 'tenant', 'unit', 'statusrs', 'findexer'])
+        assert sorted(db.get_tables()) == sorted(['statusobject', 'opcash', 'opcashdetail', 'damages', 'tenantrent', 'ntpayment', 'payment', 'tenant', 'unit', 'statusrs', 'findexer'])
         assert [*db.get_columns(table='payment')[0]._asdict().keys()] == ['name', 'data_type', 'null', 'primary_key', 'table', 'default']
 
         findex.drop_findex_table()
@@ -461,8 +461,7 @@ class TestBuildAndStatus:
     def test_statusrs_starts_empty(self):
         status = StatusRS()
         status.set_current_date(mode='autodrop')
-        status.show()
-
+        status.show(mode='just_asserting_empty')
         most_recent_status = [item for item in StatusRS().select().order_by(-StatusRS.status_id).namedtuples()][0]
         proc_file = json.loads(most_recent_status.proc_file)
         assert proc_file == []
@@ -478,6 +477,9 @@ class TestBuildAndStatus:
         proc_file = json.loads(most_recent_status.proc_file)
         # breakpoint()
         assert proc_file[0] == {'deposits_01_2022.xls': '2022-01'}
+
+    def test_reconciliation_in_status(self):
+        '''dont bother to write if it doesn't reconcile'''
     
     def test_teardown(self):
         db.drop_tables(models=create_tables_list)
