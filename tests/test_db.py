@@ -1,13 +1,15 @@
 import calendar
 import datetime
+import json
 import os
 from decimal import ROUND_DOWN, ROUND_UP, Decimal
 from pathlib import Path
 from pprint import pprint
 
 import pytest
-from backend import (Damages, NTPayment, OpCash, OpCashDetail, Payment,
-                     PopulateTable, Tenant, TenantRent, Unit, Findexer, StatusRS, db)
+from backend import (Damages, Findexer, NTPayment, OpCash, OpCashDetail,
+                     Payment, PopulateTable, StatusRS, Tenant, TenantRent,
+                     Unit, db)
 from build_rs import BuildRS
 from config import Config
 from db_utils import DBUtils
@@ -462,13 +464,20 @@ class TestBuildAndStatus:
         status.show()
 
         most_recent_status = [item for item in StatusRS().select().order_by(-StatusRS.status_id).namedtuples()][0]
-        breakpoint()
+        proc_file = json.loads(most_recent_status.proc_file)
+        assert proc_file == []
 
     def test_generic_build(self):
         basedir = os.path.abspath(os.path.dirname(__file__))
         build = BuildRS(path=path, main_db=db)
         build.new_auto_build()
         build.summary_assertion_at_period(test_date='2022-03')
+
+    def test_end_status(self):
+        most_recent_status = [item for item in StatusRS().select().order_by(-StatusRS.status_id).namedtuples()][0]
+        proc_file = json.loads(most_recent_status.proc_file)
+        # breakpoint()
+        assert proc_file[0] == {'deposits_01_2022.xls': '2022-01'}
     
     def test_teardown(self):
         db.drop_tables(models=create_tables_list)

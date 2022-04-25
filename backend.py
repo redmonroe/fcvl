@@ -152,6 +152,8 @@ class StatusRS(BaseModel):
 
         report_list = self.get_processed_by_month(month_list=months_ytd)
 
+        self.write_processed_to_db(ref_rec=most_recent_status, report_list=report_list)
+
         if most_recent_status:
             print(f'current date: {most_recent_status.current_date}\n')
 
@@ -209,6 +211,19 @@ class StatusRS(BaseModel):
             reports_by_month = {rec.fn: (month, rec.path, rec.doc_type) for rec in Findexer().select().where(Findexer.period==month).where(Findexer.status=='processed').namedtuples()}
             report_list.append(reports_by_month)
         return report_list
+
+    def write_processed_to_db(self, ref_rec=None, report_list=None):
+        mr_status = StatusRS().get(StatusRS.status_id==ref_rec.status_id)
+
+        dump_list = []
+        for item in report_list:
+            for fn, tup in item.items():
+                dict1 = {}
+                dict1[fn] = tup[0] 
+                dump_list.append(dict1)
+
+        mr_status.proc_file = json.dumps(dump_list)
+        mr_status.save()
         
 class QueryHC():
 
