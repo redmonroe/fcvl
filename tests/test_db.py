@@ -7,7 +7,7 @@ from pprint import pprint
 
 import pytest
 from backend import (Damages, NTPayment, OpCash, OpCashDetail, Payment,
-                     PopulateTable, Tenant, TenantRent, Unit, Findexer, db)
+                     PopulateTable, Tenant, TenantRent, Unit, Findexer, StatusRS, db)
 from build_rs import BuildRS
 from config import Config
 from db_utils import DBUtils
@@ -15,7 +15,7 @@ from file_indexer import FileIndexer
 from peewee import JOIN, fn
 from records import record
 
-create_tables_list = [OpCash, OpCashDetail, Damages, Tenant, Unit, Payment, NTPayment, TenantRent]
+create_tables_list = [Findexer, StatusRS, OpCash, OpCashDetail, Damages, Tenant, Unit, Payment, NTPayment, TenantRent]
 
 target_bal_load_file = 'beginning_balance_2022.xlsx'
 path = Config.TEST_RS_PATH
@@ -25,6 +25,12 @@ unit = Unit()
 findex = FileIndexer(path=path, db=Config.TEST_DB)
 
 # @pytest.mark.testing_fi
+# @pytest.mark.testing_db
+# class TestGenericSetup:
+
+#     def test_setup(self):
+#         db
+
 @pytest.mark.testing_db
 class TestFileIndexer:
 
@@ -89,7 +95,7 @@ class TestDB:
     def test_db(self):
         db.create_tables(create_tables_list)
         assert db.database == '/home/joe/local_dev_projects/fcvl/sqlite/test_pw_db.db'
-        assert sorted(db.get_tables()) == sorted(['opcash', 'opcashdetail', 'damages', 'tenantrent', 'ntpayment', 'payment', 'tenant', 'unit', 'statusrs'])
+        assert sorted(db.get_tables()) == sorted(['opcash', 'opcashdetail', 'damages', 'tenantrent', 'ntpayment', 'payment', 'tenant', 'unit', 'statusrs', 'findexer'])
         assert [*db.get_columns(table='payment')[0]._asdict().keys()] == ['name', 'data_type', 'null', 'primary_key', 'table', 'default']
 
         findex.drop_findex_table()
@@ -443,8 +449,12 @@ class TestOpcash:
             db.close()
 
 @pytest.mark.testing_db
-class TestBuild:
+class TestBuildAndStatus:
     '''what do we want this to look like that '''
+    '''how do I consolidate findex and status table creation and let them still be able to run own independent tests?'''
+
+    def test_assert_all_db_empty_and_connections_closed(self):
+        assert db.get_tables() == []
 
     def test_generic_build(self):
         basedir = os.path.abspath(os.path.dirname(__file__))
@@ -452,11 +462,9 @@ class TestBuild:
         build.new_auto_build()
         build.summary_assertion_at_period(test_date='2022-03')
     
-
     def test_teardown(self):
         db.drop_tables(models=create_tables_list)
-        db.close()
-    
+        db.close()    
 
     def test_close_db(self):
         if db.is_closed() == False:

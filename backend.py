@@ -133,9 +133,9 @@ class StatusRS(BaseModel):
         # nbofi mid month scrape
 
     def set_current_date(self, mode=None):
-        if mode == 'autodrop':
+        if db.is_closed() == True:
             db.connect()
-            # breakpoint()
+        if mode == 'autodrop':
             db.drop_tables(models=[StatusRS])
             db.create_tables(models=[StatusRS])
         date1 = datetime.now()
@@ -148,7 +148,6 @@ class StatusRS(BaseModel):
         months_ytd = self.months_in_ytd()
 
         report_list = self.get_processed_by_month(month_list=months_ytd)
-        # breakpoint()
 
         if most_recent_status:
             print(f'current date: {most_recent_status}\n')
@@ -162,7 +161,6 @@ class StatusRS(BaseModel):
             for month, item in zip(months_ytd, report_list):
                 look_dict = {fn: (tup[0], tup[1], tup[2]) for fn, tup in item.items() if month == tup[0]}
                 ready_to_write_dt = self.ready_to_process(month=month, dict1=look_dict)
-                # breakpoint()
                 look_list.append(look_dict)
                 print(f'For period {month} these files have been processed: \n {[*look_dict.keys()]} \n Ready to Write? {[*ready_to_write_dt.values()][0]}' )
     
@@ -209,7 +207,6 @@ class StatusRS(BaseModel):
             report_list.append(reports_by_month)
         return report_list
         
-
 class QueryHC():
 
     def make_first_and_last_dates(self, date_str=None):
