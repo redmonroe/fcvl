@@ -35,7 +35,7 @@ class BuildRS(MonthSheet):
         self.mformat = mformat
         self.calls = GoogleApiCalls() 
         self.sleep = sleep
-        self.create_tables_list = [StatusRS, OpCash, OpCashDetail, Damages, Tenant, Unit, Payment, NTPayment, TenantRent]
+        self.create_tables_list = [StatusRS, OpCash, OpCashDetail, Damages, Tenant, Unit, Payment, NTPayment, TenantRent, Findexer]
 
         self.target_bal_load_file = 'beginning_balance_2022.xlsx'
         self.wrange_pay = '!K2:K68'
@@ -137,6 +137,10 @@ class BuildRS(MonthSheet):
             namedtuples()]
 
         populate.transfer_opcash_to_db(file_list=file_list)
+
+        status = StatusRS()
+        status.set_current_date()
+        status.show()
         self.main_db.close()
 
     def automatic_build(self, checklist_mode=None, key=None):

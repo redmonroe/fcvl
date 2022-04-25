@@ -456,6 +456,14 @@ class TestBuildAndStatus:
     def test_assert_all_db_empty_and_connections_closed(self):
         assert db.get_tables() == []
 
+    def test_statusrs_starts_empty(self):
+        status = StatusRS()
+        status.set_current_date(mode='autodrop')
+        status.show()
+
+        most_recent_status = [item for item in StatusRS().select().order_by(-StatusRS.status_id).namedtuples()][0]
+        breakpoint()
+
     def test_generic_build(self):
         basedir = os.path.abspath(os.path.dirname(__file__))
         build = BuildRS(path=path, main_db=db)
@@ -469,6 +477,8 @@ class TestBuildAndStatus:
     def test_close_db(self):
         if db.is_closed() == False:
             db.close()
+
+
         # class SubsidyRent(BaseModel):
         #     pass
 

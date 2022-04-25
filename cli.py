@@ -64,9 +64,7 @@ def autors(mode=None):
         build = BuildRS(path=path, main_db=pw_db)
         build.new_auto_build()
         build.summary_assertion_at_period(test_date='2022-03')
-        status = StatusRS()
-        status.set_current_date(mode='autodrop')
-        status.show()
+
 
     # if mode == 'status':
 

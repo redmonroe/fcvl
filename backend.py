@@ -124,7 +124,9 @@ class Findexer(BaseModel):
 
 
 class StatusRS(BaseModel):
+    status_id = AutoField()
     current_date = DateField()
+    proc_file = CharField(default='0')
     # what months are ready to write
         # what is the threshold?
     # what files have been processed?
@@ -136,21 +138,22 @@ class StatusRS(BaseModel):
         if db.is_closed() == True:
             db.connect()
         if mode == 'autodrop':
-            db.drop_tables(models=[StatusRS])
-            db.create_tables(models=[StatusRS])
+            print(f'StatusRS set to {mode}')
+            db.drop_tables(models=[StatusRS, Findexer])
+            db.create_tables(models=[StatusRS, Findexer])
         date1 = datetime.now()
         query = StatusRS.create(current_date=date1)
         query.save()   
 
     def show(self):
-        most_recent_status = [item.current_date for item in StatusRS().select().order_by(StatusRS.current_date).namedtuples()][0]
+        most_recent_status = [item for item in StatusRS().select().order_by(-StatusRS.status_id).namedtuples()][0]
 
         months_ytd = self.months_in_ytd()
 
         report_list = self.get_processed_by_month(month_list=months_ytd)
 
         if most_recent_status:
-            print(f'current date: {most_recent_status}\n')
+            print(f'current date: {most_recent_status.current_date}\n')
 
         if months_ytd:
             print(f'current month: {months_ytd[-1]}')
@@ -160,13 +163,13 @@ class StatusRS(BaseModel):
             look_list = []
             for month, item in zip(months_ytd, report_list):
                 look_dict = {fn: (tup[0], tup[1], tup[2]) for fn, tup in item.items() if month == tup[0]}
-                ready_to_write_dt = self.ready_to_process(month=month, dict1=look_dict)
+                ready_to_write_dt = self.is_ready_to_write(month=month, dict1=look_dict)
                 look_list.append(look_dict)
                 print(f'For period {month} these files have been processed: \n {[*look_dict.keys()]} \n Ready to Write? {[*ready_to_write_dt.values()][0]}' )
     
         return most_recent_status 
 
-    def ready_to_process(self, month=None, dict1=None):
+    def is_ready_to_write(self, month=None, dict1=None):
         count = 0
         ready_to_process = False
         for fn, tup in dict1.items():
