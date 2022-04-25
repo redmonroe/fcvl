@@ -140,6 +140,14 @@ class Utils:
             shnames.append(shname)
         return shnames
 
+    @staticmethod
+    def make_sheet_names2(months, year):
+        shnames = [] # is list okay
+        for i in range(len(months)):
+            shname = months[i]
+            shnames.append(shname)
+        return shnames
+
         
     def get_book_name(service, sh_id):
         response = service.spreadsheets().get(

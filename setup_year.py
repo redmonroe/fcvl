@@ -80,16 +80,15 @@ class YearSheet:
             # self.make_shifted_list_for_prev_bal()
 
     def full_auto(self):
-        if self.shmonths == [] or self.shmonths == None:
-            pass
-        else:
-            self.make_base_sheet() ## we aren't necessarily going to always write more than one sheet at a time, we might normally just write one, hence iterative build
-            breakpoint()
-            self.formatting_runner()
-            shnames = self.duplicate_formatted_sheets()
-            self.remove_base_sheet()
-            self.make_shifted_list_for_prev_bal()
-            return shnames
+        # if self.shmonths == [] or self.shmonths == None:
+        #     pass
+        # else:
+        self.make_base_sheet() ## we aren't necessarily going to always write more than one sheet at a time, we might normally just write one, hence iterative build
+        self.formatting_runner()
+        shnames = self.duplicate_formatted_sheets()
+        self.remove_base_sheet()
+        self.make_shifted_list_for_prev_bal()
+        return shnames
 
     def set_user_choice(self):
         self.user_choice = int(input(self.user_text))
@@ -106,13 +105,24 @@ class YearSheet:
         self.calls.make_one_sheet(self.service, self.full_sheet, self.base_month + ' ' + f'{Config.current_year}')
 
     def duplicate_formatted_sheets(self):
-        sheet_names = Utils.make_sheet_names(self.shmonths, self.shyear)
+        sheet_names = Utils.make_sheet_names2(self.shmonths, self.shyear)
         
         titles_dict = Utils.get_existing_sheets(self.service, self.full_sheet)
 
+
+    # def api_duplicate_sheet(self, service, full_sheet, source_id=None, insert_index=None, title=None):
+
         for title, id1 in titles_dict.items():
             if title == 'base 2022':
-                self.source_id = id1      
+                self.source_id = id1   
+
+        insert_index = 2
+        for name in sheet_names:
+    # if title != 'base 2022':
+            insert_index += 1
+            self.calls.api_duplicate_sheet(self.service, self.full_sheet, source_id=self.source_id, insert_index=insert_index, title=name)
+        
+        
         return sheet_names
 
     def formatting_runner(self):

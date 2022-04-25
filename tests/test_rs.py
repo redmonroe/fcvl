@@ -79,16 +79,15 @@ class TestWrite:
         title_dict = ys.show_current_sheets()
         assert [*title_dict.items()] == [('intake', 1226016565)]
 
-    def test_make_base_sheet(self):
-        ys.make_base_sheet()
-
     def test_compare_base_docs_true_to_grand_total_true(self):
         '''on first pass this should show empty lists bc no month is complete'''
         # get is reconciled list
         month_list = [rec.month for rec in StatusObject().select().where(StatusObject.tenant_reconciled==1).namedtuples()]
-        ys.month_range = month_list
-        ys.formatting_runner()
-        breakpoint()
+        ys.shmonths = month_list
+        ys.full_auto()
+        # breakpoint()
+        # ys.remove_base_sheet()
+        # ys.make_shifted_list_for_prev_bal()
 
 
     def test_reconciliation_in_status(self):
@@ -199,23 +198,6 @@ class TestProduction:
         processed_true = [x['status'] for x in results]
         assert all(processed_true)
 
-    def test_opcash_details(self):
-        results = findex.ventilate_table()
-        hap_target = [result['hap'] for result in results if result['fn'] == 'op_cash_2022_01.pdf']
-        rr_target = [result['rr'] for result in results if result['fn'] == 'op_cash_2022_01.pdf']
-        assert hap_target[0] == 30990.0
-        assert rr_target[0] == 15576.54
-        # breakpoint()
-
-    def test_buildrs_init(self):
-        results = build.findex.ventilate_table()
-
-        build.proc_condition_list = build.check_diad_processed()
-        assert [*build.proc_condition_list[0].values()] == [2, 2]
-        build.proc_condition_list = build.reformat_conditions_as_bool(trigger_condition=2)
-        assert [*build.proc_condition_list[0].values()] == [True, True]
-        build.final_to_process_list = build.make_list_of_true_dates()
-        assert '2022-01' and '2022-02' in build.final_to_process_list
 
     def test_merely_mark_base_docs_processed(self):
         for date in build.final_to_process_list:
