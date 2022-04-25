@@ -35,6 +35,8 @@ class BaseModel(Model):
 class Tenant(BaseModel):
     tenant_name = CharField(primary_key=True, unique=True)
     active = CharField(default=True) # 
+    move_in_date = DateField(default='0')
+    move_out_date = DateField(default='0')
     beg_bal_date = DateField(default='2022-01-01')
     beg_bal_amount = DecimalField(default=0.00)
 
@@ -373,9 +375,6 @@ class QueryHC():
         select(TenantRent.rent_amount).
         where(TenantRent.rent_date >= first_dt).
         where(TenantRent.rent_date <= last_dt)])
-    
-    # def get_rentroll_by_period(self, first_dt=None, last_dt=None):
-    #     return []
 
     def record_type_loader(self, rtype, func1, list1, hash_no):
         '''really nice for loading up the recordtypes used here'''
@@ -460,12 +459,14 @@ class PopulateTable(QueryHC):
         df = df.fillna(fill_item)
         nt_list, explicit_move_outs = self.nt_from_df(df=df, date=date, fill_item=fill_item)
 
+        first_dt, last_dt = self.make_first_and_last_dates(date_str=date)
+
         total_tenant_charges = float(((nt_list.pop(-1)).rent).replace(',', ''))
 
         nt_list = self.return_nt_list_with_no_vacants(keyword='vacant', nt_list=nt_list)
 
-        ten_insert_many = [{'tenant_name': row.name} for row in nt_list]
-        
+        ten_insert_many = [{'tenant_name': row.name, 'move_in_date': datetime.strptime(row.mi_date, '%m/%d/%Y')} for row in nt_list]
+
         units_insert_many = [{'unit_name': row.unit, 'tenant': row.name} for row in nt_list]
 
         rent_insert_many = [{'t_name': row.name, 'unit': row.unit, 'rent_amount': row.rent, 'rent_date': row.date} for row in nt_list if row.name != 'vacant']  
@@ -484,8 +485,7 @@ class PopulateTable(QueryHC):
         ''' get tenants from jan end/feb start'''
         ''' get rent roll from feb end in nt_list from df'''
 
-        period_start_tenant_names = [(name.tenant_name, name.unit_name) for name in Tenant.select(Tenant.tenant_name, Unit.unit_name).where(Tenant.active==True).join(Unit).namedtuples()]
-        
+        period_start_tenant_names = [(name.tenant_name, name.unit_name, datetime(name.move_in_date.year, name.move_in_date.month, name.move_in_date.day)) for name in Tenant.select(Tenant.tenant_name, Tenant.move_in_date, Unit.unit_name).where(Tenant.active==True).join(Unit).namedtuples()]
         fill_item = '0'
         df = pd.read_excel(filename, header=16)
         df = df.fillna(fill_item)
@@ -493,10 +493,12 @@ class PopulateTable(QueryHC):
 
         total_tenant_charges = float(((nt_list.pop(-1)).rent).replace(',', ''))
 
-        period_end_tenant_names = [(row.name, row.unit) for row in self.return_nt_list_with_no_vacants(keyword='vacant', nt_list=nt_list)]
+        period_end_tenant_names = [(row.name, row.unit, datetime.strptime(row.mi_date, '%m/%d/%Y')) for row in self.return_nt_list_with_no_vacants(keyword='vacant', nt_list=nt_list)]
+
+        '''we could get move-ins if move-date is in month range'''
 
         computed_mis, computed_mos = self.find_rent_roll_changes_by_comparison(start_set=set(period_start_tenant_names), end_set=set(period_end_tenant_names))
-        # breakpoint()
+    
         cleaned_mos = self.merge_move_outs(explicit_move_outs=explicit_move_outs, computed_mos=computed_mos)
         self.insert_move_ins(move_ins=computed_mis)
 
@@ -609,15 +611,15 @@ class PopulateTable(QueryHC):
         return self.df
 
     def nt_from_df(self, df, date, fill_item):
-        Row = namedtuple('row', 'name unit rent mo date')
+        Row = namedtuple('row', 'name unit rent mo date mi_date')
         explicit_move_outs = []
         nt_list = []
         for index, rec in df.iterrows():
             if rec['Move out'] != fill_item:
                 explicit_move_outs.append(rec['Name'].lower())
-            row = Row(rec['Name'].lower(), rec['Unit'], rec['Actual Rent Charge'], rec['Move out'] , datetime.strptime(date, '%Y-%m'))
+            row = Row(rec['Name'].lower(), rec['Unit'], rec['Actual Rent Charge'], rec['Move out'] , datetime.strptime(date, '%Y-%m'), rec['Move in'])
             nt_list.append(row)
-
+  
         return nt_list, explicit_move_outs
 
     def return_nt_list_with_no_vacants(self, keyword=None, nt_list=None):
@@ -658,14 +660,15 @@ class PopulateTable(QueryHC):
         '''explicit move-outs from excel have been removed from end of month rent_roll_dict 
         and should initiated a discrepancy in the following code by making end list diverge from start list'''
         '''these tenants are explicitly marked as active='False' in the tenant table in func() deactivate_move_outs'''
+
         move_ins = list(end_set - start_set) # catches move in
         move_outs = list(start_set - end_set) # catches move out
 
         return move_ins, move_outs
 
     def insert_move_ins(self, move_ins=None):
-        for name, unit in move_ins:
-            nt = Tenant.create(tenant_name=name)
+        for name, unit, move_in_date in move_ins:
+            nt = Tenant.create(tenant_name=name, move_in_date=move_in_date)
             unit = Unit.create(unit_name=unit, status='occupied', tenant=name)
 
             nt.save()

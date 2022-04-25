@@ -97,7 +97,6 @@ class TestDB:
 
         findex.drop_findex_table()
 
-
     @record
     def test_initial_tenant_load(self):
         '''JANUARY IS DIFFERENT'''
@@ -108,7 +107,6 @@ class TestDB:
             where(Findexer.status == 'processed').
             where(Findexer.period == '2022-01').
             namedtuples()]
-
         january_rent_roll_path = records[0][2]
         jan_date = records[0][1]
 

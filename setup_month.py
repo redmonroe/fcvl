@@ -6,12 +6,11 @@ import pandas as pd
 from numpy import nan
 
 from auth_work import oauth
-from backend import QueryHC
+from backend import (StatusRS, StatusObject, Damages, NTPayment, OpCash, OpCashDetail, Payment, PopulateTable, QueryHC, Tenant, TenantRent, Unit, Findexer, db)
 from config import Config, my_scopes
 from db_utils import DBUtils
 from google_api_calls_abstract import GoogleApiCalls
 from utils import Utils
-
 
 class MonthSheet:
 
@@ -61,12 +60,22 @@ class MonthSheet:
 
     def auto_control(self, month_list=None):
         sheet_choice=month_list[0]
-        # breakpoint()
         self.export_month_format(sheet_choice)
         self.month_write_col(sheet_choice)
        
     def month_write_col(self, sheet_choice):
         gc = GoogleApiCalls()
+        query = QueryHC()
+
+        first_dt, last_dt = query.make_first_and_last_dates(date_str=sheet_choice)
+        tenant_names = [rec.tenant_name for rec in Tenant().select().
+            where(Tenant.move_in_date<=first_dt).
+            where(
+                (Tenant.move_out_date>=first_dt) |
+                (Tenant.move_out_date=='0'))
+                .namedtuples()] 
+        breakpoint()
+
 
         # gc.update(self.service, self.full_sheet, unit, f'{sheet_choice}!A2:A68')
         
