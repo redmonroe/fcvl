@@ -14,19 +14,11 @@ from setup_year import YearSheet
 from setup_month import MonthSheet
 from file_indexer import FileIndexer
 from build_rs import BuildRS
-from checklist import Checklist
 from google_api_calls_abstract import GoogleApiCalls
 from _pytest.monkeypatch import MonkeyPatch
 import shutil
 import pdb
 import dataset
-
-
-TEST_RR_FILE = 'TEST_rent_roll_01_2022.xls'
-TEST_DEP_FILE = 'TEST_deposits_01_2022.xls'
-GENERATED_RR_FILE = 'TEST_RENTROLL_012022.xls'
-GENERATED_DEP_FILE = 'TEST_DEP_012022.xls'
-
 
 sleep1 = 1
 test_workbook = Config.TEST_RS
@@ -38,9 +30,6 @@ calls = GoogleApiCalls()
 findex = FileIndexer(path=path, db=Config.TEST_DB)
 ys = YearSheet(full_sheet=test_workbook, mode='testing', test_service=service)
 build = BuildRS(sleep1, full_sheet=test_workbook, path=test_path, mode='testing', test_service=service)
-
-
-# pdb.set_trace()
 
 class TestChecklist:
 

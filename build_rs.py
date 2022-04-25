@@ -11,7 +11,6 @@ from auth_work import oauth
 from backend import (StatusRS, StatusObject, Damages, NTPayment, OpCash, OpCashDetail, Payment,
                      PopulateTable, Tenant, TenantRent, Unit, Findexer, db)
 
-from checklist import Checklist
 from config import Config, my_scopes
 from db_utils import DBUtils
 from file_indexer import FileIndexer

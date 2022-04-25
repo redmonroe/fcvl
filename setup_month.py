@@ -1,13 +1,17 @@
-from datetime import datetime as dt
 import time
-from config import Config, my_scopes
-from auth_work import oauth
-from utils import Utils
-from db_utils import DBUtils
-from google_api_calls_abstract import GoogleApiCalls
+from datetime import datetime as dt
 from pathlib import Path
+
 import pandas as pd
 from numpy import nan
+
+from auth_work import oauth
+from backend import QueryHC
+from config import Config, my_scopes
+from db_utils import DBUtils
+from google_api_calls_abstract import GoogleApiCalls
+from utils import Utils
+
 
 class MonthSheet:
 
@@ -55,10 +59,25 @@ class MonthSheet:
         self.sheet_choice = None
         self.gc = GoogleApiCalls()
 
-    def auto_control(self):
+    def auto_control(self, month_list=None):
+        sheet_choice=month_list[0]
+        # breakpoint()
         self.export_month_format(sheet_choice)
         self.month_write_col(sheet_choice)
        
+    def month_write_col(self, sheet_choice):
+        gc = GoogleApiCalls()
+
+        # gc.update(self.service, self.full_sheet, unit, f'{sheet_choice}!A2:A68')
+        
+        # gc.update(self.service, self.full_sheet, tenant_names, f'{sheet_choice}!B2:B68')       
+
+        # gc.update_int(self.service, self.full_sheet, contract_rent, f'{sheet_choice}!E2:E68', value_input_option='USER_ENTERED')
+        
+        # gc.update_int(self.service, self.full_sheet,subsidy, f'{sheet_choice}!F2:F68', value_input_option='USER_ENTERED')
+        
+        # gc.update_int(self.service, self.full_sheet, tenant_rent, f'{sheet_choice}!H2:H68', value_input_option='USER_ENTERED')
+
     def export_month_format(self, sheet_choice):
         gc = GoogleApiCalls()
         time.sleep(self.sleep)
@@ -138,35 +157,6 @@ class MonthSheet:
         gc.simple_batch_update(self.service, self.full_sheet, self.wrange_subsidy, self.subsidy, 'COLUMNS')
         gc.simple_batch_update(self.service, self.full_sheet, self.wrange_t_rent, self.t_rent, 'COLUMNS')
 
-    # def push_to_intake(self):
-    #     print('pushing selected excel to intake', '| Path:', self.file_input_path)
-    #     self.file_input_path = Utils.sheet_finder(path=self.file_input_path, function='mformat')
-    #     self.t_name, self.unit, self.k_rent, self.subsidy, self.t_rent = self.read_excel_ms(verbose=False)
-    #     self.write_to_rs()
-
-    # def push_one_to_intake(self, input_file_path=None):
-    #     self.file_input_path = input_file_path
-    #     print('pushing selected excel to intake', '| Path:', self.file_input_path) 
-    #     self.t_name, self.unit, self.k_rent, self.subsidy, self.t_rent = self.read_excel_ms(verbose=False)
-    #     assert len(self.unit) == 67, 'fcvl: rentroll has too many entries, you will need to manually edit your rent roll file or find a programming solution.'
-    #     self.write_to_rs()
-
-    def month_write_col(self, sheet_choice):
-        gc = GoogleApiCalls()
-        unit = gc.batch_get(self.service, self.full_sheet, f'{self.ui_sheet}!A1:Z100', 0)
-        gc.update(self.service, self.full_sheet, unit, f'{sheet_choice}!A2:A68')
-        
-        tenant_names = gc.batch_get(self.service, self.full_sheet, f'{self.ui_sheet}!A1:Z100', 1) #tenant names #
-        gc.update(self.service, self.full_sheet, tenant_names, f'{sheet_choice}!B2:B68')       
-
-        contract_rent = gc.batch_get(self.service, self.full_sheet, f'{self.ui_sheet}!A1:Z100', 2)
-        gc.update_int(self.service, self.full_sheet, contract_rent, f'{sheet_choice}!E2:E68', value_input_option='USER_ENTERED')
-        
-        subsidy = gc.batch_get(self.service, self.full_sheet, f'{self.ui_sheet}!A1:Z100', 3)
-        gc.update_int(self.service, self.full_sheet,subsidy, f'{sheet_choice}!F2:F68', value_input_option='USER_ENTERED')
-        
-        tenant_rent = gc.batch_get(self.service, self.full_sheet, f'{self.ui_sheet}!A1:Z100', 4)
-        gc.update_int(self.service, self.full_sheet, tenant_rent, f'{sheet_choice}!H2:H68', value_input_option='USER_ENTERED')
 
 
     def export_deposit_detail(self, data):

@@ -59,7 +59,6 @@ class TestWrite:
     def test_end_status(self):
         most_recent_status = [item for item in StatusRS().select().order_by(-StatusRS.status_id).namedtuples()][0]
         proc_file = json.loads(most_recent_status.proc_file)
-        # breakpoint()
         assert proc_file[0] == {'deposits_01_2022.xls': '2022-01'}
 
     # @retry_google_api(3, sleep1, error_codes)
@@ -78,8 +77,11 @@ class TestWrite:
         ys.shmonths = month_list
         ys.full_auto()
 
-    def test_reconciliation_in_status(self):
-        '''dont bother to write if it doesn't reconcile'''
+    @pytest.mark.testing_rs_sub1
+    def test_send_to_setup_month(self):
+        month_list = [rec.month for rec in StatusObject().select().where(StatusObject.tenant_reconciled==1).namedtuples()]
+        ms.auto_control(month_list=month_list)
+        breakpoint()
     
 
 

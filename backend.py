@@ -373,6 +373,9 @@ class QueryHC():
         select(TenantRent.rent_amount).
         where(TenantRent.rent_date >= first_dt).
         where(TenantRent.rent_date <= last_dt)])
+    
+    # def get_rentroll_by_period(self, first_dt=None, last_dt=None):
+    #     return []
 
     def record_type_loader(self, rtype, func1, list1, hash_no):
         '''really nice for loading up the recordtypes used here'''
