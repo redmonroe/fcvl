@@ -79,16 +79,11 @@ class TestWrite:
         title_dict = ys.show_current_sheets()
         assert [*title_dict.items()] == [('intake', 1226016565)]
 
+    @retry_google_api(3, sleep1, error_codes)
     def test_compare_base_docs_true_to_grand_total_true(self):
-        '''on first pass this should show empty lists bc no month is complete'''
-        # get is reconciled list
         month_list = [rec.month for rec in StatusObject().select().where(StatusObject.tenant_reconciled==1).namedtuples()]
         ys.shmonths = month_list
         ys.full_auto()
-        # breakpoint()
-        # ys.remove_base_sheet()
-        # ys.make_shifted_list_for_prev_bal()
-
 
     def test_reconciliation_in_status(self):
         '''dont bother to write if it doesn't reconcile'''
@@ -143,112 +138,6 @@ class TestProduction:
         assert service.__dict__['_dynamic_attrs'][1] == 'spreadsheets'
         assert calls.verify == '511' # this is the arbitrary test for the google api calls class
         breakpoint()
-
-    def test_setup_checklist(self):
-        '''PLACE YEAR IN DB TABLENAME SO THAT IT MIGHT LIVE PAST THE YEAR'''
-
-        checklist.drop_checklist()
-
-        assert checklist.db == cl_test_db
-        assert checklist.tablename == 'checklist_test' # we have right name
-
-        checklist.check_cl_exist()
-        assert checklist.init_status == 'empty_db' # cl is empty
-
-        cl_month_list = checklist.limit_date() # we are building cl iteratively
-        current_month = datetime.now().month
-    
-        assert len(cl_month_list) == current_month
-
-        table = checklist.make_checklist(month_list=cl_month_list, mode='iterative_cl')
-        assert len(table) == current_month
-        assert table.columns == ['id', 'year', 'month', 'base_docs', 'rs_exist', 'yfor', 'mfor', 'rr_proc', 'dep_proc', 'depdetail_proc', 'opcash_proc', 'grand_total_ok']
-
-    def test_setup_findexer(self):    
-
-        '''NEED TO TEST PDF SOON OR AT SOME POINT'''
-
-        assert path == Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/audit 2022/test_rent_sheets_data_sources')
-
-        findex.drop_tables()
-        init_status = findex.check_findex_exist()
-        assert init_status == 'empty'
-    
-        table = findex.build_raw_index(verbose=False)
-        assert len(table) == 5  # we have 4 files in the directory(2 rent roll, 2 deposits, 1 opcash)
-        assert table.columns == ['id', 'fn', 'path', 'status', 'indexed']
-        directory_contents = findex.articulate_directory()
-        names = [x.name for x in directory_contents]
-        assert names == ['deposits_01_2022.xls', 'deposits_02_2022.xlsx', 'op_cash_2022_01.pdf', 'rent_roll_01_2022.xls', 'rent_roll_02_2022.xlsx']
-
-        index_dict = findex.sort_directory_by_extension(verbose=False) # get extensions: NO PDF YET
-        assert 'xls' and 'xlsx' and 'pdf' in [*index_dict.values()]
-
-        findex.mark_as_checked(verbose=False) # no return: marks all files as checked
-        results = findex.ventilate_table()
-        assert len(results) == 5
-        checked_in_true = [x['indexed'] for x in results]
-        assert all(checked_in_true)
-
-        processed_files = findex.rename_by_content_xls() # the concept of processed is getting weaker
-        findex.processed_files = findex.rename_by_content_pdf()
-        findex.update_index_for_processed()
-
-        results = findex.ventilate_table()
-        processed_true = [x['status'] for x in results]
-        assert all(processed_true)
-
-
-    def test_merely_mark_base_docs_processed(self):
-        for date in build.final_to_process_list:
-            build.checklist.check_basedocs_proc(date)
-        check_items = checklist.show_checklist()
-        assertion1 = [x['month'] for x in check_items if x['base_docs'] == True]
-        assert assertion1 == ['jan', 'feb']
-
-    def test_compare_base_docs_true_to_grand_total_true(self):
-        '''on first pass this should show empty lists bc no month is complete'''
-        final_to_process_set = build.compare_base_docs_true_to_grand_total_true()
-        assert build.month_complete_is_true_list == []
-        assert final_to_process_set == {'2022-01', '2022-02'}
-        assert type(final_to_process_set) == set
-
-        build.final_to_process_list = list(final_to_process_set.difference(set(build.month_complete_is_true_list)))
-        assert'2022-01' and '2022-02' in build.final_to_process_list
-
-    def test_sort_final_to_process_list(self):
-        build.final_to_process_list = build.sort_and_adj_final_to_process_list()
-        ftp = build.final_to_process_list
-        assert ftp == ['jan', 'feb']  ## ORDER MATTERS HERE
-
-    def test_init_yearsheet_and_set_month_range(self):
-        ys.shmonths = build.final_to_process_list
-        assert ys.shmonths == ['jan', 'feb']
-
-    def test_remove_made_sheets_from_ftp_list(self):
-        '''I really need to test this more: second pass of these tests(not of my effort)'''
-        title_dict = ys.show_current_sheets()
-        build.final_to_process_list = build.remove_already_made_sheets_from_list(input_dict=title_dict)
-        ftp = build.final_to_process_list
-        assert ftp == ['jan', 'feb']
-
-    def test_init_yearsheet_and_set_month_range_after_removing_writes(self):
-        '''make this func meaningful'''
-        ys.shmonths = build.final_to_process_list
-        assert ys.shmonths == ['jan', 'feb']
-
-    def test_write_sheets(self):
-        try:
-            shnames = ys.full_auto()
-        except HttpError as e:
-            if e.resp.status == error_codes:
-                print(f'trying again with timeout of {sleep1} s')
-                time.sleep(sleep1)
-            else:
-                raise
-
-        assert shnames == ['jan 2022', 'feb 2022']
-
 
     def test_ready_to_write_first_pass(self):
         build.proc_ms_list = build.make_is_ready_to_write_list(style='base_docs_and_sheet_ok')
