@@ -123,13 +123,12 @@ class TestDB:
         # db side checks
         assert len(Tenant.select()) == 64
         assert len(TenantRent.select()) == 64
-        unit_list = [name for name in Unit.select().order_by(Unit.unit_name).namedtuples()]
-        occupied_unit_count = Unit.select().count()
-        assert occupied_unit_count == 64 
+        occupied_unit_count = [name for name in Unit.select().order_by(Unit.unit_name).where(Unit.status=='occupied').namedtuples()]
+        assert len(occupied_unit_count) == 64 
 
         '''test vacants after init tenant load'''
-        vacant_units = Unit.find_vacants()
-        assert 'PT-201' and 'CD-115' and 'CD-101' in vacant_units
+        vacant_units = [name for name in Unit.select().order_by(Unit.unit_name).where(Unit.status=='vacant').namedtuples()]
+        assert len(vacant_units) == 3
 
         '''load initial balances at 01012022'''
         dir_items = [item.name for item in path.iterdir()]
@@ -166,7 +165,6 @@ class TestDB:
             if date == '2022-03':
                 total_rent_charges = populate.get_total_rent_charges_by_month(first_dt=first_dt, last_dt=last_dt)
                 assert total_rent_charges == 15972.0 
-
                 vacant_snapshot_loop_end = Unit.find_vacants()
                 assert sorted(vacant_snapshot_loop_end) == sorted(['CD-101', 'CD-115', 'PT-211'])
     
@@ -278,31 +276,20 @@ class TestDB:
         '''all charges'''
         '''all payments'''
         '''jan, feb, mar payments subtotal'''
-
-        '''ideas: 
-        1. I can make mi list by adding mi column to Tenant
-        '''
    
         '''former tenants'''
         # is thomas johnson marked as inactive at end of loop
         former_tenants = [row.tenant_name for row in Tenant.select().where(Tenant.active=='False')]
         assert 'johnson, thomas' in [row for row in former_tenants]
-
-        '''active tenants'''
-        current_tenants = [row.tenant_name for row in Tenant.select().where(Tenant.active=='True')]
-        assert len(current_tenants) == 64
-        assert 'greiner, richard' in [row for row in current_tenants]        
         
         '''vacant units'''
         vacant_snapshot_loop_end = Unit.find_vacants()
         assert sorted(vacant_snapshot_loop_end) == sorted(['CD-101', 'CD-115', 'PT-211'])
 
         '''occupied units'''
-        occupied_loop_end = [unit for unit in Unit().select()]
-        assert len(occupied_loop_end) == 64
-
-        '''unit accounting equals 67'''
-        assert len(occupied_loop_end) + len(vacant_snapshot_loop_end) == 67
+        all_units = [unit for unit in Unit().select()]
+        occupied_num = len(all_units) - len(vacant_snapshot_loop_end) 
+        assert occupied_num == 64
 
         '''all charges'''
         total_rent_charges_ytd = sum([float(row.rent_amount) for row in Tenant.select(Tenant.tenant_name, TenantRent.rent_amount).join(TenantRent).namedtuples()])

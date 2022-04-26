@@ -43,17 +43,14 @@ class Tenant(BaseModel):
 class Unit(BaseModel):
     unit_name = CharField(unique=True)
     status = CharField(default='occupied') 
-    tenant = ForeignKeyField(Tenant, backref='unit')
+    tenant = CharField(default='vacant')
+    # tenant = ForeignKeyField(Tenant, backref='unit')
 
     @staticmethod
     def find_vacants():
-        all_units = Config.units
-        # get all units
-        query = [unit for unit in Unit.select().namedtuples()]
-        unit_status = [unit.unit_name for unit in Unit.select().namedtuples()]
-        vacant_list = list(set(all_units) - set(unit_status))
+        vacant_units = [name.unit_name for name in Unit.select().order_by(Unit.unit_name).where(Unit.status=='vacant').namedtuples()]
 
-        return vacant_list
+        return vacant_units
 
 class TenantRent(BaseModel):
     # tenant = CharField()
@@ -457,17 +454,23 @@ class PopulateTable(QueryHC):
         fill_item = '0'
         df = pd.read_excel(filename, header=16)
         df = df.fillna(fill_item)
-        nt_list, explicit_move_outs = self.nt_from_df(df=df, date=date, fill_item=fill_item)
+        nt_list_w_vacants, explicit_move_outs = self.nt_from_df(df=df, date=date, fill_item=fill_item)
 
         first_dt, last_dt = self.make_first_and_last_dates(date_str=date)
 
-        total_tenant_charges = float(((nt_list.pop(-1)).rent).replace(',', ''))
+        total_tenant_charges = float(((nt_list_w_vacants.pop(-1)).rent).replace(',', ''))
 
-        nt_list = self.return_nt_list_with_no_vacants(keyword='vacant', nt_list=nt_list)
+        nt_list = self.return_nt_list_with_no_vacants(keyword='vacant', nt_list=nt_list_w_vacants)
 
         ten_insert_many = [{'tenant_name': row.name, 'move_in_date': datetime.strptime(row.mi_date, '%m/%d/%Y')} for row in nt_list]
 
-        units_insert_many = [{'unit_name': row.unit, 'tenant': row.name} for row in nt_list]
+        units_insert_many = []
+        for row in nt_list_w_vacants:
+            if row.name == 'vacant':
+                dict1 = {'unit_name': row.unit, 'status': 'vacant'}
+            else:
+                dict1 = {'unit_name': row.unit, 'tenant': row.name}
+            units_insert_many.append(dict1)
 
         rent_insert_many = [{'t_name': row.name, 'unit': row.unit, 'rent_amount': row.rent, 'rent_date': row.date} for row in nt_list if row.name != 'vacant']  
 
@@ -485,7 +488,11 @@ class PopulateTable(QueryHC):
         ''' get tenants from jan end/feb start'''
         ''' get rent roll from feb end in nt_list from df'''
 
-        period_start_tenant_names = [(name.tenant_name, name.unit_name, datetime(name.move_in_date.year, name.move_in_date.month, name.move_in_date.day)) for name in Tenant.select(Tenant.tenant_name, Tenant.move_in_date, Unit.unit_name).where(Tenant.active==True).join(Unit).namedtuples()]
+        # join with expression not foreignkey
+        period_start_tenant_names = [(name.tenant_name, name.unit_name, datetime(name.move_in_date.year, name.move_in_date.month, name.move_in_date.day)) for name in Tenant.select(Tenant.tenant_name, Tenant.move_in_date, Unit.unit_name).
+            where(Tenant.move_in_date <= datetime.strptime(date, '%Y-%m')).
+            join(Unit, on=Tenant.tenant_name==Unit.tenant).namedtuples()]
+
         fill_item = '0'
         df = pd.read_excel(filename, header=16)
         df = df.fillna(fill_item)
@@ -503,7 +510,7 @@ class PopulateTable(QueryHC):
         self.insert_move_ins(move_ins=computed_mis)
 
         if cleaned_mos != []:
-            self.deactivate_move_outs(move_outs=cleaned_mos)
+            self.deactivate_move_outs(date, move_outs=cleaned_mos)
 
         ''' now we should have updated list of active tenants'''
         cleaned_nt_list = [row for row in self.return_nt_list_with_no_vacants(keyword='vacant', nt_list=nt_list)]
@@ -647,13 +654,13 @@ class PopulateTable(QueryHC):
         df = df.fillna(0)
         return df
 
-    def load_units(self, filename, verbose=False):
-        insert_many_list = []
-        for item in Config.units:
-            insert_many_list.append({'unit_name': item})
-
-        query = Unit.insert_many(insert_many_list)
-        query.execute()
+    # def load_units(self, filename, verbose=False):
+    #     insert_many_list = []
+    #     for item in Config.units:
+    #         insert_many_list.append({'unit_name': item})
+    #     breakpoint()
+    #     query = Unit.insert_many(insert_many_list)
+    #     query.execute()
 
     def find_rent_roll_changes_by_comparison(self, start_set=None, end_set=None):
         '''compares list of tenants at start of month to those at end'''
@@ -668,20 +675,27 @@ class PopulateTable(QueryHC):
 
     def insert_move_ins(self, move_ins=None):
         for name, unit, move_in_date in move_ins:
-            nt = Tenant.create(tenant_name=name, move_in_date=move_in_date)
-            unit = Unit.create(unit_name=unit, status='occupied', tenant=name)
+            # breakpoint()
+            nt = Tenant.create(tenant_name=name, active='true', move_in_date=move_in_date)
+            unit = Unit.get(unit_name=unit)
+            unit.status = 'occupied'
+            unit.tenant = name
 
             nt.save()
             unit.save()
 
-    def deactivate_move_outs(self, move_outs=None):
+    def deactivate_move_outs(self, date, move_outs=None):
+        first_dt, last_dt = self.make_first_and_last_dates(date_str=date)
         for name in move_outs:
             tenant = Tenant.get(Tenant.tenant_name == name)
             tenant.active = False
+            tenant.move_out_date = last_dt
             tenant.save()
 
-            unit_to_deactivate = Unit.get(Unit.tenant == name)
-            unit_to_deactivate.delete_instance()
+            unit = Unit.get(Unit.tenant==name)
+            unit.status = 'vacant'
+            unit.tenant = 'vacant'
+            unit.save()
 
     def transfer_opcash_to_db(self, file_list=None):
         for item in file_list:

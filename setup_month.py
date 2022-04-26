@@ -59,6 +59,7 @@ class MonthSheet:
         self.gc = GoogleApiCalls()
 
     def auto_control(self, month_list=None):
+        # this becomes a loop
         sheet_choice=month_list[0]
         self.export_month_format(sheet_choice)
         self.month_write_col(sheet_choice)
@@ -66,14 +67,26 @@ class MonthSheet:
     def month_write_col(self, sheet_choice):
         gc = GoogleApiCalls()
         query = QueryHC()
-
         first_dt, last_dt = query.make_first_and_last_dates(date_str=sheet_choice)
-        tenant_names = [rec.tenant_name for rec in Tenant().select().
+
+        # tenant_names = [(rec.tenant_name, rec.unit_name, rec.status) for rec in Tenant().select(Tenant.tenant_name, Unit.status, Unit.unit_name).
+        #     where(Tenant.move_in_date<=first_dt).
+        #     where(
+        #         (Tenant.move_out_date>=first_dt) |
+        #         (Tenant.move_out_date=='0')).
+        #         join(Unit)
+        #         .namedtuples()] 
+
+        tenant_names = [(rec.tenant_name, rec.unit_name, rec.status) for rec in Unit().select(Tenant.tenant_name, Unit.status, Unit.unit_name).
             where(Tenant.move_in_date<=first_dt).
             where(
                 (Tenant.move_out_date>=first_dt) |
-                (Tenant.move_out_date=='0'))
+                (Tenant.move_out_date=='0')).
+                join(Tenant)
                 .namedtuples()] 
+        
+        
+        
         breakpoint()
 
 
