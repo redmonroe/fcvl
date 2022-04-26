@@ -8,8 +8,8 @@ from pprint import pprint
 
 import pytest
 from backend import (Damages, Findexer, NTPayment, OpCash, OpCashDetail,
-                     Payment, PopulateTable, StatusRS, StatusObject, Tenant, TenantRent,
-                     Unit, db)
+                     Payment, PopulateTable, StatusObject, StatusRS, Tenant,
+                     TenantRent, Unit, db)
 from build_rs import BuildRS
 from config import Config
 from db_utils import DBUtils
@@ -18,8 +18,6 @@ from peewee import JOIN, fn
 from records import record
 
 create_tables_list = [Findexer, StatusObject, StatusRS, OpCash, OpCashDetail, Damages, Tenant, Unit, Payment, NTPayment, TenantRent]
-
-
 
 target_bal_load_file = 'beginning_balance_2022.xlsx'
 path = Config.TEST_RS_PATH
@@ -83,7 +81,6 @@ class TestFileIndexer:
 
 @pytest.mark.testing_db
 class TestDB:
-    '''basic idea: db connect > findex.build_index_runner > get_processed > '''
 
     def test_reset_all(self):
         db.connect()
@@ -139,7 +136,6 @@ class TestDB:
         jan_end_bal_sum = Tenant.select(fn.Sum(Tenant.beg_bal_amount).alias('sum')).get().sum
         assert jan_end_bal_sum == 793
 
-
     def test_load_remaining_months_rent(self):
         rent_roll_list = [(item.fn, item.period, item.path) for item in Findexer().select().
             where(Findexer.doc_type == 'rent').
@@ -167,7 +163,6 @@ class TestDB:
                 assert total_rent_charges == 15972.0 
                 vacant_snapshot_loop_end = Unit.find_vacants()
                 assert sorted(vacant_snapshot_loop_end) == sorted(['CD-101', 'CD-115', 'PT-211'])
-    
 
     def test_real_payments(self):
         file_list = [(item.fn, item.period, item.path) for item in Findexer().select().
@@ -455,11 +450,7 @@ class TestBuildAndStatus:
     def test_end_status(self):
         most_recent_status = [item for item in StatusRS().select().order_by(-StatusRS.status_id).namedtuples()][0]
         proc_file = json.loads(most_recent_status.proc_file)
-        # breakpoint()
         assert proc_file[0] == {'deposits_01_2022.xls': '2022-01'}
-
-    def test_reconciliation_in_status(self):
-        '''dont bother to write if it doesn't reconcile'''
     
     def test_teardown(self):
         db.drop_tables(models=create_tables_list)
