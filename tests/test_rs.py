@@ -62,6 +62,7 @@ class TestWrite:
         assert proc_file[0] == {'deposits_01_2022.xls': '2022-01'}
 
     # @retry_google_api(3, sleep1, error_codes)
+    @pytest.mark.skip
     def test_setup_sheet_prime(self):
         title_dict = ys.show_current_sheets()
         for name, id2, in title_dict.items():
@@ -72,6 +73,7 @@ class TestWrite:
         assert [*title_dict.items()] == [('intake', 1226016565)]
 
     # @retry_google_api(3, sleep1, error_codes)
+    @pytest.mark.skip
     def test_compare_base_docs_true_to_grand_total_true(self):
         month_list = [rec.month for rec in StatusObject().select().where(StatusObject.tenant_reconciled==1).namedtuples()]
         ys.shmonths = month_list
@@ -79,9 +81,7 @@ class TestWrite:
 
     @pytest.mark.testing_rs_sub1
     def test_send_to_setup_month(self):
-        month_list = [rec.month for rec in StatusObject().select().where(StatusObject.tenant_reconciled==1).namedtuples()]
-        ms.auto_control(month_list=month_list)
-        breakpoint()
+        ms.auto_control()
     
 
 

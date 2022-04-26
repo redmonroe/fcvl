@@ -33,7 +33,7 @@ class BaseModel(Model):
         database = db
 
 class Tenant(BaseModel):
-    tenant_name = CharField(primary_key=True, unique=True)
+    tenant_name = CharField(primary_key=True) # removed unique = True
     active = CharField(default=True) # 
     move_in_date = DateField(default='0')
     move_out_date = DateField(default='0')
@@ -45,12 +45,19 @@ class Unit(BaseModel):
     status = CharField(default='occupied') 
     tenant = CharField(default='vacant')
     # tenant = ForeignKeyField(Tenant, backref='unit')
+    
 
     @staticmethod
     def find_vacants():
         vacant_units = [name.unit_name for name in Unit.select().order_by(Unit.unit_name).where(Unit.status=='vacant').namedtuples()]
 
         return vacant_units
+
+    @staticmethod
+    def get_all_units():
+        all_units = [name.unit_name for name in Unit.select().order_by(Unit.unit_name).namedtuples()]
+
+        return all_units 
 
 class TenantRent(BaseModel):
     # tenant = CharField()

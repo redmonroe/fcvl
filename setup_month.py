@@ -59,9 +59,11 @@ class MonthSheet:
         self.gc = GoogleApiCalls()
 
     def auto_control(self, month_list=None):
+        if month_list == None:
+            month_list = [rec.month for rec in StatusObject().select().where(StatusObject.tenant_reconciled==1).namedtuples()]
         # this becomes a loop
         sheet_choice=month_list[0]
-        self.export_month_format(sheet_choice)
+        # self.export_month_format(sheet_choice)
         self.month_write_col(sheet_choice)
        
     def month_write_col(self, sheet_choice):
@@ -69,25 +71,20 @@ class MonthSheet:
         query = QueryHC()
         first_dt, last_dt = query.make_first_and_last_dates(date_str=sheet_choice)
 
-        # tenant_names = [(rec.tenant_name, rec.unit_name, rec.status) for rec in Tenant().select(Tenant.tenant_name, Unit.status, Unit.unit_name).
-        #     where(Tenant.move_in_date<=first_dt).
-        #     where(
-        #         (Tenant.move_out_date>=first_dt) |
-        #         (Tenant.move_out_date=='0')).
-        #         join(Unit)
-        #         .namedtuples()] 
+        tenants_mi_on_or_before_first = [rec for rec in Tenant().select().where(Tenant.move_in_date<=first_dt).namedtuples()]
 
-        tenant_names = [(rec.tenant_name, rec.unit_name, rec.status) for rec in Unit().select(Tenant.tenant_name, Unit.status, Unit.unit_name).
-            where(Tenant.move_in_date<=first_dt).
-            where(
-                (Tenant.move_out_date>=first_dt) |
-                (Tenant.move_out_date=='0')).
-                join(Tenant)
-                .namedtuples()] 
-        
-        
+        # for tenant in tenants_mi_on_or_before_first:
+        #     for        
+
+        all_units = Unit.get_all_units()
+
+        occupied_units =  [item[1] for item in tenants_at_start_of_month]
+        vacant_units = set(all_units) - set(occupied_units)
         
         breakpoint()
+        
+        
+        
 
 
         # gc.update(self.service, self.full_sheet, unit, f'{sheet_choice}!A2:A68')

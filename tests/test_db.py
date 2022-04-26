@@ -111,7 +111,7 @@ class TestDB:
 
         '''init is almost half of business logic'''
         nt_list, total_tenant_charges, explicit_move_outs = populate.init_tenant_load(filename=january_rent_roll_path, date=jan_date)
-
+        breakpoint()
         # sheet side checks
         assert len(nt_list) == 64
         assert total_tenant_charges == 15469.0
@@ -427,8 +427,6 @@ class TestOpcash:
 
 @pytest.mark.testing_db
 class TestBuildAndStatus:
-    '''what do we want this to look like that '''
-    '''how do I consolidate findex and status table creation and let them still be able to run own independent tests?'''
 
     def test_assert_all_db_empty_and_connections_closed(self):
         assert db.get_tables() == []

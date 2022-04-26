@@ -59,7 +59,6 @@ class BuildRS(MonthSheet):
     def new_auto_build(self):
         print('new_auto_build')
         print('ignore checklist and automation; yagni')
-        breakpoint()
         populate = PopulateTable()
         unit = Unit()
         findex = FileIndexer(path=self.path, db=self.main_db)
