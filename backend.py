@@ -47,6 +47,7 @@ class Unit(BaseModel):
     tenant = CharField(default='vacant')
     last_occupied = DateField(default='0')
     # tenant = ForeignKeyField(Tenant, backref='unit')
+    # tenant = ForeignKeyField(Tenant, backref='unit')
     
 
     @staticmethod
@@ -138,6 +139,12 @@ class Findexer(BaseModel):
     deplist = CharField(default='0')
     path = CharField()
 
+class BalanceLetter(BaseModel):
+    letter_id = AutoField()
+    target_month_end = DateField()
+    tenant = ForeignKeyField(Tenant, backref='b_letter')
+    end_bal = CharField()
+
 class StatusRS(BaseModel):
     status_id = AutoField()
     current_date = DateField()
@@ -154,8 +161,8 @@ class StatusRS(BaseModel):
             db.connect()
         if mode == 'autodrop':
             print(f'StatusRS set to {mode}')
-            db.drop_tables(models=[StatusRS, StatusObject, Findexer])
-            db.create_tables(models=[StatusRS, StatusObject, Findexer])
+            db.drop_tables(models=[StatusRS, StatusObject, Findexer, BalanceLetter])
+            db.create_tables(models=[StatusRS, StatusObject, Findexer, BalanceLetter])
         date1 = datetime.now()
         query = StatusRS.create(current_date=date1)
         query.save()   
@@ -194,8 +201,25 @@ class StatusRS(BaseModel):
     
         return most_recent_status 
 
-    def generate_balance_letter_list_mr_reconciled(self):
+    def show_balance_letter_list_mr_reconciled(self):
+        query = QueryHC()
+        mr_good_month = self.get_mr_good_month()
+        if mr_good_month:
+            first_dt, last_dt = query.make_first_and_last_dates(date_str=mr_good_month)
 
+            balance_letters = [rec for rec in BalanceLetter.select(BalanceLetter, Tenant).
+                where(Tenant.active==True).
+                where(
+                    (BalanceLetter.target_month_end>=first_dt) &
+                    (BalanceLetter.target_month_end<=last_dt)).
+                join(Tenant).
+                namedtuples()]
+
+            return balance_letters
+        else:
+            return []
+
+    def get_mr_good_month(self):
         query = QueryHC()
         '''get most recent finalized month'''
         try:
@@ -206,18 +230,29 @@ class StatusRS(BaseModel):
         except IndexError as e:
             print('bypassing error on mr_good_month', e)
             mr_good_month = False
-            return [], False
+            return mr_good_month
 
-        first_dt, last_dt = query.make_first_and_last_dates(date_str=mr_good_month)
-        position_list, cumsum = query.net_position_by_tenant_by_month(first_dt=first_dt, last_dt=last_dt)
-        
-        bal_letter_list = []
-        for rec in position_list:
-            if float(rec.end_bal) >= float(100):
-                tup = (rec.name, rec.end_bal)
-                bal_letter_list.append(tup)
+        return mr_good_month
 
-        return bal_letter_list, mr_good_month
+    def generate_balance_letter_list_mr_reconciled(self):
+        query = QueryHC()
+
+        mr_good_month = self.get_mr_good_month()
+
+        if mr_good_month:
+            first_dt, last_dt = query.make_first_and_last_dates(date_str=mr_good_month)
+            position_list, cumsum = query.net_position_by_tenant_by_month(first_dt=first_dt, last_dt=last_dt)
+            
+            bal_letter_list = []
+            for rec in position_list:
+                if float(rec.end_bal) >= float(100):
+                    b_letter = BalanceLetter(tenant=rec.name, end_bal=rec.end_bal, target_month_end=last_dt)
+                    b_letter.save()
+                    tup = (rec.name, rec.end_bal, last_dt)
+                    bal_letter_list.append(tup)
+            return bal_letter_list, mr_good_month
+        else:
+            return [], None
 
     def is_ready_to_write(self, month=None, dict1=None):
         count = 0
@@ -300,6 +335,7 @@ class StatusObject(BaseModel):
     month = CharField(default='0')
     processed = BooleanField(default=False)
     tenant_reconciled = BooleanField(default=False)
+
         
 class QueryHC():
 
