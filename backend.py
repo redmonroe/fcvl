@@ -206,7 +206,7 @@ class StatusRS(BaseModel):
         except IndexError as e:
             print('bypassing error on mr_good_month', e)
             mr_good_month = False
-            return False
+            return [], False
 
         first_dt, last_dt = query.make_first_and_last_dates(date_str=mr_good_month)
         position_list, cumsum = query.net_position_by_tenant_by_month(first_dt=first_dt, last_dt=last_dt)
