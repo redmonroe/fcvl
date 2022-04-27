@@ -452,7 +452,7 @@ class TestBuildAndStatus:
 
     def test_balance_queries(self):
         status = StatusRS()
-        balance_letter_list = status.generate_balance_letter_list_mr_reconciled()
+        balance_letter_list, mr_good_month = status.generate_balance_letter_list_mr_reconciled()
         breakpoint()
     
     def test_teardown(self):
