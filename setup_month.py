@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pandas as pd
 from numpy import nan
+from peewee import JOIN
 
 from auth_work import oauth
 from backend import (StatusRS, StatusObject, Damages, NTPayment, OpCash, OpCashDetail, Payment, PopulateTable, QueryHC, Tenant, TenantRent, Unit, Findexer, db)
@@ -32,7 +33,6 @@ class MonthSheet:
     wrange_k_rent1 = f'{ui_sheet}!c{range1}:c{range2}'
     wrange_subsidy1 = f'{ui_sheet}!d{range1}:d{range2}'
     wrange_t_rent1 = f'{ui_sheet}!e{range1}:e{range2}'
-    user_text2 = f'\n Please make sure you have run option 3 in the previous menu that formats Intake for the rent sheet. \n Please PRESS 1 when ready . . .'
 
     def __init__(self, full_sheet, path, sleep, mode=None, test_service=None):
 
@@ -61,36 +61,47 @@ class MonthSheet:
     def auto_control(self, month_list=None):
         if month_list == None:
             month_list = [rec.month for rec in StatusObject().select().where(StatusObject.tenant_reconciled==1).namedtuples()]
-        # this becomes a loop
-        sheet_choice=month_list[0]
-        # self.export_month_format(sheet_choice)
-        self.month_write_col(sheet_choice)
+        for date in month_list:
+            # self.export_month_format(date)
+            self.month_write_col(sheet_choice)
        
-    def month_write_col(self, sheet_choice):
+    def month_write_col(self, date):
         gc = GoogleApiCalls()
         query = QueryHC()
-        first_dt, last_dt = query.make_first_and_last_dates(date_str=sheet_choice)
+        first_dt, last_dt = query.make_first_and_last_dates(date_str=date)
 
-        tenants_mi_on_or_before_first = [rec for rec in Tenant().select().where(Tenant.move_in_date<=first_dt).namedtuples()]
+        tenants_mi_on_or_before_first = [(rec.tenant_name, rec.unit) for rec in Tenant().select(Tenant, Unit).
+            join(Unit, JOIN.LEFT_OUTER, on=(Tenant.tenant_name==Unit.tenant)).
+            where(Tenant.move_in_date<=first_dt).
+            # where(Unit.last_occupied<=last_dt).
+            namedtuples()]
 
-        # for tenant in tenants_mi_on_or_before_first:
-        #     for        
+        occupied_units = [unit for (name, unit) in tenants_mi_on_or_before_first]
 
         all_units = Unit.get_all_units()
 
-        occupied_units =  [item[1] for item in tenants_at_start_of_month]
-        vacant_units = set(all_units) - set(occupied_units)
+        for vacant_unit in set(all_units) - set(occupied_units):
+            tup = ('vacant',  vacant_unit)
+            tenants_mi_on_or_before_first.append(tup)
         
-        breakpoint()
+        if date == '2022-01':
+            # these become tests
+            breakpoint()
+        if date == '2022-02':
+            # greiner in
+            breakpoint()
+        if date == '2022-03':
+            # johnson out
+            breakpoint()
         
         
         
+        '''        
+        gc.update(self.service, self.full_sheet, unit, f'{sheet_choice}!A2:A68')
+        
+        gc.update(self.service, self.full_sheet, tenant_names, f'{sheet_choice}!B2:B68')       
 
-
-        # gc.update(self.service, self.full_sheet, unit, f'{sheet_choice}!A2:A68')
-        
-        # gc.update(self.service, self.full_sheet, tenant_names, f'{sheet_choice}!B2:B68')       
-
+        '''
         # gc.update_int(self.service, self.full_sheet, contract_rent, f'{sheet_choice}!E2:E68', value_input_option='USER_ENTERED')
         
         # gc.update_int(self.service, self.full_sheet,subsidy, f'{sheet_choice}!F2:F68', value_input_option='USER_ENTERED')
@@ -108,65 +119,65 @@ class MonthSheet:
         gc.write_formula_column(self.service, self.full_sheet, self.G_CURBAL, f'{sheet_choice}!L69:L69')
         print(f'exported month format to {sheet_choice} with wait time of {self.sleep} seconds')
 
-    def show_current_sheets(self, interactive=False):
-        print('showing current sheets')
-        titles_dict = Utils.get_existing_sheets(self.service, self.full_sheet)
+    # def show_current_sheets(self, interactive=False):
+    #     print('showing current sheets')
+    #     titles_dict = Utils.get_existing_sheets(self.service, self.full_sheet)
             
-        path = Utils.show_files_as_choices(titles_dict, interactive=interactive)
-        if interactive == True:
+    #     path = Utils.show_files_as_choices(titles_dict, interactive=interactive)
+    #     if interactive == True:
             
-            return path
-        return titles_dict
+    #         return path
+    #     return titles_dict
 
-    def walk_download_folder(self):
-        print('showing ALL items in download folder')
-        current_items = [p for p in pathlib.Path(self.file_input_path).iterdir() if p.is_file()]
-        for item in current_items:
-            print(item.name)
+    # def walk_download_folder(self):
+    #     print('showing ALL items in download folder')
+    #     current_items = [p for p in pathlib.Path(self.file_input_path).iterdir() if p.is_file()]
+    #     for item in current_items:
+    #         print(item.name)
 
-    def read_excel_ms(self, verbose=False):
-        df = pd.read_excel(self.file_input_path, header=16)
-        # jan len is 68
-        if verbose: 
-            pd.set_option('display.max_columns', None)
-            print(df.head(100))
-        if len(df) > 68:
-            df = self.check_for_mo(df)
+    # def read_excel_ms(self, verbose=False):
+    #     df = pd.read_excel(self.file_input_path, header=16)
+    #     # jan len is 68
+    #     if verbose: 
+    #         pd.set_option('display.max_columns', None)
+    #         print(df.head(100))
+    #     if len(df) > 68:
+    #         df = self.check_for_mo(df)
 
-        t_name = df['Name'].tolist()
-        unit = df['Unit'].tolist()
-        k_rent = self.str_to_float(df['Lease Rent'].tolist())
-        t_rent = self.str_to_float(df['Actual Rent Charge'].tolist())
-        subsidy = self.str_to_float(df['Actual Subsidy Charge'].tolist())
+    #     t_name = df['Name'].tolist()
+    #     unit = df['Unit'].tolist()
+    #     k_rent = self.str_to_float(df['Lease Rent'].tolist())
+    #     t_rent = self.str_to_float(df['Actual Rent Charge'].tolist())
+    #     subsidy = self.str_to_float(df['Actual Subsidy Charge'].tolist())
 
-        return self.fix_data(t_name), self.fix_data(unit), self.fix_data(k_rent), self.fix_data(subsidy), self.fix_data(t_rent)
+    #     return self.fix_data(t_name), self.fix_data(unit), self.fix_data(k_rent), self.fix_data(subsidy), self.fix_data(t_rent)
 
-    def str_to_float(self, list1):
-        list1 = [item.replace(',', '') for item in list1]
-        list1 = [float(item) for item in list1]
-        return list1
+    # def str_to_float(self, list1):
+    #     list1 = [item.replace(',', '') for item in list1]
+    #     list1 = [float(item) for item in list1]
+    #     return list1
 
-    def check_for_mo(self, df):
-        list1 = df['Lease Rent'].tolist()
-        list1 = [True for item in list1 if item is nan]
+    # def check_for_mo(self, df):
+    #     list1 = df['Lease Rent'].tolist()
+    #     list1 = [True for item in list1 if item is nan]
 
-        if len(list1) == 0:
-            print('No move out')
-        else:
-            print('found a move out')
-            move_out_list = []
-            for index, row in df.iterrows():
-                row_lr = row['Lease Rent']
-                row_mr = row['Market/\nNote Rate\nRent']
-                if row_lr is nan and row_mr is nan:
-                    move_out_list.append(index)
+    #     if len(list1) == 0:
+    #         print('No move out')
+    #     else:
+    #         print('found a move out')
+    #         move_out_list = []
+    #         for index, row in df.iterrows():
+    #             row_lr = row['Lease Rent']
+    #             row_mr = row['Market/\nNote Rate\nRent']
+    #             if row_lr is nan and row_mr is nan:
+    #                 move_out_list.append(index)
 
-            df = df.drop(index=move_out_list, axis=0)
-        return df
+    #         df = df.drop(index=move_out_list, axis=0)
+    #     return df
     
-    def fix_data(self, item):
-        item.pop()
-        return item
+    # def fix_data(self, item):
+    #     item.pop()
+    #     return item
 
     def write_to_rs(self):
         gc = GoogleApiCalls()
@@ -175,8 +186,6 @@ class MonthSheet:
         gc.simple_batch_update(self.service, self.full_sheet, self.wrange_k_rent, self.k_rent, 'COLUMNS')
         gc.simple_batch_update(self.service, self.full_sheet, self.wrange_subsidy, self.subsidy, 'COLUMNS')
         gc.simple_batch_update(self.service, self.full_sheet, self.wrange_t_rent, self.t_rent, 'COLUMNS')
-
-
 
     def export_deposit_detail(self, data):
         time.sleep(self.sleep)

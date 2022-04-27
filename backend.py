@@ -39,11 +39,13 @@ class Tenant(BaseModel):
     move_out_date = DateField(default='0')
     beg_bal_date = DateField(default='2022-01-01')
     beg_bal_amount = DecimalField(default=0.00)
+    unit = CharField(default='0')
 
 class Unit(BaseModel):
     unit_name = CharField(unique=True)
     status = CharField(default='occupied') 
     tenant = CharField(default='vacant')
+    last_occupied = DateField(default='0')
     # tenant = ForeignKeyField(Tenant, backref='unit')
     
 
@@ -55,7 +57,15 @@ class Unit(BaseModel):
 
     @staticmethod
     def get_all_units():
-        all_units = [name.unit_name for name in Unit.select().order_by(Unit.unit_name).namedtuples()]
+        all_units = [name.unit_name for name in Unit.select()]
+
+        return all_units 
+
+    @staticmethod
+    def get_all_occupied_units_at_date(**kwargs):
+        all_units = [(name.tenant, name.unit_name, name.last_occupied) for name in Unit.select().
+            where(Unit.last_occupied==kwargs['last_dt']).
+            order_by(Unit.unit_name).namedtuples()]
 
         return all_units 
 
@@ -469,14 +479,14 @@ class PopulateTable(QueryHC):
 
         nt_list = self.return_nt_list_with_no_vacants(keyword='vacant', nt_list=nt_list_w_vacants)
 
-        ten_insert_many = [{'tenant_name': row.name, 'move_in_date': datetime.strptime(row.mi_date, '%m/%d/%Y')} for row in nt_list]
+        ten_insert_many = [{'tenant_name': row.name, 'move_in_date': datetime.strptime(row.mi_date, '%m/%d/%Y'), 'unit': row.unit} for row in nt_list]
 
         units_insert_many = []
         for row in nt_list_w_vacants:
             if row.name == 'vacant':
                 dict1 = {'unit_name': row.unit, 'status': 'vacant'}
             else:
-                dict1 = {'unit_name': row.unit, 'tenant': row.name}
+                dict1 = {'unit_name': row.unit, 'tenant': row.name, 'last_occupied': last_dt}
             units_insert_many.append(dict1)
 
         rent_insert_many = [{'t_name': row.name, 'unit': row.unit, 'rent_amount': row.rent, 'rent_date': row.date} for row in nt_list if row.name != 'vacant']  
@@ -487,7 +497,7 @@ class PopulateTable(QueryHC):
         query.execute()
         query = Unit.insert_many(units_insert_many)
         query.execute()
-
+    
         return nt_list, total_tenant_charges, explicit_move_outs
 
     def after_jan_load(self, filename=None, date=None):
@@ -661,14 +671,6 @@ class PopulateTable(QueryHC):
         df = df.fillna(0)
         return df
 
-    # def load_units(self, filename, verbose=False):
-    #     insert_many_list = []
-    #     for item in Config.units:
-    #         insert_many_list.append({'unit_name': item})
-    #     breakpoint()
-    #     query = Unit.insert_many(insert_many_list)
-    #     query.execute()
-
     def find_rent_roll_changes_by_comparison(self, start_set=None, end_set=None):
         '''compares list of tenants at start of month to those at end'''
         '''explicit move-outs from excel have been removed from end of month rent_roll_dict 
@@ -683,7 +685,7 @@ class PopulateTable(QueryHC):
     def insert_move_ins(self, move_ins=None):
         for name, unit, move_in_date in move_ins:
             # breakpoint()
-            nt = Tenant.create(tenant_name=name, active='true', move_in_date=move_in_date)
+            nt = Tenant.create(tenant_name=name, active='true', move_in_date=move_in_date, unit=unit)
             unit = Unit.get(unit_name=unit)
             unit.status = 'occupied'
             unit.tenant = name
@@ -697,6 +699,7 @@ class PopulateTable(QueryHC):
             tenant = Tenant.get(Tenant.tenant_name == name)
             tenant.active = False
             tenant.move_out_date = last_dt
+            # tenant.unit = '0'
             tenant.save()
 
             unit = Unit.get(Unit.tenant==name)

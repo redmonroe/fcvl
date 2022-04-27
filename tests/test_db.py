@@ -111,7 +111,7 @@ class TestDB:
 
         '''init is almost half of business logic'''
         nt_list, total_tenant_charges, explicit_move_outs = populate.init_tenant_load(filename=january_rent_roll_path, date=jan_date)
-        breakpoint()
+
         # sheet side checks
         assert len(nt_list) == 64
         assert total_tenant_charges == 15469.0
