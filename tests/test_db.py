@@ -449,6 +449,11 @@ class TestBuildAndStatus:
         most_recent_status = [item for item in StatusRS().select().order_by(-StatusRS.status_id).namedtuples()][0]
         proc_file = json.loads(most_recent_status.proc_file)
         assert proc_file[0] == {'deposits_01_2022.xls': '2022-01'}
+
+    def test_balance_queries(self):
+        status = StatusRS()
+        balance_letter_list = status.generate_balance_letter_list_mr_reconciled()
+        breakpoint()
     
     def test_teardown(self):
         db.drop_tables(models=create_tables_list)

@@ -63,7 +63,7 @@ class MonthSheet:
             month_list = [rec.month for rec in StatusObject().select().where(StatusObject.tenant_reconciled==1).namedtuples()]
         for date in month_list:
             # self.export_month_format(date)
-            self.month_write_col(sheet_choice)
+            self.month_write_col(date)
        
     def month_write_col(self, date):
         gc = GoogleApiCalls()
@@ -84,9 +84,12 @@ class MonthSheet:
             tup = ('vacant',  vacant_unit)
             tenants_mi_on_or_before_first.append(tup)
         
+        # these become tests
         if date == '2022-01':
-            # these become tests
-            breakpoint()
+            tenant_test = [name for (name, unit) in tenants_mi_on_or_before_first]
+            assert len(all_units) == 67
+            assert len(occupied_units) == 64
+            assert 'johnson, thomas' in tenant_test
         if date == '2022-02':
             # greiner in
             breakpoint()

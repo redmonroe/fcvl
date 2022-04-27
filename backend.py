@@ -186,8 +186,30 @@ class StatusRS(BaseModel):
                 ready_to_write_dt = self.is_ready_to_write(month=month, dict1=look_dict)
                 look_list.append(look_dict)
                 print(f'For period {month} these files have been processed: \n {[*look_dict.keys()]} \n Ready to Write? {[*ready_to_write_dt.values()][0]}' )
+
+        balance_letter_list = self.generate_balance_letter_list_mr_reconciled()
     
         return most_recent_status 
+
+    def generate_balance_letter_list_mr_reconciled(self):
+
+        query = QueryHC()
+        '''get most recent finalized month'''
+        mr_good_month = [rec.month for rec in StatusObject().select(StatusObject.month).where(
+            (StatusObject.processed==1) &
+            (StatusObject.tenant_reconciled==1)).
+            namedtuples()][-1]
+
+        first_dt, last_dt = query.make_first_and_last_dates(date_str=mr_good_month)
+        position_list, cumsum = query.net_position_by_tenant_by_month(first_dt=first_dt, last_dt=last_dt)
+        
+        bal_letter_list = []
+        for rec in position_list:
+            if float(rec.end_bal) >= float(100):
+                tup = (rec.name, rec.end_bal)
+                bal_letter_list.append(tup)
+
+        return bal_letter_list
 
     def is_ready_to_write(self, month=None, dict1=None):
         count = 0

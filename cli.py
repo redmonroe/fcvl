@@ -56,7 +56,6 @@ def autors(mode=None):
     '''build database'''
     '''then run status and begin writing to rs'''
 
-
     if mode == 'testing':
         basedir = os.path.abspath(os.path.dirname(__file__))
         path = Config.TEST_RS_PATH
@@ -64,9 +63,6 @@ def autors(mode=None):
         build = BuildRS(path=path, main_db=pw_db)
         build.new_auto_build()
         build.summary_assertion_at_period(test_date='2022-03')
-
-
-    # if mode == 'status':
 
 @click.command()
 def sqlite_dump():
