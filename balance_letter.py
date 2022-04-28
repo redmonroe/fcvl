@@ -8,25 +8,29 @@ output_file = Config.BALANCE_LETTER_OUTPUT
 
 def get_parameters(balance_list=None):
 
-    # for record in balance_list:
+    status = StatusRS()
+    balance_letters = status.show_balance_letter_list_mr_reconciled()
+    name_list = []
+    unit_list = []
+    bal_due_list = []
 
-        # parameters = {
-        # "current_date" : formatted_date, 
-        # "display_month": display_month,
-        # "sheet_choice": sheet_choice[1][0]
-        # }
+    for record in balance_letters:
+        formatted_name = [name.rstrip().lstrip().capitalize() for name in record.tenant_name.split(',')]
+        name_list.append((' ').join(formatted_name[::-1]))
+        unit_list.append(record.unit)
+        bal_due_list.append(str(record.end_bal))
 
     formatted_date = datetime.utcnow()
     current_date = datetime.strftime(formatted_date, '%Y-%m-%d')
     parameters = {
-        "current_date" : current_date, #_
+        "current_date" : current_date, 
         "display_month": formatted_date.strftime('%B'),
         "display_year": str(formatted_date.year),
-        # "unit": unit, 
-        "name": ['new_gy', 'spring'], 
-        "bal_due": ['399', '100']
+        "unit": unit_list, 
+        "name": name_list, 
+        "bal_due": bal_due_list, 
         }
-    # breakpoint()
+
     return parameters
 
 def run_script(service, deploy_id, function_name, parameters):
@@ -49,19 +53,16 @@ def balance_letters():
     db.connect()
     status = StatusRS()
     service = oauth(Config.my_scopes, 'script')
-    deploy_id = 'AKfycby-16V2GE8uOwiXn_gjTyFd9ted3yyoGtXp6O101kXAEhvQPtRd5NLFzvOm3yU6QK8'
-    # Config.BALANCE_LETTER_DEPLOY_ID
+    deploy_id = 'AKfycbyyIjoqLq-VGYEv-gVexvQXp6F0Z-yz1H7rn1X71TZC2VTHI0-HqLcJh-AwRy7KJmxA'
+    deploy_id = Config.BALANCE_LETTER_DEPLOY_ID
     function_name = 'balanceLetter'
     balance_list = status.show_balance_letter_list_mr_reconciled()
     parameters = get_parameters(balance_list=balance_list)
 
-
     print(parameters)
     choice = str(input("send these results to google script & make receipts? y/n"))
 
-    # breakpoint()
     if choice == 'y':
         run_script(service=service, deploy_id=deploy_id, function_name=function_name, parameters=parameters) 
 
-    '''add letter generated col to db'''
 

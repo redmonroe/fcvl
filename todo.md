@@ -3,9 +3,11 @@
 - requirements:
 
   - incremental processing of files
+  - ATTEMPT APRIL
   - make rent sheets
     - midmonth scrape
   - make balance letters:
+    - add letter generated col to db
   - make rent receipts
   - export files for audit once they are processed
 
