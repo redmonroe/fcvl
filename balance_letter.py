@@ -23,8 +23,8 @@ def get_parameters(balance_list=None):
         "display_month": formatted_date.strftime('%B'),
         "display_year": str(formatted_date.year),
         # "unit": unit, 
-        # "name": name, 
-        # "bal_due": end_bal, 
+        "name": ['new_gy', 'spring'], 
+        "bal_due": ['399', '100']
         }
     # breakpoint()
     return parameters
@@ -49,19 +49,19 @@ def balance_letters():
     db.connect()
     status = StatusRS()
     service = oauth(Config.my_scopes, 'script')
-    deploy_id = 'AKfycbyWdwyvtCZLzYyaxOf_LREQh-OLDpwcTYwg51qCLB86GQl3IWe0iZ3-Mj-1a6KYgs14'
+    deploy_id = 'AKfycby-16V2GE8uOwiXn_gjTyFd9ted3yyoGtXp6O101kXAEhvQPtRd5NLFzvOm3yU6QK8'
     # Config.BALANCE_LETTER_DEPLOY_ID
     function_name = 'balanceLetter'
     balance_list = status.show_balance_letter_list_mr_reconciled()
     parameters = get_parameters(balance_list=balance_list)
 
 
-    # print(parameters)
-    # choice = str(input("send these results to google script & make receipts? y/n"))
+    print(parameters)
+    choice = str(input("send these results to google script & make receipts? y/n"))
 
-    # if choice == 'y':
-    breakpoint()
-    run_script(service=service, deploy_id=deploy_id, function_name=function_name, parameters=parameters) 
+    # breakpoint()
+    if choice == 'y':
+        run_script(service=service, deploy_id=deploy_id, function_name=function_name, parameters=parameters) 
 
     '''add letter generated col to db'''
 

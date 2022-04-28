@@ -5,7 +5,7 @@
   - incremental processing of files
   - make rent sheets
     - midmonth scrape
-  - make balance letters
+  - make balance letters:
   - make rent receipts
   - export files for audit once they are processed
 
