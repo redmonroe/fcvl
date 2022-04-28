@@ -455,7 +455,7 @@ class TestBuildAndStatus:
         balance_letters = status.show_balance_letter_list_mr_reconciled()
         assert len(balance_letters) == 9
         assert balance_letters[0].target_month_end == datetime.date(2022, 3, 31)
-        # breakpoint()
+        breakpoint()
     
     def test_teardown(self):
         db.drop_tables(models=create_tables_list)

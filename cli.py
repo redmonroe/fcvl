@@ -3,9 +3,11 @@ import time
 
 import click
 import pytest
+from peewee import *
 
 from auth_work import oauth
 from backend import StatusRS
+from balance_letter import balance_letters
 from build_rs import BuildRS
 from config import Config, my_scopes
 from file_indexer import FileIndexer
@@ -14,8 +16,6 @@ from receipts import RentReceipts
 from records import record
 from setup_month import MonthSheet
 from setup_year import YearSheet
-
-from peewee import *
 
 '''
 MAKE MODE EXPLICIT: DEV PROD TESTING
@@ -70,8 +70,13 @@ def sqlite_dump():
     from db_utils import DBUtils
     DBUtils.dump_sqlite(path_to_existing_db=Config.sqlite_test_db_path, path_to_backup=Config.sqlite_dump_path)
 
+@click.command()
+def balanceletters():
+    balance_letters()
+
 cli.add_command(autors)
 cli.add_command(sqlite_dump)
+cli.add_command(balanceletters)
 
 if __name__ == '__main__':
     cli()
