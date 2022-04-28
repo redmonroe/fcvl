@@ -8,6 +8,7 @@
     - midmonth scrape
   - make balance letters:
     - add letter generated col to db
+    - need to either loop on fcv or run automatically
   - make rent receipts
   - export files for audit once they are processed
 
