@@ -23,9 +23,7 @@ MAKE MODE EXPLICIT: DEV PROD TESTING
 
 # core functionalit:
 '''
-cli.add_command(balance_letters)
 cli.add_command(rent_receipts)
-cli.add_command(pgdump)
 cli.add_command(merchants)
 cli.add_command(nbofi)
 cli.add_command(annual_financial)

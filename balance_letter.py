@@ -19,6 +19,7 @@ def get_parameters(balance_list=None):
         name_list.append((' ').join(formatted_name[::-1]))
         unit_list.append(record.unit)
         bal_due_list.append(str(record.end_bal))
+        breakpoint()
 
     formatted_date = datetime.utcnow()
     current_date = datetime.strftime(formatted_date, '%Y-%m-%d')
