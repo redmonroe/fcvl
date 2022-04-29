@@ -10,6 +10,7 @@
     - notes: net_position_by_tenant_by_month, is showing 66 at breakpoint at end of jan
   - make rent sheets
     - midmonth scrape
+    - mm scrape: make load a loop instead of just one shot
     - pandas or meta-tenant class
   - letters:
     - rent receipts and letter class

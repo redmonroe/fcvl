@@ -200,14 +200,28 @@ class FileIndexer:
         f_date = f_date.strftime('%Y-%m')
         return f_date
 
-    def ventilate_table(self):
-        pass
-
     def drop_findex_table(self):
         self.db.drop_tables(models=self.create_findex_list)
 
     def close_findex_table(self):
         self.db.close()
+
+    def load_mm_scrape(self, list1=None):
+        path = Config.TEST_MM_SCRAPE
+
+        for fn in path.iterdir():
+            if fn.name != 'desktop.ini':
+                df = pd.read_csv(fn)
+                
+        deposit_list = []
+        for index, row in df.iterrows():
+            if row['Description'] == 'DEPOSIT':
+                dict1 = {}
+                dict1 = {'date': row['Processed Date'], 'amount': row['Amount']}
+                deposit_list.append(dict1)
+
+        return deposit_list
+
 
 
 

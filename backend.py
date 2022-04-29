@@ -202,11 +202,8 @@ class StatusRS(BaseModel):
                     mid_month_list = False
         
         if mid_month_list:
-            if input(f'\nWould you like to import mid-month report from bank for {[*ready_to_write_dt.keys()][0]} ? Y/n ') == 'Y':
-                print('go to thing')
-
-
-        # if any([*ready_to_write_dt.values()][0]) == False:
+            # if input(f'\nWould you like to import mid-month report from bank for {[*ready_to_write_dt.keys()][0]} ? Y/n ') == 'Y':
+            deposit_list = self.midmonth_scrape(list1=mid_month_list)
 
         breakpoint()
         balance_letter_list, mr_good_month = self.generate_balance_letter_list_mr_reconciled()
@@ -215,6 +212,12 @@ class StatusRS(BaseModel):
             print(f'balance letter list for {mr_good_month}: {balance_letter_list}')
     
         return most_recent_status 
+    
+    def midmonth_scrape(self, list1=None):
+        from file_indexer import FileIndexer
+        findex = FileIndexer()
+        deposit_list = findex.load_mm_scrape(list1=list1)
+        return deposit_list
 
     def show_balance_letter_list_mr_reconciled(self):
         query = QueryHC()
@@ -350,6 +353,7 @@ class StatusObject(BaseModel):
     month = CharField(default='0')
     processed = BooleanField(default=False)
     tenant_reconciled = BooleanField(default=False)
+    scrape_reconciled = BooleanField(default=False)
 
         
 class QueryHC():

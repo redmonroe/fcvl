@@ -39,7 +39,7 @@ class BuildRS(MonthSheet):
         self.wrange_pay = '!K2:K68'
         self.wrange_ntp = '!K71:K71'
         self.file_input_path = path
-        self.user_text = f'Options:\n PRESS 1 to show current sheets in RENT SHEETS \n PRESS 2 TO VIEW ITEMS IN {self.file_input_path} \n PRESS 3 for MONTHLY FORMATTING, PART ONE (that is, update intake sheet in {self.file_input_path} (xlsx) \n PRESS 4 for MONTHLY FORMATTING, PART TWO: format rent roll & subsidy by month and sheet\n >>>'
+        # self.user_text = f'Options:\n PRESS 1 to show current sheets in RENT SHEETS \n PRESS 2 TO VIEW ITEMS IN {self.file_input_path} \n PRESS 3 for MONTHLY FORMATTING, PART ONE (that is, update intake sheet in {self.file_input_path} (xlsx) \n PRESS 4 for MONTHLY FORMATTING, PART TWO: format rent roll & subsidy by month and sheet\n >>>'
         self.df = None
         self.proc_ms_list = []
         self.proc_condition_list = None
@@ -140,47 +140,6 @@ class BuildRS(MonthSheet):
         status.set_current_date()
         status.show()
         self.main_db.close()
-
-    def automatic_build(self, checklist_mode=None, key=None):
-        '''this is the hook into the program for the checklist routine'''
-        # as some point we need to figure out how to automate year and sheet selection
-
-        self.checklist.make_checklist(mode=checklist_mode)
-        self.findex.reset_files_for_testing()
-        self.findex.build_index_runner()
-
-        # start with what documents I have 
-            # --> run_findex_build_runner
-            # --> update checklist
-            # --> trigger year formatting off that
-            # --> update checklist for formatting
-
-        # ISSUES: opcash_proc is not being marked as true
-        self.proc_condition_list = self.check_triad_processed()
-    
-        self.reformat_conditions_as_bool(trigger_condition=3)
-        self.make_list_of_true_dates()
-        # checks box in base_docs_proc == True
-        for date in self.final_to_process_list:
-            self.checklist.check_basedocs_proc(date)
-
-        self.checklist.show_checklist(verbose=False)
-        self.final_to_process_list = [self.fix_date(date).split(' ')[0] for date in self.final_to_process_list]
-        ys = YearSheet(full_sheet=self.full_sheet, month_range=self.final_to_process_list, checklist=self.checklist, sleep=self.sleep, service=self.service, tablename=self.tablename, db=self.db)
-        
-        shnames = ys.auto_control()
-        self.proc_ms_list = self.make_is_ready_to_write_list()
-        findex_db = self.findex.show_checklist()
-        self.good_opcash_list, self.good_rr_list, self.good_dep_list = self.find_targeted_doc_in_findex_db(db=findex_db)
-
-        for item in self.good_rr_list:
-            self.write_rentroll(item)
-
-        for item in self.good_dep_list:
-            self.write_payments(item)
-
-        for item in self.good_opcash_list: 
-            self.write_opcash_detail(item)
 
     def iterative_build(self, checklist_mode=None):
         # where are we: look at checklist
