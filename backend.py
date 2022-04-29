@@ -243,6 +243,7 @@ class StatusRS(BaseModel):
                     (BalanceLetter.target_month_end<=last_dt)).
                 join(Tenant).
                 namedtuples()]
+            breakpoint()
 
             return balance_letters
         else:
@@ -252,15 +253,17 @@ class StatusRS(BaseModel):
         query = QueryHC()
         '''get most recent finalized month'''
         try:
-            mr_good_month = [rec.month for rec in StatusObject().select(StatusObject.month).where(
-                (StatusObject.processed==1) &
-                (StatusObject.tenant_reconciled==1)).
+            mr_good_month = [rec.month for rec in StatusObject().select(StatusObject.month).
+            where(
+                ((StatusObject.processed==1) &
+                (StatusObject.tenant_reconciled==1)) |
+                ((StatusObject.processed==0) &
+                (StatusObject.scrape_reconciled==1))).
                 namedtuples()][-1]
         except IndexError as e:
             print('bypassing error on mr_good_month', e)
             mr_good_month = False
             return mr_good_month
-        breakpoint()
 
         return mr_good_month
 
