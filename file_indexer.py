@@ -32,7 +32,7 @@ class FileIndexer:
     def build_index_runner(self):
         self.connect_to_db(mode='autodrop')
         self.directory_contents = self.articulate_directory()
-        self.index_dict = self.sort_directory_by_extension(verbose=True) # this doesn't do the sorting anymore but we still use it
+        self.index_dict = self.sort_directory_by_extension() # this doesn't do the sorting anymore but we still use it
         self.load_what_is_in_dir()
 
         self.make_a_list_of_raw(mode='xls')

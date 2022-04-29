@@ -180,6 +180,7 @@ class StatusRS(BaseModel):
             self.assert_reconcile_payments(month_list=months_ytd, ref_rec=most_recent_status)
 
         if most_recent_status:
+            print(f'\n\n*****************************AUTORS: welcome!********************')
             print(f'current date: {most_recent_status.current_date}\n')
 
         if months_ytd:
@@ -193,7 +194,21 @@ class StatusRS(BaseModel):
                 ready_to_write_dt = self.is_ready_to_write(month=month, dict1=look_dict)
                 look_list.append(look_dict)
                 print(f'For period {month} these files have been processed: \n {[*look_dict.keys()]} \n Ready to Write? {[*ready_to_write_dt.values()][0]}' )
+                
+                if [*ready_to_write_dt.values()][0] == False:
+                    mid_month_list = []
+                    mid_month_list.append(ready_to_write_dt)
+                else:
+                    mid_month_list = False
+        
+        if mid_month_list:
+            if input(f'\nWould you like to import mid-month report from bank for {[*ready_to_write_dt.keys()][0]} ? Y/n ') == 'Y':
+                print('go to thing')
 
+
+        # if any([*ready_to_write_dt.values()][0]) == False:
+
+        breakpoint()
         balance_letter_list, mr_good_month = self.generate_balance_letter_list_mr_reconciled()
 
         if balance_letter_list:
