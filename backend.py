@@ -149,9 +149,6 @@ class StatusRS(BaseModel):
     status_id = AutoField()
     current_date = DateField()
     proc_file = CharField(default='0')
-    # what months are ready to write
-        # what is the threshold?
-    # what files have been processed?
     # what is reconciling? what is not?  How do we fix this? 
     # if we are mid-month and prior months is closed then we should be able to try to use
         # nbofi mid month scrape
@@ -200,12 +197,26 @@ class StatusRS(BaseModel):
                     mid_month_list.append(ready_to_write_dt)
                 else:
                     mid_month_list = False
-        
+
+        '''this branch only applies if we have a Ready to Write? = False, ie opcash for month not present; that seems to be a resonable guard'''
         if mid_month_list:
             # if input(f'\nWould you like to import mid-month report from bank for {[*ready_to_write_dt.keys()][0]} ? Y/n ') == 'Y':
             deposit_list = self.midmonth_scrape(list1=mid_month_list)
+            scrape_deposit_sum = sum([float(item['amount']) for item in deposit_list])
+            populate = PopulateTable()
 
-        breakpoint()
+            first_dt = most_recent_status.current_date.replace(day = 1)
+            last_dt = most_recent_status.current_date.replace(day = calendar.monthrange(most_recent_status.current_date.year, most_recent_status.current_date.month)[1])
+
+            '''if this function asserts ok, then we can write balance letters for current month'''
+            all_tp, all_ntp = populate.check_db_tp_and_ntp( grand_total=scrape_deposit_sum, first_dt=first_dt, last_dt=last_dt)
+
+            if all_tp:
+                mr_status_object = [item for item in StatusObject().select().where(StatusObject.month==months_ytd[-1])][0]
+                mr_status_object.scrape_reconciled = True
+                mr_status_object.save()            
+                ''' now we can go to balance_letters.py'''
+
         balance_letter_list, mr_good_month = self.generate_balance_letter_list_mr_reconciled()
 
         if balance_letter_list:
@@ -249,6 +260,7 @@ class StatusRS(BaseModel):
             print('bypassing error on mr_good_month', e)
             mr_good_month = False
             return mr_good_month
+        breakpoint()
 
         return mr_good_month
 
@@ -355,7 +367,6 @@ class StatusObject(BaseModel):
     tenant_reconciled = BooleanField(default=False)
     scrape_reconciled = BooleanField(default=False)
 
-        
 class QueryHC():
 
     def make_first_and_last_dates(self, date_str=None):
@@ -374,7 +385,7 @@ class QueryHC():
         all_ntp = [float(rec.amount) for rec in NTPayment.select().
                 where(NTPayment.date_posted >= first_dt).
                 where(NTPayment.date_posted <= last_dt)]
-
+   
         assert sum(all_ntp) + sum(all_tp) == grand_total
 
         return all_tp, all_ntp
