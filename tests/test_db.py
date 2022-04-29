@@ -258,6 +258,14 @@ class TestDB:
     def test_load_damages(self):
         Damages.load_damages()
         assert [row.tenant.tenant_name for row in Damages().select()][0] == 'morris, michael'
+
+    def test_april_end_balances(self):
+        test_date = '2022-04'
+        populate = PopulateTable()
+        first_dt, last_dt = populate.make_first_and_last_dates(date_str=test_date)
+        object1, cumsum = populate.net_position_by_tenant_by_month(first_dt=first_dt, last_dt=last_dt)
+        pprint([item for item in object1 if item.name == 'crombaugh, albert'])
+        # breakpoint()
    
     """
     def test_end_of_loop_state(self):
@@ -388,8 +396,6 @@ class TestOpcash:
 
     def test_opcash_load(self):
         ''' you could do something here were you test for opcashes available and then run only those months'''
-
-
         file_list = [(item.fn, item.period, item.path, item.hap, item.rr, item.depsum, item.deplist) for item in Findexer().select().
             where(Findexer.doc_type == 'opcash').
             where(Findexer.status == 'processed').
