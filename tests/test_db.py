@@ -100,12 +100,12 @@ class TestDB:
         '''processed records+''' 
         '''beginning balance for all tenants+'''
         '''current tenant = tenants who lived here during month and did not move out during month+'''
-        '''vacant units'''
-        '''occupied units'''
-        '''unit accounting equals 67'''
-        '''all charges'''
-        '''all payments'''
-        '''jan, feb, mar payments subtotal'''
+        '''vacant units+'''
+        '''unit accounting equals 67+'''
+        '''all charges+'''
+        '''all payments+'''
+        '''opcash etc+'''
+        '''ntpayments, damages, statusobject, statusrs'''
 
         populate = PopulateTable()
 
@@ -131,31 +131,61 @@ class TestDB:
         assert 'johnson, thomas' in tenants
         assert 'greiner, richard' not in tenants
 
+        '''current vacant: '''
+        vacant_units = populate.get_current_vacants_by_month(last_dt=last_dt)
+
+        vacant_units = [item[1] for item in vacant_units]
+        assert vacant_units == ['CD-101', 'CD-115', 'PT-201']
+        assert len(vacant_units) == 3
+
+        '''sum of vacants and currents'''
+        assert len(vacant_units) + len(tenants) == 67
+
+        '''get current charges: individual and sum'''
+        current_charges = populate.get_rent_charges_by_tenant_by_period(last_dt=last_dt, first_dt=first_dt)
+        current_charges = sum([float(item[1]) for item in current_charges])
+        sum_current_charges = populate.get_total_rent_charges_by_month(last_dt=last_dt, first_dt=first_dt)
+        assert current_charges == sum_current_charges
+
+        '''get current payments: individual and sum'''
+        current_payments = populate.get_payments_by_tenant_by_period(last_dt=last_dt, first_dt=first_dt, cumsum=True)
+
+        current_payments2 = populate.get_payments_by_tenant_by_period(last_dt=last_dt, first_dt=first_dt)
+        current_payments2 = sum([float(item[2]) for item in current_payments2])
+
+        assert current_payments == current_payments2
+
+        '''check opcashes'''
+        opcash_sum, opcash_detail = populate.consolidated_get_stmt_by_month(first_dt=first_dt, last_dt=last_dt)
+        assert opcash_sum[0][0] == 'op_cash_2022_01.pdf'
+        assert opcash_detail[0].amount == '4019.0'
+
         breakpoint() 
 
 
-        # sheet side checks
-        assert len(nt_list) == 64
-        assert total_tenant_charges == 15469.0
-        assert explicit_move_outs == []
+    def test_opcash_load(self):
+        ''' you could do something here were you test for opcashes available and then run only those months'''
+        file_list = [(item.fn, item.period, item.path, item.hap, item.rr, item.depsum, item.deplist) for item in Findexer().select().
+            where(Findexer.doc_type == 'opcash').
+            where(Findexer.status == 'processed').
+            namedtuples()]
 
-        # db side checks
-        assert len(Tenant.select()) == 64
-        assert len(TenantRent.select()) == 64
-        occupied_unit_count = [name for name in Unit.select().order_by(Unit.unit_name).where(Unit.status=='occupied').namedtuples()]
-        assert len(occupied_unit_count) == 64 
+        populate.transfer_opcash_to_db(file_list=file_list)
 
-        '''test vacants after init tenant load'''
-        vacant_units = [name for name in Unit.select().order_by(Unit.unit_name).where(Unit.status=='vacant').namedtuples()]
-        assert len(vacant_units) == 3
+        test_date = '2022-01'
+        iter1, iter2 = self.consolidated_get_stmt(test_date=test_date)
+        assert iter1 == [('op_cash_2022_01.pdf', datetime.date(2022, 1, 1), '15576.54', '30990.0', '15491.71')]
+        assert iter2[0].id == 1
 
-        '''load initial balances at 01012022'''
-        dir_items = [item.name for item in path.iterdir()]
-        target_balance_file = path.joinpath(target_bal_load_file)
-        # populate.balance_load(filename=target_balance_file)
+        test_date = '2022-02'
+        iter1, iter2 = self.consolidated_get_stmt(test_date=test_date)        
+        assert iter1 == [('op_cash_2022_02.pdf', datetime.date(2022, 2, 1), '0', '31739.0', '15931.3')]
+        assert iter2[0].id == 7
 
-        '''test that balances loaded okay'''
-        jan_end_bal_sum = Tenant.select(fn.Sum(Tenant.beg_bal_amount).alias('sum')).get().sum
+        test_date = '2022-03'
+        iter1, iter2 = self.consolidated_get_stmt(test_date=test_date)        
+        assert iter1 == [('op_cash_2022_03.pdf', datetime.date(2022, 3, 1), '3950.91', '38672.0', '16778.95')]
+        assert iter2[0].id == 13
 
     def test_load_remaining_months_rent(self):
         rent_roll_list = [(item.fn, item.period, item.path) for item in Findexer().select().
@@ -259,6 +289,8 @@ class TestDB:
                 assert test_feb[2] == float(Decimal('384.00'))
 
                 end_bal_list_no_dec = populate.get_end_bal_by_tenant(first_dt=first_dt, last_dt=last_dt)
+
+            
 
     def test_load_nt_payments_and_type(self):
         test_date = '2022-01'
@@ -406,35 +438,7 @@ class TestDB:
 
         assert match_bool == True
 
-    def consolidated_get_stmt(self, test_date=None):
-        first_dt, last_dt = populate.make_first_and_last_dates(date_str=test_date)
-        iter1 = populate.get_opcash_by_period(first_dt=first_dt, last_dt=last_dt)
-        iter2 = populate.get_opcashdetail_by_stmt(stmt_key=iter1[0][0])
-        return iter1, iter2
-
-    def test_opcash_load(self):
-        ''' you could do something here were you test for opcashes available and then run only those months'''
-        file_list = [(item.fn, item.period, item.path, item.hap, item.rr, item.depsum, item.deplist) for item in Findexer().select().
-            where(Findexer.doc_type == 'opcash').
-            where(Findexer.status == 'processed').
-            namedtuples()]
-
-        populate.transfer_opcash_to_db(file_list=file_list)
-
-        test_date = '2022-01'
-        iter1, iter2 = self.consolidated_get_stmt(test_date=test_date)
-        assert iter1 == [('op_cash_2022_01.pdf', datetime.date(2022, 1, 1), '15576.54', '30990.0', '15491.71')]
-        assert iter2[0].id == 1
-
-        test_date = '2022-02'
-        iter1, iter2 = self.consolidated_get_stmt(test_date=test_date)        
-        assert iter1 == [('op_cash_2022_02.pdf', datetime.date(2022, 2, 1), '0', '31739.0', '15931.3')]
-        assert iter2[0].id == 7
-
-        test_date = '2022-03'
-        iter1, iter2 = self.consolidated_get_stmt(test_date=test_date)        
-        assert iter1 == [('op_cash_2022_03.pdf', datetime.date(2022, 3, 1), '3950.91', '38672.0', '16778.95')]
-        assert iter2[0].id == 13
+   
 
     # def test_teardown(self):
     #     db.drop_tables(models=create_tables_list)

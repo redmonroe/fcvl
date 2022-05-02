@@ -428,6 +428,12 @@ class QueryHC():
                 (Tenant.move_out_date >=last_dt))
                 .namedtuples()]
 
+    def get_current_vacants_by_month(self, last_dt=None, first_dt=None):
+        return[(row.tenant, row.unit_name) for row in Unit.select().order_by(Unit.unit_name).where(
+        # (Unit.last_occupied<=last_dt) |
+        (Unit.last_occupied=='0')        
+        ).namedtuples()]
+
     def get_beg_bal_sum_by_period(self, style=None, first_dt=None, last_dt=None):
         if style == 'initial':
             sum_beg_bal_all = [float(row.beg_bal_amount) for row in Tenant.select(
@@ -452,6 +458,11 @@ class QueryHC():
         return [(row.tenant_name, float(row.beg_bal_amount)) for row in Tenant.select(Tenant.tenant_name, Tenant.beg_bal_amount).
             namedtuples()]
 
+    def consolidated_get_stmt_by_month(self, first_dt=None, last_dt=None):
+            opcash_sum = self.get_opcash_by_period(first_dt=first_dt, last_dt=last_dt)
+            opcash_detail = self.get_opcashdetail_by_stmt(stmt_key=opcash_sum[0][0])
+            return opcash_sum, opcash_detail
+
     def get_opcash_by_period(self, first_dt=None, last_dt=None):
         return [(row.stmt_key, row.date, row.rr, row.hap, row.dep_sum) for row in OpCash.select(OpCash.stmt_key, OpCash.date, OpCash.rr, OpCash.hap, OpCash.dep_sum).
         where(OpCash.date >= first_dt).
@@ -471,19 +482,29 @@ class QueryHC():
 
         return sum_this_month_db, sum_this_month_df
 
-    def get_payments_by_tenant_by_period(self, first_dt=None, last_dt=None):   
+    def get_payments_by_tenant_by_period(self, first_dt=None, last_dt=None, cumsum=None):   
         '''what happens on a moveout'''
         '''why do I have to get rid of duplicates here?  THEY SHOULD NOT BE IN DATABASE TO BEGIN WITH'''
         '''for example, yancy made two payments for 18 and 279 but instead we have two payments in db for 297'''
         '''I do not want to have to filter duplicates on output'''
+        if cumsum:
+            payments = list(set([(rec.tenant_name, rec.beg_bal_amount, rec.total_payments) for rec in Tenant.select(
+            Tenant.tenant_name, 
+            Tenant.beg_bal_amount, 
+            fn.SUM(Payment.amount).over(partition_by=[Tenant.tenant_name]).alias('total_payments')).
+            where(Payment.date_posted >= first_dt).
+            where(Payment.date_posted <= last_dt).
+            join(Payment).namedtuples()]))
 
-        return list(set([(rec.tenant_name, rec.beg_bal_amount, rec.total_payments) for rec in Tenant.select(
-        Tenant.tenant_name, 
-        Tenant.beg_bal_amount, 
-        fn.SUM(Payment.amount).over(partition_by=[Tenant.tenant_name]).alias('total_payments')).
-        where(Payment.date_posted >= first_dt).
-        where(Payment.date_posted <= last_dt).
-        join(Payment).namedtuples()]))
+            return sum([float(item[2]) for item in payments])
+        else:
+            return list(set([(rec.tenant_name, rec.beg_bal_amount, rec.total_payments) for rec in Tenant.select(
+            Tenant.tenant_name, 
+            Tenant.beg_bal_amount, 
+            fn.SUM(Payment.amount).over(partition_by=[Tenant.tenant_name]).alias('total_payments')).
+            where(Payment.date_posted >= first_dt).
+            where(Payment.date_posted <= last_dt).
+            join(Payment).namedtuples()]))
 
     def get_ntp_by_period(self, first_dt=None, last_dt=None):   
         return list([float(rec.amount) for rec in NTPayment().
