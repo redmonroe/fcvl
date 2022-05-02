@@ -159,24 +159,15 @@ class TestDB:
         opcash_sum, opcash_detail = populate.consolidated_get_stmt_by_month(first_dt=first_dt, last_dt=last_dt)
         assert opcash_sum[0][0] == 'op_cash_2022_01.pdf'
         assert opcash_detail[0].amount == '4019.0'
+        assert opcash_detail[0].id == 1
+
+        '''check ntp'''
+        ntp = populate=get_ntp_by_period(first_dt=first_dt, last_dt=last_dt)
 
         breakpoint() 
 
 
     def test_opcash_load(self):
-        ''' you could do something here were you test for opcashes available and then run only those months'''
-        file_list = [(item.fn, item.period, item.path, item.hap, item.rr, item.depsum, item.deplist) for item in Findexer().select().
-            where(Findexer.doc_type == 'opcash').
-            where(Findexer.status == 'processed').
-            namedtuples()]
-
-        populate.transfer_opcash_to_db(file_list=file_list)
-
-        test_date = '2022-01'
-        iter1, iter2 = self.consolidated_get_stmt(test_date=test_date)
-        assert iter1 == [('op_cash_2022_01.pdf', datetime.date(2022, 1, 1), '15576.54', '30990.0', '15491.71')]
-        assert iter2[0].id == 1
-
         test_date = '2022-02'
         iter1, iter2 = self.consolidated_get_stmt(test_date=test_date)        
         assert iter1 == [('op_cash_2022_02.pdf', datetime.date(2022, 2, 1), '0', '31739.0', '15931.3')]
