@@ -8,8 +8,9 @@ import pandas as pd
 from peewee import JOIN, fn
 
 from auth_work import oauth
-from backend import (BalanceLetter, StatusRS, StatusObject, Damages, NTPayment, OpCash, OpCashDetail, Payment, PopulateTable, Tenant, TenantRent, Unit, Findexer, db)
-
+from backend import (BalanceLetter, Damages, Findexer, NTPayment, OpCash,
+                     OpCashDetail, Payment, PopulateTable, StatusObject,
+                     StatusRS, Tenant, TenantRent, Unit, db)
 from config import Config, my_scopes
 from db_utils import DBUtils
 from file_indexer import FileIndexer
@@ -39,7 +40,6 @@ class BuildRS(MonthSheet):
         self.wrange_pay = '!K2:K68'
         self.wrange_ntp = '!K71:K71'
         self.file_input_path = path
-        # self.user_text = f'Options:\n PRESS 1 to show current sheets in RENT SHEETS \n PRESS 2 TO VIEW ITEMS IN {self.file_input_path} \n PRESS 3 for MONTHLY FORMATTING, PART ONE (that is, update intake sheet in {self.file_input_path} (xlsx) \n PRESS 4 for MONTHLY FORMATTING, PART TWO: format rent roll & subsidy by month and sheet\n >>>'
         self.df = None
         self.proc_ms_list = []
         self.proc_condition_list = None
@@ -58,41 +58,17 @@ class BuildRS(MonthSheet):
     @record
     def new_auto_build(self):
         print('new_auto_build')
-        print('ignore checklist and automation; yagni')
         populate = PopulateTable()
-        unit = Unit()
         findex = FileIndexer(path=self.path, db=self.main_db)
         findex.drop_findex_table() 
         if self.main_db.is_closed() == True:
             self.main_db.connect()
         self.main_db.drop_tables(models=self.create_tables_list)
         self.main_db.create_tables(self.create_tables_list)
-        assert db.database == '/home/joe/local_dev_projects/fcvl/sqlite/test_pw_db.db'
-        assert [*db.get_columns(table='payment')[0]._asdict().keys()] == ['name', 'data_type', 'null', 'primary_key', 'table', 'default']
 
         findex.build_index_runner() # this is a findex method
-
-        # load initial tenants
-        records = [(item.fn, item.period, item.path) for item in Findexer().select().
-            where(Findexer.doc_type == 'rent').
-            where(Findexer.status == 'processed').
-            where(Findexer.period == '2022-01').
-            namedtuples()]
-
-        january_rent_roll_path = records[0][2]
-        jan_date = records[0][1]
-
-        # business logic to load inital tenants; cutoff '2022-01'
-        nt_list, total_tenant_charges, explicit_move_outs = populate.init_tenant_load(filename=january_rent_roll_path, date=jan_date)
-
-        vacant_units = Unit.find_vacants()
-        assert 'PT-201' and 'CD-115' and 'CD-101' in vacant_units
-
-        # load tenant balances at 01012022
-        dir_items = [item.name for item in self.path.iterdir()]
-        target_balance_file = self.path.joinpath(self.target_bal_load_file)
-        populate.balance_load(filename=target_balance_file)
-
+        self.load_initial_tenants_and_balances()
+       
         # load remaining months rent
         rent_roll_list = [(item.fn, item.period, item.path) for item in Findexer().select().
             where(Findexer.doc_type == 'rent').
@@ -141,54 +117,41 @@ class BuildRS(MonthSheet):
         status.show()
         self.main_db.close()
 
+    def load_initial_tenants_and_balances(self):
+         # load tenants as 01-01-2022
+        populate = PopulateTable()
+        records = [(item.fn, item.period, item.path) for item in Findexer().select().
+            where(Findexer.doc_type == 'rent').
+            where(Findexer.status == 'processed').
+            where(Findexer.period == '2022-01').
+            namedtuples()]
+
+        january_rent_roll_path = records[0][2]
+        jan_date = records[0][1]
+
+        # business logic to load inital tenants; cutoff '2022-01'
+        nt_list, total_tenant_charges, explicit_move_outs = populate.init_tenant_load(filename=january_rent_roll_path, date=jan_date)
+
+        vacant_units = Unit.find_vacants()
+        assert 'PT-201' and 'CD-115' and 'CD-101' in vacant_units
+
+        # load tenant balances at 01012022
+        dir_items = [item.name for item in self.path.iterdir()]
+        target_balance_file = self.path.joinpath(self.target_bal_load_file)
+        populate.balance_load(filename=target_balance_file)
+
+
     def iterative_build(self, checklist_mode=None):
-        # where are we: look at checklist
-        cl_init_status = self.checklist.check_cl_exist()
+        breakpoint()
+        for item in self.good_rr_list:
+            self.write_rentroll(item)
 
-        if cl_init_status == 'empty_db':        
-            month_list = self.checklist.limit_date()
-            self.checklist.make_checklist(month_list=month_list, mode=checklist_mode)
-            self.iterative_build(checklist_mode='iterative_cl')
-        elif cl_init_status == 'proceed':
-            records = self.checklist.show_checklist(verbose=False)
-            self.findex.build_index_runner()
-            self.proc_condition_list = self.check_diad_processed()
-            self.proc_condition_list = self.reformat_conditions_as_bool(trigger_condition=2)
-            self.final_to_process_list = self.make_list_of_true_dates()    
-            for date in self.final_to_process_list: # check base_docs are True 4 dates processed
-                self.checklist.check_basedocs_proc(date)
+        for item in self.good_dep_list:
+            self.write_payments(item)
 
-            # remove the ones that are grand_total is true
-            final_to_process_set = self.compare_base_docs_true_to_grand_total_true()
-            self.final_to_process_list = list(final_to_process_set.difference(set(self.month_complete_is_true_list)))
-            self.final_to_process_list = self.sort_and_adj_final_to_process_list()
-            
-            ys = YearSheet(full_sheet=self.full_sheet, checklist=self.checklist, sleep=self.sleep) # lil ol init
-        
-            # also remove from ftp list if sheet is already written
-            title_dict = ys.show_current_sheets()
-            self.final_to_process_list = self.remove_already_made_sheets_from_list(input_dict=title_dict)    
-                    
-            ys.shmonths = self.final_to_process_list # only write those sheets for which we have threshold data
-            shnames = ys.full_auto() # ALWAYS MAKE BASE SHEET IF MODE = FULL_AUTO
-
-            self.proc_ms_list = self.make_is_ready_to_write_list(style='base_docs_and_sheet_ok')
-
-            ## rr_proc & dep_proc checklist
-            findex_db = self.findex.show_checklist()
-            self.good_opcash_list, self.good_rr_list, self.good_dep_list = self.find_targeted_doc_in_findex_db()
-
-
-            breakpoint()
-            for item in self.good_rr_list:
-                self.write_rentroll(item)
-
-            for item in self.good_dep_list:
-                self.write_payments(item)
-
-            for item in self.good_opcash_list: 
-                print('writing from deposit_detail from db')
-                self.write_opcash_detail_from_db(item)
+        for item in self.good_opcash_list: 
+            print('writing from deposit_detail from db')
+            self.write_opcash_detail_from_db(item)
            
 
     def write_opcash_detail_from_db(self, item):
@@ -281,99 +244,9 @@ class BuildRS(MonthSheet):
                     self.final_to_process_list.remove(month)
         return self.final_to_process_list
     
-    def find_targeted_doc_in_findex_db(self):    
-        # get pedigreed lists for op_cash, rr, dep
-        for record in self.findex.db[self.findex.tablename]:
-            for date in self.proc_ms_list:
-                if date == record['period']:
-                    if 'cash' in record['fn'].split('_'):
-                        self.good_opcash_list.append(record)
-                    if 'rent' in record['fn'].split('_'):
-                        self.good_rr_list.append(record)
-                    if 'deposits' in record['fn'].split('_'):
-                        self.good_dep_list.append(record)
-
-        return self.good_opcash_list, self.good_rr_list, self.good_dep_list
-
-    def make_list_of_true_dates(self):
-        self.final_to_process_list = []
-        for item in self.proc_condition_list:
-            for date, value in item.items():
-                if value == True:
-                    self.final_to_process_list.append(date)
-
-        return self.final_to_process_list
-
-    def reformat_conditions_as_bool(self, trigger_condition=None):
-        for item in self.proc_condition_list:
-            for date, value in item.items():
-                if value == trigger_condition:
-                    item[date] = True
-                else:
-                    item[date] = False
-
-        return self.proc_condition_list
-
-    def make_is_ready_to_write_list(self, style=None):
-        cur_cl = self.checklist.show_checklist()
-
-        if style == 'base_docs_and_sheet_ok':
-            for item in cur_cl:
-                if item['base_docs'] == True and item['rs_exist'] == True and item['yfor'] == True:
-                    self.proc_ms_list.append(self.fix_date3(item['year'], item['month']))       
-        
-        return self.proc_ms_list
-
-    def check_diad_processed(self):
-        print('\nsearching memory for processed files')
-        trigger_on_condition_met_list = []
-        items_true = self.get_processed_items_list()
-        # breakpoint()
-        if items_true == []: # if we need to get this from db we can
-            print('\nsearching findex_db for processed files')
-            # list1 = self.findex.ventilate_table()
-            # items_true1 = [x for x in self.findex.ventilate_table() if x['status'] == True]
-            breakpoint()
-
-        period_dict = {date: 0 for date in list({period['period'] for period in items_true})}
-
-        for period, value in period_dict.items():
-            for record in items_true:
-                if period == record['period'] and self.get_name_from_record(record) ==  'deposits':
-                    period_dict[period] += 1
-                    trigger_on_condition_met_list.append(period_dict)
-                if period == record['period'] and self.get_name_from_record(record) ==  'rent':
-                    period_dict[period] += 1
-                    trigger_on_condition_met_list.append(period_dict)
-
-        return [dict(t) for t in {tuple(d.items()) for d in trigger_on_condition_met_list}] 
-
-    def compare_base_docs_true_to_grand_total_true(self):
-        print('Preparing write list: do not write if both base docs and grand total are true')
-        self.month_complete_is_true_list = self.checklist.get_complete_cl_month()
-        self.month_complete_is_true_list  = list(set(self.month_complete_is_true_list))
-        final_to_process_set = set(self.final_to_process_list)
-
-        return final_to_process_set
-    
     def get_name_from_record(self, record):
         name = record['fn'].split('_')[0]
         return name 
-
-    def check_triad_processed(self):
-        print('\nsearching findex_db for processed files')
-        trigger_on_condition_met_list = []
-        items_true = self.get_processed_items_list()
-        period_dict = {date: 0 for date in list({period['period'] for period in items_true})}
-
-        for period, value in period_dict.items():
-            for record in items_true:
-                if period == record['period']:
-                    value += 1
-                    period_dict[period] = value
-                    trigger_on_condition_met_list.append(period_dict)
-
-        return [dict(t) for t in {tuple(d.items()) for d in trigger_on_condition_met_list}] 
 
     def push_to_sheet_by_period(self, dt_code):
         print('pushing to sheet with code:', dt_code)
@@ -465,19 +338,6 @@ class BuildRS(MonthSheet):
         results_list = Config.units
         return results_list
 
-    def to_sql(self, df):
-        table = self.db[self.tablename]
-        table.drop()
-        for index, row in df.iterrows():
-            table.insert(dict(
-                deposit_id=row[0],
-                unit=row[1],
-                name=row[2],
-                date=row[3],
-                pay=float(row[4]),
-                dt_code=row[5],                
-                ))
-
     def make_unit_index(self, units):
         final_list = []
         idx_list = []
@@ -487,12 +347,6 @@ class BuildRS(MonthSheet):
 
         unit_index = tuple(zip(idx_list, final_list))
         return unit_index
-
-    def show_table(self, table=None):
-
-        db = self.db
-        for results in db[self.tablename]:
-            print(results)
 
     def get_by_kw(self, key=None, selected=None):
         selected_items = []
@@ -539,9 +393,6 @@ class BuildRS(MonthSheet):
         df = df.fillna(0)
         return df
 
-    def set_user_choice(self):
-        self.user_choice = int(input(self.user_text))
-
     def reset_full_sheet(self):
         titles_dict = self.show_current_sheets()
         calls = GoogleApiCalls()
@@ -563,12 +414,6 @@ class BuildRS(MonthSheet):
        
         time.sleep(self.sleep)
         print(f'sleeping for {self.sleep} seconds')
-
-    def sort_and_adj_final_to_process_list(self):
-        self.final_to_process_list = [self.fix_date(date).split(' ')[0] for date in self.final_to_process_list]
-        self.final_to_process_list = sorted(self.final_to_process_list, key=lambda m: datetime.strptime(m, "%b"))
-
-        return self.final_to_process_list
 
     def summary_assertion_at_period(self, test_date):
         self.main_db.connect()
