@@ -458,6 +458,9 @@ class QueryHC():
         return [(row.tenant_name, float(row.beg_bal_amount)) for row in Tenant.select(Tenant.tenant_name, Tenant.beg_bal_amount).
             namedtuples()]
 
+    def get_damages_by_month(self, first_dt=None, last_dt=None):
+        return [(row.tenant_id, row.dam_amount, row.dam_date, row.dam_type) for row in Damages().select().where(Damages.dam_date.between(first_dt, last_dt)).namedtuples()]
+
     def consolidated_get_stmt_by_month(self, first_dt=None, last_dt=None):
             opcash_sum = self.get_opcash_by_period(first_dt=first_dt, last_dt=last_dt)
             opcash_detail = self.get_opcashdetail_by_stmt(stmt_key=opcash_sum[0][0])

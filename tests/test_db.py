@@ -105,7 +105,9 @@ class TestDB:
         '''all charges+'''
         '''all payments+'''
         '''opcash etc+'''
-        '''ntpayments, damages, statusobject, statusrs'''
+        '''ntpayments'''
+        '''damages+'''
+        '''statusobject, statusrs, balance letters'''
 
         populate = PopulateTable()
 
@@ -162,8 +164,14 @@ class TestDB:
         assert opcash_detail[0].id == 1
 
         '''check ntp'''
-        ntp = populate=get_ntp_by_period(first_dt=first_dt, last_dt=last_dt)
+        ntp = populate.get_ntp_by_period(first_dt=first_dt, last_dt=last_dt)
+        assert sum(ntp) == 516.71
 
+        '''check damages'''
+        damages = populate.get_damages_by_month(first_dt=first_dt, last_dt=last_dt)
+        assert damages == []
+
+        '''check statusrs'''
         breakpoint() 
 
 
