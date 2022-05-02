@@ -48,7 +48,6 @@ class Unit(BaseModel):
     last_occupied = DateField(default='0')
     # tenant = ForeignKeyField(Tenant, backref='unit')
     # tenant = ForeignKeyField(Tenant, backref='unit')
-    
 
     @staticmethod
     def find_vacants():
@@ -158,8 +157,10 @@ class StatusRS(BaseModel):
             db.connect()
         if mode == 'autodrop':
             print(f'StatusRS set to {mode}')
-            db.drop_tables(models=[StatusRS, StatusObject, Findexer, BalanceLetter])
-            db.create_tables(models=[StatusRS, StatusObject, Findexer, BalanceLetter])
+
+            ''' so this needs access to all these models but I want to drop status to test fresh, tricky;  can we assume that if we keep all the db up at the end of the loop that we will have access to ntp & payment or init seperately'''
+            db.drop_tables(models=[NTPayment, Payment, StatusRS, StatusObject, Findexer, BalanceLetter])
+            db.create_tables(models=[NTPayment, Payment, StatusRS, StatusObject, Findexer, BalanceLetter])
         date1 = datetime.now()
         query = StatusRS.create(current_date=date1)
         query.save()   
@@ -183,33 +184,39 @@ class StatusRS(BaseModel):
         if months_ytd:
             print(f'current month: {months_ytd[-1]}')
             print(f'months ytd {Config.current_year}: {months_ytd}\n')
-
+        
         if report_list:
             look_list = []
+            mid_month_list = []
             for month, item in zip(months_ytd, report_list):
                 look_dict = {fn: (tup[0], tup[1], tup[2]) for fn, tup in item.items() if month == tup[0]}
-                ready_to_write_dt = self.is_ready_to_write(month=month, dict1=look_dict)
+                ready_to_write_final_dt = self.is_ready_to_write_final(month=month, dict1=look_dict)
                 look_list.append(look_dict)
-                print(f'For period {month} these files have been processed: \n {[*look_dict.keys()]} \n Ready to Write? {[*ready_to_write_dt.values()][0]}' )
+                print(f'For period {month} these files have been processed: \n {[*look_dict.keys()]} \n Ready to Write? {[*ready_to_write_final_dt.values()][0]}' )
                 
-                if [*ready_to_write_dt.values()][0] == False:
-                    mid_month_list = []
-                    mid_month_list.append(ready_to_write_dt)
+                if [*ready_to_write_final_dt.values()][0] == False:
+                    mid_month_list.append(ready_to_write_final_dt)
                 else:
-                    mid_month_list = False
+                    mid_month_list = []
 
-        '''this branch only applies if we have a Ready to Write? = False, ie opcash for month not present; that seems to be a resonable guard'''
+        '''WE ALWAYS DO JUST FIRST IN MID-MONTH LIST NO MORE: AFTER ONE MONTH SCRAPE FOLLOWING MONTH NEEDS TO BE FINALIZED'''
         if mid_month_list:
             # if input(f'\nWould you like to import mid-month report from bank for {[*ready_to_write_dt.keys()][0]} ? Y/n ') == 'Y':
-            deposit_list = self.midmonth_scrape(list1=mid_month_list)
+            
+            target_mid_month = mid_month_list[0]
+            target_mm_date = datetime.strptime(list(target_mid_month.items())[0][0], '%Y-%m')
+
+            deposit_list = self.midmonth_scrape(list1=target_mid_month)
             scrape_deposit_sum = sum([float(item['amount']) for item in deposit_list])
             populate = PopulateTable()
 
-            first_dt = most_recent_status.current_date.replace(day = 1)
-            last_dt = most_recent_status.current_date.replace(day = calendar.monthrange(most_recent_status.current_date.year, most_recent_status.current_date.month)[1])
+            first_dt = target_mm_date.replace(day = 1)
+            most_recent_status.current_date.replace(day = 1)
+            last_dt = target_mm_date.replace(day = calendar.monthrange(target_mm_date.year, target_mm_date.month)[1])
 
             '''if this function asserts ok, then we can write balance letters for current month'''
-            all_tp, all_ntp = populate.check_db_tp_and_ntp( grand_total=scrape_deposit_sum, first_dt=first_dt, last_dt=last_dt)
+
+            all_tp, all_ntp = populate.check_db_tp_and_ntp(grand_total=scrape_deposit_sum, first_dt=first_dt, last_dt=last_dt)    
 
             if all_tp:
                 mr_status_object = [item for item in StatusObject().select().where(StatusObject.month==months_ytd[-1])][0]
@@ -243,7 +250,7 @@ class StatusRS(BaseModel):
                     (BalanceLetter.target_month_end<=last_dt)).
                 join(Tenant).
                 namedtuples()]
-            breakpoint()
+            # breakpoint()q
 
             return balance_letters
         else:
@@ -287,7 +294,7 @@ class StatusRS(BaseModel):
         else:
             return [], None
 
-    def is_ready_to_write(self, month=None, dict1=None):
+    def is_ready_to_write_final(self, month=None, dict1=None):
         count = 0
         ready_to_process = False
         for fn, tup in dict1.items():

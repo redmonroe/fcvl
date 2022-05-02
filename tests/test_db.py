@@ -2,14 +2,18 @@ import calendar
 import datetime
 import json
 import os
+import sys
+current = os.path.dirname(os.path.realpath(__file__))
+parent = os.path.dirname(current)
+sys.path.append(parent)
 from decimal import ROUND_DOWN, ROUND_UP, Decimal
 from pathlib import Path
 from pprint import pprint
 
 import pytest
-from backend import (BalanceLetter, Damages, Findexer, NTPayment, OpCash, OpCashDetail,
-                     Payment, PopulateTable, StatusObject, StatusRS, Tenant,
-                     TenantRent, Unit, db)
+from backend import (BalanceLetter, Damages, Findexer, NTPayment, OpCash,
+                     OpCashDetail, Payment, PopulateTable, StatusObject,
+                     StatusRS, Tenant, TenantRent, Unit, db)
 from build_rs import BuildRS
 from config import Config
 from db_utils import DBUtils
@@ -17,37 +21,28 @@ from file_indexer import FileIndexer
 from peewee import JOIN, fn
 from records import record
 
+
 create_tables_list = [BalanceLetter, Findexer, StatusObject, StatusRS, OpCash, OpCashDetail, Damages, Tenant, Unit, Payment, NTPayment, TenantRent]
 
 target_bal_load_file = 'beginning_balance_2022.xlsx'
-path = Config.TEST_RS_PATH
+path = Config.TEST_RS_PATH_APRIL
 populate = PopulateTable()
 tenant = Tenant()
 unit = Unit()
 findex = FileIndexer(path=path, db=Config.TEST_DB)
 
-@pytest.mark.testing_db
+'''arrange, act, assert, cleanup'''
+'''basically, we just arrange to end of april, then check the state of the db'''
+
+@pytest.mark.testing_fi
 class TestFileIndexer:
 
     def test_fi_db(self):
-        findex.build_index_runner()
 
+        findex.build_index_runner()
         db_items = [item.fn for item in Findexer().select()]
         dir_contents = [item for item in findex.path.iterdir() if item.suffix != '.ini'] 
         assert len(dir_contents) == len(db_items)
-
-    def test_drop_fi_db(self):
-        findex.drop_findex_table()
-
-        '''assert table is dropped, might need to show that only findexer is dropped if other tables need to live on'''
-        assert 'findexer' not in Config.TEST_DB.get_tables()
-
-        findex.close_findex_table()
-        assert Config.TEST_DB.is_closed() == True
-
-    def test_connection(self):
-        findex.connect_to_db()
-        assert Config.TEST_DB.is_closed() == False
 
     def test_dir_contents(self):
         findex.articulate_directory()
@@ -77,6 +72,9 @@ class TestFileIndexer:
         findex.drop_findex_table()
         findex.close_findex_table()
         assert Config.TEST_DB.is_closed() == True
+    
+    def test_fixture(self):
+        assert Config.TEST_DB.is_closed() == True
 
 @pytest.mark.testing_db
 class TestDB:
@@ -105,8 +103,6 @@ class TestDB:
             namedtuples()]
         january_rent_roll_path = records[0][2]
         jan_date = records[0][1]
-
-        assert january_rent_roll_path == '/mnt/c/Users/joewa/Google Drive/fall creek village I/audit 2022/test_rent_sheets_data_sources/rent_roll_01_2022.xls'
 
         '''init is almost half of business logic'''
         nt_list, total_tenant_charges, explicit_move_outs = populate.init_tenant_load(filename=january_rent_roll_path, date=jan_date)
@@ -265,7 +261,6 @@ class TestDB:
         first_dt, last_dt = populate.make_first_and_last_dates(date_str=test_date)
         object1, cumsum = populate.net_position_by_tenant_by_month(first_dt=first_dt, last_dt=last_dt)
         pprint([item for item in object1 if item.name == 'crombaugh, albert'])
-        # breakpoint()
    
     """
     def test_end_of_loop_state(self):
@@ -418,23 +413,24 @@ class TestOpcash:
         assert iter1 == [('op_cash_2022_03.pdf', datetime.date(2022, 3, 1), '3950.91', '38672.0', '16778.95')]
         assert iter2[0].id == 13
 
-    def test_teardown(self):
-        db.drop_tables(models=create_tables_list)
-        db.close()    
+    # def test_teardown(self):
+    #     db.drop_tables(models=create_tables_list)
+    #     db.close()    
 
-    def test_close_db(self):
-        if db.is_closed() == False:
-            db.close()
+    # def test_close_db(self):
+    #     if db.is_closed() == False:
+    #         db.close()
 
 @pytest.mark.testing_db
 class TestBuildAndStatus:
 
-    def test_assert_all_db_empty_and_connections_closed(self):
-        assert db.get_tables() == []
+    # def test_assert_all_db_empty_and_connections_closed(self):
+    #     assert db.get_tables() == []
 
     def test_statusrs_starts_empty(self):
         status = StatusRS()
         status.set_current_date(mode='autodrop')
+        # breakpoint()
         status.show(mode='just_asserting_empty')
         most_recent_status = [item for item in StatusRS().select().order_by(-StatusRS.status_id).namedtuples()][0]
         proc_file = json.loads(most_recent_status.proc_file)
@@ -456,15 +452,23 @@ class TestBuildAndStatus:
         balance_letters = status.show_balance_letter_list_mr_reconciled()
         # assert len(balance_letters) == 9
         # assert balance_letters[0].target_month_end == datetime.date(2022, 3, 31)
-        breakpoint()
+        # breakpoint()
     
     def test_teardown(self):
+        # breakpoint()
         db.drop_tables(models=create_tables_list)
         db.close()    
 
     def test_close_db(self):
         if db.is_closed() == False:
             db.close()
+
+# @pytest.mark.testing_dbshort
+# class TestShort:
+
+#     test_message = 'hi'
+#     def test_message(self):
+#         assert test_message == 'hi'
 
 
         # class SubsidyRent(BaseModel):

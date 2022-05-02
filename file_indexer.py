@@ -23,6 +23,7 @@ class FileIndexer:
     rr_list = []
     dep_list = []
     deposit_and_date_list = []
+    scrape_path = Config.TEST_MM_SCRAPE
 
     def __init__(self, path=None, db=None, mode=None):
         self.path = path
@@ -207,12 +208,10 @@ class FileIndexer:
         self.db.close()
 
     def load_mm_scrape(self, list1=None):
-        path = Config.TEST_MM_SCRAPE
-
-        for fn in path.iterdir():
+        for fn in self.scrape_path.iterdir():
             if fn.name != 'desktop.ini':
                 df = pd.read_csv(fn)
-                
+
         deposit_list = []
         for index, row in df.iterrows():
             if row['Description'] == 'DEPOSIT':
