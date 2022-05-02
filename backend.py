@@ -813,7 +813,12 @@ class PopulateTable(QueryHC):
             unit.tenant = 'vacant'
             unit.save()
 
-    def transfer_opcash_to_db(self, file_list=None):
+    def transfer_opcash_to_db(self):
+        file_list = [(item.fn, item.period, item.path, item.hap, item.rr, item.depsum, item.deplist) for item in Findexer().select().
+            where(Findexer.doc_type == 'opcash').
+            where(Findexer.status == 'processed').
+            namedtuples()]
+
         for item in file_list:
             oc = OpCash.create(stmt_key=item[0], date=datetime.strptime(item[1], '%Y-%m'), rr=item[4], hap=item[3], dep_sum=item[5])
             oc.save()

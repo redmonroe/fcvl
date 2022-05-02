@@ -68,8 +68,20 @@ class BuildRS(MonthSheet):
 
         findex.build_index_runner() # this is a findex method
         self.load_initial_tenants_and_balances()
-       
+        processed_rentr_dates_and_paths = self.iterate_over_remaining_months()
+        
+        Damages.load_damages()
+
+        populate.transfer_opcash_to_db() # PROCESSED OPCASHES MOVED INTO DB
+
+        status = StatusRS()
+        status.set_current_date()
+        status.show()
+        self.main_db.close()
+
+    def iterate_over_remaining_months(self):       
         # load remaining months rent
+        populate = PopulateTable()
         rent_roll_list = [(item.fn, item.period, item.path) for item in Findexer().select().
             where(Findexer.doc_type == 'rent').
             where(Findexer.status == 'processed').
@@ -103,19 +115,7 @@ class BuildRS(MonthSheet):
             grand_total, ntp, tenant_payment_df = populate.payment_load_full(filename=path)
             first_dt, last_dt = populate.make_first_and_last_dates(date_str=date1)
 
-        Damages.load_damages()
-
-        file_list = [(item.fn, item.period, item.path, item.hap, item.rr, item.depsum, item.deplist) for item in Findexer().select().
-            where(Findexer.doc_type == 'opcash').
-            where(Findexer.status == 'processed').
-            namedtuples()]
-
-        populate.transfer_opcash_to_db(file_list=file_list)
-
-        status = StatusRS()
-        status.set_current_date()
-        status.show()
-        self.main_db.close()
+        return processed_rentr_dates_and_paths
 
     def load_initial_tenants_and_balances(self):
          # load tenants as 01-01-2022
