@@ -3,6 +3,7 @@ import datetime
 import json
 import os
 import sys
+
 current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
 sys.path.append(parent)
@@ -20,7 +21,6 @@ from db_utils import DBUtils
 from file_indexer import FileIndexer
 from peewee import JOIN, fn
 from records import record
-
 
 create_tables_list = [BalanceLetter, Findexer, StatusObject, StatusRS, OpCash, OpCashDetail, Damages, Tenant, Unit, Payment, NTPayment, TenantRent]
 
@@ -81,6 +81,7 @@ class TestDB:
 
     def test_reset_all(self):
         db.connect()
+        # if db.get_tables() != []:
         db.drop_tables(models=create_tables_list)
 
     def test_db(self):
@@ -89,23 +90,50 @@ class TestDB:
         # assert sorted(db.get_tables()) == sorted(['balanceletter, statusobject', 'opcash', 'opcashdetail', 'damages', 'tenantrent', 'ntpayment', 'payment', 'tenant', 'unit', 'statusrs', 'findexer'])
         assert [*db.get_columns(table='payment')[0]._asdict().keys()] == ['name', 'data_type', 'null', 'primary_key', 'table', 'default']
 
-        findex.drop_findex_table()
+    def test_set_init_state_at_end_of_april(self):
+        build = BuildRS(path=path, main_db=Config.TEST_DB)
+        build.new_auto_build()
 
     @record
     def test_initial_tenant_load(self):
         '''JANUARY IS DIFFERENT'''
+        '''processed records+''' 
+        '''beginning balance for all tenants+'''
+        '''tenants who lived here during month and did not move out during month'''
+        '''active tenants'''
+        '''vacant units'''
+        '''occupied units'''
+        '''unit accounting equals 67'''
+        '''all charges'''
+        '''all payments'''
+        '''jan, feb, mar payments subtotal'''
 
-        findex.build_index_runner()
+        populate = PopulateTable()
+
+        '''processed records'''
         records = [(item.fn, item.period, item.path) for item in Findexer().select().
-            where(Findexer.doc_type == 'rent').
             where(Findexer.status == 'processed').
             where(Findexer.period == '2022-01').
             namedtuples()]
-        january_rent_roll_path = records[0][2]
-        jan_date = records[0][1]
 
-        '''init is almost half of business logic'''
-        nt_list, total_tenant_charges, explicit_move_outs = populate.init_tenant_load(filename=january_rent_roll_path, date=jan_date)
+        assert sorted([item[0] for item in records]) == ['deposits_01_2022.xls', 'op_cash_2022_01.pdf', 'rent_roll_01_2022.xls']
+
+        jan_date = records[0][1]
+        first_dt, last_dt = populate.make_first_and_last_dates(date_str=jan_date)
+
+        '''all tenants beginning balance amount'''
+        all_ten_beg_bal = populate.get_all_tenants_beg_bal(cumsum=True)
+        assert all_ten_beg_bal == 793
+
+        '''current occupied'''
+        tenants = [row.tenant_name for row in Tenant.select().
+            where(
+                (Tenant.move_in_date<=last_dt) &
+                ~(Tenant.move_out_date >=last_dt))
+                .namedtuples()]
+
+        breakpoint() 
+
 
         # sheet side checks
         assert len(nt_list) == 64
@@ -125,11 +153,10 @@ class TestDB:
         '''load initial balances at 01012022'''
         dir_items = [item.name for item in path.iterdir()]
         target_balance_file = path.joinpath(target_bal_load_file)
-        populate.balance_load(filename=target_balance_file)
+        # populate.balance_load(filename=target_balance_file)
 
         '''test that balances loaded okay'''
         jan_end_bal_sum = Tenant.select(fn.Sum(Tenant.beg_bal_amount).alias('sum')).get().sum
-        assert jan_end_bal_sum == 793
 
     def test_load_remaining_months_rent(self):
         rent_roll_list = [(item.fn, item.period, item.path) for item in Findexer().select().
@@ -379,9 +406,6 @@ class TestDB:
         match_bool = DBUtils.find_sqlite(path_to_existing_db=Config.sqlite_test_db_path, path_to_backup=Config.sqlite_dump_path)
 
         assert match_bool == True
-        
-@pytest.mark.testing_db
-class TestOpcash:
 
     def consolidated_get_stmt(self, test_date=None):
         first_dt, last_dt = populate.make_first_and_last_dates(date_str=test_date)
@@ -421,47 +445,47 @@ class TestOpcash:
     #     if db.is_closed() == False:
     #         db.close()
 
-@pytest.mark.testing_db
-class TestBuildAndStatus:
+# @pytest.mark.testing_db
+# class TestBuildAndStatus:
 
-    # def test_assert_all_db_empty_and_connections_closed(self):
-    #     assert db.get_tables() == []
+#     # def test_assert_all_db_empty_and_connections_closed(self):
+#     #     assert db.get_tables() == []
 
-    def test_statusrs_starts_empty(self):
-        status = StatusRS()
-        status.set_current_date(mode='autodrop')
-        # breakpoint()
-        status.show(mode='just_asserting_empty')
-        most_recent_status = [item for item in StatusRS().select().order_by(-StatusRS.status_id).namedtuples()][0]
-        proc_file = json.loads(most_recent_status.proc_file)
-        assert proc_file == []
+#     def test_statusrs_starts_empty(self):
+#         status = StatusRS()
+#         status.set_current_date(mode='autodrop')
+#         # breakpoint()
+#         status.show(mode='just_asserting_empty')
+#         most_recent_status = [item for item in StatusRS().select().order_by(-StatusRS.status_id).namedtuples()][0]
+#         proc_file = json.loads(most_recent_status.proc_file)
+#         assert proc_file == []
 
-    def test_generic_build(self):
-        basedir = os.path.abspath(os.path.dirname(__file__))
-        build = BuildRS(path=path, main_db=db)
-        build.new_auto_build()
-        build.summary_assertion_at_period(test_date='2022-03')
+#     def test_generic_build(self):
+#         basedir = os.path.abspath(os.path.dirname(__file__))
+#         build = BuildRS(path=path, main_db=db)
+#         build.new_auto_build()
+#         build.summary_assertion_at_period(test_date='2022-03')
 
-    def test_end_status(self):
-        most_recent_status = [item for item in StatusRS().select().order_by(-StatusRS.status_id).namedtuples()][0]
-        proc_file = json.loads(most_recent_status.proc_file)
-        assert proc_file[0] == {'deposits_01_2022.xls': '2022-01'}
+#     def test_end_status(self):
+#         most_recent_status = [item for item in StatusRS().select().order_by(-StatusRS.status_id).namedtuples()][0]
+#         proc_file = json.loads(most_recent_status.proc_file)
+#         assert proc_file[0] == {'deposits_01_2022.xls': '2022-01'}
 
-    def test_balance_letter_queries(self):
-        status = StatusRS()
-        balance_letters = status.show_balance_letter_list_mr_reconciled()
-        # assert len(balance_letters) == 9
-        # assert balance_letters[0].target_month_end == datetime.date(2022, 3, 31)
-        # breakpoint()
+#     def test_balance_letter_queries(self):
+#         status = StatusRS()
+#         balance_letters = status.show_balance_letter_list_mr_reconciled()
+#         # assert len(balance_letters) == 9
+#         # assert balance_letters[0].target_month_end == datetime.date(2022, 3, 31)
+#         # breakpoint()
     
-    def test_teardown(self):
-        # breakpoint()
-        db.drop_tables(models=create_tables_list)
-        db.close()    
+#     def test_teardown(self):
+#         # breakpoint()
+#         db.drop_tables(models=create_tables_list)
+#         db.close()    
 
-    def test_close_db(self):
-        if db.is_closed() == False:
-            db.close()
+#     def test_close_db(self):
+#         if db.is_closed() == False:
+#             db.close()
 
 # @pytest.mark.testing_dbshort
 # class TestShort:

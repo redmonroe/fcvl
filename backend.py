@@ -411,10 +411,15 @@ class QueryHC():
             return different_names
         return []
 
-    def get_all_tenants_beg_bal(self):
+    def get_all_tenants_beg_bal(self, cumsum=False):
         '''returns a list of all tenants and their all time beginning balances'''
         '''does not consider active status at this point'''
-        return [(row.tenant_name, row.amount, row.beg_bal_amount) for row in Tenant.select(Tenant.tenant_name, Tenant.beg_bal_amount, Payment.amount).join(Payment).namedtuples()] 
+        if cumsum:
+            return [row.beg_bal_amount for row in Tenant.select(
+            fn.SUM(Tenant.beg_bal_amount)).
+            namedtuples()][0] 
+        else:
+            return [(row.tenant_name, row.amount, row.beg_bal_amount) for row in Tenant.select(Tenant.tenant_name, Tenant.beg_bal_amount, Payment.amount).join(Payment).namedtuples()] 
 
     def get_beg_bal_sum_by_period(self, style=None, first_dt=None, last_dt=None):
         if style == 'initial':

@@ -56,7 +56,7 @@ def autors(mode=None):
 
     if mode == 'testing':
         basedir = os.path.abspath(os.path.dirname(__file__))
-        path = Config.TEST_RS_PATH
+        path = Config.TEST_RS_PATH_APRIL
         pw_db = SqliteDatabase(f'{basedir}/sqlite/test_pw_db.db', pragmas={'foreign_keys': 1})
         build = BuildRS(path=path, main_db=pw_db)
         build.new_auto_build()
