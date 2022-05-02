@@ -99,8 +99,7 @@ class TestDB:
         '''JANUARY IS DIFFERENT'''
         '''processed records+''' 
         '''beginning balance for all tenants+'''
-        '''tenants who lived here during month and did not move out during month'''
-        '''active tenants'''
+        '''current tenant = tenants who lived here during month and did not move out during month+'''
         '''vacant units'''
         '''occupied units'''
         '''unit accounting equals 67'''
@@ -125,12 +124,12 @@ class TestDB:
         all_ten_beg_bal = populate.get_all_tenants_beg_bal(cumsum=True)
         assert all_ten_beg_bal == 793
 
-        '''current occupied'''
-        tenants = [row.tenant_name for row in Tenant.select().
-            where(
-                (Tenant.move_in_date<=last_dt) &
-                ~(Tenant.move_out_date >=last_dt))
-                .namedtuples()]
+        '''current occupied: johnson in, greiner, kelly out'''
+        tenants = populate.get_current_tenants_by_month(last_dt=last_dt)
+
+        assert len(tenants) == 64
+        assert 'johnson, thomas' in tenants
+        assert 'greiner, richard' not in tenants
 
         breakpoint() 
 

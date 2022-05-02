@@ -421,6 +421,13 @@ class QueryHC():
         else:
             return [(row.tenant_name, row.amount, row.beg_bal_amount) for row in Tenant.select(Tenant.tenant_name, Tenant.beg_bal_amount, Payment.amount).join(Payment).namedtuples()] 
 
+    def get_current_tenants_by_month(self, last_dt=None, first_dt=None):
+        return [row.tenant_name for row in Tenant.select().
+            where(
+                (Tenant.move_in_date<=last_dt) |
+                (Tenant.move_out_date >=last_dt))
+                .namedtuples()]
+
     def get_beg_bal_sum_by_period(self, style=None, first_dt=None, last_dt=None):
         if style == 'initial':
             sum_beg_bal_all = [float(row.beg_bal_amount) for row in Tenant.select(
