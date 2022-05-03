@@ -461,7 +461,11 @@ class QueryHC():
             namedtuples()]
 
     def get_damages_by_month(self, first_dt=None, last_dt=None):
-        return [(row.tenant_id, row.dam_amount, row.dam_date, row.dam_type) for row in Damages().select().where(Damages.dam_date.between(first_dt, last_dt)).namedtuples()]
+        month = first_dt.strftime('%m')
+        year = first_dt.year
+        period = str(year) + '-' + str(month)
+        damages = [(row.tenant, row.dam_amount, row.dam_date, row.dam_type) for row in Damages().select().where(Damages.dam_date==period).namedtuples()]
+        return damages
 
     def consolidated_get_stmt_by_month(self, first_dt=None, last_dt=None):
             opcash_sum = self.get_opcash_by_period(first_dt=first_dt, last_dt=last_dt)

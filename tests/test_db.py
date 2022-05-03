@@ -199,20 +199,38 @@ class TestDB:
         '''balance letters+'''
 
         assert_list = [
-                {'date': '2022-02', 
-                 'processed_record1': 'deposits_02_2022.xlsx', 
-                 'rr_len': 64, 
-                 'current_vacants': ['CD-101', 'CD-115', 'PT-201'], 
-                 'vacant_len': 3, 
-                 'sum_ntp': 726.3,
+                # {
+                #  'date': '2022-02', 
+                #  'processed_record1': 'deposits_02_2022.xlsx', 
+                #  'rr_len': 64, 
+                #  'current_vacants': ['CD-101', 'CD-115', 'PT-201'], 
+                #  'vacant_len': 3, 
+                #  'sum_ntp': 726.3,
+                #  'damages': [('morris, michael', '599', '2022-02', 'exterm')],   
+                #  'opcash_name': 'op_cash_2022_02.pdf', 
+                #  'opcash_amount': '3434.0',
+                #  'opcash_det_id': 7, 
+                #  'what_processed': [{'processed': True, 'tenant_reconciled': True, 'scrape_reconciled': False}], 
+                #  'endbal_cumsum': 2649.0, 
+                #  'bal_letters': []
+                # }, 
+                {
+                 'date': '2022-03', 
+                 'processed_record1': 'deposits_03_2022.xlsx', 
+                 'rr_len': 65, 
+                 'current_vacants': ['CD-101', 'CD-115', 'PT-211'], 
+                 'vacant_len': 2, 
+                 'sum_ntp': 272.95,
                  'damages': [],  
                  'opcash_name': 'op_cash_2022_02.pdf', 
                  'opcash_amount': '3434.0',
                  'opcash_det_id': 7, 
                  'what_processed': [{'processed': True, 'tenant_reconciled': True, 'scrape_reconciled': False}], 
+                 'endbal_cumsum': 2649.0, 
+                 'bal_letters': []
 
+                }
 
-            }
         ]
 
 
@@ -221,7 +239,6 @@ class TestDB:
 
     def test_remaining_months(self):
         assert_list = self.remaining_months_loop()
-        assert assert_list[0]['date'] == '2022-02'
         
         for i in range(len(assert_list)):
             records = [(item.fn, item.period, item.path) for item in Findexer().select().
@@ -272,10 +289,11 @@ class TestDB:
 
             '''check damages'''
             damages = populate.get_damages_by_month(first_dt=first_dt, last_dt=last_dt)
-            assert damages == []
+            assert damages == assert_list[i]['damages']
 
             '''check opcashes'''
             opcash_sum, opcash_detail = populate.consolidated_get_stmt_by_month(first_dt=first_dt, last_dt=last_dt)
+            breakpoint()
 
             assert opcash_sum[0][0] == assert_list[i]['opcash_name']
             assert opcash_detail[0].amount == assert_list[i]['opcash_amount'] 
@@ -284,20 +302,14 @@ class TestDB:
             '''check statusobject'''
             what_is_processed = populate.get_status_object_by_month(first_dt=first_dt, last_dt=last_dt)
             assert what_is_processed == assert_list[i]['what_processed']
-            
+
             '''tenant end bal'''
             positions, cumsum = populate.net_position_by_tenant_by_month(first_dt=first_dt, last_dt=last_dt)
-
-            breakpoint()
-
-
-            assert cumsum == 1287.0
 
             '''balance letters generated'''
             bal_letters = populate.get_balance_letters_by_month(first_dt=first_dt, last_dt=last_dt)
 
             assert bal_letters == []
-            breakpoint()       
 
 
         
@@ -306,19 +318,7 @@ class TestDB:
     
     
     
-    
 
-
-    def test_opcash_load(self):
-        test_date = '2022-02'
-        iter1, iter2 = self.consolidated_get_stmt(test_date=test_date)        
-        assert iter1 == [('op_cash_2022_02.pdf', datetime.date(2022, 2, 1), '0', '31739.0', '15931.3')]
-        assert iter2[0].id == 7
-
-        test_date = '2022-03'
-        iter1, iter2 = self.consolidated_get_stmt(test_date=test_date)        
-        assert iter1 == [('op_cash_2022_03.pdf', datetime.date(2022, 3, 1), '3950.91', '38672.0', '16778.95')]
-        assert iter2[0].id == 13
 
     def test_load_remaining_months_rent(self):
 
@@ -417,25 +417,6 @@ class TestDB:
                 assert test_feb[2] == float(Decimal('384.00'))
 
                 end_bal_list_no_dec = populate.get_end_bal_by_tenant(first_dt=first_dt, last_dt=last_dt)
-
-            
-
-    def test_load_nt_payments_and_type(self):
-        test_date = '2022-01'
-        first_dt, last_dt = populate.make_first_and_last_dates(date_str=test_date)
-
-        ntp = [item for item in NTPayment.select().where(NTPayment.date_posted <= last_dt).namedtuples()]
-        assert ntp[0].amount == '501.71'
-        assert ntp[0].payee == 'laundry cd'
-
-        test_date = '2022-02'
-        first_dt, last_dt = populate.make_first_and_last_dates(date_str=test_date)
-
-        ntp = [item for item in NTPayment.select().
-        where(NTPayment.date_posted >= first_dt).
-        where(NTPayment.date_posted <= last_dt).namedtuples()]
-        assert ntp[0].amount == '700.0'
-        assert ntp[1].payee == 'laundry pt'
 
     def test_load_damages(self):
         Damages.load_damages()
