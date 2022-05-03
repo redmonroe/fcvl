@@ -70,13 +70,13 @@ class BuildRS(MonthSheet):
         self.load_initial_tenants_and_balances()
         processed_rentr_dates_and_paths = self.iterate_over_remaining_months()
         
-        Damages.load_damages()
+        # Damages.load_damages()
 
-        populate.transfer_opcash_to_db() # PROCESSED OPCASHES MOVED INTO DB
+        # populate.transfer_opcash_to_db() # PROCESSED OPCASHES MOVED INTO DB
 
-        status = StatusRS()
-        status.set_current_date()
-        status.show()
+        # status = StatusRS()
+        # status.set_current_date()
+        # status.show()
         self.main_db.close()
 
     def iterate_over_remaining_months(self):       
@@ -114,7 +114,6 @@ class BuildRS(MonthSheet):
         for date1, path in processed_dates_and_paths:
             grand_total, ntp, tenant_payment_df = populate.payment_load_full(filename=path)
             first_dt, last_dt = populate.make_first_and_last_dates(date_str=date1)
-
         return processed_rentr_dates_and_paths
 
     def load_initial_tenants_and_balances(self):

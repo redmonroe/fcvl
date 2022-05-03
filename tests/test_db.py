@@ -138,6 +138,7 @@ class TestDB:
         vacant_units = populate.get_current_vacants_by_month(last_dt=last_dt)
 
         vacant_units = [item[1] for item in vacant_units]
+        breakpoint()
         assert vacant_units == ['CD-101', 'CD-115', 'PT-201']
         assert len(vacant_units) == 3
 
@@ -180,7 +181,7 @@ class TestDB:
 
         '''balance letters generated'''
         bal_letters = populate.get_balance_letters_by_month(first_dt=first_dt, last_dt=last_dt)
-
+        breakpoint()
         assert bal_letters == []
 
     def remaining_months_loop(self):
@@ -268,6 +269,7 @@ class TestDB:
             breakpoint()
             assert len(vacant_units) == assert_list[i]['vacant_len']
             assert vacant_units == assert_list[i]['current_vacants']
+            # breakpoint()
             
             assert len(vacant_units) + len(tenants) == 67
 

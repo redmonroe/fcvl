@@ -432,7 +432,7 @@ class QueryHC():
 
     def get_current_vacants_by_month(self, last_dt=None, first_dt=None):
         return[(row.tenant, row.unit_name) for row in Unit.select().order_by(Unit.unit_name).where(
-        # (Unit.last_occupied<=last_dt) |
+        (Unit.last_occupied>=last_dt) |
         (Unit.last_occupied=='0')        
         ).namedtuples()]
 
@@ -695,10 +695,14 @@ class PopulateTable(QueryHC):
 
         '''update last_occupied for occupied: SLOW, Don't like'''
         for row in cleaned_nt_list:
-            unit = Unit.get(Unit.tenant==row.name)
-            unit.last_occupied = last_dt
+            try:
+                unit = Unit.get(Unit.tenant==row.name)
+                unit.last_occupied = last_dt
+            except Exception as e:
+                unit = Unit.get(Unit.unit_name==row.unit)
+                unit.last_occupied = '0'
             unit.save()
-            
+
         query = TenantRent.insert_many(insert_many_rent)
         query.execute()
         '''Units: now we should check whether end of period '''
