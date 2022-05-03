@@ -432,9 +432,14 @@ class QueryHC():
 
     def get_current_vacants_by_month(self, last_dt=None, first_dt=None):
         return[(row.tenant, row.unit_name) for row in Unit.select().order_by(Unit.unit_name).where(
-        (Unit.last_occupied>=last_dt) |
+        # (Unit.last_occupied>=last_dt) |
         (Unit.last_occupied=='0')        
         ).namedtuples()]
+
+    def get_rent_roll_by_month_at_first_of_month(self, last_dt=None, first_dt=None):
+        current_tenants = [(row.tenant_name, row.move_in_date) for row in Tenant().select().
+            where(Tenant.move_in_date <= first_dt).namedtuples()]
+        return current_tenants
 
     def get_beg_bal_sum_by_period(self, style=None, first_dt=None, last_dt=None):
         if style == 'initial':

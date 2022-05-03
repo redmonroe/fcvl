@@ -6,7 +6,7 @@ import pytest
 from peewee import *
 
 from auth_work import oauth
-from backend import StatusRS
+from backend import StatusRS, PopulateTable
 from balance_letter import balance_letters
 from build_rs import BuildRS
 from config import Config, my_scopes
@@ -63,6 +63,59 @@ def autors(mode=None):
         # build.summary_assertion_at_period(test_date='2022-03')
 
 @click.command()
+def isolate():
+    click.echo('temp: for testing vacants and occupied')
+
+    '''jan occupied: johnson in'''
+    date = '2022-01'
+    populate = PopulateTable()
+    first_dt, last_dt = populate.make_first_and_last_dates(date_str=date)
+    
+    tenants = populate.get_rent_roll_by_month_at_first_of_month(first_dt=first_dt, last_dt=last_dt)
+    assert len(tenants) == 64
+    tenants = [item[0] for item in tenants]
+    assert 'johnson, thomas' in tenants
+    assert 'greiner, richard' not in tenants
+    
+    
+    '''feb occupied@first of month: johnson still in, greiner should not show up in this version'''
+    date = '2022-02'
+    first_dt, last_dt = populate.make_first_and_last_dates(date_str=date)
+    tenants = populate.get_rent_roll_by_month_at_first_of_month(first_dt=first_dt, last_dt=last_dt)
+    assert len(tenants) == 64
+    tenants = [item[0] for item in tenants]
+    assert 'johnson, thomas' in tenants
+    assert 'greiner, richard' not in tenants
+
+
+    '''march: johnson still in, greiner should be in'''
+    date = '2022-03'
+    first_dt, last_dt = populate.make_first_and_last_dates(date_str=date)
+    tenants = populate.get_rent_roll_by_month_at_first_of_month(first_dt=first_dt, last_dt=last_dt)
+    tenants = [item[0] for item in tenants]
+    assert len(tenants) == 65
+    assert 'johnson, thomas' in tenants
+    assert 'greiner, richard' in tenants
+
+    '''april: johnson out, greiner in, kelly not in yet'''
+    date = '2022-04'
+    first_dt, last_dt = populate.make_first_and_last_dates(date_str=date)
+    tenants = populate.get_rent_roll_by_month_at_first_of_month(first_dt=first_dt, last_dt=last_dt)
+    tenants = [item[0] for item in tenants]
+    assert 'johnson, thomas' not in tenants
+    assert 'greiner, richard' in tenants
+    assert 'kelly, daniel' not in tenants
+    breakpoint()
+    # tenants = populate.get_current_tenants_by_month(first_dt=first_dt, last_dt=last_dt)
+    # '''current vacant: '''
+    # vacant_units = populate.get_current_vacants_by_month(last_dt=last_dt)
+
+    # vacant_units = [item[1] for item in vacant_units]
+    # assert vacant_units == ['CD-101', 'CD-115', 'PT-201']
+    # assert len(vacant_units) == 3
+    
+
+@click.command()
 def sqlite_dump():
     click.echo('Dumping current tables to sqlite folder on GDrive.')
     from db_utils import DBUtils
@@ -75,6 +128,7 @@ def balanceletters():
 cli.add_command(autors)
 cli.add_command(sqlite_dump)
 cli.add_command(balanceletters)
+cli.add_command(isolate)
 
 if __name__ == '__main__':
     cli()
