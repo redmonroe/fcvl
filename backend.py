@@ -438,7 +438,10 @@ class QueryHC():
 
     def get_rent_roll_by_month_at_first_of_month(self, last_dt=None, first_dt=None):
         current_tenants = [(row.tenant_name, row.move_in_date) for row in Tenant().select().
-            where(Tenant.move_in_date <= first_dt).namedtuples()]
+            where(
+                (Tenant.move_in_date <= first_dt) &
+                ((Tenant.move_out_date=='0') | (Tenant.move_out_date>=first_dt)))
+                .namedtuples()]
         return current_tenants
 
     def get_beg_bal_sum_by_period(self, style=None, first_dt=None, last_dt=None):
@@ -877,7 +880,6 @@ class PopulateTable(QueryHC):
             tenant = Tenant.get(Tenant.tenant_name == name)
             tenant.active = False
             tenant.move_out_date = date
-            # tenant.unit = '0'
             tenant.save()
 
             unit = Unit.get(Unit.tenant==name)
