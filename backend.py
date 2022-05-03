@@ -436,13 +436,36 @@ class QueryHC():
         (Unit.last_occupied=='0')        
         ).namedtuples()]
 
-    def get_rent_roll_by_month_at_first_of_month(self, last_dt=None, first_dt=None):
+    def get_rent_roll_by_month_at_first_of_month_basic(self, last_dt=None, first_dt=None):
         current_tenants = [(row.tenant_name, row.move_in_date) for row in Tenant().select().
             where(
                 (Tenant.move_in_date <= first_dt) &
                 ((Tenant.move_out_date=='0') | (Tenant.move_out_date>=first_dt)))
                 .namedtuples()]
         return current_tenants
+
+    def get_rent_roll_by_month_at_first_of_month(self, first_dt=None, last_dt=None, tenant_list=None):
+        '''lots of work in this func'''
+        tenants_mi_on_or_before_first = [(rec.tenant_name, rec.unit) for rec in Tenant().select(Tenant, Unit).
+            join(Unit, JOIN.LEFT_OUTER, on=(Tenant.tenant_name==Unit.tenant)).
+            where(
+            (Tenant.move_in_date <= first_dt) &
+            ((Tenant.move_out_date=='0') | (Tenant.move_out_date>=first_dt))).
+            namedtuples()]
+
+        occupied_units = [unit for (name, unit) in tenants_mi_on_or_before_first]
+
+        all_units = Unit.get_all_units()
+
+        for vacant_unit in set(all_units) - set(occupied_units):
+            tup = ('vacant',  vacant_unit)
+            tenants_mi_on_or_before_first.append(tup)
+
+        vacants = [item for item in tenants_mi_on_or_before_first if item[0] == 'vacant']
+        tenants = [item[0] for item in tenants_mi_on_or_before_first if item[0] != 'vacant']
+
+        # breakpoint()
+        return tenants_mi_on_or_before_first, vacants, tenants
 
     def get_beg_bal_sum_by_period(self, style=None, first_dt=None, last_dt=None):
         if style == 'initial':

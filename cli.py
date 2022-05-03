@@ -66,33 +66,36 @@ def autors(mode=None):
 def isolate():
     click.echo('temp: for testing vacants and occupied')
 
+    '''MOVE THIS TO TESTS IMMEDIATELY'''
+
     '''jan occupied: johnson in'''
     date = '2022-01'
     populate = PopulateTable()
     first_dt, last_dt = populate.make_first_and_last_dates(date_str=date)
+    rent_roll, vacants, tenants = populate.get_rent_roll_by_month_at_first_of_month(first_dt=first_dt, last_dt=last_dt)
     
-    tenants = populate.get_rent_roll_by_month_at_first_of_month(first_dt=first_dt, last_dt=last_dt)
+    assert len(rent_roll) == 67
+    assert len(vacants) == 3
     assert len(tenants) == 64
-    tenants = [item[0] for item in tenants]
+  
     assert 'johnson, thomas' in tenants
     assert 'greiner, richard' not in tenants
     
     
     '''feb occupied@first of month: johnson still in, greiner should not show up in this version'''
     date = '2022-02'
-    first_dt, last_dt = populate.make_first_and_last_dates(date_str=date)
-    tenants = populate.get_rent_roll_by_month_at_first_of_month(first_dt=first_dt, last_dt=last_dt)
+    first_dt, last_dt = populate.make_first_and_last_dates(date_str=date) 
+    rent_roll, vacants, tenants = populate.get_rent_roll_by_month_at_first_of_month(first_dt=first_dt, last_dt=last_dt)
     assert len(tenants) == 64
-    tenants = [item[0] for item in tenants]
+    assert len(rent_roll) == 67
+    assert len(vacants) == 3
     assert 'johnson, thomas' in tenants
     assert 'greiner, richard' not in tenants
-
 
     '''march: johnson still in, greiner should be in'''
     date = '2022-03'
     first_dt, last_dt = populate.make_first_and_last_dates(date_str=date)
-    tenants = populate.get_rent_roll_by_month_at_first_of_month(first_dt=first_dt, last_dt=last_dt)
-    tenants = [item[0] for item in tenants]
+    rent_roll, vacants, tenants = populate.get_rent_roll_by_month_at_first_of_month(first_dt=first_dt, last_dt=last_dt)
     assert len(tenants) == 65
     assert 'johnson, thomas' in tenants
     assert 'greiner, richard' in tenants
@@ -100,20 +103,11 @@ def isolate():
     '''april: johnson out, greiner in, kelly not in yet'''
     date = '2022-04'
     first_dt, last_dt = populate.make_first_and_last_dates(date_str=date)
-    tenants = populate.get_rent_roll_by_month_at_first_of_month(first_dt=first_dt, last_dt=last_dt)
-    tenants = [item[0] for item in tenants]
+    rent_roll, vacants, tenants = populate.get_rent_roll_by_month_at_first_of_month(first_dt=first_dt, last_dt=last_dt)
+    breakpoint()
     assert 'johnson, thomas' not in tenants
     assert 'greiner, richard' in tenants
-    assert 'kelly, daniel' not in tenants
-    breakpoint()
-    # tenants = populate.get_current_tenants_by_month(first_dt=first_dt, last_dt=last_dt)
-    # '''current vacant: '''
-    # vacant_units = populate.get_current_vacants_by_month(last_dt=last_dt)
-
-    # vacant_units = [item[1] for item in vacant_units]
-    # assert vacant_units == ['CD-101', 'CD-115', 'PT-201']
-    # assert len(vacant_units) == 3
-    
+    assert 'kelly, daniel' not in tenants    
 
 @click.command()
 def sqlite_dump():
