@@ -687,6 +687,7 @@ class PopulateTable(QueryHC):
 
         computed_mis, computed_mos = self.find_rent_roll_changes_by_comparison(start_set=set(period_start_tenant_names), end_set=set(period_end_tenant_names))
     
+        breakpoint()
         cleaned_mos = self.merge_move_outs(explicit_move_outs=explicit_move_outs, computed_mos=computed_mos)
         self.insert_move_ins(move_ins=computed_mis)
 
@@ -714,10 +715,12 @@ class PopulateTable(QueryHC):
         return cleaned_nt_list, total_tenant_charges, cleaned_mos
 
     def merge_move_outs(self, explicit_move_outs=None, computed_mos=None):
-        explicit_move_outs = [name for name in explicit_move_outs if name != 'vacant']
+        explicit_move_outs = [(row[0], row[1]) for row in explicit_move_outs if row[0] != 'vacant']
         cleaned_mos = []
         if explicit_move_outs != []:
             cleaned_mos = explicit_move_outs + computed_mos
+
+        breakpoint()
         return cleaned_mos
 
     def balance_load(self, filename):
@@ -814,7 +817,7 @@ class PopulateTable(QueryHC):
         nt_list = []
         for index, rec in df.iterrows():
             if rec['Move out'] != fill_item:
-                explicit_move_outs.append(rec['Name'].lower())
+                explicit_move_outs.append((rec['Name'].lower(), datetime.strptime(rec['Move out'], '%m/%d/%Y')))
             row = Row(rec['Name'].lower(), rec['Unit'], rec['Actual Rent Charge'], rec['Move out'] , datetime.strptime(date, '%Y-%m'), rec['Move in'])
             nt_list.append(row)
   
@@ -870,10 +873,10 @@ class PopulateTable(QueryHC):
 
     def deactivate_move_outs(self, date, move_outs=None):
         first_dt, last_dt = self.make_first_and_last_dates(date_str=date)
-        for name in move_outs:
+        for name, date in move_outs:
             tenant = Tenant.get(Tenant.tenant_name == name)
             tenant.active = False
-            tenant.move_out_date = last_dt
+            tenant.move_out_date = date
             # tenant.unit = '0'
             tenant.save()
 
