@@ -474,6 +474,11 @@ class QueryHC():
     def get_opcashdetail_by_stmt(self, stmt_key=None):
         return [row for row in OpCashDetail.select().join(OpCash).where(OpCashDetail.stmt_key == stmt_key).namedtuples()]
 
+    def get_status_object_by_month(self, first_dt=None, last_dt=None):
+        month = first_dt.strftime('%m')
+        year = first_dt.year
+        period = str(year) + '-' + str(month)
+        return [{'processed': item.processed, 'tenant_reconciled': item.tenant_reconciled, 'scrape_reconciled': item.scrape_reconciled} for item in StatusObject().select().where(StatusObject.month==period).namedtuples()]
     def match_tp_db_to_df(self, df=None, first_dt=None, last_dt=None):
         sum_this_month_db = sum([float(row.amount) for row in 
             Payment.select(Payment.amount).

@@ -107,7 +107,9 @@ class TestDB:
         '''opcash etc+'''
         '''ntpayments'''
         '''damages+'''
-        '''statusobject, statusrs, balance letters'''
+        '''statusobject+'''
+        '''tenant end balances+'''
+        ''' statusrs, balance letters'''
 
         populate = PopulateTable()
 
@@ -151,10 +153,8 @@ class TestDB:
 
         '''get current payments: individual and sum'''
         current_payments = populate.get_payments_by_tenant_by_period(last_dt=last_dt, first_dt=first_dt, cumsum=True)
-
         current_payments2 = populate.get_payments_by_tenant_by_period(last_dt=last_dt, first_dt=first_dt)
         current_payments2 = sum([float(item[2]) for item in current_payments2])
-
         assert current_payments == current_payments2
 
         '''check opcashes'''
@@ -171,7 +171,16 @@ class TestDB:
         damages = populate.get_damages_by_month(first_dt=first_dt, last_dt=last_dt)
         assert damages == []
 
-        '''check statusrs'''
+        '''check statusobject'''
+        what_is_processed = populate.get_status_object_by_month(first_dt=first_dt, last_dt=last_dt)
+        assert what_is_processed == [{'processed': True, 'tenant_reconciled': True, 'scrape_reconciled': False}]
+
+        '''tenant end bal'''
+        positions, cumsum = populate.net_position_by_tenant_by_month(first_dt=first_dt, last_dt=last_dt)
+        assert cumsum == 1287.0
+
+        '''
+
         breakpoint() 
 
 
