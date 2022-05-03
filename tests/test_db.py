@@ -109,7 +109,7 @@ class TestDB:
         '''damages+'''
         '''statusobject+'''
         '''tenant end balances+'''
-        ''' statusrs, balance letters'''
+        '''balance letters+'''
 
         populate = PopulateTable()
 
@@ -129,8 +129,7 @@ class TestDB:
         assert all_ten_beg_bal == 793
 
         '''current occupied: johnson in, greiner, kelly out'''
-        tenants = populate.get_current_tenants_by_month(last_dt=last_dt)
-
+        tenants = populate.get_current_tenants_by_month(first_dt=first_dt, last_dt=last_dt)
         assert len(tenants) == 64
         assert 'johnson, thomas' in tenants
         assert 'greiner, richard' not in tenants
@@ -179,9 +178,135 @@ class TestDB:
         positions, cumsum = populate.net_position_by_tenant_by_month(first_dt=first_dt, last_dt=last_dt)
         assert cumsum == 1287.0
 
-        '''
+        '''balance letters generated'''
+        bal_letters = populate.get_balance_letters_by_month(first_dt=first_dt, last_dt=last_dt)
 
-        breakpoint() 
+        assert bal_letters == []
+
+    def remaining_months_loop(self):
+        '''processed records+''' 
+        '''beginning balance for all tenants+'''
+        '''current tenant = tenants who lived here during month and did not move out during month+'''
+        '''vacant units+'''
+        '''unit accounting equals 67+'''
+        '''all charges+'''
+        '''all payments+'''
+        '''opcash etc+'''
+        '''ntpayments'''
+        '''damages+'''
+        '''statusobject+'''
+        '''tenant end balances+'''
+        '''balance letters+'''
+
+        assert_list = [
+                {'date': '2022-02', 
+                 'processed_record1': 'deposits_02_2022.xlsx', 
+                 'rr_len': 64, 
+                 'current_vacants': ['CD-101', 'CD-115', 'PT-201'], 
+                 'vacant_len': 3, 
+                 'sum_ntp': 726.3,
+                 'damages': [],  
+                 'opcash_name': 'op_cash_2022_02.pdf', 
+                 'opcash_amount': '3434.0',
+                 'opcash_det_id': 7, 
+                 'what_processed': [{'processed': True, 'tenant_reconciled': True, 'scrape_reconciled': False}], 
+
+
+            }
+        ]
+
+
+
+        return assert_list
+
+    def test_remaining_months(self):
+        assert_list = self.remaining_months_loop()
+        assert assert_list[0]['date'] == '2022-02'
+        
+        for i in range(len(assert_list)):
+            records = [(item.fn, item.period, item.path) for item in Findexer().select().
+                where(Findexer.status == 'processed').
+                where(Findexer.period == assert_list[i]['date']).
+                namedtuples()]
+
+            assert records[0][0] == assert_list[i]['processed_record1']
+
+            first_dt, last_dt = populate.make_first_and_last_dates(date_str=assert_list[i]['date'])
+
+            '''all tenants beginning balance amount'''
+            all_ten_beg_bal = populate.get_all_tenants_beg_bal(cumsum=True)
+            assert all_ten_beg_bal == 793
+
+            '''current occupied'''
+            tenants = populate.get_current_tenants_by_month(first_dt=first_dt, last_dt=last_dt)
+            assert len(tenants) == assert_list[i]['rr_len'] 
+
+            if assert_list[i]['date'] == '2022-02':     
+                assert 'johnson, thomas' in tenants
+                assert 'greiner, richard' not in tenants
+
+            '''current vacant: '''
+            vacant_units = populate.get_current_vacants_by_month(last_dt=last_dt)
+            vacant_units = [item[1] for item in vacant_units]
+            assert len(vacant_units) == assert_list[i]['vacant_len']
+            assert vacant_units == assert_list[i]['current_vacants']
+            
+            assert len(vacant_units) + len(tenants) == 67
+
+            '''current_charges'''
+            current_charges = populate.get_rent_charges_by_tenant_by_period(last_dt=last_dt, first_dt=first_dt)
+            current_charges = sum([float(item[1]) for item in current_charges])
+            sum_current_charges = populate.get_total_rent_charges_by_month(last_dt=last_dt, first_dt=first_dt)
+
+            assert current_charges == sum_current_charges
+
+            '''get current payments: individual and sum'''
+            current_payments = populate.get_payments_by_tenant_by_period(last_dt=last_dt, first_dt=first_dt, cumsum=True)
+            current_payments2 = populate.get_payments_by_tenant_by_period(last_dt=last_dt, first_dt=first_dt)
+            current_payments2 = sum([float(item[2]) for item in current_payments2])
+            assert current_payments == current_payments2
+
+            '''check ntp'''
+            ntp = populate.get_ntp_by_period(first_dt=first_dt, last_dt=last_dt)
+            assert sum(ntp) == assert_list[i]['sum_ntp']
+
+            '''check damages'''
+            damages = populate.get_damages_by_month(first_dt=first_dt, last_dt=last_dt)
+            assert damages == []
+
+            '''check opcashes'''
+            opcash_sum, opcash_detail = populate.consolidated_get_stmt_by_month(first_dt=first_dt, last_dt=last_dt)
+
+            assert opcash_sum[0][0] == assert_list[i]['opcash_name']
+            assert opcash_detail[0].amount == assert_list[i]['opcash_amount'] 
+            assert opcash_detail[0].id == assert_list[i]['opcash_det_id'] 
+
+            '''check statusobject'''
+            what_is_processed = populate.get_status_object_by_month(first_dt=first_dt, last_dt=last_dt)
+            assert what_is_processed == assert_list[i]['what_processed']
+            
+            '''tenant end bal'''
+            positions, cumsum = populate.net_position_by_tenant_by_month(first_dt=first_dt, last_dt=last_dt)
+
+            breakpoint()
+
+
+            assert cumsum == 1287.0
+
+            '''balance letters generated'''
+            bal_letters = populate.get_balance_letters_by_month(first_dt=first_dt, last_dt=last_dt)
+
+            assert bal_letters == []
+            breakpoint()       
+
+
+        
+        
+        
+    
+    
+    
+    
 
 
     def test_opcash_load(self):
@@ -196,11 +321,6 @@ class TestDB:
         assert iter2[0].id == 13
 
     def test_load_remaining_months_rent(self):
-        rent_roll_list = [(item.fn, item.period, item.path) for item in Findexer().select().
-            where(Findexer.doc_type == 'rent').
-            where(Findexer.status == 'processed').
-            where(Findexer.period != '2022-01').
-            namedtuples()]
 
         processed_rentr_dates_and_paths = [(item[1], item[2]) for item in rent_roll_list]
         processed_rentr_dates_and_paths.sort()

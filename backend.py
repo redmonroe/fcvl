@@ -422,11 +422,13 @@ class QueryHC():
             return [(row.tenant_name, row.amount, row.beg_bal_amount) for row in Tenant.select(Tenant.tenant_name, Tenant.beg_bal_amount, Payment.amount).join(Payment).namedtuples()] 
 
     def get_current_tenants_by_month(self, last_dt=None, first_dt=None):
-        return [row.tenant_name for row in Tenant.select().
-            where(
-                (Tenant.move_in_date<=last_dt) |
-                (Tenant.move_out_date >=last_dt))
+        '''must be a tenant on first day of month; midmonths move-ins need an adjustment'''
+        tenants = [row.tenant_name for row in Tenant.select().
+                    where(
+                        (Tenant.move_in_date <= first_dt) |                
+                        (Tenant.move_out_date >=last_dt))
                 .namedtuples()]
+        return tenants
 
     def get_current_vacants_by_month(self, last_dt=None, first_dt=None):
         return[(row.tenant, row.unit_name) for row in Unit.select().order_by(Unit.unit_name).where(
@@ -479,6 +481,7 @@ class QueryHC():
         year = first_dt.year
         period = str(year) + '-' + str(month)
         return [{'processed': item.processed, 'tenant_reconciled': item.tenant_reconciled, 'scrape_reconciled': item.scrape_reconciled} for item in StatusObject().select().where(StatusObject.month==period).namedtuples()]
+
     def match_tp_db_to_df(self, df=None, first_dt=None, last_dt=None):
         sum_this_month_db = sum([float(row.amount) for row in 
             Payment.select(Payment.amount).
@@ -489,6 +492,9 @@ class QueryHC():
         assert sum_this_month_db == sum_this_month_df
 
         return sum_this_month_db, sum_this_month_df
+
+    def get_balance_letters_by_month(self, first_dt=None, last_dt=None):
+        return [item.tenant_id for item in BalanceLetter().select().where(BalanceLetter.target_month_end==last_dt).namedtuples()]
 
     def get_payments_by_tenant_by_period(self, first_dt=None, last_dt=None, cumsum=None):   
         '''what happens on a moveout'''
