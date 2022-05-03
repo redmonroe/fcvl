@@ -219,7 +219,7 @@ class TestDB:
                  'processed_record1': 'deposits_03_2022.xlsx', 
                  'rr_len': 65, 
                  'current_vacants': ['CD-101', 'CD-115', 'PT-211'], 
-                 'vacant_len': 2, 
+                 'vacant_len': 3, 
                  'sum_ntp': 272.95,
                  'damages': [],  
                  'opcash_name': 'op_cash_2022_02.pdf', 
@@ -265,6 +265,7 @@ class TestDB:
             '''current vacant: '''
             vacant_units = populate.get_current_vacants_by_month(last_dt=last_dt)
             vacant_units = [item[1] for item in vacant_units]
+            breakpoint()
             assert len(vacant_units) == assert_list[i]['vacant_len']
             assert vacant_units == assert_list[i]['current_vacants']
             
@@ -293,7 +294,6 @@ class TestDB:
 
             '''check opcashes'''
             opcash_sum, opcash_detail = populate.consolidated_get_stmt_by_month(first_dt=first_dt, last_dt=last_dt)
-            breakpoint()
 
             assert opcash_sum[0][0] == assert_list[i]['opcash_name']
             assert opcash_detail[0].amount == assert_list[i]['opcash_amount'] 

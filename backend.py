@@ -662,6 +662,8 @@ class PopulateTable(QueryHC):
         ''' get tenants from jan end/feb start'''
         ''' get rent roll from feb end in nt_list from df'''
 
+        first_dt, last_dt = self.make_first_and_last_dates(date_str=date)
+
         # join with expression not foreignkey
         period_start_tenant_names = [(name.tenant_name, name.unit_name, datetime(name.move_in_date.year, name.move_in_date.month, name.move_in_date.day)) for name in Tenant.select(Tenant.tenant_name, Tenant.move_in_date, Unit.unit_name).
             where(Tenant.move_in_date <= datetime.strptime(date, '%Y-%m')).
@@ -691,6 +693,12 @@ class PopulateTable(QueryHC):
 
         insert_many_rent = [{'t_name': row.name, 'unit': row.unit, 'rent_amount': row.rent, 'rent_date': row.date} for row in cleaned_nt_list]  
 
+        '''update last_occupied for occupied: SLOW, Don't like'''
+        for row in cleaned_nt_list:
+            unit = Unit.get(Unit.tenant==row.name)
+            unit.last_occupied = last_dt
+            unit.save()
+            
         query = TenantRent.insert_many(insert_many_rent)
         query.execute()
         '''Units: now we should check whether end of period '''
@@ -845,6 +853,7 @@ class PopulateTable(QueryHC):
             nt = Tenant.create(tenant_name=name, active='true', move_in_date=move_in_date, unit=unit)
             unit = Unit.get(unit_name=unit)
             unit.status = 'occupied'
+            unit.last_occupied = move_in_date
             unit.tenant = name
 
             nt.save()
