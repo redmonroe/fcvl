@@ -239,21 +239,21 @@ class TestDB:
                  'endbal_cumsum': 2115.0, 
                  'bal_letters': []
                 }, 
-                  {
-                 'date': '2022-04', 
-                 'processed_record1': 'deposits_04_2022.xlsx', 
-                 'rr_len': 64, 
-                 'current_vacants': ['CD-101', 'CD-115', 'PT-211'], 
-                 'vacant_len': 3, 
-                 'sum_ntp': 227.27,
-                 'damages': [],  
-                 'opcash_name': None, 
-                 'opcash_amount': None,
-                 'opcash_det_id': 13, 
-                 'what_processed': [{'processed': False, 'tenant_reconciled': False, 'scrape_reconciled': False}], 
-                 'endbal_cumsum': 2933.0, 
-                 'bal_letters': []
-                }
+                #   {
+                #  'date': '2022-04', 
+                #  'processed_record1': 'deposits_04_2022.xlsx', 
+                #  'rr_len': 64, 
+                #  'current_vacants': ['CD-101', 'CD-115', 'PT-211'], 
+                #  'vacant_len': 3, 
+                #  'sum_ntp': 227.27,
+                #  'damages': [],  
+                #  'opcash_name': None, 
+                #  'opcash_amount': None,
+                #  'opcash_det_id': 13, 
+                #  'what_processed': [{'processed': False, 'tenant_reconciled': False, 'scrape_reconciled': False}], 
+                #  'endbal_cumsum': 2933.0, 
+                #  'bal_letters': []
+                # }, 
 
         ]
         return assert_list

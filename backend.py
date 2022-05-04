@@ -641,6 +641,8 @@ class QueryHC():
         cumsum = 0
         for row in position_list1:
             cumsum += row.end_bal
+
+        breakpoint()
        
         return position_list1, cumsum
 

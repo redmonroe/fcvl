@@ -7,12 +7,13 @@ from pprint import pprint
 import numpy as np
 import pandas as pd
 
+from backend import Findexer
 from config import Config
 from pdf import StructDataExtract
-from backend import Findexer
+from utils import Utils
 
 
-class FileIndexer:
+class FileIndexer(Utils):
 
     create_findex_list = [Findexer]
     index_dict = {}
@@ -24,6 +25,12 @@ class FileIndexer:
     dep_list = []
     deposit_and_date_list = []
     scrape_path = Config.TEST_MM_SCRAPE
+    '''this functionality can come fromm a mixin with utils'''
+    doc_mode = Utils.dotdict({'xls': 'xls', 'pdf': 'pdf'})
+    style_term = Utils.dotdict({'rent': 'rent', 'deposits': 'deposits', 'opcash': 'opcash'})
+    bank_acct_str = ' XXXXXXX1891'
+    excluded_file_names = ['desktop.ini']
+    target_string = Utils.dotdict({'affordable':'Affordable Rent Roll Detail/ GPR Report', 'bank': 'BANK DEPOSIT DETAILS' })
 
     def __init__(self, path=None, db=None, mode=None):
         self.path = path
@@ -36,12 +43,12 @@ class FileIndexer:
         self.index_dict = self.sort_directory_by_extension() # this doesn't do the sorting anymore but we still use it
         self.load_what_is_in_dir()
 
-        self.make_a_list_of_raw(mode='xls')
+        self.make_a_list_of_raw(mode=self.doc_mode.xls)
         if self.raw_list:
-            self.find_by_content(style='rent', target_string='Affordable Rent Roll Detail/ GPR Report')
-            self.find_by_content(style='deposits', target_string='BANK DEPOSIT DETAILS')
+            self.find_by_content(style=self.style_term.rent, target_string=self.target_string.affordable)
+            self.find_by_content(style=self.style_term.deposits, target_string=self.target_string.bank)
 
-        self.make_a_list_of_raw(mode='pdf')
+        self.make_a_list_of_raw(mode=self.doc_mode.pdf)
         if self.raw_list:
             self.find_opcashes()
             self.type_opcashes()
@@ -61,9 +68,8 @@ class FileIndexer:
     def sort_directory_by_extension(self, verbose=None):
         for item in self.directory_contents:
             full_path = Path(item)
-            if item.name != 'desktop.ini':
-                self.index_dict[full_path] = (item.suffix, item.name)
-        
+            if item.name not in self.excluded_file_names:
+                self.index_dict[full_path] = (item.suffix, item.name)        
         if verbose:
             pprint(self.index_dict)
         return self.index_dict
@@ -75,21 +81,23 @@ class FileIndexer:
 
     def make_a_list_of_raw(self, mode=None):
         '''instead of making this from a list in memory (faster), I will make the list from db, so that I can control whether to process it or reprocessed it; otherwise, everything that is in dir will just be fully processed again'''
-        if mode == 'xls':   
+        if mode == self.doc_mode.xls:   
             self.raw_list = [(item.path, item.doc_id) for item in Findexer().select().where(Findexer.status=='raw').where(
                 (Findexer.file_ext == '.xlsx') | (Findexer.file_ext == '.xls')).namedtuples()]
 
-        if mode == 'pdf':   
+        if mode == self.doc_mode.pdf:   
             self.raw_list = [(item.path, item.doc_id) for item in Findexer().select().where(Findexer.status=='raw').where(Findexer.file_ext == '.pdf').namedtuples()]
 
     def find_by_content(self, style, target_string=None):
-        if style == 'rent':
+        '''this should be moved up'''
+        if style == self.style_term.rent:
             get_col = 0
             split_col = 11
             split_type = ' '
             date_split = 2
 
-        if style == 'deposits':
+        '''this should be moved up'''
+        if style == self.style_term.deposits:
             get_col = 9
             split_col = 9
             split_type = '/'
@@ -123,7 +131,7 @@ class FileIndexer:
 
     def find_opcashes(self):
         for item, doc_id in self.raw_list:
-            op_cash_path = self.pdf.select_stmt_by_str(path=item, target_str=' XXXXXXX1891')
+            op_cash_path = self.pdf.select_stmt_by_str(path=item, target_str=self.bank_acct_str)
             if op_cash_path != None:
                 self.op_cash_list.append(op_cash_path)
 
@@ -131,7 +139,7 @@ class FileIndexer:
         for path in self.op_cash_list:
             doc_id = [item.doc_id for item in Findexer().select().where(Findexer.path == path).namedtuples()][0]
             find_change = Findexer.get(Findexer.doc_id==doc_id)
-            find_change.doc_type = 'opcash'
+            find_change.doc_type = self.style_term.opcash
             find_change.save()
 
     def rename_by_content_pdf(self):
@@ -170,7 +178,7 @@ class FileIndexer:
         print('Writing deposit list to db')
         opcash_records = [(item.fn, item.doc_id) for item in Findexer().
             select().
-            where(Findexer.doc_type=='opcash').
+            where(Findexer.doc_type==self.style_term.opcash).
             namedtuples()]
 
         for name, doc_id in opcash_records:
@@ -209,7 +217,7 @@ class FileIndexer:
 
     def load_mm_scrape(self, list1=None):
         for fn in self.scrape_path.iterdir():
-            if fn.name != 'desktop.ini':
+            if fn.name not in self.excluded_file_names:
                 df = pd.read_csv(fn)
 
         deposit_list = []

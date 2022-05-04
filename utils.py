@@ -9,7 +9,16 @@ import xlrd
 import pandas as pd
 from google_api_calls_abstract import GoogleApiCalls
 
+
+
 class Utils:
+
+    @staticmethod
+    class dotdict(dict):
+        """dot.notation access to dictionary attributes"""
+        __getattr__ = dict.get
+        __setattr__ = dict.__setitem__
+        __delattr__ = dict.__delitem__
 
     @staticmethod
     def pickle_jar(self, target_data, pknm_string):
@@ -257,3 +266,4 @@ class Utils:
         random.seed(version=2)
         random_id = random.randrange(100000)
         return random_id
+
