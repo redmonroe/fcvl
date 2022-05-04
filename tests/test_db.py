@@ -128,22 +128,32 @@ class TestDB:
         all_ten_beg_bal = populate.get_all_tenants_beg_bal(cumsum=True)
         assert all_ten_beg_bal == 793
 
-        '''current occupied: johnson in, greiner, kelly out'''
-        tenants = populate.get_current_tenants_by_month(first_dt=first_dt, last_dt=last_dt)
+        first_dt, last_dt = populate.make_first_and_last_dates(date_str=jan_date)
+        rent_roll, vacants, tenants = populate.get_rent_roll_by_month_at_first_of_month(first_dt=first_dt, last_dt=last_dt)
+
+        assert len(rent_roll) == 67
+        assert len(vacants) == 3
         assert len(tenants) == 64
+
         assert 'johnson, thomas' in tenants
         assert 'greiner, richard' not in tenants
 
-        '''current vacant: '''
-        vacant_units = populate.get_current_vacants_by_month(last_dt=last_dt)
+        # '''current occupied: johnson in, greiner, kelly out'''
+        # tenants = populate.get_current_tenants_by_month(first_dt=first_dt, last_dt=last_dt)
+        # assert len(tenants) == 64
+        # assert 'johnson, thomas' in tenants
+        # assert 'greiner, richard' not in tenants
 
-        vacant_units = [item[1] for item in vacant_units]
-        breakpoint()
-        assert vacant_units == ['CD-101', 'CD-115', 'PT-201']
-        assert len(vacant_units) == 3
+        # '''current vacant: '''
+        # vacant_units = populate.get_current_vacants_by_month(last_dt=last_dt)
 
-        '''sum of vacants and currents'''
-        assert len(vacant_units) + len(tenants) == 67
+        # vacant_units = [item[1] for item in vacant_units]
+        # breakpoint()
+        # assert vacant_units == ['CD-101', 'CD-115', 'PT-201']
+        # assert len(vacant_units) == 3
+
+        # '''sum of vacants and currents'''
+        # assert len(vacant_units) + len(tenants) == 67
 
         '''get current charges: individual and sum'''
         current_charges = populate.get_rent_charges_by_tenant_by_period(last_dt=last_dt, first_dt=first_dt)
@@ -181,7 +191,6 @@ class TestDB:
 
         '''balance letters generated'''
         bal_letters = populate.get_balance_letters_by_month(first_dt=first_dt, last_dt=last_dt)
-        breakpoint()
         assert bal_letters == []
 
     def remaining_months_loop(self):
@@ -200,42 +209,38 @@ class TestDB:
         '''balance letters+'''
 
         assert_list = [
-                # {
-                #  'date': '2022-02', 
-                #  'processed_record1': 'deposits_02_2022.xlsx', 
-                #  'rr_len': 64, 
-                #  'current_vacants': ['CD-101', 'CD-115', 'PT-201'], 
-                #  'vacant_len': 3, 
-                #  'sum_ntp': 726.3,
-                #  'damages': [('morris, michael', '599', '2022-02', 'exterm')],   
-                #  'opcash_name': 'op_cash_2022_02.pdf', 
-                #  'opcash_amount': '3434.0',
-                #  'opcash_det_id': 7, 
-                #  'what_processed': [{'processed': True, 'tenant_reconciled': True, 'scrape_reconciled': False}], 
-                #  'endbal_cumsum': 2649.0, 
-                #  'bal_letters': []
-                # }, 
                 {
-                 'date': '2022-03', 
-                 'processed_record1': 'deposits_03_2022.xlsx', 
-                 'rr_len': 65, 
-                 'current_vacants': ['CD-101', 'CD-115', 'PT-211'], 
+                 'date': '2022-02', 
+                 'processed_record1': 'deposits_02_2022.xlsx', 
+                 'rr_len': 64, 
+                 'current_vacants': ['CD-101', 'CD-115', 'PT-201'], 
                  'vacant_len': 3, 
-                 'sum_ntp': 272.95,
-                 'damages': [],  
+                 'sum_ntp': 726.3,
+                 'damages': [('morris, michael', '599', '2022-02', 'exterm')],   
                  'opcash_name': 'op_cash_2022_02.pdf', 
                  'opcash_amount': '3434.0',
                  'opcash_det_id': 7, 
                  'what_processed': [{'processed': True, 'tenant_reconciled': True, 'scrape_reconciled': False}], 
                  'endbal_cumsum': 2649.0, 
                  'bal_letters': []
-
+                }, 
+                {
+                 'date': '2022-03', 
+                 'processed_record1': 'deposits_03_2022.xlsx', 
+                 'rr_len': 65, 
+                 'current_vacants': ['CD-101', 'CD-115'], 
+                 'vacant_len': 2, 
+                 'sum_ntp': 272.95,
+                 'damages': [],  
+                 'opcash_name': 'op_cash_2022_03.pdf', 
+                 'opcash_amount': '3434.0',
+                 'opcash_det_id': 7, 
+                 'what_processed': [{'processed': True, 'tenant_reconciled': True, 'scrape_reconciled': False}], 
+                 'endbal_cumsum': 2649.0, 
+                 'bal_letters': []
                 }
 
         ]
-
-
-
         return assert_list
 
     def test_remaining_months(self):
@@ -251,27 +256,32 @@ class TestDB:
 
             first_dt, last_dt = populate.make_first_and_last_dates(date_str=assert_list[i]['date'])
 
+            breakpoint()
             '''all tenants beginning balance amount'''
             all_ten_beg_bal = populate.get_all_tenants_beg_bal(cumsum=True)
             assert all_ten_beg_bal == 793
 
             '''current occupied'''
-            tenants = populate.get_current_tenants_by_month(first_dt=first_dt, last_dt=last_dt)
-            assert len(tenants) == assert_list[i]['rr_len'] 
+            '''current vacant: '''
+            rent_roll, vacants, tenants = populate.get_rent_roll_by_month_at_first_of_month(first_dt=first_dt, last_dt=last_dt)
 
-            if assert_list[i]['date'] == '2022-02':     
+            assert len(rent_roll) == 67
+            assert len(vacants) == assert_list[i]['vacant_len']
+            transformed_vacants = [item[1] for item in vacants]
+            assert sorted(transformed_vacants) == sorted(assert_list[i]['current_vacants']) 
+
+            if assert_list[i]['date'] == '2022-02':
                 assert 'johnson, thomas' in tenants
                 assert 'greiner, richard' not in tenants
 
-            '''current vacant: '''
-            vacant_units = populate.get_current_vacants_by_month(last_dt=last_dt)
-            vacant_units = [item[1] for item in vacant_units]
-            breakpoint()
-            assert len(vacant_units) == assert_list[i]['vacant_len']
-            assert vacant_units == assert_list[i]['current_vacants']
-            # breakpoint()
-            
-            assert len(vacant_units) + len(tenants) == 67
+            if assert_list[i]['date'] == '2022-03':
+                assert 'johnson, thomas' in tenants
+                assert 'greiner, richard' in tenants    
+
+            if assert_list[i]['date'] == '2022-04':
+                assert 'johnson, thomas' not in tenants
+                assert 'greiner, richard' in tenants
+                assert 'kelly, daniel' not in tenants 
 
             '''current_charges'''
             current_charges = populate.get_rent_charges_by_tenant_by_period(last_dt=last_dt, first_dt=first_dt)

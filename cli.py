@@ -60,54 +60,7 @@ def autors(mode=None):
         pw_db = SqliteDatabase(f'{basedir}/sqlite/test_pw_db.db', pragmas={'foreign_keys': 1})
         build = BuildRS(path=path, main_db=pw_db)
         build.new_auto_build()
-        # build.summary_assertion_at_period(test_date='2022-03')
-
-@click.command()
-def isolate():
-    click.echo('temp: for testing vacants and occupied')
-
-    '''MOVE THIS TO TESTS IMMEDIATELY'''
-
-    '''jan occupied: johnson in'''
-    date = '2022-01'
-    populate = PopulateTable()
-    first_dt, last_dt = populate.make_first_and_last_dates(date_str=date)
-    rent_roll, vacants, tenants = populate.get_rent_roll_by_month_at_first_of_month(first_dt=first_dt, last_dt=last_dt)
-    
-    assert len(rent_roll) == 67
-    assert len(vacants) == 3
-    assert len(tenants) == 64
-  
-    assert 'johnson, thomas' in tenants
-    assert 'greiner, richard' not in tenants
-    
-    
-    '''feb occupied@first of month: johnson still in, greiner should not show up in this version'''
-    date = '2022-02'
-    first_dt, last_dt = populate.make_first_and_last_dates(date_str=date) 
-    rent_roll, vacants, tenants = populate.get_rent_roll_by_month_at_first_of_month(first_dt=first_dt, last_dt=last_dt)
-    assert len(tenants) == 64
-    assert len(rent_roll) == 67
-    assert len(vacants) == 3
-    assert 'johnson, thomas' in tenants
-    assert 'greiner, richard' not in tenants
-
-    '''march: johnson still in, greiner should be in'''
-    date = '2022-03'
-    first_dt, last_dt = populate.make_first_and_last_dates(date_str=date)
-    rent_roll, vacants, tenants = populate.get_rent_roll_by_month_at_first_of_month(first_dt=first_dt, last_dt=last_dt)
-    assert len(tenants) == 65
-    assert 'johnson, thomas' in tenants
-    assert 'greiner, richard' in tenants
-
-    '''april: johnson out, greiner in, kelly not in yet'''
-    date = '2022-04'
-    first_dt, last_dt = populate.make_first_and_last_dates(date_str=date)
-    rent_roll, vacants, tenants = populate.get_rent_roll_by_month_at_first_of_month(first_dt=first_dt, last_dt=last_dt)
-    breakpoint()
-    assert 'johnson, thomas' not in tenants
-    assert 'greiner, richard' in tenants
-    assert 'kelly, daniel' not in tenants    
+        build.summary_assertion_at_period(test_date='2022-03')
 
 @click.command()
 def sqlite_dump():
@@ -122,7 +75,6 @@ def balanceletters():
 cli.add_command(autors)
 cli.add_command(sqlite_dump)
 cli.add_command(balanceletters)
-cli.add_command(isolate)
 
 if __name__ == '__main__':
     cli()

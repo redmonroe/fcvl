@@ -432,7 +432,6 @@ class QueryHC():
 
     def get_current_vacants_by_month(self, last_dt=None, first_dt=None):
         return[(row.tenant, row.unit_name) for row in Unit.select().order_by(Unit.unit_name).where(
-        # (Unit.last_occupied>=last_dt) |
         (Unit.last_occupied=='0')        
         ).namedtuples()]
 
@@ -464,7 +463,6 @@ class QueryHC():
         vacants = [item for item in tenants_mi_on_or_before_first if item[0] == 'vacant']
         tenants = [item[0] for item in tenants_mi_on_or_before_first if item[0] != 'vacant']
 
-        # breakpoint()
         return tenants_mi_on_or_before_first, vacants, tenants
 
     def get_beg_bal_sum_by_period(self, style=None, first_dt=None, last_dt=None):
@@ -713,7 +711,6 @@ class PopulateTable(QueryHC):
 
         computed_mis, computed_mos = self.find_rent_roll_changes_by_comparison(start_set=set(period_start_tenant_names), end_set=set(period_end_tenant_names))
     
-        breakpoint()
         cleaned_mos = self.merge_move_outs(explicit_move_outs=explicit_move_outs, computed_mos=computed_mos)
         self.insert_move_ins(move_ins=computed_mis)
 
@@ -746,7 +743,6 @@ class PopulateTable(QueryHC):
         if explicit_move_outs != []:
             cleaned_mos = explicit_move_outs + computed_mos
 
-        breakpoint()
         return cleaned_mos
 
     def balance_load(self, filename):
