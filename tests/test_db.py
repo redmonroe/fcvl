@@ -233,32 +233,31 @@ class TestDB:
                  'sum_ntp': 272.95,
                  'damages': [],  
                  'opcash_name': 'op_cash_2022_03.pdf', 
-                 'opcash_amount': '3434.0',
-                 'opcash_det_id': 7, 
+                 'opcash_amount': '3639.0',
+                 'opcash_det_id': 13, 
                  'what_processed': [{'processed': True, 'tenant_reconciled': True, 'scrape_reconciled': False}], 
-                 'endbal_cumsum': 2649.0, 
+                 'endbal_cumsum': 2115.0, 
                  'bal_letters': []
                 }, 
                   {
                  'date': '2022-04', 
                  'processed_record1': 'deposits_04_2022.xlsx', 
                  'rr_len': 64, 
-                 'current_vacants': ['CD-101', 'CD-115'], 
+                 'current_vacants': ['CD-101', 'CD-115', 'PT-211'], 
                  'vacant_len': 3, 
-                 'sum_ntp': 272.95,
+                 'sum_ntp': 227.27,
                  'damages': [],  
-                 'opcash_name': 'op_cash_2022_04.pdf', 
-                 'opcash_amount': '3434.0',
-                 'opcash_det_id': 7, 
-                 'what_processed': [{'processed': True, 'tenant_reconciled': True, 'scrape_reconciled': False}], 
-                 'endbal_cumsum': 2649.0, 
+                 'opcash_name': None, 
+                 'opcash_amount': None,
+                 'opcash_det_id': 13, 
+                 'what_processed': [{'processed': False, 'tenant_reconciled': False, 'scrape_reconciled': False}], 
+                 'endbal_cumsum': 2933.0, 
                  'bal_letters': []
                 }
 
         ]
         return assert_list
 
-class Remainders:
 
     def test_remaining_months(self):
         assert_list = self.remaining_months_loop()
@@ -273,7 +272,6 @@ class Remainders:
 
             first_dt, last_dt = populate.make_first_and_last_dates(date_str=assert_list[i]['date'])
 
-            breakpoint()
             '''all tenants beginning balance amount'''
             all_ten_beg_bal = populate.get_all_tenants_beg_bal(cumsum=True)
             assert all_ten_beg_bal == 793
@@ -322,11 +320,14 @@ class Remainders:
             assert damages == assert_list[i]['damages']
 
             '''check opcashes'''
-            opcash_sum, opcash_detail = populate.consolidated_get_stmt_by_month(first_dt=first_dt, last_dt=last_dt)
+            try:
+                opcash_sum, opcash_detail = populate.consolidated_get_stmt_by_month(first_dt=first_dt, last_dt=last_dt)
 
-            assert opcash_sum[0][0] == assert_list[i]['opcash_name']
-            assert opcash_detail[0].amount == assert_list[i]['opcash_amount'] 
-            assert opcash_detail[0].id == assert_list[i]['opcash_det_id'] 
+                assert opcash_sum[0][0] == assert_list[i]['opcash_name']
+                assert opcash_detail[0].amount == assert_list[i]['opcash_amount'] 
+                assert opcash_detail[0].id == assert_list[i]['opcash_det_id']
+            except IndexError as e:
+                print(f'No value set for opcash_amount, opcash_det_id, opcash_name: {e}') 
 
             '''check statusobject'''
             what_is_processed = populate.get_status_object_by_month(first_dt=first_dt, last_dt=last_dt)
@@ -334,86 +335,16 @@ class Remainders:
 
             '''tenant end bal'''
             positions, cumsum = populate.net_position_by_tenant_by_month(first_dt=first_dt, last_dt=last_dt)
+            assert cumsum == assert_list[i]['endbal_cumsum']
 
             '''balance letters generated'''
             bal_letters = populate.get_balance_letters_by_month(first_dt=first_dt, last_dt=last_dt)
+    
+            assert bal_letters == assert_list[i]['bal_letters']
 
-            assert bal_letters == []
 
-    def test_real_payments(self):
-        file_list = [(item.fn, item.period, item.path) for item in Findexer().select().
-            where(Findexer.doc_type == 'deposits').
-            where(Findexer.status == 'processed').
-            namedtuples()]
-        
-        processed_dates_and_paths = [(item[1], item[2]) for item in file_list]
-        processed_dates_and_paths.sort()
-        
-        for date1, path in processed_dates_and_paths:
-            grand_total, ntp, tenant_payment_df = populate.payment_load_full(filename=path)
-            first_dt, last_dt = populate.make_first_and_last_dates(date_str=date1)
+class Remainders:
 
-            if date1 == '2022-01':
-                # check db commited ten payments and ntp against df
-                all_tp, all_ntp = populate.check_db_tp_and_ntp(grand_total=grand_total, first_dt=first_dt, last_dt=last_dt) 
-
-                # get beginning balance by tenant and check for duplicate payments
-                detail_beg_bal_all = populate.get_all_tenants_beg_bal()
-
-                different_names = populate.check_for_multiple_payments(detail_beg_bal_all=detail_beg_bal_all, first_dt=first_dt, last_dt=last_dt)
-
-                if len(different_names) > 0:
-                    detail_one = [row for row in detail_beg_bal_all if row[0] == different_names[0]]
-                    assert detail_one == [('yancy, claude', '279.00', Decimal('-9')), ('yancy, claude', '18.00', Decimal('-9'))]
-
-                # check beg_bal_amount again
-                beg_bal_sum_by_period = populate.get_beg_bal_sum_by_period(style='initial')
-                assert beg_bal_sum_by_period == 795.0
-                # check total tenant payments sum db-side
-                # check total tenant payments from dataframe against what I committed to db
-                tp_sum_by_period_db, tp_sum_by_period_df = populate.match_tp_db_to_df(df=tenant_payment_df, first_dt=first_dt, last_dt=last_dt)
-
-                # sum tenant payments by tenant
-                sum_payment_list = populate.get_payments_by_tenant_by_period(first_dt=first_dt, last_dt=last_dt)
-
-                yancy_jan = [row for row in sum_payment_list if row[0] == 'yancy, claude'][0]
-                assert yancy_jan[2] == float(Decimal('297.00'))
-
-                # check jan ending balances by tenant
-                end_bal_list_no_dec = populate.get_end_bal_by_tenant(first_dt=first_dt, last_dt=last_dt)
-
-                tj_row = [row for row in end_bal_list_no_dec if row[0] == 'johnson, thomas'][0]
-                yancy_row = [row for row in end_bal_list_no_dec if row[0] == 'yancy, claude'][0]
-                jack_row = [row for row in end_bal_list_no_dec if row[0] == 'davis, jacki'][0]
-                assert tj_row == ('johnson, thomas', -162.0)
-                assert yancy_row == ('yancy, claude', -306.0)
-                assert jack_row == ('davis, jacki', -211.0)
-
-            if date1 == '2022-02':
-                first_dt, last_dt = populate.make_first_and_last_dates(date_str=date1)
-                all_tp, all_ntp = populate.check_db_tp_and_ntp(grand_total=grand_total, first_dt=first_dt, last_dt=last_dt)           
-
-                beg_bal_sum_by_period = populate.get_beg_bal_sum_by_period(style='other', first_dt=first_dt, last_dt=last_dt)
-
-                detail_beg_bal_all = populate.get_all_tenants_beg_bal()
-
-                different_names = populate.check_for_multiple_payments(detail_beg_bal_all=detail_beg_bal_all, first_dt=first_dt, last_dt=last_dt)
-           
-                if len(different_names) > 0:
-                    detail_one = [row for row in detail_beg_bal_all if row[0] == different_names[0]]
-                    assert detail_one == [('coleman, william', '192.0', Decimal('-24')), ('coleman, william', '192.0', Decimal('-24'))]
-      
-                beg_bal_sum_by_period = populate.get_beg_bal_sum_by_period(style='initial')
-                assert beg_bal_sum_by_period == 795.0
-
-                tp_sum_by_period_db, tp_sum_by_period_df = populate.match_tp_db_to_df(df=tenant_payment_df, first_dt=first_dt, last_dt=last_dt)
-        
-                sum_payment_list = populate.get_payments_by_tenant_by_period(first_dt=first_dt, last_dt=last_dt)
-
-                test_feb = [row for row in sum_payment_list if row[0] == 'coleman, william'][0]
-                assert test_feb[2] == float(Decimal('384.00'))
-
-                end_bal_list_no_dec = populate.get_end_bal_by_tenant(first_dt=first_dt, last_dt=last_dt)
 
     def test_load_damages(self):
         Damages.load_damages()
