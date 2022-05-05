@@ -302,6 +302,7 @@ class BuildRS(MonthSheet):
             df.drop(labels=item, inplace=True)
         return df, ntp_item
 
+    '''can parameterize?'''
     def fix_date4(self, date):
         dt_object = datetime.strptime(date, '%Y-%m')
         dt_object = datetime.strftime(dt_object, '%m %Y')

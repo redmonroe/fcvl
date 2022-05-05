@@ -36,46 +36,33 @@ findex = FileIndexer(path=path, db=Config.TEST_DB)
 
 @pytest.mark.testing_fi
 class TestFileIndexer:
+    
+    '''simple test to pin predictably end-state for file_index db as I make changes; all functionality is'''
+    '''wrapped into latter calls from build_rs()'''
+
+    def test_db_reset(self):
+        findex.drop_findex_table()
+        findex.close_findex_table()
+        assert Config.TEST_DB.is_closed() == True
 
     def test_fi_db(self):
-
         findex.build_index_runner()
         db_items = [item.fn for item in Findexer().select()]
         dir_contents = [item for item in findex.path.iterdir() if item.suffix != '.ini'] 
         assert len(dir_contents) == len(db_items)
-
-    def test_dir_contents(self):
-        findex.articulate_directory()
-        assert len(findex.directory_contents) == 12
-        
-    def test_index_dict(self):
-        findex.sort_directory_by_extension()
         assert list(findex.index_dict)[0].stem == 'beginning_balance_2022'
-
-    def test_load_what_is_in_dir(self):
-        findex.load_what_is_in_dir()
-        db_items = [item.fn for item in Findexer().select()]
-        dir_contents = [item for item in findex.path.iterdir() if item.suffix != '.ini'] 
         assert len(dir_contents) == len(db_items)
-
-    def test_xls_list(self):
         findex.make_a_list_of_raw(mode='xls')
-        assert len(findex.raw_list) == 9
-        assert findex.raw_list[0][1] == 1
-   
-    def test_pdf_list(self):
+        assert len(findex.raw_list) == 1  # should just be beginning_balance.xls
         findex.make_a_list_of_raw(mode='pdf')
-        assert len(findex.raw_list) == 3
-        assert findex.raw_list[-1][-1] == 8
+        assert len(findex.raw_list) == 0
+        breakpoint()
 
     def test_close(self):
         findex.drop_findex_table()
         findex.close_findex_table()
         assert Config.TEST_DB.is_closed() == True
     
-    def test_fixture(self):
-        assert Config.TEST_DB.is_closed() == True
-
 @pytest.mark.testing_db
 class TestDB:
 

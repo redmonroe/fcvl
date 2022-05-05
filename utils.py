@@ -157,6 +157,12 @@ class Utils:
             shnames.append(shname)
         return shnames
 
+    @staticmethod
+    def helper_fix_date(raw_date):    
+        f_date = datetime.strptime(raw_date, '%m %Y')
+        f_date = f_date.strftime('%Y-%m')
+        return f_date
+
         
     def get_book_name(service, sh_id):
         response = service.spreadsheets().get(
