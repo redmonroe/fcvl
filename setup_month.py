@@ -80,51 +80,13 @@ class MonthSheet:
 
         list1 = []
 
-        np = query.net_position_by_tenant_by_month(first_dt=first_dt, last_dt=last_dt)
-        # rr, vacants, tenants = query.get_rent_roll_by_month_at_first_of_month(first_dt=first_dt, last_dt=last_dt)
-        # tenants_mi_on_or_before_first = [(rec.tenant_name, rec.unit, float(rec.beg_bal_amount), rec.rent_amount, rec.rent_date) for rec in Tenant().select(Tenant, TenantRent.rent_amount, Payment.amount 
-        
-        # TenantRent.rent_date,
-        # fn.SUM(Payment.amount).over(partition_by=[Tenant.tenant_name]).alias('total_pay')
-        # ).
-        
-        # where(
-        #     (Tenant.move_in_date<=first_dt) &
-        #     ((Tenant.move_out_date=='0') | (Tenant.move_out_date>=first_dt))).
-        # where(TenantRent.rent_date>=first_dt).
-        # where(TenantRent.rent_date<=last_dt).
-        # where(Payment.date_posted>=first_dt).
-        # where(Payment.date_posted<=last_dt).
-        # join(TenantRent, Payment).
-        # namedtuples()]
+        np, cumsum = query.net_position_by_tenant_by_month(first_dt=first_dt, last_dt=last_dt)
 
-        # return list(set([(rec.tenant_name, rec.beg_bal_amount, rec.total_payments) for rec in Tenant.select(
-        #     Tenant.tenant_name, 
-        #     Tenant.beg_bal_amount, 
-        #     where(Payment.date_posted >= first_dt).
-        #     where(Payment.date_posted <= last_dt).
-        #     join(Payment).namedtuples()]))
+        unit_raw = [unit.unit_name for unit in Unit().select()]
+        unit_index = self.make_unit_index(unit_raw)
 
-        # unit_raw = [unit.unit_name for unit in Unit().select()]
-        # unit_index = self.make_unit_index(unit_raw)
-        # df = pd.DataFrame(np, columns=['name', 'unit'])
-
-        # for idx, unit in df.iterrows():
-        #     for name, unt in rr:
-        #         if str(unit.unit) == unt:
-        #             tup = (unt, name)
-        #             list1.append(tup)
-
-        # df = pd.DataFrame(list1, columns=['unit', 'name'])
-
-        # beg_bal = query.get_all_tenants_beg_bal()
-
-        # list2 = []
-        # for idx, row in df.iterrows():
-        #     for item in beg_bal:
-        #         if item[0] == row['name']:
-        #             tup = (row['unit'], row['name'], float(item[2]))
-        #             list2.append(tup)
+        df = pd.DataFrame(np, columns=['name', 'beg_bal_at', 'pay_month', 'charge_month', 'dam_month', 'end_bal_m', 'st_date', 'end_date',  'unit'])
+        df = df.set_index('unit')
 
 
         breakpoint()
