@@ -83,7 +83,7 @@ class MonthSheet:
         np, cumsum = query.net_position_by_tenant_by_month(first_dt=first_dt, last_dt=last_dt)
 
         unit_raw = [unit.unit_name for unit in Unit().select()]
-        unit_index = self.make_unit_index(unit_raw)
+        unit_index_df = self.make_unit_index(unit_raw)
 
         df = pd.DataFrame(np, columns=['name', 'beg_bal_at', 'pay_month', 'charge_month', 'dam_month', 'end_bal_m', 'st_date', 'end_date',  'unit'])
         df = df.set_index('unit')
@@ -226,6 +226,7 @@ class MonthSheet:
         '''this func is moved to setup_month.py and should be deprecated and culled'''
         final_list = []
         idx_list = []
+        breakpoint()
         for index, unit in enumerate(units): # indexes units from sheet
             idx_list.append(int(index))
             final_list.append(unit)
