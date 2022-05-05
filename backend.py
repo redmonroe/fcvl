@@ -443,7 +443,7 @@ class QueryHC():
                 .namedtuples()]
         return current_tenants
 
-    def get_rent_roll_by_month_at_first_of_month(self, first_dt=None, last_dt=None, tenant_list=None):
+    def get_rent_roll_by_month_at_first_of_month(self, first_dt=None, last_dt=None):
         '''lots of work in this func'''
         tenants_mi_on_or_before_first = [(rec.tenant_name, rec.unit) for rec in Tenant().select(Tenant, Unit).
             join(Unit, JOIN.LEFT_OUTER, on=(Tenant.tenant_name==Unit.tenant)).

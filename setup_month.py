@@ -7,11 +7,14 @@ from numpy import nan
 from peewee import JOIN
 
 from auth_work import oauth
-from backend import (StatusRS, StatusObject, Damages, NTPayment, OpCash, OpCashDetail, Payment, PopulateTable, QueryHC, Tenant, TenantRent, Unit, Findexer, db)
+from backend import (Damages, Findexer, NTPayment, OpCash, OpCashDetail,
+                     Payment, PopulateTable, QueryHC, StatusObject, StatusRS,
+                     Tenant, TenantRent, Unit, db)
 from config import Config, my_scopes
 from db_utils import DBUtils
 from google_api_calls_abstract import GoogleApiCalls
 from utils import Utils
+
 
 class MonthSheet:
 
@@ -66,36 +69,31 @@ class MonthSheet:
             self.month_write_col(date)
        
     def month_write_col(self, date):
+        '''we are using pandas here and the funcs I've already made'''
+        import numpy as np
         gc = GoogleApiCalls()
         query = QueryHC()
         first_dt, last_dt = query.make_first_and_last_dates(date_str=date)
 
-        tenants_mi_on_or_before_first = [(rec.tenant_name, rec.unit) for rec in Tenant().select(Tenant, Unit).
-            join(Unit, JOIN.LEFT_OUTER, on=(Tenant.tenant_name==Unit.tenant)).
-            where(Tenant.move_in_date<=first_dt).
-            # where(Unit.last_occupied<=last_dt).
-            namedtuples()]
+        # unit, tenants & vacants, tenant rent
 
-        occupied_units = [unit for (name, unit) in tenants_mi_on_or_before_first]
+        start_list = []
+        rr, vacants, tenants = query.get_rent_roll_by_month_at_first_of_month(first_dt=first_dt, last_dt=last_dt)
 
-        all_units = Unit.get_all_units()
+        unit_raw = [unit.unit_name for unit in Unit().select()]
+        unit_index = self.make_unit_index(unit_raw)
+        df = pd.DataFrame(unit_index, columns=['index', 'unit'])
 
-        for vacant_unit in set(all_units) - set(occupied_units):
-            tup = ('vacant',  vacant_unit)
-            tenants_mi_on_or_before_first.append(tup)
-        
-        # these become tests
-        if date == '2022-01':
-            tenant_test = [name for (name, unit) in tenants_mi_on_or_before_first]
-            assert len(all_units) == 67
-            assert len(occupied_units) == 64
-            assert 'johnson, thomas' in tenant_test
-        if date == '2022-02':
-            # greiner in
-            breakpoint()
-        if date == '2022-03':
-            # johnson out
-            breakpoint()
+        for idx, unit in df.iterrows():
+            for name, unt in rr:
+                if str(unit.unit) == unt:
+                    tup = (idx, unt, name)
+                    start_list.append(tup)
+                    print(unt)
+
+        df = pd.DataFrame(start_list, columns=['index', 'unit', 'name'])
+        breakpoint()
+
         
         
         
@@ -226,6 +224,17 @@ class MonthSheet:
             message = ['does not balance']
             gc.update(self.service, self.full_sheet, message, f'{self.sheet_choice}' + '!E90:E90')
             return False
+
+    def make_unit_index(self, units):
+        '''this func is moved to setup_month.py and should be deprecated and culled'''
+        final_list = []
+        idx_list = []
+        for index, unit in enumerate(units): # indexes units from sheet
+            idx_list.append(int(index))
+            final_list.append(unit)
+
+        unit_index = tuple(zip(idx_list, final_list))
+        return unit_index
     
     def get_tables(self):
         DBUtils.get_tables(self, self.db)

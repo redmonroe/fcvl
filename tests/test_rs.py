@@ -73,8 +73,11 @@ class TestWrite:
         assert [*title_dict.items()] == [('intake', 1226016565)]
 
     # @retry_google_api(3, sleep1, error_codes)
+    # @pytest.mark.testing_rs_sub1
     @pytest.mark.skip
     def test_compare_base_docs_true_to_grand_total_true(self):
+        '''this is how you make the sheets, no teardown right now'''
+        '''just mark skip if you want sheets to stay up for now'''
         month_list = [rec.month for rec in StatusObject().select().where(StatusObject.tenant_reconciled==1).namedtuples()]
         ys.shmonths = month_list
         ys.full_auto()

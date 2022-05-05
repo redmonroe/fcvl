@@ -217,7 +217,6 @@ class BuildRS(MonthSheet):
         self.mformat.push_one_to_intake(input_file_path=item['path'])
         self.checklist.check_mfor(dt_object)
         self.month_write_col(dt_object)
-        self.checklist.check_rr_proc(dt_object)
 
     def write_payments(self, item):
         '''get raw deposit items to sql'''
@@ -232,7 +231,6 @@ class BuildRS(MonthSheet):
         self.write_payment_list(dt_object, payment_list)
         self.write_ntp(dt_object, [str(ntp)])
         self.print_summary(payment_list, grand_total, ntp, df)
-        self.checklist.check_dep_proc(dt_object)
 
     def remove_already_made_sheets_from_list(self, input_dict=None):
         for mon_year, id1 in input_dict.items():
@@ -339,6 +337,7 @@ class BuildRS(MonthSheet):
         return results_list
 
     def make_unit_index(self, units):
+        '''this func is moved to setup_month.py and should be deprecated and culled'''
         final_list = []
         idx_list = []
         for index, unit in enumerate(units): # indexes units from sheet
