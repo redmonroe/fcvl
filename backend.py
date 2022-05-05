@@ -614,10 +614,10 @@ class QueryHC():
         '''returns relatively hefty object with everything you'd need to write the report/make the sheets'''
         '''model we are using now is do alltime payments, charges, and alltime beg_bal'''
 
-        Position = recordtype('Position', 'name alltime_beg_bal payment_total charges_total damages_total end_bal start_date end_date', default=0)
+        Position = recordtype('Position', 'name alltime_beg_bal payment_total charges_total damages_total end_bal start_date end_date unit' , default=0)
 
-        tenant_list = [name.tenant_name for name in Tenant.select()]
-        position_list1 = [Position(name=name, start_date=first_dt, end_date=last_dt) for name in tenant_list]
+        rr, vacants, tenants = self.get_rent_roll_by_month_at_first_of_month(first_dt=first_dt, last_dt=last_dt)
+        position_list1 = [Position(name=item[0], start_date=first_dt, end_date=last_dt, unit=item[1]) for item in rr]
 
         alltime_beg_bal = self.get_beg_bal_by_tenant() # ALLTIME STARING BEG BALANCES
 
@@ -634,15 +634,13 @@ class QueryHC():
         all_tenant_damages_by_tenant = self.sum_lifetime_tenant_damages(dt_obj_last=last_dt)
         position_list1 = self.record_type_loader(position_list1, 'damages_total', all_tenant_damages_by_tenant, 1)
 
-        '''this is the work right here'''
+        '''this is the work right here: do I want to put output in a database?'''
         for row in position_list1:
             row.end_bal = row.alltime_beg_bal + row.charges_total + row.damages_total - row.payment_total
 
         cumsum = 0
         for row in position_list1:
             cumsum += row.end_bal
-
-        breakpoint()
        
         return position_list1, cumsum
 
