@@ -337,7 +337,7 @@ class BuildRS(MonthSheet):
         return results_list
 
     def make_unit_index(self, units):
-        '''this func is moved to setup_month.py and should be deprecated and culled'''
+        '''this func is moved to setup_month.py'''
         final_list = []
         idx_list = []
         for index, unit in enumerate(units): # indexes units from sheet

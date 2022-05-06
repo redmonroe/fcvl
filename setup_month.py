@@ -82,29 +82,32 @@ class MonthSheet:
 
         np, cumsum = query.net_position_by_tenant_by_month(first_dt=first_dt, last_dt=last_dt)
 
-        unit_raw = [unit.unit_name for unit in Unit().select()]
-        unit_index_df = self.make_unit_index(unit_raw)
+        df = self.index_np_with_df(np)
+        unit = df['unit'].tolist()
+        tenant_names = self.capitalize_name(tenant_list=df['name'].tolist())
+        beg_bal = df['beg_bal_at'].tolist()
+        
 
-        df = pd.DataFrame(np, columns=['name', 'beg_bal_at', 'pay_month', 'charge_month', 'dam_month', 'end_bal_m', 'st_date', 'end_date',  'unit'])
-        df = df.set_index('unit')
+        gc.update(self.service, self.full_sheet, unit, f'{date}!A2:A68')
 
+        gc.update(self.service, self.full_sheet, tenant_names, f'{date}!B2:B68')   
 
+        gc.update_int(self.service, self.full_sheet, beg_bal, f'{date}!D2:D68', value_input_option='USER_ENTERED')
         breakpoint()
+
+
 
         
         
         
         '''        
-        gc.update(self.service, self.full_sheet, unit, f'{sheet_choice}!A2:A68')
         
-        gc.update(self.service, self.full_sheet, tenant_names, f'{sheet_choice}!B2:B68')       
 
         '''
         # gc.update_int(self.service, self.full_sheet, contract_rent, f'{sheet_choice}!E2:E68', value_input_option='USER_ENTERED')
         
         # gc.update_int(self.service, self.full_sheet,subsidy, f'{sheet_choice}!F2:F68', value_input_option='USER_ENTERED')
         
-        # gc.update_int(self.service, self.full_sheet, tenant_rent, f'{sheet_choice}!H2:H68', value_input_option='USER_ENTERED')
 
     def export_month_format(self, sheet_choice):
         gc = GoogleApiCalls()
@@ -222,18 +225,37 @@ class MonthSheet:
             gc.update(self.service, self.full_sheet, message, f'{self.sheet_choice}' + '!E90:E90')
             return False
 
-    def make_unit_index(self, units):
-        '''this func is moved to setup_month.py and should be deprecated and culled'''
+    def index_np_with_df(self, np):
+        unit_raw = [unit.unit_name for unit in Unit().select()]
+
         final_list = []
         idx_list = []
-        breakpoint()
-        for index, unit in enumerate(units): # indexes units from sheet
+        for index, unit in enumerate(unit_raw): 
             idx_list.append(int(index))
             final_list.append(unit)
 
         unit_index = tuple(zip(idx_list, final_list))
-        return unit_index
     
+        ui_df = pd.DataFrame(unit_index, columns=['Rank', 'unit'])
+
+        df = pd.DataFrame(np, columns=['name', 'beg_bal_at', 'pay_month', 'charge_month', 'dam_month', 'end_bal_m', 'st_date', 'end_date',  'unit'])
+        df = df.set_index('unit')
+
+        # merge indexes to order units in way we always have
+        merged_df = pd.merge(df, ui_df, on='unit', how='outer')
+        final_df = merged_df.sort_values(by='Rank', axis=0)
+        df = final_df.set_index('Rank')
+
+        return df
+
+    def capitalize_name(self, tenant_list=None):
+        t_list = []
+        for name in tenant_list:
+            new = [item.rstrip().lstrip().capitalize() for item in name.split(',')]
+            t_list.append(', '.join(new))
+
+        return t_list
+
     def get_tables(self):
         DBUtils.get_tables(self, self.db)
 
