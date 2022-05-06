@@ -22,7 +22,6 @@ from file_indexer import FileIndexer
 from peewee import JOIN, fn
 from records import record
 
-create_tables_list = [BalanceLetter, Findexer, StatusObject, StatusRS, OpCash, OpCashDetail, Damages, Tenant, Unit, Payment, NTPayment, TenantRent]
 
 target_bal_load_file = 'beginning_balance_2022.xlsx'
 path = Config.TEST_RS_PATH_APRIL
@@ -30,6 +29,7 @@ populate = PopulateTable()
 tenant = Tenant()
 unit = Unit()
 findex = FileIndexer(path=path, db=Config.TEST_DB)
+create_tables_list = populate.return_tables_list()
 
 '''arrange, act, assert, cleanup'''
 '''basically, we just arrange to end of april, then check the state of the db'''

@@ -65,10 +65,12 @@ class MonthSheet:
         charge_month = df['charge_month'].tolist()
         pay_month = df['pay_month'].tolist()
         dam_month = df['dam_month'].tolist()
+        subsidy = df['subsidy'].tolist()
    
         # gc.update_int(self.service, self.full_sheet, contract_rent, f'{sheet_choice}!E2:E68', value_input_option='USER_ENTERED')
         
-        # gc.update_int(self.service, self.full_sheet,subsidy, f'{sheet_choice}!F2:F68', value_input_option='USER_ENTERED')
+        gc.update_int(self.service, self.full_sheet,subsidy, f'{date}!F2:F68', value_input_option='USER_ENTERED')
+        breakpoint()        
         
         gc.update(self.service, self.full_sheet, unit, f'{date}!A2:A68')
         gc.update(self.service, self.full_sheet, tenant_names, f'{date}!B2:B68')   
@@ -76,7 +78,6 @@ class MonthSheet:
         gc.update_int(self.service, self.full_sheet, charge_month, f'{date}!H2:H68', value_input_option='USER_ENTERED')
         gc.update_int(self.service, self.full_sheet, pay_month, f'{date}!K2:K68', value_input_option='USER_ENTERED')
         gc.update_int(self.service, self.full_sheet, dam_month, f'{date}!J2:J68', value_input_option='USER_ENTERED')
-        breakpoint()        
 
     def export_month_format(self, sheet_choice):
         gc = GoogleApiCalls()
@@ -166,7 +167,7 @@ class MonthSheet:
     
         ui_df = pd.DataFrame(unit_index, columns=['Rank', 'unit'])
 
-        df = pd.DataFrame(np, columns=['name', 'beg_bal_at', 'pay_month', 'charge_month', 'dam_month', 'end_bal_m', 'st_date', 'end_date',  'unit'])
+        df = pd.DataFrame(np, columns=['name', 'beg_bal_at', 'pay_month', 'charge_month', 'dam_month', 'end_bal_m', 'st_date', 'end_date',  'unit', 'subsidy'])
         df = df.set_index('unit')
 
         # merge indexes to order units in way we always have

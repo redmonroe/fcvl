@@ -12,7 +12,7 @@ sys.path.append(parent)
 from pathlib import Path
 
 from auth_work import oauth
-from backend import (Damages, Findexer, NTPayment, OpCash, OpCashDetail,
+from backend import (Subsidy, Damages, Findexer, NTPayment, OpCash, OpCashDetail,
                      Payment, PopulateTable, StatusObject, StatusRS, Tenant,
                      TenantRent, Unit, db)
 from build_rs import BuildRS
@@ -32,7 +32,8 @@ calls = GoogleApiCalls()
 findex = FileIndexer(path=path, db=Config.TEST_DB)
 ms = MonthSheet(full_sheet=test_workbook, path=path, mode='testing', sleep=sleep1, test_service=service)
 ys = YearSheet(full_sheet=test_workbook, mode='testing', test_service=service, sleep=sleep1)
-create_tables_list = [Findexer, StatusObject, StatusRS, OpCash, OpCashDetail, Damages, Tenant, Unit, Payment, NTPayment, TenantRent]
+create_tables_list = [Subsidy, Findexer, StatusObject, StatusRS, OpCash, OpCashDetail, Damages, Tenant, Unit, Payment, NTPayment, TenantRent]
+'''how can I import object names without having to import object in Config class'''
 
 error_codes = 429
 

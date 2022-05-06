@@ -8,7 +8,7 @@ import pandas as pd
 from peewee import JOIN, fn
 
 from auth_work import oauth
-from backend import (BalanceLetter, Damages, Findexer, NTPayment, OpCash,
+from backend import (Subsidy, BalanceLetter, Damages, Findexer, NTPayment, OpCash,
                      OpCashDetail, Payment, PopulateTable, StatusObject,
                      StatusRS, Tenant, TenantRent, Unit, db)
 from config import Config, my_scopes
@@ -34,7 +34,7 @@ class BuildRS(MonthSheet):
         self.mformat = mformat
         self.calls = GoogleApiCalls() 
         self.sleep = sleep
-        self.create_tables_list = [BalanceLetter, StatusRS, StatusObject, OpCash, OpCashDetail, Damages, Tenant, Unit, Payment, NTPayment, TenantRent, Findexer]
+        self.create_tables_list1 = None
 
         self.target_bal_load_file = 'beginning_balance_2022.xlsx'
         self.wrange_pay = '!K2:K68'
@@ -59,12 +59,13 @@ class BuildRS(MonthSheet):
     def new_auto_build(self):
         print('new_auto_build')
         populate = PopulateTable()
+        self.create_tables_list1 = populate.return_tables_list()
         findex = FileIndexer(path=self.path, db=self.main_db)
         findex.drop_findex_table() 
         if self.main_db.is_closed() == True:
             self.main_db.connect()
-        self.main_db.drop_tables(models=self.create_tables_list)
-        self.main_db.create_tables(self.create_tables_list)
+        self.main_db.drop_tables(models=self.create_tables_list1)
+        self.main_db.create_tables(self.create_tables_list1)
 
         findex.build_index_runner() # this is a findex method
         self.load_initial_tenants_and_balances()
