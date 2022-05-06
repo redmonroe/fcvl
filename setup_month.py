@@ -65,6 +65,7 @@ class MonthSheet:
         charge_month = df['charge_month'].tolist()
         pay_month = df['pay_month'].tolist()
         dam_month = df['dam_month'].tolist()
+        # breakpoint()
         subsidy = df['subsidy'].tolist()
         contract_rent = df['contract_rent'].tolist()
    

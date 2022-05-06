@@ -652,6 +652,22 @@ class QueryHC():
         where(Damages.dam_date <= last_dt).
         join(Damages).namedtuples()]))
 
+    def subsidy_this_period(self, first_dt=None, last_dt=None):
+        return list(set([(rec.tenant_name, rec.total_payments) for rec in Tenant.select(
+        Tenant.tenant_name, 
+        fn.SUM(Subsidy.sub_amount).over(partition_by=[Tenant.tenant_name]).alias('total_payments')).
+        where(Subsidy.date_posted >= first_dt).
+        where(Subsidy.date_posted <= last_dt).
+        join(Subsidy).namedtuples()]))
+
+    def contract_this_period(self, first_dt=None, last_dt=None):
+        return list(set([(rec.tenant_name, rec.total_payments) for rec in Tenant.select(
+        Tenant.tenant_name, 
+        fn.SUM(ContractRent.sub_amount).over(partition_by=[Tenant.tenant_name]).alias('total_payments')).
+        where(ContractRent.date_posted >= first_dt).
+        where(ContractRent.date_posted <= last_dt).
+        join(ContractRent).namedtuples()]))
+
     def sum_lifetime_tenant_damages(self, dt_obj_last=None):
         return [(rec.tenant_name, rec.total_damages) for rec in Tenant.select(
         Tenant.tenant_name, 
@@ -679,11 +695,11 @@ class QueryHC():
         damages_by_tenant = self.tenant_damages_this_period(first_dt=first_dt, last_dt=last_dt)
         position_list1 = self.record_type_loader(position_list1, 'damages_total', damages_by_tenant, 1)
 
-        all_subsidy_by_tenant = self.sum_lifetime_subsidy(dt_obj_last=last_dt)
-        position_list1 = self.record_type_loader(position_list1, 'subsidy', all_subsidy_by_tenant, 1)
+        subsidy_by_tenant = self.subsidy_this_period(first_dt=first_dt, last_dt=last_dt)
+        position_list1 = self.record_type_loader(position_list1, 'subsidy', subsidy_by_tenant, 1)
 
-        all_krent_by_tenant = self.sum_lifetime_contract_rent(dt_obj_last=last_dt)
-        position_list1 = self.record_type_loader(position_list1, 'contract_rent', all_krent_by_tenant, 1)
+        contract_by_tenant = self.contract_this_period(first_dt=first_dt, last_dt=last_dt)
+        position_list1 = self.record_type_loader(position_list1, 'contract_rent', contract_by_tenant, 1)
   
         '''this is the work right here: do I want to put output in a database?'''
         for row in position_list1:
