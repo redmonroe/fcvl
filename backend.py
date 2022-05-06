@@ -93,7 +93,7 @@ class Damages(BaseModel):
         damages_2022 = Config.damages_2022
         for item in damages_2022:
             for name, packet in item.items():
-                dam = Damages(tenant=name, dam_amount=packet[0], dam_date=packet[1], dam_type=packet[2]) 
+                dam = Damages(tenant=name, dam_amount=packet[0], dam_date=packet[1], dam_type=packet[2])
                 dam.save()
 
 class Payment(BaseModel):
@@ -105,6 +105,11 @@ class Payment(BaseModel):
     deposit_id = IntegerField()
 
 class Subsidy(BaseModel):
+    tenant = ForeignKeyField(Tenant, backref='subsidies')
+    sub_amount = CharField()
+    date_posted = DateField()
+
+class ContractRent(BaseModel):
     tenant = ForeignKeyField(Tenant, backref='subsidies')
     sub_amount = CharField()
     date_posted = DateField()
@@ -385,7 +390,7 @@ class StatusObject(BaseModel):
 class QueryHC():
 
     def return_tables_list(self):
-        return [Subsidy, BalanceLetter, StatusRS, StatusObject, OpCash, OpCashDetail, Damages, Tenant, Unit, Payment, NTPayment, TenantRent, Findexer]
+        return [ContractRent, Subsidy, BalanceLetter, StatusRS, StatusObject, OpCash, OpCashDetail, Damages, Tenant, Unit, Payment, NTPayment, TenantRent, Findexer]
 
     def make_first_and_last_dates(self, date_str=None):
         dt_obj = datetime.strptime(date_str, '%Y-%m')
@@ -498,10 +503,10 @@ class QueryHC():
             namedtuples()]
 
     def get_damages_by_month(self, first_dt=None, last_dt=None):
-        month = first_dt.strftime('%m')
-        year = first_dt.year
-        period = str(year) + '-' + str(month)
-        damages = [(row.tenant, row.dam_amount, row.dam_date, row.dam_type) for row in Damages().select().where(Damages.dam_date==period).namedtuples()]
+        damages = [(row.tenant, row.dam_amount, row.dam_date, row.dam_type) for row in Damages().select().
+        where(Damages.dam_date>=first_dt).
+        where(Damages.dam_date<=last_dt).
+        namedtuples()]
         return damages
 
     def consolidated_get_stmt_by_month(self, first_dt=None, last_dt=None):
@@ -601,13 +606,27 @@ class QueryHC():
         where(Payment.date_posted <= dt_obj_last).
         join(Payment).namedtuples()]))
 
+    def tenant_payments_this_period(self, first_dt=None, last_dt=None):
+        return list(set([(rec.tenant_name, rec.total_payments) for rec in Tenant.select(
+        Tenant.tenant_name, 
+        fn.SUM(Payment.amount).over(partition_by=[Tenant.tenant_name]).alias('total_payments')).
+        where(Payment.date_posted >= first_dt).
+        where(Payment.date_posted <= last_dt).
+        join(Payment).namedtuples()]))
+
     def sum_lifetime_subsidy(self, dt_obj_last=None):
         return list(set([(rec.tenant_name, rec.total_payments) for rec in Tenant.select(
         Tenant.tenant_name, 
-        Tenant.beg_bal_amount, 
         fn.SUM(Subsidy.sub_amount).over(partition_by=[Tenant.tenant_name]).alias('total_payments')).
         where(Subsidy.date_posted <= dt_obj_last).
         join(Subsidy).namedtuples()]))
+
+    def sum_lifetime_contract_rent(self, dt_obj_last=None):
+        return list(set([(rec.tenant_name, rec.total_payments) for rec in Tenant.select(
+        Tenant.tenant_name, 
+        fn.SUM(ContractRent.sub_amount).over(partition_by=[Tenant.tenant_name]).alias('total_payments')).
+        where(ContractRent.date_posted <= dt_obj_last).
+        join(ContractRent).namedtuples()]))
 
     def sum_lifetime_tenant_charges(self, dt_obj_last=None):
         return [(rec.tenant_name, rec.total_charges) for rec in Tenant.select(
@@ -616,6 +635,22 @@ class QueryHC():
         fn.SUM(TenantRent.rent_amount).over(partition_by=[Tenant.tenant_name]).alias('total_charges')).
         where(TenantRent.rent_date <= dt_obj_last).
         join(TenantRent).namedtuples()]
+  
+    def tenant_charges_this_period(self, first_dt=None, last_dt=None):
+        return list(set([(rec.tenant_name, rec.total_payments) for rec in Tenant.select(
+        Tenant.tenant_name, 
+        fn.SUM(TenantRent.rent_amount).over(partition_by=[Tenant.tenant_name]).alias('total_payments')).
+        where(TenantRent.rent_date >= first_dt).
+        where(TenantRent.rent_date <= last_dt).
+        join(TenantRent).namedtuples()]))
+
+    def tenant_damages_this_period(self, first_dt=None, last_dt=None):
+        return list(set([(rec.tenant_name, rec.total_payments) for rec in Tenant.select(
+        Tenant.tenant_name, 
+        fn.SUM(Damages.dam_amount).over(partition_by=[Tenant.tenant_name]).alias('total_payments')).
+        where(Damages.dam_date >= first_dt).
+        where(Damages.dam_date <= last_dt).
+        join(Damages).namedtuples()]))
 
     def sum_lifetime_tenant_damages(self, dt_obj_last=None):
         return [(rec.tenant_name, rec.total_damages) for rec in Tenant.select(
@@ -625,12 +660,47 @@ class QueryHC():
         where(Damages.dam_date <= dt_obj_last).
         join(Damages).namedtuples()]
 
+    def full_month_position_tenant_by_month(self, first_dt=None, last_dt=None):
+        Position = recordtype('Position', 'name alltime_beg_bal period_bb payment_total charges_total damages_total end_bal start_date end_date unit subsidy contract_rent' , default=0)
+
+        rr, vacants, tenants = self.get_rent_roll_by_month_at_first_of_month(first_dt=first_dt, last_dt=last_dt)
+        position_list1 = [Position(name=item[0], start_date=first_dt, end_date=last_dt, unit=item[1]) for item in rr]
+
+        alltime_beg_bal = self.get_beg_bal_by_tenant() # ALLTIME STARING BEG BALANCES
+
+        position_list1 = self.record_type_loader(position_list1, 'alltime_beg_bal', alltime_beg_bal, 1)
+
+        payments_by_tenant = self.tenant_payments_this_period(first_dt=first_dt, last_dt=last_dt)
+        position_list1 = self.record_type_loader(position_list1, 'payment_total', payments_by_tenant, 1)
+        
+        charges_by_tenant = self.tenant_charges_this_period(first_dt=first_dt, last_dt=last_dt)
+        position_list1 = self.record_type_loader(position_list1, 'charges_total', charges_by_tenant, 1)
+
+        damages_by_tenant = self.tenant_damages_this_period(first_dt=first_dt, last_dt=last_dt)
+        position_list1 = self.record_type_loader(position_list1, 'damages_total', damages_by_tenant, 1)
+
+        all_subsidy_by_tenant = self.sum_lifetime_subsidy(dt_obj_last=last_dt)
+        position_list1 = self.record_type_loader(position_list1, 'subsidy', all_subsidy_by_tenant, 1)
+
+        all_krent_by_tenant = self.sum_lifetime_contract_rent(dt_obj_last=last_dt)
+        position_list1 = self.record_type_loader(position_list1, 'contract_rent', all_krent_by_tenant, 1)
+  
+        '''this is the work right here: do I want to put output in a database?'''
+        for row in position_list1:
+            row.end_bal = row.alltime_beg_bal + row.charges_total + row.damages_total - row.payment_total
+
+        cumsum = 0
+        for row in position_list1:
+            cumsum += row.end_bal
+       
+        return position_list1, cumsum
+
     def net_position_by_tenant_by_month(self, first_dt=None, last_dt=None, after_first_month=None):
         '''heaviest business logic here'''
         '''returns relatively hefty object with everything you'd need to write the report/make the sheets'''
         '''model we are using now is do alltime payments, charges, and alltime beg_bal'''
 
-        Position = recordtype('Position', 'name alltime_beg_bal payment_total charges_total damages_total end_bal start_date end_date unit subsidy' , default=0)
+        Position = recordtype('Position', 'name alltime_beg_bal payment_total charges_total damages_total end_bal start_date end_date unit subsidy contract_rent' , default=0)
 
         rr, vacants, tenants = self.get_rent_roll_by_month_at_first_of_month(first_dt=first_dt, last_dt=last_dt)
         position_list1 = [Position(name=item[0], start_date=first_dt, end_date=last_dt, unit=item[1]) for item in rr]
@@ -653,6 +723,9 @@ class QueryHC():
         all_subsidy_by_tenant = self.sum_lifetime_subsidy(dt_obj_last=last_dt)
         position_list1 = self.record_type_loader(position_list1, 'subsidy', all_subsidy_by_tenant, 1)
 
+        all_krent_by_tenant = self.sum_lifetime_contract_rent(dt_obj_last=last_dt)
+        position_list1 = self.record_type_loader(position_list1, 'contract_rent', all_krent_by_tenant, 1)
+  
         '''this is the work right here: do I want to put output in a database?'''
         for row in position_list1:
             row.end_bal = row.alltime_beg_bal + row.charges_total + row.damages_total - row.payment_total
@@ -698,6 +771,8 @@ class PopulateTable(QueryHC):
 
         subs_insert_many = [{'tenant': row.name, 'sub_amount': row.subsidy, 'date_posted': row.date} for row in nt_list if row.name != 'vacant']
 
+        krent_insert_many = [{'tenant': row.name, 'sub_amount': row.contract, 'date_posted': row.date} for row in nt_list if row.name != 'vacant']
+
         query = Tenant.insert_many(ten_insert_many)
         query.execute()
         query = TenantRent.insert_many(rent_insert_many)
@@ -705,6 +780,8 @@ class PopulateTable(QueryHC):
         query = Unit.insert_many(units_insert_many)
         query.execute()
         query = Subsidy.insert_many(subs_insert_many)
+        query.execute()
+        query = ContractRent.insert_many(krent_insert_many)
         query.execute()
     
         return nt_list, total_tenant_charges, explicit_move_outs
@@ -756,10 +833,13 @@ class PopulateTable(QueryHC):
             unit.save()
 
         subs_insert_many = [{'tenant': row.name, 'sub_amount': row.subsidy, 'date_posted': row.date} for row in cleaned_nt_list if row.name != 'vacant']
+        krent_insert_many = [{'tenant': row.name, 'sub_amount': row.contract, 'date_posted': row.date} for row in cleaned_nt_list if row.name != 'vacant']
 
         query = TenantRent.insert_many(insert_many_rent)
         query.execute()
         query = Subsidy.insert_many(subs_insert_many)
+        query.execute()
+        query = ContractRent.insert_many(krent_insert_many)
         query.execute()
         '''Units: now we should check whether end of period '''
         return cleaned_nt_list, total_tenant_charges, cleaned_mos
@@ -861,13 +941,13 @@ class PopulateTable(QueryHC):
         return self.df
 
     def nt_from_df(self, df, date, fill_item):
-        Row = namedtuple('row', 'name unit rent mo date mi_date subsidy')
+        Row = namedtuple('row', 'name unit rent mo date mi_date subsidy contract')
         explicit_move_outs = []
         nt_list = []
         for index, rec in df.iterrows():
             if rec['Move out'] != fill_item:
                 explicit_move_outs.append((rec['Name'].lower(), datetime.strptime(rec['Move out'], '%m/%d/%Y')))
-            row = Row(rec['Name'].lower(), rec['Unit'], rec['Actual Rent Charge'], rec['Move out'] , datetime.strptime(date, '%Y-%m'), rec['Move in'], rec['Actual Subsidy Charge'])
+            row = Row(rec['Name'].lower(), rec['Unit'], rec['Actual Rent Charge'], rec['Move out'] , datetime.strptime(date, '%Y-%m'), rec['Move in'], rec['Actual Subsidy Charge'], rec['Lease Rent'])
             nt_list.append(row)
   
         return nt_list, explicit_move_outs

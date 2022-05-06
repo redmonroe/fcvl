@@ -50,13 +50,13 @@ class MonthSheet:
             self.month_write_col(date)
        
     def month_write_col(self, date):
-        '''still need subsidy * k rent still needed and then deposit detail and laundy'''
         '''all time beg bal will fail bc it will write all time in jan'''
         gc = GoogleApiCalls()
         query = QueryHC()
         first_dt, last_dt = query.make_first_and_last_dates(date_str=date)
 
-        np, cumsum = query.net_position_by_tenant_by_month(first_dt=first_dt, last_dt=last_dt)
+        np, cumsum = query.full_month_position_tenant_by_month(first_dt=first_dt, last_dt=last_dt)
+        # breakpoint()        
 
         df = self.index_np_with_df(np)
         unit = df['unit'].tolist()
@@ -66,11 +66,11 @@ class MonthSheet:
         pay_month = df['pay_month'].tolist()
         dam_month = df['dam_month'].tolist()
         subsidy = df['subsidy'].tolist()
+        contract_rent = df['contract_rent'].tolist()
    
-        # gc.update_int(self.service, self.full_sheet, contract_rent, f'{sheet_choice}!E2:E68', value_input_option='USER_ENTERED')
+        gc.update_int(self.service, self.full_sheet, contract_rent, f'{date}!E2:E68', value_input_option='USER_ENTERED')
         
         gc.update_int(self.service, self.full_sheet,subsidy, f'{date}!F2:F68', value_input_option='USER_ENTERED')
-        breakpoint()        
         
         gc.update(self.service, self.full_sheet, unit, f'{date}!A2:A68')
         gc.update(self.service, self.full_sheet, tenant_names, f'{date}!B2:B68')   
@@ -167,7 +167,7 @@ class MonthSheet:
     
         ui_df = pd.DataFrame(unit_index, columns=['Rank', 'unit'])
 
-        df = pd.DataFrame(np, columns=['name', 'beg_bal_at', 'pay_month', 'charge_month', 'dam_month', 'end_bal_m', 'st_date', 'end_date',  'unit', 'subsidy'])
+        df = pd.DataFrame(np, columns=['name', 'beg_bal_at', 'bb_period', 'pay_month', 'charge_month', 'dam_month', 'end_bal_m', 'st_date', 'end_date',  'unit', 'subsidy', 'contract_rent'])
         df = df.set_index('unit')
 
         # merge indexes to order units in way we always have
