@@ -132,10 +132,7 @@ class GoogleApiCalls:
 
     def write_formula_hardcoded_column(self, service, sheet_id, data, write_range):
         value_input_option = 'USER_ENTERED'
-        # value_range_body = {
-        #                     "values": [data]
-        # }
-
+  
         value_range_body = {"range": write_range,
                             "majorDimension": 'COLUMNS', 
                             "values": [data]

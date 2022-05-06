@@ -139,7 +139,6 @@ class BuildRS(MonthSheet):
         target_balance_file = self.path.joinpath(self.target_bal_load_file)
         populate.balance_load(filename=target_balance_file)
 
-
     def iterative_build(self, checklist_mode=None):
         breakpoint()
         for item in self.good_rr_list:
@@ -335,25 +334,6 @@ class BuildRS(MonthSheet):
     def get_units(self):
         results_list = Config.units
         return results_list
-
-    def make_unit_index(self, units):
-        '''this func is moved to setup_month.py'''
-        final_list = []
-        idx_list = []
-        for index, unit in enumerate(units): # indexes units from sheet
-            idx_list.append(int(index))
-            final_list.append(unit)
-
-        unit_index = tuple(zip(idx_list, final_list))
-        return unit_index
-
-    def get_by_kw(self, key=None, selected=None):
-        selected_items = []
-        for item in selected:
-            name = item['fn'].split('_')
-            if key in name:
-                selected_items.append(item)
-        return selected_items
 
     def get_processed_items_list(self):
         print('\nmaking list of processed items')

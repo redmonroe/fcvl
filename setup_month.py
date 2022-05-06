@@ -26,16 +26,9 @@ class MonthSheet:
     G_PAYMENT_MADE = ["=sum(K2:K68)"]
     G_CURBAL = ["=sum(L2:L68)"]
     G_DEPDETAIL = ["=sum(D82:D89)"]
-    ui_sheet = 'intake'
     wrange_hap_partial = '!D81:D81'
     wrange_rr_partial = '!D80:D80'
-    range1 = '1'
-    range2 = '100'
-    wrange_unit1 = f'{ui_sheet}!A{range1}:A{range2}'
-    wrange_t_name1 = f'{ui_sheet}!B{range1}:B{range2}'
-    wrange_k_rent1 = f'{ui_sheet}!c{range1}:c{range2}'
-    wrange_subsidy1 = f'{ui_sheet}!d{range1}:d{range2}'
-    wrange_t_rent1 = f'{ui_sheet}!e{range1}:e{range2}'
+    wrange_reconciled = '!E90:E90'
 
     def __init__(self, full_sheet, path, sleep, mode=None, test_service=None):
 
@@ -47,18 +40,6 @@ class MonthSheet:
             self.service = oauth(my_scopes, 'sheet')
         
         self.file_input_path = path
-        self.wrange_unit = self.wrange_unit1
-        self.wrange_t_name = self.wrange_t_name1
-        self.wrange_k_rent = self.wrange_k_rent1 
-        self.wrange_subsidy = self.wrange_subsidy1
-        self.wrange_t_rent = self.wrange_t_rent1 
-        self.wrange_reconciled = '!E90:E90'
-        self.t_name = []
-        self.unit = [] 
-        self.k_rent = [] 
-        self.subsidy = [] 
-        self.t_rent = []
-        self.sheet_choice = None
         self.gc = GoogleApiCalls()
 
     def auto_control(self, month_list=None):
@@ -69,16 +50,11 @@ class MonthSheet:
             self.month_write_col(date)
        
     def month_write_col(self, date):
-        '''we are using pandas here and the funcs I've already made'''
-        import numpy as np
-        # from peewee import fn
+        '''still need subsidy * k rent still needed and then deposit detail and laundy'''
+        '''all time beg bal will fail bc it will write all time in jan'''
         gc = GoogleApiCalls()
         query = QueryHC()
         first_dt, last_dt = query.make_first_and_last_dates(date_str=date)
-
-        # unit+, tenants & vacants+, tenant rent
-
-        list1 = []
 
         np, cumsum = query.net_position_by_tenant_by_month(first_dt=first_dt, last_dt=last_dt)
 
@@ -86,28 +62,21 @@ class MonthSheet:
         unit = df['unit'].tolist()
         tenant_names = self.capitalize_name(tenant_list=df['name'].tolist())
         beg_bal = df['beg_bal_at'].tolist()
-        
-
-        gc.update(self.service, self.full_sheet, unit, f'{date}!A2:A68')
-
-        gc.update(self.service, self.full_sheet, tenant_names, f'{date}!B2:B68')   
-
-        gc.update_int(self.service, self.full_sheet, beg_bal, f'{date}!D2:D68', value_input_option='USER_ENTERED')
-        breakpoint()
-
-
-
-        
-        
-        
-        '''        
-        
-
-        '''
+        charge_month = df['charge_month'].tolist()
+        pay_month = df['pay_month'].tolist()
+        dam_month = df['dam_month'].tolist()
+   
         # gc.update_int(self.service, self.full_sheet, contract_rent, f'{sheet_choice}!E2:E68', value_input_option='USER_ENTERED')
         
         # gc.update_int(self.service, self.full_sheet,subsidy, f'{sheet_choice}!F2:F68', value_input_option='USER_ENTERED')
         
+        gc.update(self.service, self.full_sheet, unit, f'{date}!A2:A68')
+        gc.update(self.service, self.full_sheet, tenant_names, f'{date}!B2:B68')   
+        gc.update_int(self.service, self.full_sheet, beg_bal, f'{date}!D2:D68', value_input_option='USER_ENTERED')
+        gc.update_int(self.service, self.full_sheet, charge_month, f'{date}!H2:H68', value_input_option='USER_ENTERED')
+        gc.update_int(self.service, self.full_sheet, pay_month, f'{date}!K2:K68', value_input_option='USER_ENTERED')
+        gc.update_int(self.service, self.full_sheet, dam_month, f'{date}!J2:J68', value_input_option='USER_ENTERED')
+        breakpoint()        
 
     def export_month_format(self, sheet_choice):
         gc = GoogleApiCalls()
@@ -119,39 +88,6 @@ class MonthSheet:
         gc.write_formula_column(self.service, self.full_sheet, self.G_PAYMENT_MADE, f'{sheet_choice}!K69:K69')
         gc.write_formula_column(self.service, self.full_sheet, self.G_CURBAL, f'{sheet_choice}!L69:L69')
         print(f'exported month format to {sheet_choice} with wait time of {self.sleep} seconds')
-
-    # def show_current_sheets(self, interactive=False):
-    #     print('showing current sheets')
-    #     titles_dict = Utils.get_existing_sheets(self.service, self.full_sheet)
-            
-    #     path = Utils.show_files_as_choices(titles_dict, interactive=interactive)
-    #     if interactive == True:
-            
-    #         return path
-    #     return titles_dict
-
-    # def walk_download_folder(self):
-    #     print('showing ALL items in download folder')
-    #     current_items = [p for p in pathlib.Path(self.file_input_path).iterdir() if p.is_file()]
-    #     for item in current_items:
-    #         print(item.name)
-
-    # def read_excel_ms(self, verbose=False):
-    #     df = pd.read_excel(self.file_input_path, header=16)
-    #     # jan len is 68
-    #     if verbose: 
-    #         pd.set_option('display.max_columns', None)
-    #         print(df.head(100))
-    #     if len(df) > 68:
-    #         df = self.check_for_mo(df)
-
-    #     t_name = df['Name'].tolist()
-    #     unit = df['Unit'].tolist()
-    #     k_rent = self.str_to_float(df['Lease Rent'].tolist())
-    #     t_rent = self.str_to_float(df['Actual Rent Charge'].tolist())
-    #     subsidy = self.str_to_float(df['Actual Subsidy Charge'].tolist())
-
-    #     return self.fix_data(t_name), self.fix_data(unit), self.fix_data(k_rent), self.fix_data(subsidy), self.fix_data(t_rent)
 
     # def str_to_float(self, list1):
     #     list1 = [item.replace(',', '') for item in list1]
@@ -179,14 +115,6 @@ class MonthSheet:
     # def fix_data(self, item):
     #     item.pop()
     #     return item
-
-    def write_to_rs(self):
-        gc = GoogleApiCalls()
-        gc.simple_batch_update(self.service, self.full_sheet, self.wrange_unit, self.unit, 'COLUMNS')
-        gc.simple_batch_update(self.service, self.full_sheet, self.wrange_t_name, self.t_name, 'COLUMNS')
-        gc.simple_batch_update(self.service, self.full_sheet, self.wrange_k_rent, self.k_rent, 'COLUMNS')
-        gc.simple_batch_update(self.service, self.full_sheet, self.wrange_subsidy, self.subsidy, 'COLUMNS')
-        gc.simple_batch_update(self.service, self.full_sheet, self.wrange_t_rent, self.t_rent, 'COLUMNS')
 
     def export_deposit_detail(self, data):
         time.sleep(self.sleep)
@@ -256,12 +184,6 @@ class MonthSheet:
 
         return t_list
 
-    def get_tables(self):
-        DBUtils.get_tables(self, self.db)
-
-    def delete_table(self):
-        db = Config
-        DBUtils.delete_table(self, self.db)
 
 
 
