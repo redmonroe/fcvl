@@ -6,7 +6,7 @@ import math
 import os
 from calendar import monthrange
 from collections import namedtuple
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import ROUND_DOWN, ROUND_UP, Decimal
 from pathlib import Path
 from pprint import pprint
@@ -109,8 +109,13 @@ class Subsidy(BaseModel):
     sub_amount = CharField()
     date_posted = DateField()
 
+class LP_EndBal(BaseModel):
+    tenant = ForeignKeyField(Tenant, backref='lp_endbal')
+    sub_amount = CharField()
+    date_posted = DateField()
+
 class ContractRent(BaseModel):
-    tenant = ForeignKeyField(Tenant, backref='subsidies')
+    tenant = ForeignKeyField(Tenant, backref='contract_rent')
     sub_amount = CharField()
     date_posted = DateField()
 
@@ -390,7 +395,7 @@ class StatusObject(BaseModel):
 class QueryHC():
 
     def return_tables_list(self):
-        return [ContractRent, Subsidy, BalanceLetter, StatusRS, StatusObject, OpCash, OpCashDetail, Damages, Tenant, Unit, Payment, NTPayment, TenantRent, Findexer]
+        return [LP_EndBal, ContractRent, Subsidy, BalanceLetter, StatusRS, StatusObject, OpCash, OpCashDetail, Damages, Tenant, Unit, Payment, NTPayment, TenantRent, Findexer]
 
     def make_first_and_last_dates(self, date_str=None):
         dt_obj = datetime.strptime(date_str, '%Y-%m')
@@ -614,6 +619,15 @@ class QueryHC():
         where(Payment.date_posted <= last_dt).
         join(Payment).namedtuples()]))
 
+    def tenant_last_endbal_this_period(self, first_dt=None, last_dt=None):
+        last_dt = first_dt - timedelta(days=1)
+        first_dt = last_dt.replace(day=1)
+        return list(set([(rec.tenant_name, rec.sub_amount) for rec in Tenant.select(
+        Tenant.tenant_name, LP_EndBal.sub_amount).
+        where(LP_EndBal.date_posted >= first_dt).
+        where(LP_EndBal.date_posted <= last_dt).
+        join(LP_EndBal).namedtuples()]))
+
     def sum_lifetime_subsidy(self, dt_obj_last=None):
         return list(set([(rec.tenant_name, rec.total_payments) for rec in Tenant.select(
         Tenant.tenant_name, 
@@ -677,14 +691,22 @@ class QueryHC():
         join(Damages).namedtuples()]
 
     def full_month_position_tenant_by_month(self, first_dt=None, last_dt=None):
-        Position = recordtype('Position', 'name alltime_beg_bal period_bb payment_total charges_total damages_total end_bal start_date end_date unit subsidy contract_rent' , default=0)
+        Position = recordtype('Position', 'name alltime_beg_bal lp_endbal payment_total charges_total damages_total end_bal start_date end_date unit subsidy contract_rent' , default=0)
 
         rr, vacants, tenants = self.get_rent_roll_by_month_at_first_of_month(first_dt=first_dt, last_dt=last_dt)
         position_list1 = [Position(name=item[0], start_date=first_dt, end_date=last_dt, unit=item[1]) for item in rr]
 
-        alltime_beg_bal = self.get_beg_bal_by_tenant() # ALLTIME STARING BEG BALANCES
-
+        #lp_endball & we will need to change math at bottom
+        alltime_beg_bal = self.get_beg_bal_by_tenant() # ALLTIME STARING BEG BALANCE
         position_list1 = self.record_type_loader(position_list1, 'alltime_beg_bal', alltime_beg_bal, 1)
+
+        if str(first_dt.year) + '-' + str(first_dt.month) == '2022-1':
+            positions_list1 = self.record_type_loader(position_list1, 'lp_endbal', alltime_beg_bal, 1)
+            breakpoint()
+        else:
+            last_endbal_by_tenant = self.tenant_last_endbal_this_period(first_dt=first_dt, last_dt=last_dt)
+            position_list1 = self.record_type_loader(position_list1, 'lp_endbal', last_endbal_by_tenant, 1)
+            breakpoint()
 
         payments_by_tenant = self.tenant_payments_this_period(first_dt=first_dt, last_dt=last_dt)
         position_list1 = self.record_type_loader(position_list1, 'payment_total', payments_by_tenant, 1)
@@ -703,8 +725,12 @@ class QueryHC():
   
         '''this is the work right here: do I want to put output in a database?'''
         for row in position_list1:
-            row.end_bal = row.alltime_beg_bal + row.charges_total + row.damages_total - row.payment_total
-
+            row.end_bal = row.lp_endbal + row.charges_total + row.damages_total - row.payment_total
+            if row.name != 'vacant':
+                lp_end_bal = LP_EndBal.create(tenant=row.name, sub_amount=row.end_bal, date_posted=last_dt )
+                lp_end_bal.save()
+        
+        breakpoint()
         cumsum = 0
         for row in position_list1:
             cumsum += row.end_bal

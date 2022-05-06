@@ -69,16 +69,16 @@ class MonthSheet:
         subsidy = df['subsidy'].tolist()
         contract_rent = df['contract_rent'].tolist()
    
-        gc.update_int(self.service, self.full_sheet, contract_rent, f'{date}!E2:E68', value_input_option='USER_ENTERED')
+        # gc.update_int(self.service, self.full_sheet, contract_rent, f'{date}!E2:E68', value_input_option='USER_ENTERED')
         
-        gc.update_int(self.service, self.full_sheet,subsidy, f'{date}!F2:F68', value_input_option='USER_ENTERED')
+        # gc.update_int(self.service, self.full_sheet,subsidy, f'{date}!F2:F68', value_input_option='USER_ENTERED')
         
-        gc.update(self.service, self.full_sheet, unit, f'{date}!A2:A68')
-        gc.update(self.service, self.full_sheet, tenant_names, f'{date}!B2:B68')   
-        gc.update_int(self.service, self.full_sheet, beg_bal, f'{date}!D2:D68', value_input_option='USER_ENTERED')
-        gc.update_int(self.service, self.full_sheet, charge_month, f'{date}!H2:H68', value_input_option='USER_ENTERED')
-        gc.update_int(self.service, self.full_sheet, pay_month, f'{date}!K2:K68', value_input_option='USER_ENTERED')
-        gc.update_int(self.service, self.full_sheet, dam_month, f'{date}!J2:J68', value_input_option='USER_ENTERED')
+        # gc.update(self.service, self.full_sheet, unit, f'{date}!A2:A68')
+        # gc.update(self.service, self.full_sheet, tenant_names, f'{date}!B2:B68')   
+        # gc.update_int(self.service, self.full_sheet, beg_bal, f'{date}!D2:D68', value_input_option='USER_ENTERED')
+        # gc.update_int(self.service, self.full_sheet, charge_month, f'{date}!H2:H68', value_input_option='USER_ENTERED')
+        # gc.update_int(self.service, self.full_sheet, pay_month, f'{date}!K2:K68', value_input_option='USER_ENTERED')
+        # gc.update_int(self.service, self.full_sheet, dam_month, f'{date}!J2:J68', value_input_option='USER_ENTERED')
 
     def export_month_format(self, sheet_choice):
         gc = GoogleApiCalls()
