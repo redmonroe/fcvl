@@ -32,11 +32,10 @@ class MonthSheet(YearSheet):
     wrange_reconciled = '!E90:E90'
     wrange_ntp = '!K71:K71'
 
-    def __init__(self, full_sheet, path, sleep, mode=None, test_service=None):
+    def __init__(self, full_sheet, path, mode=None, test_service=None):
         self.full_sheet = full_sheet
         if mode == 'testing':
             self.service = test_service
-            self.sleep = sleep
         else:
             self.service = oauth(my_scopes, 'sheet')
 

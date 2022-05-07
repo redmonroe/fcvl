@@ -1,7 +1,7 @@
 from errors import retry_google_api
 
 times = 3
-sleep1 = 100
+sleep1 = 65
 exceptions = 429
 
 class GoogleApiCalls:
@@ -91,6 +91,7 @@ class GoogleApiCalls:
         request = service.spreadsheets().values().batchClear(spreadsheetId=spreadsheet_id, body=batch_clear_values_request_body)
         response = request.execute()
 
+    @retry_google_api(times, sleep1, exceptions)
     def broad_get(self, service, spreadsheet_id, range):
         sheet = service.spreadsheets()
         result = sheet.values().get(spreadsheetId=spreadsheet_id,
@@ -124,6 +125,7 @@ class GoogleApiCalls:
             body=data
         ).execute()
 
+    @retry_google_api(times, sleep1, exceptions)
     def del_one_sheet(self, service, spreadsheet_id, id):
         sh_id = spreadsheet_id
 

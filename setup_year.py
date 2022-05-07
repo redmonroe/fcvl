@@ -1,6 +1,5 @@
 import pathlib
 import time
-from time import sleep
 
 from auth_work import oauth
 from config import Config, my_scopes
@@ -37,7 +36,7 @@ class YearSheet:
     calls = GoogleApiCalls()
     base_month = 'base'
     
-    def __init__(self, full_sheet=None, month_range=None, mode=None, test_service=None, sleep=None):
+    def __init__(self, full_sheet=None, month_range=None, mode=None, test_service=None):
         self.full_sheet = full_sheet
         if mode == 'testing':
             self.service = test_service
@@ -87,7 +86,6 @@ class YearSheet:
             self.calls.format_row(self.service, self.full_sheet, f'{sheet}!M71:M71', 'ROWS', self.laundry_income)
             self.calls.format_row(self.service, self.full_sheet, f'{sheet}!J77:J77', 'ROWS', self.grand_total)
             self.calls.format_row(self.service, self.full_sheet, f'{sheet}!M73:M74', 'ROWS', self.sd_total)
-            time.sleep(self.sleep)
             
             self.calls.format_row(self.service, self.full_sheet, f'{sheet}!A1:M1', 'ROWS', self.HEADER_NAMES)
             self.calls.format_row(self.service, self.full_sheet, f'{sheet}!G80:G86', 'COLUMNS', self.MF_FORMATTING_TEXT)
