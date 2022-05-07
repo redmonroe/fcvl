@@ -39,18 +39,19 @@ class MonthSheet:
             self.sleep = sleep
         else:
             self.service = oauth(my_scopes, 'sheet')
-        
+
         self.file_input_path = path
 
     def auto_control(self, month_list=None):
         if month_list == None:
             month_list = [rec.month for rec in StatusObject().select().where(StatusObject.tenant_reconciled==1).namedtuples()]
         for date in month_list:
-            # self.export_month_format(date)
-            # self.write_rs_col(date)
-            # self.write_deposit_detail(date)
+            self.export_month_format(date)
+            self.write_rs_col(date)
+            self.write_deposit_detail(date)
             ntp = self.get_ntp_wrapper(date)
-            self.check_totals_reconcile(date, ntp)
+            self.write_ntp(date, ntp)
+            self.check_totals_reconcile(date)
        
     def write_rs_col(self, date):
         gc = GoogleApiCalls()
@@ -69,7 +70,6 @@ class MonthSheet:
         subsidy = df['subsidy'].tolist()
         contract_rent = df['contract_rent'].tolist()
         endbal = df['end_bal_m'].tolist()
-        s_endbal = sum(endbal)
    
         gc.update_int(self.service, self.full_sheet, contract_rent, f'{date}!E2:E68', value_input_option='USER_ENTERED')        
         gc.update_int(self.service, self.full_sheet,subsidy, f'{date}!F2:F68', value_input_option='USER_ENTERED')        
@@ -97,8 +97,7 @@ class MonthSheet:
 
     def write_ntp(self, date, data):
         gc = GoogleApiCalls()
-        breakpoint()
-        gc.update_int(self.service, self.full_sheet, data, date + self.wrange_ntp, 'USER_ENTERED')
+        self.write_list_to_col(start_row=71, list1=data, col_letter='K', gc=gc, date=date)
 
     def write_deposit_detail(self, date):
         populate = PopulateTable()
@@ -112,19 +111,20 @@ class MonthSheet:
         date = kw['date']
         gc.update_int(self.service, self.full_sheet, [kw['hap']], f'{date}' + f'{self.wrange_hap_partial}', value_input_option='USER_ENTERED')
         gc.update_int(self.service, self.full_sheet, [kw['res_rep']], f'{date}' + f'{self.wrange_rr_partial}', value_input_option='USER_ENTERED')
-        self.split_and_write_dep_detail(dep_detail=kw['dep_detail'], gc=gc, date=date)
+        dep_detail_amounts = [item.amount for item in kw['dep_detail']]
+        self.write_list_to_col(start_row=82, list1=dep_detail_amounts, col_letter='D', date=date, gc=gc)
         self.write_sum_forumula1(date=date)
 
-    def split_and_write_dep_detail(self, **kw):
-        value = 82
-        for dep_amt in kw['dep_detail']:
+    def write_list_to_col(self, **kw):
+        start_row = kw['start_row']
+        for item in kw['list1']:
             sub_str0 = '!'
-            sub_str1 = 'D'
+            sub_str1 = kw['col_letter']
             sub_str2 = ':'
-            cat_str = sub_str0 + sub_str1 + str(value) + sub_str2 + sub_str1 + str(value)
-            kw['gc'].update_int(self.service, self.full_sheet, [dep_amt.amount], f'{kw["date"]}' + cat_str, value_input_option='USER_ENTERED')
-            value += 1
-
+            cat_str = sub_str0 + sub_str1 + str(start_row) + sub_str2 + sub_str1 + str(start_row)
+            kw['gc'].update_int(self.service, self.full_sheet, [item], f'{kw["date"]}' + cat_str, value_input_option='USER_ENTERED')
+            start_row += 1
+            
     def write_sum_forumula1(self, date):
         gc = GoogleApiCalls()
         gc.write_formula_column(self.service, self.full_sheet, self.G_DEPDETAIL, f'{date}!D90:D90')
@@ -132,7 +132,6 @@ class MonthSheet:
     def check_totals_reconcile(self, date):
         gc = GoogleApiCalls()
         onesite_total = gc.broad_get(self.service, self.full_sheet, f'{date}!K77:K77')
-        ntp = populate.get_ntp_by_period()
         nbofi_total = gc.broad_get(self.service, self.full_sheet, f'{date}!D90:D90')
         if onesite_total == nbofi_total:
             message = [f'balances at {str(dt.today().date())}']
