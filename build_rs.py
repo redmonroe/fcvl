@@ -25,10 +25,9 @@ class BuildRS(MonthSheet):
         self.create_tables_list1 = None
 
         self.target_bal_load_file = 'beginning_balance_2022.xlsx'
-        self.file_input_path = path
 
     def __repr__(self):
-        return f'BuildRS object path: {self.file_input_path} write sheet: {self.full_sheet} service:{self.service}'
+        return f'BuildRS object path: {self.path} write sheet: {self.full_sheet} service:{self.service}'
     
     @record
     def new_auto_build(self):

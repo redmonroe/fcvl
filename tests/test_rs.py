@@ -24,7 +24,7 @@ from setup_month import MonthSheet
 from setup_year import YearSheet
 
 full_sheet = Config.TEST_RS
-path = Config.TEST_RS_PATH
+path = Config.TEST_RS_PATH_APRIL
 service = oauth(Config.my_scopes, 'sheet', mode='testing')
 calls = GoogleApiCalls()
 ms = MonthSheet(full_sheet=full_sheet, path=path, mode='testing', test_service=service)

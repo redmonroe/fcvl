@@ -332,7 +332,6 @@ class TestDB:
             bal_letters = populate.get_balance_letters_by_month(first_dt=first_dt, last_dt=last_dt)
     
             assert bal_letters == assert_list[i]['bal_letters']
-            breakpoint()
 
 
 class Remainders:
