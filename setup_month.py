@@ -47,38 +47,40 @@ class MonthSheet:
             month_list = [rec.month for rec in StatusObject().select().where(StatusObject.tenant_reconciled==1).namedtuples()]
         for date in month_list:
             # self.export_month_format(date)
-            self.month_write_col(date)
+            # self.write_rs_col(date)
+            self.write_deposit_detail(date)
        
-    def month_write_col(self, date):
+    def write_rs_col(self, date):
         '''all time beg bal will fail bc it will write all time in jan'''
         gc = GoogleApiCalls()
         query = QueryHC()
         first_dt, last_dt = query.make_first_and_last_dates(date_str=date)
 
         np, cumsum = query.full_month_position_tenant_by_month(first_dt=first_dt, last_dt=last_dt)
-        # breakpoint()        
 
         df = self.index_np_with_df(np)
         unit = df['unit'].tolist()
         tenant_names = self.capitalize_name(tenant_list=df['name'].tolist())
-        beg_bal = df['beg_bal_at'].tolist()
+        beg_bal = df['lp_endbal'].tolist()
         charge_month = df['charge_month'].tolist()
         pay_month = df['pay_month'].tolist()
         dam_month = df['dam_month'].tolist()
-        # breakpoint()
         subsidy = df['subsidy'].tolist()
         contract_rent = df['contract_rent'].tolist()
+        endbal = df['end_bal_m'].tolist()
+        s_endbal = sum(endbal)
+        breakpoint()
    
-        # gc.update_int(self.service, self.full_sheet, contract_rent, f'{date}!E2:E68', value_input_option='USER_ENTERED')
-        
-        # gc.update_int(self.service, self.full_sheet,subsidy, f'{date}!F2:F68', value_input_option='USER_ENTERED')
-        
-        # gc.update(self.service, self.full_sheet, unit, f'{date}!A2:A68')
-        # gc.update(self.service, self.full_sheet, tenant_names, f'{date}!B2:B68')   
-        # gc.update_int(self.service, self.full_sheet, beg_bal, f'{date}!D2:D68', value_input_option='USER_ENTERED')
-        # gc.update_int(self.service, self.full_sheet, charge_month, f'{date}!H2:H68', value_input_option='USER_ENTERED')
-        # gc.update_int(self.service, self.full_sheet, pay_month, f'{date}!K2:K68', value_input_option='USER_ENTERED')
-        # gc.update_int(self.service, self.full_sheet, dam_month, f'{date}!J2:J68', value_input_option='USER_ENTERED')
+        gc.update_int(self.service, self.full_sheet, contract_rent, f'{date}!E2:E68', value_input_option='USER_ENTERED')        
+        gc.update_int(self.service, self.full_sheet,subsidy, f'{date}!F2:F68', value_input_option='USER_ENTERED')        
+        gc.update(self.service, self.full_sheet, unit, f'{date}!A2:A68')
+        gc.update(self.service, self.full_sheet, tenant_names, f'{date}!B2:B68')   
+        gc.update_int(self.service, self.full_sheet, beg_bal, f'{date}!D2:D68', value_input_option='USER_ENTERED')
+        gc.update_int(self.service, self.full_sheet, endbal, f'{date}!L2:L68', value_input_option='USER_ENTERED')
+        gc.update_int(self.service, self.full_sheet, charge_month, f'{date}!H2:H68', value_input_option='USER_ENTERED')
+        gc.update_int(self.service, self.full_sheet, pay_month, f'{date}!K2:K68', value_input_option='USER_ENTERED')
+        gc.update_int(self.service, self.full_sheet, dam_month, f'{date}!J2:J68', value_input_option='USER_ENTERED')
+        breakpoint()
 
     def export_month_format(self, sheet_choice):
         gc = GoogleApiCalls()
@@ -91,51 +93,34 @@ class MonthSheet:
         gc.write_formula_column(self.service, self.full_sheet, self.G_CURBAL, f'{sheet_choice}!L69:L69')
         print(f'exported month format to {sheet_choice} with wait time of {self.sleep} seconds')
 
-    # def str_to_float(self, list1):
-    #     list1 = [item.replace(',', '') for item in list1]
-    #     list1 = [float(item) for item in list1]
-    #     return list1
+    def write_deposit_detail(self, date):
+        populate = PopulateTable()
+        first_dt, last_dt = populate.make_first_and_last_dates(date_str=date)
+        rec = populate.get_opcash_by_period(first_dt=first_dt, last_dt=last_dt)
+        dep_detail = populate.get_opcashdetail_by_stmt(stmt_key=rec[0][0])
+        self.export_deposit_detail(date=date, res_rep=rec[0][2], hap=rec[0][3], dep_sum=rec[0][4], dep_detail=dep_detail)
+        # stmt_key = rec[0][0]
+        # res_rep = rec[0][2]
+        # dep_sum = rec[0][4]
+        # hap = rec[0][3]
 
-    # def check_for_mo(self, df):
-    #     list1 = df['Lease Rent'].tolist()
-    #     list1 = [True for item in list1 if item is nan]
 
-    #     if len(list1) == 0:
-    #         print('No move out')
-    #     else:
-    #         print('found a move out')
-    #         move_out_list = []
-    #         for index, row in df.iterrows():
-    #             row_lr = row['Lease Rent']
-    #             row_mr = row['Market/\nNote Rate\nRent']
-    #             if row_lr is nan and row_mr is nan:
-    #                 move_out_list.append(index)
-
-    #         df = df.drop(index=move_out_list, axis=0)
-    #     return df
-    
-    # def fix_data(self, item):
-    #     item.pop()
-    #     return item
-
-    def export_deposit_detail(self, data):
-        time.sleep(self.sleep)
+    def export_deposit_detail(self, **kw):
         gc = GoogleApiCalls()
-        sheet_choice = data['formatted_hap_date']
-        print(f'export deposit detail to {sheet_choice} with wait time of {self.sleep} seconds')
-        self.sheet_choice = sheet_choice
-        hap = [data['hap_amount']]
-        rr = [data['rr_amount']]
-        deposit_list = data['deposit_list']
-        gc.update_int(self.service, self.full_sheet, hap, f'{sheet_choice}' + f'{self.wrange_hap_partial}', value_input_option='USER_ENTERED')
-        gc.update_int(self.service, self.full_sheet, rr, f'{sheet_choice}' + f'{self.wrange_rr_partial}', value_input_option='USER_ENTERED')
+        date = kw['date']
+        gc.update_int(self.service, self.full_sheet, [kw['hap']], f'{date}' + f'{self.wrange_hap_partial}', value_input_option='USER_ENTERED')
+        gc.update_int(self.service, self.full_sheet, [kw['res_rep']], f'{date}' + f'{self.wrange_rr_partial}', value_input_option='USER_ENTERED')
+        self.split_and_write_dep_detail(dep_detail=kw['dep_detail'], gc=gc, date=date)
+
+
+    def split_and_write_dep_detail(self, **kw):
         value = 82
-        for dep_amt in deposit_list:
+        for dep_amt in kw['dep_detail']:
             sub_str0 = '!'
             sub_str1 = 'D'
             sub_str2 = ':'
             cat_str = sub_str0 + sub_str1 + str(value) + sub_str2 + sub_str1 + str(value)
-            gc.update_int(self.service, self.full_sheet, [dep_amt[1]], f'{sheet_choice}' + cat_str, value_input_option='USER_ENTERED')
+            kw['gc'].update_int(self.service, self.full_sheet, [dep_amt.amount], f'{kw["date"]}' + cat_str, value_input_option='USER_ENTERED')
             value += 1
 
     def write_sum_forumula1(self):
@@ -167,8 +152,7 @@ class MonthSheet:
         unit_index = tuple(zip(idx_list, final_list))
     
         ui_df = pd.DataFrame(unit_index, columns=['Rank', 'unit'])
-
-        df = pd.DataFrame(np, columns=['name', 'beg_bal_at', 'bb_period', 'pay_month', 'charge_month', 'dam_month', 'end_bal_m', 'st_date', 'end_date',  'unit', 'subsidy', 'contract_rent'])
+        df = pd.DataFrame(np, columns=['name', 'beg_bal_at', 'lp_endbal', 'pay_month', 'charge_month', 'dam_month', 'end_bal_m', 'st_date', 'end_date',  'unit', 'subsidy', 'contract_rent'])
         df = df.set_index('unit')
 
         # merge indexes to order units in way we always have

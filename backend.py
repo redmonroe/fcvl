@@ -696,17 +696,14 @@ class QueryHC():
         rr, vacants, tenants = self.get_rent_roll_by_month_at_first_of_month(first_dt=first_dt, last_dt=last_dt)
         position_list1 = [Position(name=item[0], start_date=first_dt, end_date=last_dt, unit=item[1]) for item in rr]
 
-        #lp_endball & we will need to change math at bottom
         alltime_beg_bal = self.get_beg_bal_by_tenant() # ALLTIME STARING BEG BALANCE
         position_list1 = self.record_type_loader(position_list1, 'alltime_beg_bal', alltime_beg_bal, 1)
 
         if str(first_dt.year) + '-' + str(first_dt.month) == '2022-1':
             positions_list1 = self.record_type_loader(position_list1, 'lp_endbal', alltime_beg_bal, 1)
-            breakpoint()
         else:
             last_endbal_by_tenant = self.tenant_last_endbal_this_period(first_dt=first_dt, last_dt=last_dt)
             position_list1 = self.record_type_loader(position_list1, 'lp_endbal', last_endbal_by_tenant, 1)
-            breakpoint()
 
         payments_by_tenant = self.tenant_payments_this_period(first_dt=first_dt, last_dt=last_dt)
         position_list1 = self.record_type_loader(position_list1, 'payment_total', payments_by_tenant, 1)
@@ -730,7 +727,6 @@ class QueryHC():
                 lp_end_bal = LP_EndBal.create(tenant=row.name, sub_amount=row.end_bal, date_posted=last_dt )
                 lp_end_bal.save()
         
-        breakpoint()
         cumsum = 0
         for row in position_list1:
             cumsum += row.end_bal
