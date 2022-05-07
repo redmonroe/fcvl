@@ -13,10 +13,11 @@ from backend import (Damages, Findexer, NTPayment, OpCash, OpCashDetail,
 from config import Config, my_scopes
 from db_utils import DBUtils
 from google_api_calls_abstract import GoogleApiCalls
+from setup_year import YearSheet
 from utils import Utils
 
 
-class MonthSheet:
+class MonthSheet(YearSheet):
 
     HEADER_NAMES = ['Unit', 'Tenant Name', 'Notes', 'Balance Start', 'Contract Rent', 'Subsity Entitlement',
     'Hap received', 'Tenant Rent', 'Charge Type', 'Charge Amount', 'Payment Made', 'Balance Current', 'Payment Plan/Action']
@@ -32,7 +33,6 @@ class MonthSheet:
     wrange_ntp = '!K71:K71'
 
     def __init__(self, full_sheet, path, sleep, mode=None, test_service=None):
-
         self.full_sheet = full_sheet
         if mode == 'testing':
             self.service = test_service
@@ -45,6 +45,10 @@ class MonthSheet:
     def auto_control(self, month_list=None):
         if month_list == None:
             month_list = [rec.month for rec in StatusObject().select().where(StatusObject.tenant_reconciled==1).namedtuples()]
+            self.make_base_sheet()
+            self.formatting_runner()
+            self.duplicate_formatted_sheets(month_list=month_list)
+            self.remove_base_sheet()
         for date in month_list:
             self.export_month_format(date)
             self.write_rs_col(date)
