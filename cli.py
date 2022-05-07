@@ -39,12 +39,18 @@ def autors(mode=None):
     '''build database'''
     '''then run status and begin writing to rs'''
 
+    path = Config.TEST_RS_PATH_APRIL
     if mode == 'testing':
         basedir = os.path.abspath(os.path.dirname(__file__))
-        path = Config.TEST_RS_PATH_APRIL
-        pw_db = SqliteDatabase(f'{basedir}/sqlite/test_pw_db.db', pragmas={'foreign_keys': 1})
-        build = BuildRS(path=path, main_db=pw_db)
+        # pw_db = SqliteDatabase(f'{basedir}/sqlite/test_pw_db.db', pragmas={'foreign_keys': 1})
+        build = BuildRS(path=path, main_db=Config.TEST_DB)
         build.new_auto_build()
+
+    if mode == 'iter_testing':
+        basedir = os.path.abspath(os.path.dirname(__file__))
+        build = BuildRS(path=path, main_db=Config.TEST_DB)
+        build.iter_build()
+
 
 @click.command()
 def sqlite_dump():

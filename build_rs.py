@@ -28,6 +28,13 @@ class BuildRS(MonthSheet):
 
     def __repr__(self):
         return f'BuildRS object path: {self.path} write sheet: {self.full_sheet} service:{self.service}'
+
+    def iter_build(self):
+        '''this should probably end up in findexer, right? or no?'''
+        # what is in dir
+        findex = FileIndexer(path=self.path, db=self.main_db)
+        directory_contents = findex.iter_build_runner()
+        breakpoint()
     
     @record
     def new_auto_build(self):

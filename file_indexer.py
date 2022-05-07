@@ -32,7 +32,7 @@ class FileIndexer(Utils):
     ext_mode = Utils.dotdict({'xls': '.xls', 'pdf': '.pdf', 'xlsx': '.xlsx'})
     style_term = Utils.dotdict({'rent': 'rent', 'deposits': 'deposits', 'opcash': 'opcash', 'hap': 'hap', 'r4r': 'rr', 'dep': 'dep', 'dep_detail': 'dep_detail'})
     bank_acct_str = ' XXXXXXX1891'
-    excluded_file_names = ['desktop.ini']
+    excluded_file_names = ['desktop.ini', 'beginning_balance_2022.xlsx']
     target_string = Utils.dotdict({'affordable':'Affordable Rent Roll Detail/ GPR Report', 'bank': 'BANK DEPOSIT DETAILS', 'quadel': 'QUADEL', 'r4r': 'Incoming Wire', 'oc_deposit': 'Deposit',  })
     status_str = Utils.dotdict({'raw': 'raw', 'processed': 'processed'})
 
@@ -40,12 +40,38 @@ class FileIndexer(Utils):
         self.path = path
         self.db = db
         self.mode = mode
+        self.unproc_file_for_testing = None
+        self.index_dict = {}
+        self.index_dict_iter = {} 
+
+    def iter_build_runner(self):
+        self.connect_to_db() # no autodrop
+        processed_fn = [item.fn for item in Findexer().select().where(Findexer.status=='processed').namedtuples()]        
+        directory_contents = self.articulate_directory2()        
+        unproc_file = list(set(directory_contents) - set(processed_fn))
+        self.unproc_file_for_testing = unproc_file    
+        index_dict = self.sort_directory_by_extension2() 
+        self.load_what_is_in_dir_as_raw(dict1=self.index_dict_iter)
+       
+        self.make_a_list_of_raw(mode=self.doc_mode.xls)
+        if self.raw_list:
+            self.find_by_content(style=self.style_term.rent, target_string=self.target_string.affordable)
+            self.find_by_content(style=self.style_term.deposits, target_string=self.target_string.bank)
+        
+        self.make_a_list_of_raw(mode=self.doc_mode.pdf)
+        if self.raw_list:
+            self.find_opcashes()
+            self.type_opcashes()
+            self.rename_by_content_pdf()
+        # breakpoint()
+        
+        return index_dict
 
     def build_index_runner(self):
-        self.connect_to_db(mode='autodrop')
+        self.connect_to_db()
         self.directory_contents = self.articulate_directory()
         self.index_dict = self.sort_directory_by_extension() # this doesn't do the sorting anymore but we still use it
-        self.load_what_is_in_dir()
+        self.load_what_is_in_dir_as_raw(dict1=self.index_dict)
 
         self.make_a_list_of_raw(mode=self.doc_mode.xls)
         if self.raw_list:
@@ -80,9 +106,20 @@ class FileIndexer(Utils):
             self.db.drop_tables(models=self.create_findex_list)
         self.db.create_tables(models=self.create_findex_list)
 
+    def articulate_directory2(self):
+        dir_cont = [item.name for item in self.path.iterdir() if item.name not in self.excluded_file_names] 
+        return dir_cont
+        
     def articulate_directory(self):
-        self.directory_contents = [item for item in self.path.iterdir()] 
-        return self.directory_contents
+        return [item for item in self.path.iterdir()] 
+
+    def sort_directory_by_extension2(self, verbose=None):
+        index_dict = {}
+        for fn in self.unproc_file_for_testing:
+            index_dict[Path.joinpath(self.path, fn)] = (Path(fn).suffix ,fn )
+        
+        self.index_dict_iter = index_dict # for testing, do not just erase this
+        return index_dict        
 
     def sort_directory_by_extension(self, verbose=None):
         for item in self.directory_contents:
@@ -93,8 +130,8 @@ class FileIndexer(Utils):
             pprint(self.index_dict)
         return self.index_dict
 
-    def load_what_is_in_dir(self, autodrop=None, verbose=None):
-        insert_dir_contents = [{'path': path, 'fn': name, 'indexed': 'false', 'file_ext': suffix} for path, (suffix, name) in self.index_dict.items()]
+    def load_what_is_in_dir_as_raw(self, dict1={}, autodrop=None, verbose=None):
+        insert_dir_contents = [{'path': path, 'fn': name, 'indexed': 'false', 'file_ext': suffix} for path, (suffix, name) in dict1.items()]
         query = Findexer.insert_many(insert_dir_contents)
         query.execute()
 
@@ -106,6 +143,7 @@ class FileIndexer(Utils):
 
         if mode == self.doc_mode.pdf:   
             self.raw_list = [(item.path, item.doc_id) for item in Findexer().select().where(Findexer.status==self.status_str.raw).where(Findexer.file_ext == self.ext_mode.pdf).namedtuples()]
+
 
     def find_by_content(self, style, target_string=None):
         '''kwargs into loop below'''

@@ -2,6 +2,9 @@
 
 - requirements:
 
+  - operations:
+    - duplicate payment issues
+    - add manual_entry dict and/or figure out why original fcvfin doesn't have move-in missing deposits problems? how do I want to fix?
   - testing:
     - april endbal 2920(test) v. 2933(rs): wait to til I process month to freak out (deactivating april in tests for now)
     - need to write tests for statusrs and balance letters (this is not an auto-flow now; triggered from cli )
@@ -18,6 +21,8 @@
   - S/M: export files for audit once they are processed, async, profiling, cython, frontend api structure
   - structure:
     - use interfaces and getters when referencing other classes
+      -outside world
+    - make convention for renaming pdfs
 
 - links
 - [markdown guide](https://www.markdownguide.org/basic-syntax/)

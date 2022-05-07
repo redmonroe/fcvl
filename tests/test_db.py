@@ -45,18 +45,28 @@ class TestFileIndexer:
         findex.close_findex_table()
         assert Config.TEST_DB.is_closed() == True
 
-    def test_fi_db(self):
+    def test_init_run_with_april(self):
         findex.build_index_runner()
-        db_items = [item.fn for item in Findexer().select()]
-        dir_contents = [item for item in findex.path.iterdir() if item.suffix != '.ini'] 
-        assert len(dir_contents) == len(db_items)
-        assert list(findex.index_dict)[0].stem == 'beginning_balance_2022'
+        db_items = [item.fn for item in Findexer().select().namedtuples() if item.fn not in findex.excluded_file_names]
+        dir_contents = [item for item in findex.path.iterdir() if item.name not in findex.excluded_file_names] 
         assert len(dir_contents) == len(db_items)
         findex.make_a_list_of_raw(mode='xls')
-        assert len(findex.raw_list) == 1  # should just be beginning_balance.xls
+        assert len(findex.raw_list) == 0  
         findex.make_a_list_of_raw(mode='pdf')
         assert len(findex.raw_list) == 0
-        breakpoint()
+
+    def test_iter_run_with_may_dir(self):
+        may_path = Config.TEST_RS_PATH_MAY
+        may_findex = FileIndexer(path=may_path, db=Config.TEST_DB)
+        index_dict = may_findex.iter_build_runner()
+        assert may_findex.unproc_file_for_testing == ['op_cash_2022_04.pdf']
+        assert list(may_findex.index_dict_iter.values())[0][0] == '.pdf'
+
+        '''show that db after may update includes raw opcash_04'''
+        assert Path(may_findex.raw_list[0][0]).name == 'op_cash_2022_04.pdf'
+        '''show that db after may update includes proc"d opcash_04'''
+        proc_items = [item.fn for item in Findexer().select().where(Findexer.status=='processed').namedtuples() if item.fn not in findex.excluded_file_names]
+        assert 'op_cash_2022_04.pdf' in proc_items
 
     def test_close(self):
         findex.drop_findex_table()
@@ -335,7 +345,6 @@ class TestDB:
 
 
 class Remainders:
-
 
     def test_load_damages(self):
         Damages.load_damages()
