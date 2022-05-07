@@ -31,7 +31,6 @@ ms = MonthSheet(full_sheet=full_sheet, path=path, mode='testing', test_service=s
 create_tables_list = [Subsidy, Findexer, StatusObject, StatusRS, OpCash, OpCashDetail, Damages, Tenant, Unit, Payment, NTPayment, TenantRent]
 '''how can I import object names without having to import object in Config class'''
 
-
 @pytest.mark.testing_rs
 class TestWrite:
 

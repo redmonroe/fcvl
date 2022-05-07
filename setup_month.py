@@ -41,6 +41,9 @@ class MonthSheet(YearSheet):
 
         self.file_input_path = path
 
+    def iterative_control(self, month_list=None):
+        pass
+    
     def auto_control(self, month_list=None):
         if month_list == None:
             month_list = [rec.month for rec in StatusObject().select().where(StatusObject.tenant_reconciled==1).namedtuples()]

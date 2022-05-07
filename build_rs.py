@@ -54,6 +54,7 @@ class BuildRS(MonthSheet):
     @record
     def new_auto_build(self):
         print('new_auto_build')
+        """
         populate = PopulateTable()
         self.create_tables_list1 = populate.return_tables_list()
         findex = FileIndexer(path=self.path, db=self.main_db)
@@ -76,6 +77,7 @@ class BuildRS(MonthSheet):
         '''from show we can do rs_write, rent_sheets, balance_letters'''
         status.show() 
         self.main_db.close()
+        """
 
     def iterate_over_remaining_months(self):       
         # load remaining months rent
@@ -137,90 +139,6 @@ class BuildRS(MonthSheet):
         target_balance_file = self.path.joinpath(self.target_bal_load_file)
         populate.balance_load(filename=target_balance_file)
 
-    # def iterative_build(self, checklist_mode=None):
-    #     breakpoint()
-    #     for item in self.good_rr_list:
-    #         self.write_rentroll(item)
-
-    #     for item in self.good_dep_list:
-    #         self.write_payments(item)
-
-    #     for item in self.good_opcash_list: 
-    #         print('writing from deposit_detail from db')
-    #         self.write_opcash_detail_from_db(item)
-           
-
-    # def write_opcash_detail_from_db(self, item):
-    #     dict1 = {}
-    #     dict1['formatted_hap_date'] = self.fix_date(item['period'])
-    #     dict1['hap_date'] = item['period']
-    #     dict1['hap_amount'] = item['hap']
-    #     dict1['rr_date'] = item['period']
-    #     dict1['rr_amount'] = item['rr']
-    #     dict1['deposit_list_date'] = item['period']
-    #     dict1['deposit_list'] = json.loads(item['dep_list'])[0]
-        
-    #     self.export_deposit_detail(data=dict1)
-    #     self.checklist.check_depdetail_proc(dict1['hap_date'])
-    #     self.checklist.check_opcash(dict1['hap_date'])
-    #     self.write_sum_forumula1()
-    #     reconciled_bool = self.check_totals_reconcile()
-    #     if reconciled_bool:
-    #         self.checklist.check_grand_total_ok(dict1['hap_date'])
-    #     else:
-    #         month = dict1['hap_date']
-    #         print(f'rent sheet for {month} does not balance.')
-
-    # def write_opcash_detail(self, item):
-    #     '''does not write from memory properly; would like it to'''
-    #     for good_date, hap in zip(self.proc_ms_list, self.findex.hap_list):
-    #         if self.fix_date4(good_date) == next(iter(hap[0])): # right = 01 2022
-    #             dict1 = {}
-    #             dict1['formatted_hap_date'] = self.fix_date2(next(iter(hap[0])))
-    #             dict1['hap_date'] = next(iter(hap[0]))
-    #             dict1['hap_amount'] = next(iter(hap[0].values()))[0]
-
-    #     for good_date, rr in zip(self.proc_ms_list, self.findex.rr_list):
-    #         if self.fix_date4(good_date) == next(iter(rr[0])): # right = 01 2022
-    #             dict1['rr_date'] = next(iter(rr[0]))
-    #             dict1['rr_amount'] = next(iter(rr[0].values()))[0]
-
-    #     # this is for a total deposit: do I need it? DON'T ERASE!
-    #     for good_date, d_sum in zip(self.proc_ms_list, self.findex.dep_list):
-    #         if self.fix_date4(good_date) == next(iter(d_sum[0])): # right = 01 2022
-    #             dict1['deposit_date'] = next(iter(d_sum[0]))
-
-    #     for good_date, d_detail in zip(self.proc_ms_list, self.findex.deposit_and_date_list):
-    #         if self.fix_date4(good_date) == next(iter(d_detail[0])): # right = 01 2022
-    #             dict1['deposit_list_date'] = next(iter(d_detail[0]))
-    #             dict1['deposit_list'] = list(d_detail[0].values())[0]
-
-    #         self.export_deposit_detail(data=dict1)
-    #         self.write_sum_forumula1()
-    #         reconciled_bool = self.check_totals_reconcile()
-
-    # def write_rentroll(self, item):
-    #     dt_object = self.fix_date(item['period'])
-
-    #     '''trigger formatting of dt_object named sheet'''
-    #     self.mformat.export_month_format(dt_object)
-    #     self.mformat.push_one_to_intake(input_file_path=item['path'])
-    #     self.write_rs_col(dt_object)
-
-    # def write_payments(self, item):
-    #     '''get raw deposit items to sql'''
-    #     dt_object = self.fix_date(item['period'])
-
-    #     df = self.read_excel_rs(path=item['path'])
-    #     df = self.remove_nan_lines(df=df)
-    #     self.to_sql(df=df)
-    #     dt_code = item['period'][-2:]
-    #     '''group objects by tenant name or unit: which was it?'''
-    #     payment_list, grand_total, ntp, df = self.push_to_sheet_by_period(dt_code=dt_code)
-    #     self.write_payment_list(dt_object, payment_list)
-    #     self.write_ntp(dt_object, [str(ntp)])
-    #     self.print_summary(payment_list, grand_total, ntp, df)
-
     def remove_already_made_sheets_from_list(self, input_dict=None):
         for mon_year, id1 in input_dict.items():
             for month in self.final_to_process_list:
@@ -233,61 +151,6 @@ class BuildRS(MonthSheet):
     def get_name_from_record(self, record):
         name = record['fn'].split('_')[0]
         return name 
-
-    # def push_to_sheet_by_period(self, dt_code):
-    #     print('pushing to sheet with code:', dt_code)
-    #     db = self.db
-    #     tablename = self.tablename
-    #     results_list = []
-    #     for result in db[tablename]:
-    #         if result['dt_code'] == dt_code:
-    #             results_list.append(result)
-
-    #     df = self.lists_to_df(results_list)
-    #     grand_total = self.grand_total(df=df)        
-    #     df, laundry_income = self.return_and_remove_ntp(df=df, col='unit', remove_str='0')        
-    #     df = self.group_df(df=df)
-    #     no_unit_number = self.group_df(df=laundry_income, just_return_total=True)
-
-    #     unit_index = self.get_units()
-    #     unit_index = self.make_unit_index(unit_index)
-
-    #     unit_index_df = pd.DataFrame(unit_index, columns= ['Rank', 'unit'])
-    #     payment_list = self.merge_indexes(df, unit_index_df) 
-
-    #     ntp = no_unit_number 
-    #     return payment_list, grand_total, ntp, df
-
-    def print_summary(self, payment_list, grand_total, ntp, df):
-        print(df.head(10))
-        print('grand_total:', grand_total)
-        print('tenant_payments:', sum(payment_list))
-        print('ntp:', ntp)
-        assert sum(payment_list) + ntp == grand_total, 'the total of your tenant & non-tenant payments does not match.  you probably need to catch more types of nontenant transactions'
-        print('payments balance=ok!')
-
-    def write_ntp(self, sheet_choice, data_string):
-        self.calls.update_int(self.service, self.full_sheet, data_string, sheet_choice + self.wrange_ntp, 'USER_ENTERED')
-        
-    # def write_payment_list(self, sheet_choice, data_list):
-    #     self.calls.simple_batch_update(self.service, self.full_sheet, sheet_choice + self.wrange_pay, data_list, "COLUMNS")
-
-    # def merge_indexes(self, df1, df2):
-    #     merged_df = pd.merge(df1, df2, on='unit', how='outer')
-    #     final_df = merged_df.sort_values(by='Rank', axis=0)
-    #     final_df = final_df.fillna(0)
-    #     payment_list = final_df['pay'].tolist()
-    #     return payment_list
-    
-    # def lists_to_df(self, lists):
-    #     df = pd.DataFrame(lists)
-    #     return df
-
-    # def return_and_remove_ntp(self, df, col=None, remove_str=None):
-    #     ntp_item = df.loc[df[col] == remove_str]
-    #     for item in ntp_item.index:
-    #         df.drop(labels=item, inplace=True)
-    #     return df, ntp_item
 
     '''can parameterize?'''
     # def fix_date4(self, date):
@@ -313,76 +176,7 @@ class BuildRS(MonthSheet):
 
     # def grand_total(self, df):
     #     grand_total = sum(df['pay'].tolist())
-    #     return grand_total
-    
-    # def group_df(self, df, just_return_total=False):
-    #     df = df.groupby(['name', 'unit'])['pay'].sum()
-    #     if just_return_total:
-    #         df = df[0]
-    #     return df
-
-    # def get_units(self):
-    #     results_list = Config.units
-    #     return results_list
-
-    # def get_processed_items_list(self):
-    #     print('\nmaking list of processed items')
-    #     items_true = []
-    #     for item in self.findex.db[self.findex.tablename]:
-    #         if item['status'] == 'processed':
-    #             items_true.append(item)
-        
-    #     return items_true 
-
-    # def read_excel_rs(self, path, verbose=False):
-    #     df = pd.read_excel(path, header=9)
-    #     pd.set_option('display.max_columns', None)
-    #     pd.set_option('display.max_rows', None)
-    #     if verbose: 
-    #         pd.set_option('display.max_columns', None)
-    #         print(df.head(20))
-
-    #     columns = ['deposit_id', 'unit', 'name', 'date_posted', 'amount', 'date_code']
-        
-    #     bde = df['BDEPID'].tolist()
-    #     unit = df['Unit'].tolist()
-    #     name = df['Name'].tolist()
-    #     date = df['Date Posted'].tolist()
-    #     pay = df['Amount'].tolist()
-    #     dt_code = [datetime.strptime(item, '%m/%d/%Y') for item in date if type(item) == str]
-    #     dt_code = [str(datetime.strftime(item, '%m')) for item in dt_code]
-
-    #     zipped = zip(bde, unit, name, date, pay, dt_code)
-    #     self.df = pd.DataFrame(zipped, columns=columns)
-
-    #     return self.df
-
-    # def remove_nan_lines(self, df):
-    #     df = df.dropna(thresh=2)
-    #     df = df.fillna(0)
-    #     return df
-
-    def reset_full_sheet(self):
-        titles_dict = self.show_current_sheets()
-        calls = GoogleApiCalls()
-
-        intake_ok = False
-        for name, id2 in titles_dict.items():
-            if name == 'intake':
-                intake_ok = True
-                calls.clear_sheet(self.service, self.full_sheet, f'intake!A1:ZZ100')
-                break
-
-        if intake_ok == False:
-            calls.make_one_sheet(self.service, self.full_sheet, 'intake')
-        
-        # removal all sheets but intake
-        for name, id2, in titles_dict.items():
-            if name != 'intake':
-                calls.del_one_sheet(self.service, self.full_sheet, id2)
-       
-        time.sleep(self.sleep)
-        print(f'sleeping for {self.sleep} seconds')
+    #     return grand_total 
 
     def summary_assertion_at_period(self, test_date):
         self.main_db.connect()

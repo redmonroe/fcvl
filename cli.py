@@ -6,7 +6,7 @@ import pytest
 from peewee import *
 
 from auth_work import oauth
-from backend import StatusRS, PopulateTable
+from backend import PopulateTable, StatusRS
 from balance_letter import balance_letters
 from build_rs import BuildRS
 from config import Config, my_scopes
@@ -17,11 +17,7 @@ from records import record
 from setup_month import MonthSheet
 from setup_year import YearSheet
 
-'''
-MAKE MODE EXPLICIT: DEV PROD TESTING
-'''
 
-# core functionalit:
 '''
 cli.add_command(rent_receipts)
 cli.add_command(merchants)
@@ -30,17 +26,6 @@ cli.add_command(annual_financial)
 cli.add_command(consume_and_backup_invoices)
 cli.add_command(workorders_todo)
 '''
-# what does UI experience look like now? 
-
-# write cli to run and also reset
-    # two month test will tell us a lot; the combined test should provide us with almost all the code we need to run bare bones
-    # set up production environment for all but actual sheet
-    # DON'T FORGET TO STAY CURRENT WITH TESTS
-    
-    # get year to date to run with a full rebuild and teardown each time WITH sleeps, then focus on speeding up process
-        # skipping proc if checklist items are True
-
-    # this would be faster in production but in this stage of testing I don't have this 
 
 @click.group()
 def cli():
