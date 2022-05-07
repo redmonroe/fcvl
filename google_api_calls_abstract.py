@@ -1,8 +1,12 @@
+from errors import retry_google_api
+
+times = 3
+sleep1 = 100
+exceptions = 429
 
 class GoogleApiCalls:
 
     verify = '511'
-
     def simple_batch_update(self, service, sheet_id, wrange, data, dim):
         print(f"Updating with batch call to {wrange}...")
         body_request = {
@@ -33,6 +37,7 @@ class GoogleApiCalls:
                 col.append(COLUMN[col_num])
         return col
 
+    @retry_google_api(times, sleep1, exceptions)
     def update(self, service, sheet_choice, data, write_range, value_input_option='RAW'):
         sheet = service.spreadsheets()
         spreadsheet_id = sheet_choice
@@ -46,6 +51,7 @@ class GoogleApiCalls:
         request = service.spreadsheets().values().update(spreadsheetId=spreadsheet_id, range=range_, valueInputOption=value_input_option, body=value_range_body)
         response = request.execute()
     
+    @retry_google_api(times, sleep1, exceptions)
     def update_int(self, service, sheet_choice, data, write_range, value_input_option=None):
         sheet = service.spreadsheets()
         spreadsheet_id = sheet_choice

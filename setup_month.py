@@ -50,13 +50,13 @@ class MonthSheet(YearSheet):
             self.duplicate_formatted_sheets(month_list=month_list)
             self.remove_base_sheet()
         for date in month_list:
+            '''seems like monthly formatting could be moved to YS'''
             self.export_month_format(date)
             self.write_rs_col(date)
             self.write_deposit_detail(date)
             ntp = self.get_ntp_wrapper(date)
             self.write_ntp(date, ntp)
             self.check_totals_reconcile(date)
-            break
        
     def write_rs_col(self, date):
         gc = GoogleApiCalls()

@@ -9,6 +9,7 @@
   - make rent sheets (JUST USE PANDAS)
     - midmonth scrape (how does this work with rent sheets)
     - mm scrape: make load a loop instead of just one shot
+    - we don't have an answer yet for inputing move-in like in feb (greiner)
   - RENT RECEIPTS:
     - make rent receipts flow
     - rent receipts and letter class

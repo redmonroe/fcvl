@@ -1,5 +1,6 @@
 import time
 from functools import wraps
+
 from googleapiclient.errors import HttpError
 
 # interesting link: https://stackoverflow.com/questions/50246304/using-python-decorators-to-retry-request
@@ -47,10 +48,10 @@ def retry_google_api(times, sleep1, exceptions):
                     return func(*args, **kwargs)
                 except HttpError as e:
                     if e.resp.status == exceptions:
-                        print(
-                            'Exception thrown when attempting to run %s, attempt '
-                            '%d of %d' % (func, attempt, times)
-                        )
+                        print('Exception thrown when attempting to run %s, attempt '
+                            '%d of %d' % (func, attempt, times))
+                        print(f'sleep time = {sleep1}, exception code: {exceptions}')
+                        time.sleep(sleep1)
                     attempt += 1
             return func(*args, **kwargs)
         return newfn
@@ -63,14 +64,3 @@ except HttpError as e:
         else:
             raise
 '''
-
-
-
-# @retry(times=3, exceptions=(ValueError, TypeError))
-# def foo1():
-#     print('Some code here ....')
-#     print('Oh no, we have exception')
-#     raise ValueError('Some error')
-
-
-        # foo1()
