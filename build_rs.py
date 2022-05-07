@@ -1,27 +1,18 @@
 import json
-import time
-from calendar import month_name
 from datetime import datetime
 
-import dataset
-import pandas as pd
-from peewee import JOIN, fn
-
 from auth_work import oauth
-from backend import (Subsidy, BalanceLetter, Damages, Findexer, NTPayment, OpCash,
+from backend import (BalanceLetter, Damages, Findexer, NTPayment, OpCash,
                      OpCashDetail, Payment, PopulateTable, StatusObject,
-                     StatusRS, Tenant, TenantRent, Unit, db)
+                     StatusRS, Subsidy, Tenant, TenantRent, Unit, db)
 from config import Config, my_scopes
-from db_utils import DBUtils
 from file_indexer import FileIndexer
-from google_api_calls_abstract import GoogleApiCalls
 from records import record
 from setup_month import MonthSheet
-from setup_year import YearSheet
 
 
 class BuildRS(MonthSheet):
-    def __init__(self, sleep=None, full_sheet=None, path=None, mode=None, main_db=None, rs_tablename=None, mformat_obj=None, test_service=None, mformat=None):
+    def __init__(self, sleep=None, full_sheet=None, path=None, mode=None, main_db=None, test_service=None):
 
         self.main_db = main_db
         self.full_sheet = full_sheet
@@ -31,22 +22,10 @@ class BuildRS(MonthSheet):
         except FileNotFoundError as e:
             print(e, 'using testing configuration for Google Api Calls')
             self.service = oauth(Config.my_scopes, 'sheet', mode='testing')
-        self.mformat = mformat
         self.create_tables_list1 = None
 
         self.target_bal_load_file = 'beginning_balance_2022.xlsx'
         self.file_input_path = path
-        self.df = None
-        self.proc_ms_list = []
-        self.proc_condition_list = None
-        self.final_to_process_list = []
-        self.month_complete_is_true_list = []
-
-        self.good_opcash_list = []
-        self.good_rr_list = []
-        self.good_dep_list = []
-        self.good_hap_list = []
-        self.good_dep_detail_list = []
 
     def __repr__(self):
         return f'BuildRS object path: {self.file_input_path} write sheet: {self.full_sheet} service:{self.service}'
@@ -54,7 +33,7 @@ class BuildRS(MonthSheet):
     @record
     def new_auto_build(self):
         print('new_auto_build')
-        """
+        # """
         populate = PopulateTable()
         self.create_tables_list1 = populate.return_tables_list()
         findex = FileIndexer(path=self.path, db=self.main_db)
@@ -77,7 +56,7 @@ class BuildRS(MonthSheet):
         '''from show we can do rs_write, rent_sheets, balance_letters'''
         status.show() 
         self.main_db.close()
-        """
+        # """
 
     def iterate_over_remaining_months(self):       
         # load remaining months rent
@@ -178,29 +157,6 @@ class BuildRS(MonthSheet):
     #     grand_total = sum(df['pay'].tolist())
     #     return grand_total 
 
-    def summary_assertion_at_period(self, test_date):
-        self.main_db.connect()
-        test_date = test_date
-        populate = PopulateTable()
-        first_dt, last_dt = populate.make_first_and_last_dates(date_str=test_date)
-
-        active_tenant_start_bal_sum = Tenant.select(fn.Sum(Tenant.beg_bal_amount).alias('sum')).where(Tenant.active=='True').get().sum
-        assert active_tenant_start_bal_sum == 795.0
-
-        '''charges'''
-        tenant_rent_total_mar = [float(row[1]) for row in populate.get_rent_charges_by_tenant_by_period(first_dt=first_dt, last_dt=last_dt)]
-        assert sum(tenant_rent_total_mar) == 15972.0
-
-        '''payments'''
-        payments_jan = [float(row[2]) for row in populate.get_payments_by_tenant_by_period(first_dt=first_dt, last_dt=last_dt)]
-        assert sum(payments_jan) == 16506.0
-
-        tenant_activity_recordtype, cumsum_endbal= populate.net_position_by_tenant_by_month(first_dt=first_dt, last_dt=last_dt)
-
-        cumsum_check = 2115.0
-        
-        assert cumsum_endbal == cumsum_check
-        self.main_db.close()
     
 
 

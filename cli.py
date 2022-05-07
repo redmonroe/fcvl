@@ -45,7 +45,6 @@ def autors(mode=None):
         pw_db = SqliteDatabase(f'{basedir}/sqlite/test_pw_db.db', pragmas={'foreign_keys': 1})
         build = BuildRS(path=path, main_db=pw_db)
         build.new_auto_build()
-        build.summary_assertion_at_period(test_date='2022-03')
 
 @click.command()
 def sqlite_dump():
