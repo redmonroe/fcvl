@@ -20,8 +20,6 @@ class YearSheet:
     MF_SUM_FORMULA = ["=sum(H81:H84)"]
     MF_PERCENT_FORMULA = ["=product(H85, .08)"]
     MF_FORMULA = ["=H86"]
-    CURRENT_BALANCE = ["=sum(D2,H2,J2,-K2)"]
-    # UI header names and formatting
     HEADER_NAMES = ['Unit', 'Tenant Name', 'Notes', 'Balance Start', 'Contract Rent', 'Actual Subsidy',
     'Hap received', 'Tenant Rent', 'Charge Type', 'Charge Amount', 'Payment Made', 'Balance Current', 'Payment Plan/Action']
     MF_FORMATTING_TEXT = ['managment fee>', 'hap collected>', 'positive adj', 'damages',
@@ -40,21 +38,12 @@ class YearSheet:
     base_month = 'base'
     
     def __init__(self, full_sheet=None, month_range=None, mode=None, test_service=None, sleep=None):
-        self.test_message = 'hi_from_year_sheets!'
         self.full_sheet = full_sheet
-        self.calls = GoogleApiCalls()
         if mode == 'testing':
-            self.mode = mode
-            self.sleep = sleep
-            self.shmonths = None
             self.service = test_service
         else:
             self.service = oauth(my_scopes, 'sheet')
-            self.full_sheet = full_sheet
-            self.sleep = sleep
         
-        self.wrange_unit = '!A2:A68'
-        self.sheet_id_list = None
         self.source_id = None
 
     def show_current_sheets(self, interactive=False):
@@ -84,7 +73,7 @@ class YearSheet:
         
         for sheet, sheet_id in titles_dict.items():
             '''writes the sum formulas in a row'''
-            self.calls.write_formula_column(self.service, self.full_sheet, self.CURRENT_BALANCE, f'{sheet}!L2:L2')
+    
             self.calls.write_formula_column(self.service, self.full_sheet, self.G_SUM_STARTBAL, f'{sheet}!D69:D69')
             self.calls.write_formula_column(self.service, self.full_sheet, self.G_SUM_ENDBAL, f'{sheet}!K69:K69')
             self.calls.write_formula_column(self.service, self.full_sheet, self.MF_SUM_FORMULA, f'{sheet}!H85:H85')

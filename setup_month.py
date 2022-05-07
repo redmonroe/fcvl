@@ -56,6 +56,7 @@ class MonthSheet(YearSheet):
             ntp = self.get_ntp_wrapper(date)
             self.write_ntp(date, ntp)
             self.check_totals_reconcile(date)
+            break
        
     def write_rs_col(self, date):
         gc = GoogleApiCalls()
