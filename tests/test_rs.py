@@ -31,7 +31,7 @@ service = oauth(Config.my_scopes, 'sheet', mode='testing')
 calls = GoogleApiCalls()
 findex = FileIndexer(path=path, db=Config.TEST_DB)
 ms = MonthSheet(full_sheet=test_workbook, path=path, mode='testing', sleep=sleep1, test_service=service)
-ys = YearSheet(full_sheet=test_workbook, mode='testing', test_service=service, sleep=sleep1)
+# ys = YearSheet(full_sheet=test_workbook, mode='testing', test_service=service, sleep=sleep1)
 create_tables_list = [Subsidy, Findexer, StatusObject, StatusRS, OpCash, OpCashDetail, Damages, Tenant, Unit, Payment, NTPayment, TenantRent]
 '''how can I import object names without having to import object in Config class'''
 
