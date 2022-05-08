@@ -7,6 +7,7 @@ exceptions = 429
 class GoogleApiCalls:
 
     verify = '511'
+    
     def simple_batch_update(self, service, sheet_id, wrange, data, dim):
         print(f"Updating with batch call to {wrange}...")
         body_request = {
@@ -65,21 +66,18 @@ class GoogleApiCalls:
         request = service.spreadsheets().values().update(spreadsheetId=spreadsheet_id, range=range_, valueInputOption=value_input_option, body=value_range_body)
         response = request.execute()
 
-    def format_row(self, service, sheet_choice, write_range, r_or_c, name_list): # and writing strings to ranges passed
-        print(f"Formatting {r_or_c} . . .")
-        sheet = service.spreadsheets()
-        range_ = write_range  # TODO: Update placeholder value.
-
+    @retry_google_api(times, sleep1, exceptions)
+    def format_row(self, service, sheet_id, write_range, r_or_c, name_list):
+        range_ = write_range 
         value_input_option = 'USER_ENTERED'  #
-
         value_range_body = {"range": write_range,
                             "majorDimension": r_or_c,
                             "values": [name_list]
         }
 
-        request = service.spreadsheets().values().update(spreadsheetId=sheet_choice, range=range_, valueInputOption=value_input_option, body=value_range_body)
+        request = service.spreadsheets().values().update(spreadsheetId=sheet_id, range=write_range, valueInputOption=value_input_option, body=value_range_body)
         response = request.execute()
-
+   
     def clear_sheet(self, service, sheet_choice, clear_range):
         service = service
         spreadsheet_id = sheet_choice
@@ -138,6 +136,7 @@ class GoogleApiCalls:
         ).execute()
         print(f"Deleting sheet id: {response['spreadsheetId']}")
 
+    @retry_google_api(times, sleep1, exceptions)
     def write_formula_hardcoded_column(self, service, sheet_id, data, write_range):
         value_input_option = 'USER_ENTERED'
   
@@ -149,6 +148,7 @@ class GoogleApiCalls:
         request = service.spreadsheets().values().update(spreadsheetId=sheet_id, range=write_range, valueInputOption=value_input_option, body=value_range_body)
         response = request.execute()
 
+    @retry_google_api(times, sleep1, exceptions)
     def write_formula_column(self, service, sheet_id, data, write_range):
         value_input_option = 'USER_ENTERED'
         value_range_body = {
@@ -158,16 +158,6 @@ class GoogleApiCalls:
         request = service.spreadsheets().values().update(spreadsheetId=sheet_id, range=write_range, valueInputOption=value_input_option, body=value_range_body)
         response = request.execute()
 
-    def format_row(self, service, sheet_id, write_range, r_or_c, name_list):
-        range_ = write_range 
-        value_input_option = 'USER_ENTERED'  #
-        value_range_body = {"range": write_range,
-                            "majorDimension": r_or_c,
-                            "values": [name_list]
-        }
-
-        request = service.spreadsheets().values().update(spreadsheetId=sheet_id, range=write_range, valueInputOption=value_input_option, body=value_range_body)
-        response = request.execute()
 
     def date_stamp(self, service, sheet_id, wrange):
         from datetime import datetime

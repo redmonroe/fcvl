@@ -28,13 +28,18 @@ path = Config.TEST_RS_PATH_APRIL
 service = oauth(Config.my_scopes, 'sheet', mode='testing')
 calls = GoogleApiCalls()
 ms = MonthSheet(full_sheet=full_sheet, path=path, mode='testing', test_service=service)
-create_tables_list = [Subsidy, Findexer, StatusObject, StatusRS, OpCash, OpCashDetail, Damages, Tenant, Unit, Payment, NTPayment, TenantRent]
+populate = PopulateTable()
+create_tables_list = populate.return_tables_list()
+
+
 '''how can I import object names without having to import object in Config class'''
 
 @pytest.mark.testing_rs
 class TestWrite:
 
     def test_assert_all_db_empty_and_connections_closed(self):
+        if db.get_tables() != []:
+            db.drop_tables(models=create_tables_list)
         assert db.get_tables() == []
 
     def test_statusrs_starts_empty(self):
@@ -49,14 +54,13 @@ class TestWrite:
         basedir = os.path.abspath(os.path.dirname(__file__))
         build = BuildRS(path=path, main_db=db)
         build.new_auto_build()
-        build.summary_assertion_at_period(test_date='2022-03')
 
     def test_end_status(self):
         most_recent_status = [item for item in StatusRS().select().order_by(-StatusRS.status_id).namedtuples()][0]
         proc_file = json.loads(most_recent_status.proc_file)
         assert proc_file[0] == {'deposits_01_2022.xls': '2022-01'}
 
-@pytest.mark.testing_rs_sub1
+@pytest.mark.testing_rs
 class TestRSOnly:
 
     def test_setup_sheet_prime(self):
@@ -82,12 +86,13 @@ class TestRSOnly:
             if name != 'intake':
                 calls.del_one_sheet(service, full_sheet, id2)
                   
-    # def test_teardown(self):
-    #     db.drop_tables(models=create_tables_list)
-    #     db.close()    
+    def test_teardown(self):
+        if db.get_tables() != []:
+            db.drop_tables(models=create_tables_list)
+        db.close()    
 
-    # def test_close_db(self):
-    #     if db.is_closed() == False:
-    #         db.close()
+    def test_close_db(self):
+        if db.is_closed() == False:
+            db.close()
 
 
