@@ -34,7 +34,7 @@ create_tables_list = populate.return_tables_list()
 '''arrange, act, assert, cleanup'''
 '''basically, we just arrange to end of april, then check the state of the db'''
 
-@pytest.mark.testing_fi
+@pytest.mark.testing_db
 class TestFileIndexer:
     
     '''simple test to pin predictably end-state for file_index db as I make changes; all functionality is'''
@@ -89,9 +89,9 @@ class TestDB:
 
     def test_set_init_state_at_end_of_april(self):
         build = BuildRS(path=path, main_db=Config.TEST_DB)
-        build.new_auto_build()
+        build.new_auto_build()                      
 
-    @record
+    # @record
     def test_initial_tenant_load(self):
         '''JANUARY IS DIFFERENT'''
         '''processed records+''' 
@@ -343,85 +343,25 @@ class TestDB:
     
             assert bal_letters == assert_list[i]['bal_letters']
 
+    def test_teardown(self):
+        db.drop_tables(models=create_tables_list)
+        db.close()    
 
-class Remainders:
+    def test_close_db(self):
+        if db.is_closed() == False:
+            db.close()
 
-    def test_load_damages(self):
-        Damages.load_damages()
-        assert [row.tenant.tenant_name for row in Damages().select()][0] == 'morris, michael'
+@pytest.mark.testing_db
+class DBBackup:
 
-    def test_april_end_balances(self):
-        test_date = '2022-04'
-        populate = PopulateTable()
-        first_dt, last_dt = populate.make_first_and_last_dates(date_str=test_date)
-        object1, cumsum = populate.net_position_by_tenant_by_month(first_dt=first_dt, last_dt=last_dt)
-        pprint([item for item in object1 if item.name == 'crombaugh, albert'])
-   
     def test_db_backup(self):
         
         DBUtils.dump_sqlite(path_to_existing_db=Config.sqlite_test_db_path, path_to_backup=Config.sqlite_dump_path)
         match_bool = DBUtils.find_sqlite(path_to_existing_db=Config.sqlite_test_db_path, path_to_backup=Config.sqlite_dump_path)
 
         assert match_bool == True
-
    
-
-    # def test_teardown(self):
-    #     db.drop_tables(models=create_tables_list)
-    #     db.close()    
-
-    # def test_close_db(self):
-    #     if db.is_closed() == False:
-    #         db.close()
-
-# @pytest.mark.testing_db
-# class TestBuildAndStatus:
-
-#     # def test_assert_all_db_empty_and_connections_closed(self):
-#     #     assert db.get_tables() == []
-
-#     def test_statusrs_starts_empty(self):
-#         status = StatusRS()
-#         status.set_current_date(mode='autodrop')
-#         # breakpoint()
-#         status.show(mode='just_asserting_empty')
-#         most_recent_status = [item for item in StatusRS().select().order_by(-StatusRS.status_id).namedtuples()][0]
-#         proc_file = json.loads(most_recent_status.proc_file)
-#         assert proc_file == []
-
-#     def test_generic_build(self):
-#         basedir = os.path.abspath(os.path.dirname(__file__))
-#         build = BuildRS(path=path, main_db=db)
-#         build.new_auto_build()
-#         build.summary_assertion_at_period(test_date='2022-03')
-
-#     def test_end_status(self):
-#         most_recent_status = [item for item in StatusRS().select().order_by(-StatusRS.status_id).namedtuples()][0]
-#         proc_file = json.loads(most_recent_status.proc_file)
-#         assert proc_file[0] == {'deposits_01_2022.xls': '2022-01'}
-
-#     def test_balance_letter_queries(self):
-#         status = StatusRS()
-#         balance_letters = status.show_balance_letter_list_mr_reconciled()
-#         # assert len(balance_letters) == 9
-#         # assert balance_letters[0].target_month_end == datetime.date(2022, 3, 31)
-#         # breakpoint()
-    
-#     def test_teardown(self):
-#         # breakpoint()
-#         db.drop_tables(models=create_tables_list)
-#         db.close()    
-
-#     def test_close_db(self):
-#         if db.is_closed() == False:
-#             db.close()
-
-# @pytest.mark.testing_dbshort
-# class TestShort:
-
-#     test_message = 'hi'
-#     def test_message(self):
-#         assert test_message == 'hi'
+ 
 
 
 

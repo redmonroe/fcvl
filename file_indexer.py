@@ -43,6 +43,7 @@ class FileIndexer(Utils):
         self.unproc_file_for_testing = None
         self.index_dict = {}
         self.index_dict_iter = {} 
+        self.op_cash_list = []
 
     def iter_build_runner(self):
         self.connect_to_db() # no autodrop
@@ -54,6 +55,7 @@ class FileIndexer(Utils):
         self.load_what_is_in_dir_as_raw(dict1=self.index_dict_iter)
        
         self.make_a_list_of_raw(mode=self.doc_mode.xls)
+        print('evaluating:', self.raw_list)
         if self.raw_list:
             self.find_by_content(style=self.style_term.rent, target_string=self.target_string.affordable)
             self.find_by_content(style=self.style_term.deposits, target_string=self.target_string.bank)
@@ -63,9 +65,7 @@ class FileIndexer(Utils):
             self.find_opcashes()
             self.type_opcashes()
             self.rename_by_content_pdf()
-        # breakpoint()
-        
-        return index_dict
+        print('evaluating:', self.raw_list)
 
     def build_index_runner(self):
         self.connect_to_db()

@@ -24,17 +24,30 @@ class BuildRS(MonthSheet):
             self.service = oauth(Config.my_scopes, 'sheet', mode='testing')
         self.create_tables_list1 = None
 
-        self.target_bal_load_file = 'beginning_balance_2022.xlsx'
+        self.target_bal_load_file = Config.beg_bal_xlsx
 
     def __repr__(self):
         return f'BuildRS object path: {self.path} write sheet: {self.full_sheet} service:{self.service}'
 
+    def determine_ctx(self, flag=None):
+        populate = PopulateTable()
+        if flag == 'reset':
+            self.create_tables_list1 = populate.return_tables_list()
+            self.main_db.drop_tables(models=self.create_tables_list1)
+        elif flag == 'run':
+            if self.main_db.get_tables() == []:
+                self.new_auto_build()
+            # determine if unprocessed files in folder
+            else:
+                self.iter_build()  # else explicitly state nothing new to add
+            # do tables exist? if not run new_auto_build
+            pass
+       
+
     def iter_build(self):
-        '''this should probably end up in findexer, right? or no?'''
-        # what is in dir
+        print('iter_build')
         findex = FileIndexer(path=self.path, db=self.main_db)
-        directory_contents = findex.iter_build_runner()
-        breakpoint()
+        findex.iter_build_runner() # this is not complete
     
     @record
     def new_auto_build(self):
@@ -48,7 +61,6 @@ class BuildRS(MonthSheet):
             self.main_db.connect()
         self.main_db.drop_tables(models=self.create_tables_list1)
         self.main_db.create_tables(self.create_tables_list1)
-
         findex.build_index_runner() # this is a findex method
         self.load_initial_tenants_and_balances()
         processed_rentr_dates_and_paths = self.iterate_over_remaining_months()
@@ -62,7 +74,6 @@ class BuildRS(MonthSheet):
         '''from show we can do rs_write, rent_sheets, balance_letters'''
         status.show() 
         self.main_db.close()
-        # """
 
     def iterate_over_remaining_months(self):       
         # load remaining months rent
