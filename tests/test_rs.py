@@ -42,13 +42,13 @@ class TestWrite:
             db.drop_tables(models=create_tables_list)
         assert db.get_tables() == []
 
-    def test_statusrs_starts_empty(self):
-        status = StatusRS()
-        status.set_current_date(mode='autodrop')
-        status.show(mode='just_asserting_empty')
-        most_recent_status = [item for item in StatusRS().select().order_by(-StatusRS.status_id).namedtuples()][0]
-        proc_file = json.loads(most_recent_status.proc_file)
-        assert proc_file == []
+    # def test_statusrs_starts_empty(self):
+    #     status = StatusRS()
+    #     status.set_current_date(mode='autodrop')
+    #     status.show(mode='just_asserting_empty')
+    #     most_recent_status = [item for item in StatusRS().select().order_by(-StatusRS.status_id).namedtuples()][0]
+    #     proc_file = json.loads(most_recent_status.proc_file)
+    #     assert proc_file == []
 
     def test_generic_build(self):
         basedir = os.path.abspath(os.path.dirname(__file__))
