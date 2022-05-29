@@ -42,7 +42,6 @@ class BuildRS(MonthSheet):
                 self.iter_build()  # else explicitly state nothing new to add
             # do tables exist? if not run new_auto_build
             pass
-       
 
     def iter_build(self):
         print('iter_build')
@@ -76,7 +75,7 @@ class BuildRS(MonthSheet):
         self.main_db.close()
 
     def iterate_over_remaining_months(self):       
-        # load remaining months rent
+                # load remaining months rent
         populate = PopulateTable()
         rent_roll_list = [(item.fn, item.period, item.path) for item in Findexer().select().
             where(Findexer.doc_type == 'rent').
@@ -92,12 +91,6 @@ class BuildRS(MonthSheet):
             cleaned_nt_list, total_tenant_charges, cleaned_mos = populate.after_jan_load(filename=filename, date=date)
             
             first_dt, last_dt = populate.make_first_and_last_dates(date_str=date)
-            if date == '2022-03':
-                total_rent_charges = populate.get_total_rent_charges_by_month(first_dt=first_dt, last_dt=last_dt)
-                assert total_rent_charges == 15972.0 
-
-                vacant_snapshot_loop_end = Unit.find_vacants()
-                assert sorted(vacant_snapshot_loop_end) == sorted(['CD-101', 'CD-115', 'PT-211'])
 
         file_list = [(item.fn, item.period, item.path) for item in Findexer().select().
             where(Findexer.doc_type == 'deposits').
@@ -147,32 +140,6 @@ class BuildRS(MonthSheet):
     def get_name_from_record(self, record):
         name = record['fn'].split('_')[0]
         return name 
-
-    '''can parameterize?'''
-    # def fix_date4(self, date):
-    #     dt_object = datetime.strptime(date, '%Y-%m')
-    #     dt_object = datetime.strftime(dt_object, '%m %Y')
-    #     return dt_object
-
-    # def fix_date3(self, year, month):
-    #     date = year + '-' + month
-    #     dt_object = datetime.strptime(date, '%Y-%b')
-    #     dt_object = datetime.strftime(dt_object, '%Y-%m')
-    #     return dt_object
-
-    # def fix_date2(self, date):
-    #     dt_object = datetime.strptime(date, '%m %Y')
-    #     dt_object = datetime.strftime(dt_object, '%b %Y').lower()
-    #     return dt_object
-
-    # def fix_date(self, date):
-    #     dt_object = datetime.strptime(date, '%Y-%m')
-    #     dt_object = datetime.strftime(dt_object, '%b %Y').lower()
-    #     return dt_object
-
-    # def grand_total(self, df):
-    #     grand_total = sum(df['pay'].tolist())
-    #     return grand_total 
 
     
 

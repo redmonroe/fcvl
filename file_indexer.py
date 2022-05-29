@@ -86,12 +86,15 @@ class FileIndexer(Utils):
 
     def load_mm_scrape(self, list1=None):
         '''still rough and raw'''
+        mr_dict = {}
         for fn in self.scrape_path.iterdir():
-            if fn.name not in self.excluded_file_names:
-                df = pd.read_csv(fn)
+            if fn.suffix == '.csv' and fn.name not in self.excluded_file_names:
+                mr_dict[fn] = fn.lstat().st_ctime
+
+        most_recent_scrape = pd.read_csv(max(list(mr_dict)))        
 
         deposit_list = []
-        for index, row in df.iterrows():
+        for index, row in most_recent_scrape.iterrows():
             if row['Description'] == 'DEPOSIT':
                 dict1 = {}
                 dict1 = {'date': row['Processed Date'], 'amount': row['Amount']}

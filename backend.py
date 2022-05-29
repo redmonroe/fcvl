@@ -199,30 +199,25 @@ class StatusRS(BaseModel):
         if months_ytd:
             print(f'current month: {months_ytd[-1]}')
             print(f'months ytd {Config.current_year}: {months_ytd}\n')
-        
+
         if report_list:
-            look_list = []
-            mid_month_list = []
-            for month, item in zip(months_ytd, report_list):
-                look_dict = {fn: (tup[0], tup[1], tup[2]) for fn, tup in item.items() if month == tup[0]}
-                ready_to_write_final_dt = self.is_ready_to_write_final(month=month, dict1=look_dict)
-                look_list.append(look_dict)
-                print(f'For period {month} these files have been processed: \n {[*look_dict.keys()]} \n Ready to Write? {[*ready_to_write_final_dt.values()][0]}' )
-                
-                if [*ready_to_write_final_dt.values()][0] == False:
-                    mid_month_list.append(ready_to_write_final_dt)
-                else:
-                    mid_month_list = []
+            incomplete_month_bool = self.is_there_mid_month(months_ytd, report_list)
 
-        '''WE ALWAYS DO JUST FIRST IN MID-MONTH LIST NO MORE: AFTER ONE MONTH SCRAPE FOLLOWING MONTH NEEDS TO BE FINALIZED'''
-        if mid_month_list:
-            # if input(f'\nWould you like to import mid-month report from bank for {[*ready_to_write_dt.keys()][0]} ? Y/n ') == 'Y':
+        if incomplete_month_bool:
+            choice = input(f'\nWould you like to import mid-month report from bank for {incomplete_month_bool[0]} ? Y/n ')
+            if choice == 'Y':
+                mid_month_choice = True
+            else:
+                mid_month_choice = False
+        
+        if mid_month_choice:
+            print('ready to try mid month')
             
-            target_mid_month = mid_month_list[0]
+            target_mid_month = incomplete_month_bool[0]
             target_mm_date = datetime.strptime(list(target_mid_month.items())[0][0], '%Y-%m')
-
             deposit_list = self.midmonth_scrape(list1=target_mid_month)
             scrape_deposit_sum = sum([float(item['amount']) for item in deposit_list])
+
             populate = PopulateTable()
 
             first_dt = target_mm_date.replace(day = 1)
@@ -289,6 +284,21 @@ class StatusRS(BaseModel):
 
         return mr_good_month
 
+
+    def is_there_mid_month(self, months_ytd, report_list):
+        look_list = []
+        mid_month_list = []
+        for month, item in zip(months_ytd, report_list):
+            look_dict = {fn: (tup[0], tup[1], tup[2]) for fn, tup in item.items() if month == tup[0]}
+            ready_to_write_final_dt = self.is_ready_to_write_final(month=month, dict1=look_dict)
+            print(f'For period {month} these files have been processed: \n {[*look_dict.keys()]} \n Ready to Write? {[*ready_to_write_final_dt.values()][0]}' )
+            
+            if [*ready_to_write_final_dt.values()][0] == False:
+                mid_month_list.append(ready_to_write_final_dt)
+            else:
+                mid_month_list = []
+        return mid_month_list
+
     def generate_balance_letter_list_mr_reconciled(self):
         query = QueryHC()
 
@@ -327,6 +337,7 @@ class StatusRS(BaseModel):
             send_to_write = {month: ready_to_process}
 
         return send_to_write
+
 
     def months_in_ytd(self, style=None):
         range_month = datetime.now().strftime('%m')
@@ -413,9 +424,8 @@ class QueryHC():
         all_ntp = [float(rec.amount) for rec in NTPayment.select().
                 where(NTPayment.date_posted >= first_dt).
                 where(NTPayment.date_posted <= last_dt)]
-   
+        breakpoint()
         assert sum(all_ntp) + sum(all_tp) == grand_total
-
         return all_tp, all_ntp
 
     def check_for_multiple_payments(self, detail_beg_bal_all=None, first_dt=None, last_dt=None):

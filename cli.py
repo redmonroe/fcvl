@@ -38,25 +38,35 @@ def autors(mode=None):
     '''the way we would run this:'''
     '''build database'''
     '''then run status and begin writing to rs'''
+    '''convention: rent roll is good for beginning of month:
+    does not pick up move in'''
 
-    path = Config.TEST_RS_PATH_APRIL
+    path = Config.TEST_RS_PATH_MAY
+    full_sheet = Config.TEST_RS
     build = BuildRS(path=path, main_db=Config.TEST_DB)
+    service = oauth(Config.my_scopes, 'sheet', mode='testing')
+    ms = MonthSheet(full_sheet=full_sheet, path=path, mode='testing', test_service=service)
+
     if mode == 'testing':
         # basedir = os.path.abspath(os.path.dirname(__file__))
-        build.determine_ctx(flag='run')
+        # build.determine_ctx(flag='run')
 
         #if empty run new_auto_build() 
         #if unproc'd files exists run iter build
         # make expllicit reset_db command
-        breakpoint()
+        # breakpoint()
 
-        # build.new_auto_build()
+        build.new_auto_build()
 
     if mode == 'iter_testing':
         build.iter_build()
 
     if mode == 'reset':
         build.determine_ctx(flag='reset')
+
+    if mode == 'write_from_db':
+        ms.auto_control()
+
 
 
 @click.command()
