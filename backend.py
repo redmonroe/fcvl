@@ -260,7 +260,6 @@ class StatusRS(BaseModel):
                     (BalanceLetter.target_month_end<=last_dt)).
                 join(Tenant).
                 namedtuples()]
-            # breakpoint()q
 
             return balance_letters
         else:
@@ -272,9 +271,9 @@ class StatusRS(BaseModel):
         try:
             mr_good_month = [rec.month for rec in StatusObject().select(StatusObject.month).
             where(
-                ((StatusObject.processed==1) &
+                ((StatusObject.opcash_processed==1) &
                 (StatusObject.tenant_reconciled==1)) |
-                ((StatusObject.processed==0) &
+                ((StatusObject.opcash_processed==0) &
                 (StatusObject.scrape_reconciled==1))).
                 namedtuples()][-1]
         except IndexError as e:
@@ -338,7 +337,6 @@ class StatusRS(BaseModel):
 
         return send_to_write
 
-
     def months_in_ytd(self, style=None):
         range_month = datetime.now().strftime('%m')
         str_month = datetime.now().strftime('%b').lower()
@@ -389,7 +387,7 @@ class StatusRS(BaseModel):
 
                 if opcash_deposits == sum_from_payments:
                     mr_status = StatusRS().get(StatusRS.status_id==ref_rec.status_id)                
-                    s_object = StatusObject.create(key=mr_status.status_id, month=month, processed=True, tenant_reconciled=True)
+                    s_object = StatusObject.create(key=mr_status.status_id, month=month, opcash_processed=True, tenant_reconciled=True)
                     s_object.save()
             else:
                 mr_status = StatusRS().get(StatusRS.status_id==ref_rec.status_id)                
@@ -399,7 +397,7 @@ class StatusRS(BaseModel):
 class StatusObject(BaseModel):
     key = ForeignKeyField(StatusRS, backref='zzzzzz')
     month = CharField(default='0')
-    processed = BooleanField(default=False)
+    opcash_processed = BooleanField(default=False)
     tenant_reconciled = BooleanField(default=False)
     scrape_reconciled = BooleanField(default=False)
 

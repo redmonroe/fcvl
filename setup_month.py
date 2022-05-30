@@ -46,7 +46,8 @@ class MonthSheet(YearSheet):
     
     def auto_control(self, month_list=None):
         if month_list == None:
-            month_list = [rec.month for rec in StatusObject().select().where(StatusObject.tenant_reconciled==1).namedtuples()]
+            month_list = [rec.month for rec in StatusObject().select().where(       (StatusObject.tenant_reconciled==1) |
+                    (StatusObject.scrape_reconciled==1)).namedtuples()]
             self.make_base_sheet()
             self.formatting_runner()
             self.duplicate_formatted_sheets(month_list=month_list)
@@ -55,10 +56,17 @@ class MonthSheet(YearSheet):
             '''seems like monthly formatting could be moved to YS'''
             self.export_month_format(date)
             self.write_rs_col(date)
+            reconciliation_type = [rec.scrape_reconciled for rec in StatusObject().select().where(StatusObject.month==date).namedtuples()]
             self.write_deposit_detail(date)
             ntp = self.get_ntp_wrapper(date)
             self.write_ntp(date, ntp)
             self.check_totals_reconcile(date)
+
+            if reconciliation_type[0] == True:
+                pass
+                # this mean is it scrape reconciled only
+
+            breakpoint()
        
     def write_rs_col(self, date):
         gc = GoogleApiCalls()
