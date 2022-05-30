@@ -139,7 +139,6 @@ class MonthSheet(YearSheet):
     def write_deposit_detail_from_scrape(self, date):
         populate = PopulateTable()
         first_dt, last_dt = populate.make_first_and_last_dates(date_str=date)
-        # rec = populate.get_opcash_by_period(first_dt=first_dt, last_dt=last_dt)
         dep_detail = populate.get_scrape_detail_by_month(first_dt=first_dt, last_dt=last_dt)
         breakpoint()
         self.export_deposit_detail(date=date, res_rep=rec[0][2], hap=rec[0][3], dep_sum=rec[0][4], dep_detail=dep_detail)
