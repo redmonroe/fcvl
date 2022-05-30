@@ -73,6 +73,14 @@ class MonthSheet(YearSheet):
             ntp = self.get_ntp_wrapper(date)
             self.write_ntp(date, ntp)
             self.check_totals_reconcile(date)
+
+    def scrape_control(self, month_list):
+        print('scrape control')
+        for date in month_list:
+            self.export_month_format(date)
+            self.write_rs_col(date)
+            self.write_deposit_detail_from_scrape(date)
+
        
     def write_rs_col(self, date):
         gc = GoogleApiCalls()
@@ -131,9 +139,9 @@ class MonthSheet(YearSheet):
     def write_deposit_detail_from_scrape(self, date):
         populate = PopulateTable()
         first_dt, last_dt = populate.make_first_and_last_dates(date_str=date)
-        rec = populate.get_opcash_by_period(first_dt=first_dt, last_dt=last_dt)
-        breakpoint()
+        # rec = populate.get_opcash_by_period(first_dt=first_dt, last_dt=last_dt)
         dep_detail = populate.get_scrape_detail_by_month()
+        breakpoint()
         self.export_deposit_detail(date=date, res_rep=rec[0][2], hap=rec[0][3], dep_sum=rec[0][4], dep_detail=dep_detail)
 
     def export_deposit_detail(self, **kw):

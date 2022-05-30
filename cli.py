@@ -66,8 +66,11 @@ def autors(mode=None):
 
     if mode == 'write_from_db':
         partial_month_list_for_testing = ['2022-01', '2022-02', '2022-03', '2022-04']
-        partial_month_list_for_testing2 = ['2022-05']
         ms.auto_control(month_list=partial_month_list_for_testing)
+    
+    if mode == 'testmay':
+        partial_month_list_for_testing2 = ['2022-05']
+        ms.scrape_control(month_list=partial_month_list_for_testing2)
 
 
 

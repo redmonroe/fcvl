@@ -219,6 +219,7 @@ class StatusRS(BaseModel):
             scrape_deposit_sum = sum([float(item['amount']) for item in deposit_list])
 
             populate = PopulateTable()
+            populate.load_scrape_to_db(deposit_list=deposit_list, target_date=target_mm_date)
 
             first_dt = target_mm_date.replace(day = 1)
             most_recent_status.current_date.replace(day = 1)
@@ -401,10 +402,16 @@ class StatusObject(BaseModel):
     tenant_reconciled = BooleanField(default=False)
     scrape_reconciled = BooleanField(default=False)
 
+class ScrapeDetail(BaseModel):
+    period = CharField(default='0')
+    scrape_date = DateField('0')
+    scrape_dep_date = DateField('0')
+    amount = CharField(default='0')
+
 class QueryHC():
 
     def return_tables_list(self):
-        return [LP_EndBal, ContractRent, Subsidy, BalanceLetter, StatusRS, StatusObject, OpCash, OpCashDetail, Damages, Tenant, Unit, Payment, NTPayment, TenantRent, Findexer]
+        return [LP_EndBal, ContractRent, Subsidy, BalanceLetter, StatusRS, StatusObject, OpCash, OpCashDetail, Damages, Tenant, Unit, Payment, NTPayment, TenantRent, Findexer, ScrapeDetail]
 
     def make_first_and_last_dates(self, date_str=None):
         dt_obj = datetime.strptime(date_str, '%Y-%m')
@@ -1075,4 +1082,14 @@ class PopulateTable(QueryHC):
             for lst in json.loads(item[6])[0]:
                 ocd = OpCashDetail.create(stmt_key=item[0], date1=datetime.strptime(lst[0], '%m/%d/%Y'), amount=lst[1])
                 ocd.save()
+
+    def load_scrape_to_db(self, deposit_list=None, target_date=None):
+        for line_item in deposit_list:
+            for key, value in line_item.items():
+                if key == 'date':
+                    scrape_dep = ScrapeDetail(period=target_date, scrape_date=datetime.now(), scrape_dep_date=0, amount=0)
+                    scrape_dep.scrape_dep_date = value 
+                if key == 'amount':
+                    scrape_dep.amount = value
+                scrape_dep.save()    
 
