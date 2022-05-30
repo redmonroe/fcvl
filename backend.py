@@ -46,31 +46,23 @@ class Unit(BaseModel):
     status = CharField(default='occupied') 
     tenant = CharField(default='vacant')
     last_occupied = DateField(default='0')
-    # tenant = ForeignKeyField(Tenant, backref='unit')
-    # tenant = ForeignKeyField(Tenant, backref='unit')
 
     @staticmethod
     def find_vacants():
         vacant_units = [name.unit_name for name in Unit.select().order_by(Unit.unit_name).where(Unit.status=='vacant').namedtuples()]
-
         return vacant_units
 
     @staticmethod
     def get_all_units():
-        all_units = [name.unit_name for name in Unit.select()]
+        return [name.unit_name for name in Unit.select()]
 
-        return all_units 
-
-    @staticmethod
     def get_all_occupied_units_at_date(**kwargs):
         all_units = [(name.tenant, name.unit_name, name.last_occupied) for name in Unit.select().
             where(Unit.last_occupied==kwargs['last_dt']).
             order_by(Unit.unit_name).namedtuples()]
-
         return all_units 
 
 class TenantRent(BaseModel):
-    # tenant = CharField()
     t_name = ForeignKeyField(Tenant, backref='charge')
     unit = CharField()
     rent_amount = DecimalField(default=0.00)
@@ -211,7 +203,7 @@ class StatusRS(BaseModel):
                 mid_month_choice = False
         
         if mid_month_choice:
-            print('ready to try mid month')
+            print('load midmonth scrape from bank website')
             
             target_mid_month = incomplete_month_bool[0]
             target_mm_date = datetime.strptime(list(target_mid_month.items())[0][0], '%Y-%m')

@@ -52,24 +52,22 @@ class MonthSheet(YearSheet):
             month_list = [rec.month for rec in StatusObject().select().where(       (StatusObject.tenant_reconciled==1) |
                     (StatusObject.scrape_reconciled==1)).namedtuples()]
 
+        # breakpoint()
+
         self.make_base_sheet()
         self.formatting_runner()
         self.duplicate_formatted_sheets(month_list=month_list)
         self.remove_base_sheet()
 
         for date in month_list:
-            '''seems like monthly formatting could be moved to YS'''
             self.export_month_format(date)
             self.write_rs_col(date)
             reconciliation_type = [rec.scrape_reconciled for rec in StatusObject().select().where(StatusObject.month==date).namedtuples()]
             if reconciliation_type[0] == True:
-                # this is for scrape only
-
-                # pseudo-code:
-                    # we need to store scrape data during build
                 self.write_deposit_detail_from_scrape(date)
-                breakpoint()
-            self.write_deposit_detail_from_opcash(date)
+            else:
+                self.write_deposit_detail_from_opcash(date)
+            
             ntp = self.get_ntp_wrapper(date)
             self.write_ntp(date, ntp)
             self.check_totals_reconcile(date)
@@ -133,15 +131,13 @@ class MonthSheet(YearSheet):
         first_dt, last_dt = populate.make_first_and_last_dates(date_str=date)
         rec = populate.get_opcash_by_period(first_dt=first_dt, last_dt=last_dt)
         dep_detail = populate.get_opcashdetail_by_stmt(stmt_key=rec[0][0])
-        breakpoint()
         self.export_deposit_detail(date=date, res_rep=rec[0][2], hap=rec[0][3], dep_sum=rec[0][4], dep_detail=dep_detail)
 
     def write_deposit_detail_from_scrape(self, date):
         populate = PopulateTable()
         first_dt, last_dt = populate.make_first_and_last_dates(date_str=date)
         dep_detail = populate.get_scrape_detail_by_month(first_dt=first_dt, last_dt=last_dt)
-        breakpoint()
-        self.export_deposit_detail(date=date, res_rep=rec[0][2], hap=rec[0][3], dep_sum=rec[0][4], dep_detail=dep_detail)
+        self.export_deposit_detail_from_scrape(date=date, res_rep=0, hap=0, dep_sum=0, dep_detail=dep_detail)
 
     def export_deposit_detail(self, **kw):
         gc = GoogleApiCalls()
@@ -149,6 +145,15 @@ class MonthSheet(YearSheet):
         gc.update_int(self.service, self.full_sheet, [kw['hap']], f'{date}' + f'{self.wrange_hap_partial}', value_input_option='USER_ENTERED')
         gc.update_int(self.service, self.full_sheet, [kw['res_rep']], f'{date}' + f'{self.wrange_rr_partial}', value_input_option='USER_ENTERED')
         dep_detail_amounts = [item.amount for item in kw['dep_detail']]
+        self.write_list_to_col(start_row=82, list1=dep_detail_amounts, col_letter='D', date=date, gc=gc)
+        self.write_sum_forumula1(date=date)
+
+    def export_deposit_detail_from_scrape(self, **kw):
+        gc = GoogleApiCalls()
+        date = kw['date']
+        gc.update_int(self.service, self.full_sheet, [kw['hap']], f'{date}' + f'{self.wrange_hap_partial}', value_input_option='USER_ENTERED')
+        gc.update_int(self.service, self.full_sheet, [kw['res_rep']], f'{date}' + f'{self.wrange_rr_partial}', value_input_option='USER_ENTERED')
+        dep_detail_amounts = [item[1] for item in kw['dep_detail']]
         self.write_list_to_col(start_row=82, list1=dep_detail_amounts, col_letter='D', date=date, gc=gc)
         self.write_sum_forumula1(date=date)
 
