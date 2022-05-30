@@ -8,6 +8,7 @@ class GoogleApiCalls:
 
     verify = '511'
     
+    @retry_google_api(times, sleep1, exceptions)
     def simple_batch_update(self, service, sheet_id, wrange, data, dim):
         print(f"Updating with batch call to {wrange}...")
         body_request = {
@@ -24,6 +25,7 @@ class GoogleApiCalls:
         response = request.execute()
         print(f'Updating {[*response.values()][5][0]["updatedRange"]}, changing {[*response.values()][5][0]["updatedCells"]} cells.')
 
+    @retry_google_api(times, sleep1, exceptions)
     def batch_get(self, service, sheet_id, range, col_num): 
         sheet = service.spreadsheets()
         result = sheet.values().get(spreadsheetId=sheet_id,
@@ -78,6 +80,7 @@ class GoogleApiCalls:
         request = service.spreadsheets().values().update(spreadsheetId=sheet_id, range=write_range, valueInputOption=value_input_option, body=value_range_body)
         response = request.execute()
    
+    @retry_google_api(times, sleep1, exceptions)
     def clear_sheet(self, service, sheet_choice, clear_range):
         service = service
         spreadsheet_id = sheet_choice
@@ -100,6 +103,7 @@ class GoogleApiCalls:
             values.append(value)
         return values
     
+    @retry_google_api(times, sleep1, exceptions)
     def make_one_sheet(self, service, spreadsheet_id, sheet_title):
         sh_id = spreadsheet_id
 
@@ -159,6 +163,7 @@ class GoogleApiCalls:
         response = request.execute()
 
 
+    @retry_google_api(times, sleep1, exceptions)
     def date_stamp(self, service, sheet_id, wrange):
         from datetime import datetime
 
@@ -173,6 +178,7 @@ class GoogleApiCalls:
         request = service.spreadsheets().values().update(spreadsheetId=sheet_id, range=wrange, valueInputOption=value_input_option, body=value_range_body)
         response = request.execute()
 
+    @retry_google_api(times, sleep1, exceptions)
     def bold_freeze(self, service, spreadsheet_id, sheet_id, num):
 
         data = {"requests":
@@ -201,6 +207,7 @@ class GoogleApiCalls:
         service.spreadsheets().batchUpdate(
             spreadsheetId=spreadsheet_id, body=data).execute()
     
+    @retry_google_api(times, sleep1, exceptions)
     def bold_range(self, service, spreadsheet_id, sheet_id, start_col, end_col, start_row, end_row):
         data = {"requests":
                 {'repeatCell':
@@ -228,6 +235,7 @@ class GoogleApiCalls:
         service.spreadsheets().batchUpdate(
             spreadsheetId=spreadsheet_id, body=data).execute()
 
+    @retry_google_api(times, sleep1, exceptions)
     def api_duplicate_sheet(self, service, full_sheet, source_id=None, insert_index=None, title=None):
         sheet = service.spreadsheets()
         SPREADSHEET_ID = full_sheet

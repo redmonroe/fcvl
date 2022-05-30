@@ -535,6 +535,9 @@ class QueryHC():
     def get_opcashdetail_by_stmt(self, stmt_key=None):
         return [row for row in OpCashDetail.select().join(OpCash).where(OpCashDetail.stmt_key == stmt_key).namedtuples()]
 
+    def get_scrape_detail_by_month(self):
+        print('hi')
+
     def get_status_object_by_month(self, first_dt=None, last_dt=None):
         month = first_dt.strftime('%m')
         year = first_dt.year

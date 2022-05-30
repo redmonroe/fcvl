@@ -65,7 +65,9 @@ def autors(mode=None):
         build.determine_ctx(flag='reset')
 
     if mode == 'write_from_db':
-        ms.auto_control()
+        partial_month_list_for_testing = ['2022-01', '2022-02', '2022-03', '2022-04']
+        partial_month_list_for_testing2 = ['2022-05']
+        ms.auto_control(month_list=partial_month_list_for_testing)
 
 
 

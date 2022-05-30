@@ -45,28 +45,34 @@ class MonthSheet(YearSheet):
         pass
     
     def auto_control(self, month_list=None):
-        if month_list == None:
+        if month_list != None:
+            print(f'writing rent sheets for {month_list}.  This list has been expressly passed from cli.py.')
+        else:
+            print('generating list of months where either scrape or opcash has reconciled to tenant.')
             month_list = [rec.month for rec in StatusObject().select().where(       (StatusObject.tenant_reconciled==1) |
                     (StatusObject.scrape_reconciled==1)).namedtuples()]
-            self.make_base_sheet()
-            self.formatting_runner()
-            self.duplicate_formatted_sheets(month_list=month_list)
-            self.remove_base_sheet()
+
+        self.make_base_sheet()
+        self.formatting_runner()
+        self.duplicate_formatted_sheets(month_list=month_list)
+        self.remove_base_sheet()
+
         for date in month_list:
             '''seems like monthly formatting could be moved to YS'''
             self.export_month_format(date)
             self.write_rs_col(date)
             reconciliation_type = [rec.scrape_reconciled for rec in StatusObject().select().where(StatusObject.month==date).namedtuples()]
-            self.write_deposit_detail(date)
+            if reconciliation_type[0] == True:
+                # this is for scrape only
+
+                # pseudo-code:
+                    # we need to store scrape data during build
+                self.write_deposit_detail_from_scrape(date)
+                breakpoint()
+            self.write_deposit_detail_from_opcash(date)
             ntp = self.get_ntp_wrapper(date)
             self.write_ntp(date, ntp)
             self.check_totals_reconcile(date)
-
-            if reconciliation_type[0] == True:
-                pass
-                # this mean is it scrape reconciled only
-
-            breakpoint()
        
     def write_rs_col(self, date):
         gc = GoogleApiCalls()
@@ -114,11 +120,20 @@ class MonthSheet(YearSheet):
         gc = GoogleApiCalls()
         self.write_list_to_col(start_row=71, list1=data, col_letter='K', gc=gc, date=date)
 
-    def write_deposit_detail(self, date):
+    def write_deposit_detail_from_opcash(self, date):
         populate = PopulateTable()
         first_dt, last_dt = populate.make_first_and_last_dates(date_str=date)
         rec = populate.get_opcash_by_period(first_dt=first_dt, last_dt=last_dt)
         dep_detail = populate.get_opcashdetail_by_stmt(stmt_key=rec[0][0])
+        breakpoint()
+        self.export_deposit_detail(date=date, res_rep=rec[0][2], hap=rec[0][3], dep_sum=rec[0][4], dep_detail=dep_detail)
+
+    def write_deposit_detail_from_scrape(self, date):
+        populate = PopulateTable()
+        first_dt, last_dt = populate.make_first_and_last_dates(date_str=date)
+        rec = populate.get_opcash_by_period(first_dt=first_dt, last_dt=last_dt)
+        breakpoint()
+        dep_detail = populate.get_scrape_detail_by_month()
         self.export_deposit_detail(date=date, res_rep=rec[0][2], hap=rec[0][3], dep_sum=rec[0][4], dep_detail=dep_detail)
 
     def export_deposit_detail(self, **kw):
