@@ -542,8 +542,8 @@ class QueryHC():
     def get_opcashdetail_by_stmt(self, stmt_key=None):
         return [row for row in OpCashDetail.select().join(OpCash).where(OpCashDetail.stmt_key == stmt_key).namedtuples()]
 
-    def get_scrape_detail_by_month(self):
-        print('hi')
+    def get_scrape_detail_by_month(self, first_dt=None, last_dt=None):
+        print(first_dt, last_dt)
 
     def get_status_object_by_month(self, first_dt=None, last_dt=None):
         month = first_dt.strftime('%m')
@@ -1087,7 +1087,9 @@ class PopulateTable(QueryHC):
         for line_item in deposit_list:
             for key, value in line_item.items():
                 if key == 'date':
-                    scrape_dep = ScrapeDetail(period=target_date, scrape_date=datetime.now(), scrape_dep_date=0, amount=0)
+                    # breakpoint()
+                    period = target_date.strftime('%Y-%m')
+                    scrape_dep = ScrapeDetail(period=period, scrape_date=datetime.now(), scrape_dep_date=0, amount=0)
                     scrape_dep.scrape_dep_date = value 
                 if key == 'amount':
                     scrape_dep.amount = value

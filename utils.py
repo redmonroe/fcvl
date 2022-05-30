@@ -162,7 +162,6 @@ class Utils:
         f_date = datetime.strptime(raw_date, '%m %Y')
         f_date = f_date.strftime('%Y-%m')
         return f_date
-
         
     def get_book_name(service, sh_id):
         response = service.spreadsheets().get(
