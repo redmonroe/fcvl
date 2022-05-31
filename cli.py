@@ -10,13 +10,13 @@ from backend import PopulateTable, StatusRS
 from balance_letter import balance_letters
 from build_rs import BuildRS
 from config import Config, my_scopes
+from db_utils import DBUtils
 from file_indexer import FileIndexer
 from file_manager import path_to_statements, write_hap
 from receipts import RentReceipts
 from records import record
 from setup_month import MonthSheet
 from setup_year import YearSheet
-
 
 '''
 cli.add_command(merchants)
@@ -34,9 +34,7 @@ def cli():
 @click.option('--mode', required=True)
 @record
 def autors(mode=None):
-    '''the way we would run this:'''
-    '''build database'''
-    '''then run status and begin writing to rs'''
+    '''now: build db > run status against it to generate rs, receipts, letters'''
     '''convention: rent roll is good for beginning of month:
     does not pick up move in'''
 
@@ -71,7 +69,6 @@ def autors(mode=None):
 @click.command()
 def sqlite_dump():
     click.echo('Dumping current tables to sqlite folder on GDrive.')
-    from db_utils import DBUtils
     DBUtils.dump_sqlite(path_to_existing_db=Config.sqlite_test_db_path, path_to_backup=Config.sqlite_dump_path)
 
 @click.command()
