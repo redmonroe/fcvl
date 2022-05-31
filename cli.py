@@ -19,7 +19,6 @@ from setup_year import YearSheet
 
 
 '''
-cli.add_command(rent_receipts)
 cli.add_command(merchants)
 cli.add_command(nbofi)
 cli.add_command(annual_financial)
@@ -79,6 +78,12 @@ def sqlite_dump():
 def balanceletters():
     balance_letters()
 
+@click.command()
+def receipts():
+    status = StatusRS()
+    status.rent_receipts_wrapper()
+
+cli.add_command(receipts)
 cli.add_command(autors)
 cli.add_command(sqlite_dump)
 cli.add_command(balanceletters)

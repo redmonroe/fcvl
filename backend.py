@@ -156,9 +156,6 @@ class StatusRS(BaseModel):
     status_id = AutoField()
     current_date = DateField()
     proc_file = CharField(default='0')
-    # what is reconciling? what is not?  How do we fix this? 
-    # if we are mid-month and prior months is closed then we should be able to try to use
-        # nbofi mid month scrape
 
     def set_current_date(self, mode=None):
         if db.is_closed() == True:
@@ -245,10 +242,14 @@ class StatusRS(BaseModel):
                 print(f'balance letter list for {mr_good_month}: {balance_letter_list}')
 
         if write_rr_letters:
-            print('generating rent receipts')
-            receipts = RentReceipts()
-            receipts.rent_receipts()
+            self.rent_receipts_wrapper()
+        
         return most_recent_status 
+
+    def rent_receipts_wrapper(self):
+        print('generating rent receipts')
+        receipts = RentReceipts()
+        receipts.rent_receipts()
     
     def midmonth_scrape(self, list1=None):
         from file_indexer import FileIndexer

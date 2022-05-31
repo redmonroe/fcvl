@@ -22,7 +22,8 @@ class RentReceipts(object):
                                         fields='id').execute()
         print('Folder ID: %s' % file.get('id'))
 
-    def create_blank_doc(self, service_docs, service_drive, title): # from docs, there is also a method from drive
+    def create_blank_doc(self, service_docs, service_drive, title): 
+        # from docs, there is also a method from drive
         title = f'{title}'
         body = {
             'title': title
