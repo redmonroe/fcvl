@@ -136,23 +136,10 @@ class MonthSheet(YearSheet):
             gc.format_row(self.service, self.full_sheet, f'{date}!B73:B73', "ROWS", mi_write_item)
         else:
             names_list = [item[1] for item in mi_list_to_write]
-            self.write_str_list_to_col(start_row=77, list1=names_list, col_letter='B', date=date, gc=gc)
+            dates_list = [item[0] for item in mi_list_to_write]
+            self.write_str_list_to_col(start_row=73, list1=names_list, col_letter='B', date=date, gc=gc)
+            self.write_str_list_to_col(start_row=73, list1=dates_list, col_letter='C', date=date, gc=gc)
             breakpoint()
-
-    # def write_move_in_names(self, **kw):
-    #     gc = GoogleApiCalls(
-
-
-    # def write_str_list_to_col(self, **kw):
-    #     start_row = kw['start_row']
-    #     for item in kw['list1']:
-    #         sub_str0 = '!'
-    #         sub_str1 = kw['col_letter']
-    #         sub_str2 = ':'
-    #         cat_str = sub_str0 + sub_str1 + str(start_row) + sub_str2 + sub_str1 + str(start_row)
-    #         kw['gc'].update_int(self.service, self.full_sheet, [item], f'{kw["date"]}' + cat_str, value_input_option='USER_ENTERED')
-    #         start_row += 1
-    #     # gc.simple_batch_update(service, sheet_id, wrange, data, dim)(self.service, self.full_sheet, f'{date}!B73:B78', "COLUMNS", mi_write_item)
 
     def write_deposit_detail_from_opcash(self, date):
         populate = PopulateTable()
