@@ -15,7 +15,7 @@ class YearSheet:
     G_SUM_STARTBAL = ["=sum(D2:D68)"]
     G_SUM_ENDBAL = ["=sum(L2:L68)"]
     G_SHEETS_SUM_PAYMENT = ["=sum(K2:K68)"]
-    G_SHEETS_GRAND_TOTAL = ["=sum(K71:K76)"]
+    G_SHEETS_GRAND_TOTAL = ["=sum(K71:K79)"]
     MF_SUM_FORMULA = ["=sum(H81:H84)"]
     MF_PERCENT_FORMULA = ["=product(H85, .08)"]
     MF_FORMULA = ["=H86"]
@@ -26,7 +26,6 @@ class YearSheet:
     'tenant rent collected', 'total', '0.08']
     DEPOSIT_BOX_VERTICAL = ['rr', 'hap', 'ten', 'ten', 'ten', 'ten', 'ten', 'ten', 'ten','ten']
     DEPOSIT_BOX_HORIZONTAL = ['month', 'date']
-    G_SHEETS_GRAND_TOTAL = ["=sum(K69:K76)"]
     G_SHEETS_LAUNDRY_STOTAL = ["=sum(K71:K72)"]
     G_SHEETS_SD_TOTAL = ['total by hand']
 
@@ -85,7 +84,7 @@ class YearSheet:
 
             self.calls.format_row(self.service, self.full_sheet, f'{sheet}!J70:J75', 'COLUMNS', self.csc)
             self.calls.format_row(self.service, self.full_sheet, f'{sheet}!M71:M71', 'ROWS', self.laundry_income)
-            self.calls.format_row(self.service, self.full_sheet, f'{sheet}!J77:J77', 'ROWS', self.grand_total)
+            self.calls.format_row(self.service, self.full_sheet, f'{sheet}!J80:J80', 'ROWS', self.grand_total)
             self.calls.format_row(self.service, self.full_sheet, f'{sheet}!M73:M74', 'ROWS', self.sd_total)
             
             self.calls.format_row(self.service, self.full_sheet, f'{sheet}!A1:M1', 'ROWS', self.HEADER_NAMES)
@@ -95,7 +94,7 @@ class YearSheet:
             self.calls.format_row(self.service, self.full_sheet, f'{sheet}!B80:C80', 'ROWS', self.DEPOSIT_BOX_HORIZONTAL)
             
             self.calls.write_formula_column(self.service, self.full_sheet, self.G_SHEETS_SD_TOTAL, f'{sheet}!N73:N73')
-            self.calls.write_formula_column(self.service, self.full_sheet, self.G_SHEETS_GRAND_TOTAL, f'{sheet}!K77')
+            self.calls.write_formula_column(self.service, self.full_sheet, self.G_SHEETS_GRAND_TOTAL, f'{sheet}!K80')
             self.calls.write_formula_column(self.service, self.full_sheet, self.G_SHEETS_LAUNDRY_STOTAL, f'{sheet}!N71:N71')
             
             self.calls.date_stamp(self.service, self.full_sheet, f'{sheet}!A70:A70')

@@ -137,9 +137,9 @@ class MonthSheet(YearSheet):
         else:
             names_list = [item[1] for item in mi_list_to_write]
             dates_list = [item[0] for item in mi_list_to_write]
-            self.write_str_list_to_col(start_row=73, list1=names_list, col_letter='B', date=date, gc=gc)
-            self.write_str_list_to_col(start_row=73, list1=dates_list, col_letter='C', date=date, gc=gc)
-            breakpoint()
+            self.write_list_to_col(func=gc.update, start_row=73, list1=names_list, col_letter='B', date=date)
+            self.write_list_to_col(func=gc.update, start_row=73, list1=dates_list, col_letter='C', date=date)
+            # breakpoint()
 
     def write_deposit_detail_from_opcash(self, date):
         populate = PopulateTable()
@@ -158,9 +158,9 @@ class MonthSheet(YearSheet):
         gc = GoogleApiCalls()
         date = kw['date']
         gc.update_int(self.service, self.full_sheet, [kw['hap']], f'{date}' + f'{self.wrange_hap_partial}', value_input_option='USER_ENTERED')
-        gc.update_int(self.service, self.full_sheet, [kw['res_rep']], f'{date}' + f'{self.wrange_rr_partial}', value_input_option='USER_ENTERED')
+        gc.update_int(self.service, self.full_sheet, [kw['res_rep']], f'{date}' + f'{self.wrange_rr_partial}', value_input_option='USER_ENTERED')   
         dep_detail_amounts = [item.amount for item in kw['dep_detail']]
-        self.write_list_to_col(start_row=82, list1=dep_detail_amounts, col_letter='D', date=date, gc=gc)
+        self.write_list_to_col(func=gc.update_int, start_row=82, list1=dep_detail_amounts, col_letter='D', date=date)
         self.write_sum_forumula1(date=date)
 
     def export_deposit_detail_from_scrape(self, **kw):
@@ -170,27 +170,28 @@ class MonthSheet(YearSheet):
         gc.update_int(self.service, self.full_sheet, [kw['hap']], f'{date}' + f'{self.wrange_hap_partial}', value_input_option='USER_ENTERED')
         gc.update_int(self.service, self.full_sheet, [kw['res_rep']], f'{date}' + f'{self.wrange_rr_partial}', value_input_option='USER_ENTERED')
         dep_detail_amounts = [item[1] for item in kw['dep_detail']]
-        self.write_list_to_col(start_row=82, list1=dep_detail_amounts, col_letter='D', date=date, gc=gc)
+        self.write_list_to_col(func=gc.update_int, start_row=82, list1=dep_detail_amounts, col_letter='D', date=date)
         self.write_sum_forumula1(date=date)
 
-    def write_str_list_to_col(self, **kw):
-        start_row = kw['start_row']
-        for item in kw['list1']:
-            sub_str0 = '!'
-            sub_str1 = kw['col_letter']
-            sub_str2 = ':'
-            cat_str = sub_str0 + sub_str1 + str(start_row) + sub_str2 + sub_str1 + str(start_row)
-            kw['gc'].update(self.service, self.full_sheet, [item], f'{kw["date"]}' + cat_str, value_input_option='USER_ENTERED')
-            start_row += 1
+    # def write_str_list_to_col(self, **kw):
+    #     start_row = kw['start_row']
+    #     for item in kw['list1']:
+    #         sub_str0 = '!'
+    #         sub_str1 = kw['col_letter']
+    #         sub_str2 = ':'
+    #         cat_str = sub_str0 + sub_str1 + str(start_row) + sub_str2 + sub_str1 + str(start_row)
+    #         kw['func'](self.service, self.full_sheet, [item], f'{kw["date"]}' + cat_str, value_input_option='USER_ENTERED')
+    #         start_row += 1
 
     def write_list_to_col(self, **kw):
+        # update int
         start_row = kw['start_row']
         for item in kw['list1']:
             sub_str0 = '!'
             sub_str1 = kw['col_letter']
             sub_str2 = ':'
             cat_str = sub_str0 + sub_str1 + str(start_row) + sub_str2 + sub_str1 + str(start_row)
-            kw['gc'].update_int(self.service, self.full_sheet, [item], f'{kw["date"]}' + cat_str, value_input_option='USER_ENTERED')
+            kw['func'](self.service, self.full_sheet, [item], f'{kw["date"]}' + cat_str, value_input_option='USER_ENTERED')
             start_row += 1
             
     def write_sum_forumula1(self, date):
