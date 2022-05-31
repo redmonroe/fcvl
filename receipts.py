@@ -1,6 +1,9 @@
 # sample project: https://github.com/gsuitedevs/python-samples/tree/master/docs/mail-merge
+from datetime import datetime
+
 from auth_work import oauth
-from config import my_scopes, Config   
+from config import Config, my_scopes
+from utils import Utils
 
 
 class RentReceipts(object):
@@ -69,26 +72,19 @@ class RentReceipts(object):
                         ).execute()
         print(request, 'response:', response)
 
-    @staticmethod 
-    def rent_receipts():
-        from fcvfin import FileHandler, BookFormat, UI
-        from liltilities import get_existing_sheets
-        from config import CURRENT_YEAR_RS
-        from datetime import datetime
+    def rent_receipts(self):
         
-        fh = FileHandler()
-        bf = BookFormat()
-        ui = UI()
         service_scripts = oauth(my_scopes, 'script')
         service = oauth(my_scopes, 'sheet')
     
-        deploy_id = "AKfycbyAEXFweZewXCkAYqg0DdsYFZmEZEZxUfhAwz9XVHSt2qJu9_Sx14n8hqzskm57fkze"
+        deploy_id = "AKfycby3_qnppVYUo9g7DE3dQgu2l_xd97td8smvs66gExs8AOH00CPlxT2ciXjbS4l94qD0"
     
-        titles_dict = get_existing_sheets(service, CURRENT_YEAR_RS)
-        idx_list = bf.existing_ids(titles_dict)
-        choice = ui.prompt("Please select a sheet to make receipts from:")
+        titles_dict = Utils.get_existing_sheets(service, Config.TEST_RS)
+        titles_dict = {name:id2 for name, id2 in titles_dict.items() if name != 'intake'}
+        idx_list = Utils.existing_ids(titles_dict)
+        choice = int(input("Please select a sheet to make receipts from: "))
         sheet_choice = idx_list[choice]
-        display_month = str(input("type display month you wish to appear?"))
+        display_month = str(input("type display month you wish to appear? "))
 
         # display current date
         # replace { display_month } in template
@@ -97,11 +93,12 @@ class RentReceipts(object):
         parameters = {
         "current_date" : formatted_date, 
         "display_month": display_month,
-        "sheet_choice": sheet_choice[1][0]
+        "sheet_choice": sheet_choice[1][0], 
+        "rent_sheet": Config.TEST_RS, 
         }
 
         print(parameters)
-        choice = str(input("send these results to google script & make receipts? y/n"))
+        choice = str(input("send these results to google script & make receipts? y/n "))
 
         if choice == 'y':
             RentReceipts.run_script(service=service_scripts, deploy_id=deploy_id, function_name="test1", parameters=parameters) 

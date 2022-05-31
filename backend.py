@@ -22,6 +22,7 @@ from recordtype import \
     recordtype  # i edit the source code here, so requirements won't work if this is ever published, after 3.10, collection.abc change
 
 from config import Config
+from receipts import RentReceipts
 from records import record
 
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -204,7 +205,6 @@ class StatusRS(BaseModel):
         
         if mid_month_choice:
             print('load midmonth scrape from bank website')
-            
             target_mid_month = incomplete_month_bool[0]
             target_mm_date = datetime.strptime(list(target_mid_month.items())[0][0], '%Y-%m')
             deposit_list = self.midmonth_scrape(list1=target_mid_month)
@@ -217,21 +217,37 @@ class StatusRS(BaseModel):
             most_recent_status.current_date.replace(day = 1)
             last_dt = target_mm_date.replace(day = calendar.monthrange(target_mm_date.year, target_mm_date.month)[1])
 
-            '''if this function asserts ok, then we can write balance letters for current month'''
-
+            '''if this function asserts ok, then we can write balance letters & rent receipts for current month'''
             all_tp, all_ntp = populate.check_db_tp_and_ntp(grand_total=scrape_deposit_sum, first_dt=first_dt, last_dt=last_dt)    
 
-            if all_tp:
-                mr_status_object = [item for item in StatusObject().select().where(StatusObject.month==months_ytd[-1])][0]
-                mr_status_object.scrape_reconciled = True
-                mr_status_object.save()            
-                ''' now we can go to balance_letters.py'''
+        if all_tp:
+            mr_status_object = [item for item in StatusObject().select().where(StatusObject.month==months_ytd[-1])][0]
+            mr_status_object.scrape_reconciled = True
+            mr_status_object.save()   
 
-        balance_letter_list, mr_good_month = self.generate_balance_letter_list_mr_reconciled()
+            choice1 = input(f'\nWould you like to make rent receipts for period between {incomplete_month_bool[0]} ? Y/n ')
+            if choice1 == 'Y':
+                write_rr_letters = True
+            else:
+                write_rr_letters = False
 
-        if balance_letter_list:
-            print(f'balance letter list for {mr_good_month}: {balance_letter_list}')
-    
+            choice2 = input(f'\nWould you like to make balance letters for period between {incomplete_month_bool[0]} ? Y/n ')
+            if choice2 == 'Y':
+                write_bal_letters = True
+            else:
+                write_bal_letters = False
+            
+        if write_bal_letters:
+            print('generating balance letters')
+            balance_letter_list, mr_good_month = self.generate_balance_letter_list_mr_reconciled()
+
+            if balance_letter_list:
+                print(f'balance letter list for {mr_good_month}: {balance_letter_list}')
+
+        if write_rr_letters:
+            print('generating rent receipts')
+            receipts = RentReceipts()
+            receipts.rent_receipts()
         return most_recent_status 
     
     def midmonth_scrape(self, list1=None):
@@ -421,7 +437,7 @@ class QueryHC():
         all_ntp = [float(rec.amount) for rec in NTPayment.select().
                 where(NTPayment.date_posted >= first_dt).
                 where(NTPayment.date_posted <= last_dt)]
-        breakpoint()
+        
         assert sum(all_ntp) + sum(all_tp) == grand_total
         return all_tp, all_ntp
 

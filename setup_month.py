@@ -71,15 +71,7 @@ class MonthSheet(YearSheet):
             ntp = self.get_ntp_wrapper(date)
             self.write_ntp(date, ntp)
             self.check_totals_reconcile(date)
-
-    def scrape_control(self, month_list):
-        print('scrape control')
-        for date in month_list:
-            self.export_month_format(date)
-            self.write_rs_col(date)
-            self.write_deposit_detail_from_scrape(date)
-
-       
+                   
     def write_rs_col(self, date):
         gc = GoogleApiCalls()
         query = QueryHC()

@@ -68,11 +68,6 @@ def autors(mode=None):
         # partial_month_list_for_testing = ['2022-01', '2022-02', '2022-03', '2022-04']
         # ms.auto_control(month_list=partial_month_list_for_testing)
         ms.auto_control()
-    if mode == 'testmay':
-        partial_month_list_for_testing2 = ['2022-05']
-        ms.scrape_control(month_list=partial_month_list_for_testing2)
-
-
 
 @click.command()
 def sqlite_dump():
