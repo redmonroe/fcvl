@@ -124,7 +124,7 @@ class MonthSheet(YearSheet):
 
     def write_ntp(self, date, data):
         gc = GoogleApiCalls()
-        self.write_list_to_col(start_row=71, list1=data, col_letter='K', gc=gc, date=date)
+        self.write_list_to_col(func=gc.update_int, start_row=71, list1=data, col_letter='K', gc=gc, date=date)
 
     def write_move_in_box(self, date):
         populate = PopulateTable()
