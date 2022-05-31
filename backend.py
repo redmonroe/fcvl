@@ -69,6 +69,11 @@ class TenantRent(BaseModel):
     rent_amount = DecimalField(default=0.00)
     rent_date = DateField()
 
+class MoveIn(BaseModel):
+    period = CharField(default='0')
+    mi_date = DateField('0')
+    name = CharField(default='move_in_name')
+
 class SubsidyRent(BaseModel):
     pass
 
@@ -417,10 +422,11 @@ class ScrapeDetail(BaseModel):
     scrape_dep_date = DateField('0')
     amount = CharField(default='0')
 
+
 class QueryHC():
 
     def return_tables_list(self):
-        return [LP_EndBal, ContractRent, Subsidy, BalanceLetter, StatusRS, StatusObject, OpCash, OpCashDetail, Damages, Tenant, Unit, Payment, NTPayment, TenantRent, Findexer, ScrapeDetail]
+        return [LP_EndBal, ContractRent, Subsidy, BalanceLetter, StatusRS, StatusObject, OpCash, OpCashDetail, Damages, Tenant, Unit, Payment, NTPayment, TenantRent, Findexer, ScrapeDetail, MoveIn]
 
     def make_first_and_last_dates(self, date_str=None):
         dt_obj = datetime.strptime(date_str, '%Y-%m')
@@ -550,6 +556,12 @@ class QueryHC():
 
     def get_opcashdetail_by_stmt(self, stmt_key=None):
         return [row for row in OpCashDetail.select().join(OpCash).where(OpCashDetail.stmt_key == stmt_key).namedtuples()]
+
+    def get_move_ins_by_period(self, first_dt=None, last_dt=None):
+        recs = [(row.period, row.mi_date, row.name) for row in MoveIn.select().where(MoveIn.mi_date>= first_dt).
+        where(MoveIn.mi_date <= last_dt).namedtuples()]
+        breakpoint()
+        return recs 
 
     def get_scrape_detail_by_month(self, first_dt=None, last_dt=None):
         recs = [(row.scrape_dep_date, row.amount) for row in ScrapeDetail().select().where(ScrapeDetail.scrape_dep_date >= first_dt).

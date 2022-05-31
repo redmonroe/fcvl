@@ -51,7 +51,6 @@ class BuildRS(MonthSheet):
     @record
     def new_auto_build(self):
         print('new_auto_build')
-        # """
         populate = PopulateTable()
         self.create_tables_list1 = populate.return_tables_list()
         findex = FileIndexer(path=self.path, db=self.main_db)

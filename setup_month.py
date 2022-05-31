@@ -67,6 +67,7 @@ class MonthSheet(YearSheet):
                 self.write_deposit_detail_from_opcash(date)
             
             ntp = self.get_ntp_wrapper(date)
+            self.write_move_in_box(date)
             self.write_ntp(date, ntp)
             self.check_totals_reconcile(date)
 
@@ -115,6 +116,17 @@ class MonthSheet(YearSheet):
     def write_ntp(self, date, data):
         gc = GoogleApiCalls()
         self.write_list_to_col(start_row=71, list1=data, col_letter='K', gc=gc, date=date)
+
+    def write_move_in_box(self, date):
+        populate = PopulateTable()
+        gc = GoogleApiCalls()
+        first_dt, last_dt = populate.make_first_and_last_dates(date_str=date)
+        mi_list_to_write = populate.get_move_ins_by_period(first_dt=first_dt, last_dt=last_dt)
+        if mi_list_to_write == []:
+            mi_write_item = ['no move ins this month']
+            gc.format_row(self.service, self.full_sheet, f'{date}!B73:B73', "ROWS", mi_write_item)
+        else:
+            return mi_list_to_write
 
     def write_deposit_detail_from_opcash(self, date):
         populate = PopulateTable()
