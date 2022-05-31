@@ -21,6 +21,7 @@ class YearSheet:
     MF_FORMULA = ["=H86"]
     HEADER_NAMES = ['Unit', 'Tenant Name', 'Notes', 'Balance Start', 'Contract Rent', 'Actual Subsidy',
     'Hap received', 'Tenant Rent', 'Charge Type', 'Charge Amount', 'Payment Made', 'Balance Current', 'Payment Plan/Action']
+    MI_HEADER = ['Move-Ins']
     MF_FORMATTING_TEXT = ['managment fee>', 'hap collected>', 'positive adj', 'damages',
     'tenant rent collected', 'total', '0.08']
     DEPOSIT_BOX_VERTICAL = ['rr', 'hap', 'ten', 'ten', 'ten', 'ten', 'ten', 'ten', 'ten','ten']
@@ -88,6 +89,7 @@ class YearSheet:
             self.calls.format_row(self.service, self.full_sheet, f'{sheet}!M73:M74', 'ROWS', self.sd_total)
             
             self.calls.format_row(self.service, self.full_sheet, f'{sheet}!A1:M1', 'ROWS', self.HEADER_NAMES)
+            self.calls.format_row(self.service, self.full_sheet, f'{sheet}!B72:B72', 'ROWS', self.MI_HEADER)
             self.calls.format_row(self.service, self.full_sheet, f'{sheet}!G80:G86', 'COLUMNS', self.MF_FORMATTING_TEXT)
             self.calls.format_row(self.service, self.full_sheet, f'{sheet}!E80:E89', 'COLUMNS', self.DEPOSIT_BOX_VERTICAL)
             self.calls.format_row(self.service, self.full_sheet, f'{sheet}!B80:C80', 'ROWS', self.DEPOSIT_BOX_HORIZONTAL)

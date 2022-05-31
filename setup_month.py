@@ -52,8 +52,6 @@ class MonthSheet(YearSheet):
             month_list = [rec.month for rec in StatusObject().select().where(       (StatusObject.tenant_reconciled==1) |
                     (StatusObject.scrape_reconciled==1)).namedtuples()]
 
-        # breakpoint()
-
         self.make_base_sheet()
         self.formatting_runner()
         self.duplicate_formatted_sheets(month_list=month_list)
@@ -71,7 +69,7 @@ class MonthSheet(YearSheet):
             ntp = self.get_ntp_wrapper(date)
             self.write_ntp(date, ntp)
             self.check_totals_reconcile(date)
-                   
+
     def write_rs_col(self, date):
         gc = GoogleApiCalls()
         query = QueryHC()
@@ -141,6 +139,7 @@ class MonthSheet(YearSheet):
         self.write_sum_forumula1(date=date)
 
     def export_deposit_detail_from_scrape(self, **kw):
+        # why doesn't make scrape namedtuples work here, would prevent a nearly dup func?
         gc = GoogleApiCalls()
         date = kw['date']
         gc.update_int(self.service, self.full_sheet, [kw['hap']], f'{date}' + f'{self.wrange_hap_partial}', value_input_option='USER_ENTERED')
