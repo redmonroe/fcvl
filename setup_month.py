@@ -158,7 +158,8 @@ class MonthSheet(YearSheet):
         gc = GoogleApiCalls()
         date = kw['date']
         gc.update_int(self.service, self.full_sheet, [kw['hap']], f'{date}' + f'{self.wrange_hap_partial}', value_input_option='USER_ENTERED')
-        gc.update_int(self.service, self.full_sheet, [kw['res_rep']], f'{date}' + f'{self.wrange_rr_partial}', value_input_option='USER_ENTERED')   
+        gc.update_int(self.service, self.full_sheet, [kw['res_rep']], f'{date}' + f'{self.wrange_rr_partial}', value_input_option='USER_ENTERED')  
+        breakpoint() 
         dep_detail_amounts = [item.amount for item in kw['dep_detail']]
         self.write_list_to_col(func=gc.update_int, start_row=82, list1=dep_detail_amounts, col_letter='D', date=date)
         self.write_sum_forumula1(date=date)
@@ -173,18 +174,7 @@ class MonthSheet(YearSheet):
         self.write_list_to_col(func=gc.update_int, start_row=82, list1=dep_detail_amounts, col_letter='D', date=date)
         self.write_sum_forumula1(date=date)
 
-    # def write_str_list_to_col(self, **kw):
-    #     start_row = kw['start_row']
-    #     for item in kw['list1']:
-    #         sub_str0 = '!'
-    #         sub_str1 = kw['col_letter']
-    #         sub_str2 = ':'
-    #         cat_str = sub_str0 + sub_str1 + str(start_row) + sub_str2 + sub_str1 + str(start_row)
-    #         kw['func'](self.service, self.full_sheet, [item], f'{kw["date"]}' + cat_str, value_input_option='USER_ENTERED')
-    #         start_row += 1
-
     def write_list_to_col(self, **kw):
-        # update int
         start_row = kw['start_row']
         for item in kw['list1']:
             sub_str0 = '!'
