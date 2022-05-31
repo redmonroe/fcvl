@@ -70,7 +70,6 @@ class TenantRent(BaseModel):
     rent_date = DateField()
 
 class MoveIn(BaseModel):
-    period = CharField(default='0')
     mi_date = DateField('0')
     name = CharField(default='move_in_name')
 
@@ -558,9 +557,8 @@ class QueryHC():
         return [row for row in OpCashDetail.select().join(OpCash).where(OpCashDetail.stmt_key == stmt_key).namedtuples()]
 
     def get_move_ins_by_period(self, first_dt=None, last_dt=None):
-        recs = [(row.period, row.mi_date, row.name) for row in MoveIn.select().where(MoveIn.mi_date>= first_dt).
+        recs = [(row.mi_date, row.name) for row in MoveIn.select().where(MoveIn.mi_date>= first_dt).
         where(MoveIn.mi_date <= last_dt).namedtuples()]
-        breakpoint()
         return recs 
 
     def get_scrape_detail_by_month(self, first_dt=None, last_dt=None):
@@ -1070,7 +1068,6 @@ class PopulateTable(QueryHC):
         return move_ins, move_outs
 
     def insert_move_ins(self, move_ins=None):
-        '''inserts move-ins into rent roll but not into rent_sheet'''
         for name, unit, move_in_date in move_ins:
             nt = Tenant.create(tenant_name=name, active='true', move_in_date=move_in_date, unit=unit)
             mi = MoveIn.create(mi_date=move_in_date, name=name)

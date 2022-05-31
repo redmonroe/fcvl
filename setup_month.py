@@ -52,6 +52,7 @@ class MonthSheet(YearSheet):
             month_list = [rec.month for rec in StatusObject().select().where(       (StatusObject.tenant_reconciled==1) |
                     (StatusObject.scrape_reconciled==1)).namedtuples()]
 
+        self.reset_spreadsheet()
         self.make_base_sheet()
         self.formatting_runner()
         self.duplicate_formatted_sheets(month_list=month_list)
@@ -70,6 +71,14 @@ class MonthSheet(YearSheet):
             self.write_move_in_box(date)
             self.write_ntp(date, ntp)
             self.check_totals_reconcile(date)
+
+    def reset_spreadsheet(self):
+        print('resetting spreadsheet')
+        current_sheets = self.show_current_sheets()
+        gc = GoogleApiCalls()
+        for name, id2, in current_sheets.items():
+            if name != 'intake':
+                gc.del_one_sheet(self.service, self.full_sheet, id2)
 
     def write_rs_col(self, date):
         gc = GoogleApiCalls()
@@ -126,7 +135,24 @@ class MonthSheet(YearSheet):
             mi_write_item = ['no move ins this month']
             gc.format_row(self.service, self.full_sheet, f'{date}!B73:B73', "ROWS", mi_write_item)
         else:
-            return mi_list_to_write
+            names_list = [item[1] for item in mi_list_to_write]
+            self.write_str_list_to_col(start_row=77, list1=names_list, col_letter='B', date=date, gc=gc)
+            breakpoint()
+
+    # def write_move_in_names(self, **kw):
+    #     gc = GoogleApiCalls(
+
+
+    # def write_str_list_to_col(self, **kw):
+    #     start_row = kw['start_row']
+    #     for item in kw['list1']:
+    #         sub_str0 = '!'
+    #         sub_str1 = kw['col_letter']
+    #         sub_str2 = ':'
+    #         cat_str = sub_str0 + sub_str1 + str(start_row) + sub_str2 + sub_str1 + str(start_row)
+    #         kw['gc'].update_int(self.service, self.full_sheet, [item], f'{kw["date"]}' + cat_str, value_input_option='USER_ENTERED')
+    #         start_row += 1
+    #     # gc.simple_batch_update(service, sheet_id, wrange, data, dim)(self.service, self.full_sheet, f'{date}!B73:B78', "COLUMNS", mi_write_item)
 
     def write_deposit_detail_from_opcash(self, date):
         populate = PopulateTable()
@@ -159,6 +185,16 @@ class MonthSheet(YearSheet):
         dep_detail_amounts = [item[1] for item in kw['dep_detail']]
         self.write_list_to_col(start_row=82, list1=dep_detail_amounts, col_letter='D', date=date, gc=gc)
         self.write_sum_forumula1(date=date)
+
+    def write_str_list_to_col(self, **kw):
+        start_row = kw['start_row']
+        for item in kw['list1']:
+            sub_str0 = '!'
+            sub_str1 = kw['col_letter']
+            sub_str2 = ':'
+            cat_str = sub_str0 + sub_str1 + str(start_row) + sub_str2 + sub_str1 + str(start_row)
+            kw['gc'].update(self.service, self.full_sheet, [item], f'{kw["date"]}' + cat_str, value_input_option='USER_ENTERED')
+            start_row += 1
 
     def write_list_to_col(self, **kw):
         start_row = kw['start_row']
