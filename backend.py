@@ -846,6 +846,8 @@ class PopulateTable(QueryHC):
                 dict1 = {'unit_name': row.unit, 'tenant': row.name, 'last_occupied': last_dt}
             units_insert_many.append(dict1)
 
+        # should include write to move-in even though no move'in in jan
+
         rent_insert_many = [{'t_name': row.name, 'unit': row.unit, 'rent_amount': row.rent, 'rent_date': row.date} for row in nt_list if row.name != 'vacant']  
 
         subs_insert_many = [{'tenant': row.name, 'sub_amount': row.subsidy, 'date_posted': row.date} for row in nt_list if row.name != 'vacant']
@@ -1068,15 +1070,17 @@ class PopulateTable(QueryHC):
         return move_ins, move_outs
 
     def insert_move_ins(self, move_ins=None):
+        '''inserts move-ins into rent roll but not into rent_sheet'''
         for name, unit, move_in_date in move_ins:
-            # breakpoint()
             nt = Tenant.create(tenant_name=name, active='true', move_in_date=move_in_date, unit=unit)
+            mi = MoveIn.create(mi_date=move_in_date, name=name)
             unit = Unit.get(unit_name=unit)
             unit.status = 'occupied'
             unit.last_occupied = move_in_date
             unit.tenant = name
 
             nt.save()
+            mi.save()
             unit.save()
 
     def deactivate_move_outs(self, date, move_outs=None):
