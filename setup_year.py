@@ -29,8 +29,8 @@ class YearSheet:
     G_SHEETS_LAUNDRY_STOTAL = ["=sum(K71:K72)"]
     G_SHEETS_SD_TOTAL = ['total by hand']
 
-    sd_total = ["sd_total"]
-    csc = ["type:", "csc", "csc", "other", "other","other", 'mis']
+    sd_total = ['sd_total']
+    csc = ['type:', 'csc', 'csc', 'other', 'other', 'other', 'total tr MIs']
     laundry_income = ["laundry income"]
     grand_total = ["GRAND TOTAL"]
     calls = GoogleApiCalls()

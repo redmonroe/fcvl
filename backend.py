@@ -610,6 +610,16 @@ class QueryHC():
             where(Payment.date_posted <= last_dt).
             join(Payment).namedtuples()]))
 
+    def get_single_ten_pay_by_period(self, first_dt=None, last_dt=None, name=None):
+        ten_pay_tup =  [(rec.tenant_name, rec.total_payments) for rec in Tenant.select(
+        Tenant.tenant_name, 
+        fn.SUM(Payment.amount).over(partition_by=[Tenant.tenant_name]).alias('total_payments')).
+        where(Payment.date_posted >= first_dt).
+        where(Payment.date_posted <= last_dt).
+        where(Tenant.tenant_name==name).
+        join(Payment).namedtuples()][0]
+        return ten_pay_tup
+
     def get_ntp_by_period(self, first_dt=None, last_dt=None):   
         return list([float(rec.amount) for rec in NTPayment().
         select(NTPayment.amount).

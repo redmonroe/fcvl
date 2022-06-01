@@ -4,11 +4,10 @@ from pathlib import Path
 
 import pandas as pd
 from numpy import nan
-from peewee import JOIN
+from peewee import JOIN, fn
 
 from auth_work import oauth
-from backend import (Damages, Findexer, NTPayment, OpCash, OpCashDetail,
-                     Payment, PopulateTable, QueryHC, StatusObject, StatusRS,
+from backend import (Damages, Findexer, NTPayment, OpCash, OpCashDetail, Payment, PopulateTable, QueryHC, StatusObject, StatusRS,
                      Tenant, TenantRent, Unit, db)
 from config import Config, my_scopes
 from db_utils import DBUtils
@@ -31,6 +30,7 @@ class MonthSheet(YearSheet):
     wrange_rr_partial = '!D80:D80'
     wrange_reconciled = '!E90:E90'
     wrange_ntp = '!K71:K71'
+    wrange_sum_mi_payments = '!K76:K76'
 
     def __init__(self, full_sheet, path, mode=None, test_service=None):
         self.full_sheet = full_sheet
@@ -68,9 +68,31 @@ class MonthSheet(YearSheet):
                 self.write_deposit_detail_from_opcash(date)
             
             ntp = self.get_ntp_wrapper(date)
+            sum_mi_payments = self.get_move_ins(date)
             self.write_move_in_box(date)
             self.write_ntp(date, ntp)
+            self.write_sum_mi_payments(date, sum_mi_payments)
             self.check_totals_reconcile(date)
+    
+    def get_move_ins(self, date):
+        query = QueryHC()
+        first_dt, last_dt = query.make_first_and_last_dates(date_str=date)
+        move_ins = query.get_move_ins_by_period(first_dt=first_dt, last_dt=last_dt)
+
+        move_in_names = [name[1] for name in move_ins]
+
+        mi_payments = []
+        for name in move_in_names:                
+            mi_tp = query.get_single_ten_pay_by_period(first_dt=first_dt, last_dt=last_dt, name=name)
+            mi_payments.append(mi_tp)
+
+        sum_mi_payments = self.sum_move_in_payments_period(mi_payments=mi_payments)
+
+        return sum_mi_payments
+
+    def sum_move_in_payments_period(self, mi_payments=None):
+        sum_mi_payments = sum([float(item[1]) for item in mi_payments])
+        return sum_mi_payments
 
     def write_rs_col(self, date):
         gc = GoogleApiCalls()
@@ -113,6 +135,10 @@ class MonthSheet(YearSheet):
         populate = PopulateTable()
         first_dt, last_dt = populate.make_first_and_last_dates(date_str=date)
         return populate.get_ntp_by_period(first_dt=first_dt, last_dt=last_dt)
+
+    def write_sum_mi_payments(self, date, data):
+        gc = GoogleApiCalls()
+        gc.update_int(self.service, self.full_sheet, [data], f'{date}' + f'{self.wrange_sum_mi_payments}', value_input_option='USER_ENTERED')   
 
     def write_ntp(self, date, data):
         gc = GoogleApiCalls()
