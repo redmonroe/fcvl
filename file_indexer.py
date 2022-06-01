@@ -99,6 +99,10 @@ class FileIndexer(Utils):
                 dict1 = {}
                 dict1 = {'date': row['Processed Date'], 'amount': row['Amount'], 'dep_type': 'deposit'}
                 deposit_list.append(dict1)
+            if 'QUADEL' in row['Description']:
+                dict1 = {}
+                dict1 = {'date': row['Processed Date'], 'amount': row['Amount'], 'dep_type': 'hap'}
+                deposit_list.append(dict1)
       
         return deposit_list
 

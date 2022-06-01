@@ -209,10 +209,6 @@ class StatusRS(BaseModel):
             findex = FileIndexer()
             all_relevant_scrape_txn_list = findex.load_mm_scrape(list1=target_mid_month)
             scrape_deposit_sum = sum([float(item['amount']) for item in all_relevant_scrape_txn_list if item['dep_type'] == 'deposit'])
-            # re-run with selection based on dep_type
-            # then write code to pull hap out based on quadel
-            # then segregate all scrape functionality for seperate cli command
-            # breakpoint()
 
             populate = PopulateTable()
             populate.load_scrape_to_db(deposit_list=all_relevant_scrape_txn_list, target_date=target_mm_date)
@@ -558,9 +554,16 @@ class QueryHC():
         where(MoveIn.mi_date <= last_dt).namedtuples()]
         return recs 
 
-    def get_scrape_detail_by_month(self, first_dt=None, last_dt=None):
+    def get_scrape_detail_by_month_deposit(self, first_dt=None, last_dt=None):
         recs = [row for row in ScrapeDetail.select().where(ScrapeDetail.scrape_dep_date >= first_dt).
-        where(ScrapeDetail.scrape_dep_date <= last_dt).namedtuples()]
+        where(ScrapeDetail.scrape_dep_date <= last_dt).
+        where(ScrapeDetail.dep_type=='deposit').namedtuples()]
+        return recs
+
+    def get_scrape_detail_by_month_hap(self, first_dt=None, last_dt=None):
+        recs = [row.amount for row in ScrapeDetail.select().where(ScrapeDetail.scrape_dep_date >= first_dt).
+        where(ScrapeDetail.scrape_dep_date <= last_dt).
+        where(ScrapeDetail.dep_type=='hap').namedtuples()]
         return recs
 
     def get_status_object_by_month(self, first_dt=None, last_dt=None):
@@ -1119,7 +1122,6 @@ class PopulateTable(QueryHC):
         for line_item in deposit_list:
             for key, value in line_item.items():
                 if key == 'date':
-                    # breakpoint()
                     period = target_date.strftime('%Y-%m')
                     scrape_dep = ScrapeDetail(period=period, scrape_date=datetime.now(), scrape_dep_date=0, amount=0)
                     scrape_dep.scrape_dep_date = value 

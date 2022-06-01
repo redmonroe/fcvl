@@ -3,16 +3,11 @@
 - requirements:
 
   - operations:
-    - duplicate payment issues
-    - add manual_entry dict and/or figure out why original fcvfin doesn't have move-in missing deposits problems? how do I want to fix?
+    - segregate scrape_loading functionality
   - testing:
-    - april endbal 2920(test) v. 2933(rs): wait to til I process month to freak out (deactivating april in tests for now)
     - need to write tests for statusrs and balance letters (this is not an auto-flow now; triggered from cli )
   - incremental processing of files (comes from statusRS)
   - make rent sheets (JUST USE PANDAS)
-    - midmonth scrape (how does this work with rent sheets)
-    - mm scrape: make load a loop instead of just one shot
-    - we don't have an answer yet for inputing move-in like in feb (greiner)
   - S/M: export files for audit once they are processed, async, profiling, cython, frontend api structure
   - structure:
     - use interfaces and getters when referencing other classes
