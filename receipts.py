@@ -2,7 +2,7 @@
 from datetime import datetime
 
 from auth_work import oauth
-from config import Config, my_scopes
+from config import Config
 from utils import Utils
 
 
@@ -75,8 +75,8 @@ class RentReceipts(object):
 
     def rent_receipts(self):
         
-        service_scripts = oauth(my_scopes, 'script')
-        service = oauth(my_scopes, 'sheet')
+        service_scripts = oauth(Config.my_scopes, 'script')
+        service = oauth(Config.my_scopes, 'sheet')
     
         deploy_id = "AKfycby3_qnppVYUo9g7DE3dQgu2l_xd97td8smvs66gExs8AOH00CPlxT2ciXjbS4l94qD0"
     

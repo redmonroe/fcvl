@@ -1,14 +1,14 @@
 
-from datetime import datetime
 import os.path
-from pathlib import Path
-from openpyxl import Workbook
-from openpyxl import load_workbook
+from datetime import datetime
 from decimal import Decimal
-import xlrd
-import pandas as pd
-from google_api_calls_abstract import GoogleApiCalls
+from pathlib import Path
 
+import pandas as pd
+import xlrd
+from openpyxl import Workbook, load_workbook
+
+from google_api_calls_abstract import GoogleApiCalls
 
 
 class Utils:
@@ -53,9 +53,6 @@ class Utils:
                 xls_name.append(file_name_no_ext)
 
         print(xls_list)
-        # for items, names in zip(xls_list, xls_name):       
-            # df = pd.read_excel(items)
-            # df.to_excel(f'{names}.xlsx', index = False)
 
     @staticmethod
     def pick_rent_sheet(service, workbook_id): # ie RENT_SHEETS2020

@@ -9,7 +9,8 @@ from auth_work import oauth
 from backend import PopulateTable, StatusRS
 from balance_letter import balance_letters
 from build_rs import BuildRS
-from config import Config, my_scopes
+from config import Config
+#  my_scopes
 from db_utils import DBUtils
 from file_indexer import FileIndexer
 from file_manager import path_to_statements, write_hap

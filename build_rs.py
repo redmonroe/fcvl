@@ -5,7 +5,7 @@ from auth_work import oauth
 from backend import (BalanceLetter, Damages, Findexer, NTPayment, OpCash,
                      OpCashDetail, Payment, PopulateTable, StatusObject,
                      StatusRS, Subsidy, Tenant, TenantRent, Unit, db)
-from config import Config, my_scopes
+from config import Config
 from file_indexer import FileIndexer
 from records import record
 from setup_month import MonthSheet
@@ -18,7 +18,7 @@ class BuildRS(MonthSheet):
         self.full_sheet = full_sheet
         self.path = path
         try:
-            self.service = oauth(my_scopes, 'sheet')
+            self.service = oauth(Config.my_scopes, 'sheet')
         except FileNotFoundError as e:
             print(e, 'using testing configuration for Google Api Calls')
             self.service = oauth(Config.my_scopes, 'sheet', mode='testing')

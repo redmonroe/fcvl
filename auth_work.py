@@ -5,12 +5,7 @@ from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from oauth2client.service_account import ServiceAccountCredentials
-
-from config import (R_RANGE_INTAKE_UNITS, READ_RANGE_HAP, READ_RANGE_PAY_PRE,
-                    RENT_SHEETS2022, SCOPES_API, Config,
-                    my_oauth_credentials_json, my_scopes, my_token,
-                    my_token_api)
-
+from config import Config
 
 def oauth(SCOPES, type, mode=None):
     creds = None
@@ -31,8 +26,8 @@ def oauth(SCOPES, type, mode=None):
                 pickle.dump(creds, token)
 
     else:
-        if os.path.exists(my_token):
-            with open(my_token, 'rb') as token:
+        if os.path.exists(Config.my_token):
+            with open(Config.my_token, 'rb') as token:
                 creds = pickle.load(token)
         if not creds or not creds.valid:
             if creds and creds.expired and creds.refresh_token:

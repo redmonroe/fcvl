@@ -2,7 +2,6 @@ from config import Config
 import os
 from os import listdir
 from os.path import isfile, join
-# from google_api_calls_abstract import simple_batch_update
 
 def path_to_statements(path=None, keyword=None):
     script_dir = os.path.dirname(__file__)																										

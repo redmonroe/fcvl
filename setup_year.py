@@ -2,7 +2,8 @@ import pathlib
 import time
 
 from auth_work import oauth
-from config import Config, my_scopes
+from config import Config
+#  my_scopes
 from db_utils import DBUtils
 from google_api_calls_abstract import GoogleApiCalls
 from utils import Utils
