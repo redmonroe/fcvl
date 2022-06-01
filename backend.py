@@ -203,13 +203,19 @@ class StatusRS(BaseModel):
         
         if mid_month_choice:
             print('load midmonth scrape from bank website')
+            from file_indexer import FileIndexer
             target_mid_month = incomplete_month_bool[0]
             target_mm_date = datetime.strptime(list(target_mid_month.items())[0][0], '%Y-%m')
-            deposit_list = self.midmonth_scrape(list1=target_mid_month)
-            scrape_deposit_sum = sum([float(item['amount']) for item in deposit_list])
+            findex = FileIndexer()
+            all_relevant_scrape_txn_list = findex.load_mm_scrape(list1=target_mid_month)
+            scrape_deposit_sum = sum([float(item['amount']) for item in all_relevant_scrape_txn_list if item['dep_type'] == 'deposit'])
+            # re-run with selection based on dep_type
+            # then write code to pull hap out based on quadel
+            # then segregate all scrape functionality for seperate cli command
+            # breakpoint()
 
             populate = PopulateTable()
-            populate.load_scrape_to_db(deposit_list=deposit_list, target_date=target_mm_date)
+            populate.load_scrape_to_db(deposit_list=all_relevant_scrape_txn_list, target_date=target_mm_date)
 
             first_dt = target_mm_date.replace(day = 1)
             most_recent_status.current_date.replace(day = 1)
@@ -251,12 +257,6 @@ class StatusRS(BaseModel):
         print('generating rent receipts')
         receipts = RentReceipts()
         receipts.rent_receipts()
-    
-    def midmonth_scrape(self, list1=None):
-        from file_indexer import FileIndexer
-        findex = FileIndexer()
-        deposit_list = findex.load_mm_scrape(list1=list1)
-        return deposit_list
 
     def show_balance_letter_list_mr_reconciled(self):
         query = QueryHC()
@@ -417,7 +417,7 @@ class ScrapeDetail(BaseModel):
     scrape_date = DateField('0')
     scrape_dep_date = DateField('0')
     amount = CharField(default='0')
-
+    dep_type = CharField(default='undef_str')
 
 class QueryHC():
 
@@ -1125,5 +1125,7 @@ class PopulateTable(QueryHC):
                     scrape_dep.scrape_dep_date = value 
                 if key == 'amount':
                     scrape_dep.amount = value
+                if key == 'dep_type':
+                    scrape_dep.dep_type = value
                 scrape_dep.save()    
 

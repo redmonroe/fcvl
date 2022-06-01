@@ -181,16 +181,6 @@ class MonthSheet(YearSheet):
         self.write_list_to_col(func=gc.update_int, start_row=82, list1=dep_detail_amounts, col_letter='D', date=date)
         self.write_sum_forumula1(date=date)
 
-    # def export_deposit_detail_from_scrape(self, **kw):
-    #     # why doesn't make scrape namedtuples work here, would prevent a nearly dup func?
-    #     gc = GoogleApiCalls()
-    #     date = kw['date']
-    #     gc.update_int(self.service, self.full_sheet, [kw['hap']], f'{date}' + f'{self.wrange_hap_partial}', value_input_option='USER_ENTERED')
-    #     gc.update_int(self.service, self.full_sheet, [kw['res_rep']], f'{date}' + f'{self.wrange_rr_partial}', value_input_option='USER_ENTERED')
-    #     dep_detail_amounts = [item[1] for item in kw['dep_detail']]
-    #     self.write_list_to_col(func=gc.update_int, start_row=82, list1=dep_detail_amounts, col_letter='D', date=date)
-    #     self.write_sum_forumula1(date=date)
-
     def write_list_to_col(self, **kw):
         start_row = kw['start_row']
         for item in kw['list1']:

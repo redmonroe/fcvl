@@ -97,9 +97,9 @@ class FileIndexer(Utils):
         for index, row in most_recent_scrape.iterrows():
             if row['Description'] == 'DEPOSIT':
                 dict1 = {}
-                dict1 = {'date': row['Processed Date'], 'amount': row['Amount']}
+                dict1 = {'date': row['Processed Date'], 'amount': row['Amount'], 'dep_type': 'deposit'}
                 deposit_list.append(dict1)
-
+      
         return deposit_list
 
     def connect_to_db(self, mode=None):
