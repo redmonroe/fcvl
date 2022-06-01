@@ -36,7 +36,7 @@ def oauth(SCOPES, type, mode=None):
                 flow = InstalledAppFlow.from_client_secrets_file(
                     my_oauth_credentials_json, SCOPES)
                 creds = flow.run_local_server(port=0)
-            with open(my_token, 'wb') as token:
+            with open(Config.my_token, 'wb') as token:
                 pickle.dump(creds, token)
 
     if type == 'sheet':

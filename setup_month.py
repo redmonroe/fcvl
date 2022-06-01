@@ -10,7 +10,7 @@ from auth_work import oauth
 from backend import (Damages, Findexer, NTPayment, OpCash, OpCashDetail, Payment, PopulateTable, QueryHC, StatusObject, StatusRS,
                      Tenant, TenantRent, Unit, db)
 from config import Config
-# my_scopes
+
 from db_utils import DBUtils
 from google_api_calls_abstract import GoogleApiCalls
 from setup_year import YearSheet

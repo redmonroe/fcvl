@@ -76,9 +76,6 @@ class MoveIn(BaseModel):
 class SubsidyRent(BaseModel):
     pass
 
-class ContractRent(BaseModel):
-    pass
-
 class Damages(BaseModel):
     tenant = ForeignKeyField(Tenant, backref='damage')
     dam_amount = CharField()
@@ -767,6 +764,7 @@ class QueryHC():
         position_list1 = self.record_type_loader(position_list1, 'subsidy', subsidy_by_tenant, 1)
 
         contract_by_tenant = self.contract_this_period(first_dt=first_dt, last_dt=last_dt)
+        
         position_list1 = self.record_type_loader(position_list1, 'contract_rent', contract_by_tenant, 1)
   
         '''this is the work right here: do I want to put output in a database?'''
@@ -856,11 +854,11 @@ class PopulateTable(QueryHC):
 
         # should include write to move-in even though no move'in in jan
 
-        rent_insert_many = [{'t_name': row.name, 'unit': row.unit, 'rent_amount': row.rent, 'rent_date': row.date} for row in nt_list if row.name != 'vacant']  
+        rent_insert_many = [{'t_name': row.name, 'unit': row.unit, 'rent_amount': row.rent.replace(',',''), 'rent_date': row.date} for row in nt_list if row.name != 'vacant']  
 
-        subs_insert_many = [{'tenant': row.name, 'sub_amount': row.subsidy, 'date_posted': row.date} for row in nt_list if row.name != 'vacant']
+        subs_insert_many = [{'tenant': row.name, 'sub_amount': row.subsidy.replace(',', ''), 'date_posted': row.date} for row in nt_list if row.name != 'vacant']
 
-        krent_insert_many = [{'tenant': row.name, 'sub_amount': row.contract, 'date_posted': row.date} for row in nt_list if row.name != 'vacant']
+        krent_insert_many = [{'tenant': row.name, 'sub_amount': row.contract.replace(',', ''), 'date_posted': row.date} for row in nt_list if row.name != 'vacant']
 
         query = Tenant.insert_many(ten_insert_many)
         query.execute()
@@ -909,7 +907,7 @@ class PopulateTable(QueryHC):
         ''' now we should have updated list of active tenants'''
         cleaned_nt_list = [row for row in self.return_nt_list_with_no_vacants(keyword='vacant', nt_list=nt_list)]
 
-        insert_many_rent = [{'t_name': row.name, 'unit': row.unit, 'rent_amount': row.rent, 'rent_date': row.date} for row in cleaned_nt_list]  
+        insert_many_rent = [{'t_name': row.name, 'unit': row.unit, 'rent_amount': row.rent.replace(',',''), 'rent_date': row.date} for row in cleaned_nt_list]  
 
         '''update last_occupied for occupied: SLOW, Don't like'''
         for row in cleaned_nt_list:
@@ -921,8 +919,8 @@ class PopulateTable(QueryHC):
                 unit.last_occupied = '0'
             unit.save()
 
-        subs_insert_many = [{'tenant': row.name, 'sub_amount': row.subsidy, 'date_posted': row.date} for row in cleaned_nt_list if row.name != 'vacant']
-        krent_insert_many = [{'tenant': row.name, 'sub_amount': row.contract, 'date_posted': row.date} for row in cleaned_nt_list if row.name != 'vacant']
+        subs_insert_many = [{'tenant': row.name, 'sub_amount': row.subsidy.replace(',',''), 'date_posted': row.date} for row in cleaned_nt_list if row.name != 'vacant']
+        krent_insert_many = [{'tenant': row.name, 'sub_amount': row.contract.replace(',',''), 'date_posted': row.date} for row in cleaned_nt_list if row.name != 'vacant']
 
         query = TenantRent.insert_many(insert_many_rent)
         query.execute()
