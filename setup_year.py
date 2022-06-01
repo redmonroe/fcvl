@@ -15,7 +15,7 @@ class YearSheet:
     G_SUM_STARTBAL = ["=sum(D2:D68)"]
     G_SUM_ENDBAL = ["=sum(L2:L68)"]
     G_SHEETS_SUM_PAYMENT = ["=sum(K2:K68)"]
-    G_SHEETS_GRAND_TOTAL = ["=sum(K71:K79)"]
+    G_SHEETS_GRAND_TOTAL = ["=sum(K69:K79)"]
     MF_SUM_FORMULA = ["=sum(H81:H84)"]
     MF_PERCENT_FORMULA = ["=product(H85, .08)"]
     MF_FORMULA = ["=H86"]
@@ -30,7 +30,7 @@ class YearSheet:
     G_SHEETS_SD_TOTAL = ['total by hand']
 
     sd_total = ["sd_total"]
-    csc = ["type:", "csc", "csc", "other", "other","other"]
+    csc = ["type:", "csc", "csc", "other", "other","other", 'mis']
     laundry_income = ["laundry income"]
     grand_total = ["GRAND TOTAL"]
     calls = GoogleApiCalls()
@@ -82,7 +82,7 @@ class YearSheet:
             self.calls.format_row(self.service, self.full_sheet, f'{sheet}!H81:H81', 'ROWS', self.G_SHEETS_HAP_COLLECTED)
             self.calls.format_row(self.service, self.full_sheet, f'{sheet}!H84:H84', 'ROWS', self.G_SHEETS_TENANT_COLLECTED)
 
-            self.calls.format_row(self.service, self.full_sheet, f'{sheet}!J70:J75', 'COLUMNS', self.csc)
+            self.calls.format_row(self.service, self.full_sheet, f'{sheet}!J70:J76', 'COLUMNS', self.csc)
             self.calls.format_row(self.service, self.full_sheet, f'{sheet}!M71:M71', 'ROWS', self.laundry_income)
             self.calls.format_row(self.service, self.full_sheet, f'{sheet}!J80:J80', 'ROWS', self.grand_total)
             self.calls.format_row(self.service, self.full_sheet, f'{sheet}!M73:M74', 'ROWS', self.sd_total)

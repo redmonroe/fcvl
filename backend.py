@@ -562,7 +562,7 @@ class QueryHC():
         return recs 
 
     def get_scrape_detail_by_month(self, first_dt=None, last_dt=None):
-        recs = [(row.scrape_dep_date, row.amount) for row in ScrapeDetail().select().where(ScrapeDetail.scrape_dep_date >= first_dt).
+        recs = [row for row in ScrapeDetail.select().where(ScrapeDetail.scrape_dep_date >= first_dt).
         where(ScrapeDetail.scrape_dep_date <= last_dt).namedtuples()]
         return recs
 

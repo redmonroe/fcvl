@@ -72,14 +72,6 @@ class MonthSheet(YearSheet):
             self.write_ntp(date, ntp)
             self.check_totals_reconcile(date)
 
-    def reset_spreadsheet(self):
-        print('resetting spreadsheet')
-        current_sheets = self.show_current_sheets()
-        gc = GoogleApiCalls()
-        for name, id2, in current_sheets.items():
-            if name != 'intake':
-                gc.del_one_sheet(self.service, self.full_sheet, id2)
-
     def write_rs_col(self, date):
         gc = GoogleApiCalls()
         query = QueryHC()
@@ -139,7 +131,6 @@ class MonthSheet(YearSheet):
             dates_list = [item[0] for item in mi_list_to_write]
             self.write_list_to_col(func=gc.update, start_row=73, list1=names_list, col_letter='B', date=date)
             self.write_list_to_col(func=gc.update, start_row=73, list1=dates_list, col_letter='C', date=date)
-            # breakpoint()
 
     def write_deposit_detail_from_opcash(self, date):
         populate = PopulateTable()
@@ -152,27 +143,26 @@ class MonthSheet(YearSheet):
         populate = PopulateTable()
         first_dt, last_dt = populate.make_first_and_last_dates(date_str=date)
         dep_detail = populate.get_scrape_detail_by_month(first_dt=first_dt, last_dt=last_dt)
-        self.export_deposit_detail_from_scrape(date=date, res_rep=0, hap=0, dep_sum=0, dep_detail=dep_detail)
+        self.export_deposit_detail(date=date, res_rep=0, hap=0, dep_sum=0, dep_detail=dep_detail)
 
     def export_deposit_detail(self, **kw):
         gc = GoogleApiCalls()
         date = kw['date']
         gc.update_int(self.service, self.full_sheet, [kw['hap']], f'{date}' + f'{self.wrange_hap_partial}', value_input_option='USER_ENTERED')
-        gc.update_int(self.service, self.full_sheet, [kw['res_rep']], f'{date}' + f'{self.wrange_rr_partial}', value_input_option='USER_ENTERED')  
-        breakpoint() 
+        gc.update_int(self.service, self.full_sheet, [kw['res_rep']], f'{date}' + f'{self.wrange_rr_partial}', value_input_option='USER_ENTERED')   
         dep_detail_amounts = [item.amount for item in kw['dep_detail']]
         self.write_list_to_col(func=gc.update_int, start_row=82, list1=dep_detail_amounts, col_letter='D', date=date)
         self.write_sum_forumula1(date=date)
 
-    def export_deposit_detail_from_scrape(self, **kw):
-        # why doesn't make scrape namedtuples work here, would prevent a nearly dup func?
-        gc = GoogleApiCalls()
-        date = kw['date']
-        gc.update_int(self.service, self.full_sheet, [kw['hap']], f'{date}' + f'{self.wrange_hap_partial}', value_input_option='USER_ENTERED')
-        gc.update_int(self.service, self.full_sheet, [kw['res_rep']], f'{date}' + f'{self.wrange_rr_partial}', value_input_option='USER_ENTERED')
-        dep_detail_amounts = [item[1] for item in kw['dep_detail']]
-        self.write_list_to_col(func=gc.update_int, start_row=82, list1=dep_detail_amounts, col_letter='D', date=date)
-        self.write_sum_forumula1(date=date)
+    # def export_deposit_detail_from_scrape(self, **kw):
+    #     # why doesn't make scrape namedtuples work here, would prevent a nearly dup func?
+    #     gc = GoogleApiCalls()
+    #     date = kw['date']
+    #     gc.update_int(self.service, self.full_sheet, [kw['hap']], f'{date}' + f'{self.wrange_hap_partial}', value_input_option='USER_ENTERED')
+    #     gc.update_int(self.service, self.full_sheet, [kw['res_rep']], f'{date}' + f'{self.wrange_rr_partial}', value_input_option='USER_ENTERED')
+    #     dep_detail_amounts = [item[1] for item in kw['dep_detail']]
+    #     self.write_list_to_col(func=gc.update_int, start_row=82, list1=dep_detail_amounts, col_letter='D', date=date)
+    #     self.write_sum_forumula1(date=date)
 
     def write_list_to_col(self, **kw):
         start_row = kw['start_row']
@@ -190,7 +180,7 @@ class MonthSheet(YearSheet):
     
     def check_totals_reconcile(self, date):
         gc = GoogleApiCalls()
-        onesite_total = gc.broad_get(self.service, self.full_sheet, f'{date}!K77:K77')
+        onesite_total = gc.broad_get(self.service, self.full_sheet, f'{date}!K80:K80')
         nbofi_total = gc.broad_get(self.service, self.full_sheet, f'{date}!D90:D90')
         if onesite_total == nbofi_total:
             message = [f'balances at {str(dt.today().date())}']
@@ -228,6 +218,14 @@ class MonthSheet(YearSheet):
             new = [item.rstrip().lstrip().capitalize() for item in name.split(',')]
             t_list.append(', '.join(new))
         return t_list
+
+    def reset_spreadsheet(self):
+        print('resetting spreadsheet')
+        current_sheets = self.show_current_sheets()
+        gc = GoogleApiCalls()
+        for name, id2, in current_sheets.items():
+            if name != 'intake':
+                gc.del_one_sheet(self.service, self.full_sheet, id2)
 
 
 
