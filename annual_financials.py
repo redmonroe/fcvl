@@ -5,6 +5,8 @@
 
 from auth_work import oauth
 from config import Config
+from utils import Utils
+from backend import PopulateTable, Findexer
 
 class AnnFin:   
 
@@ -36,8 +38,32 @@ class AnnFin:
         'dec': 12, 
         }
 
-    def return_path(self):
-        pass
+    def __init__(self):
+        populate = PopulateTable()
+        self.tables = populate.return_tables_list()
+
+    def receivables_actual(self):
+        # self.match_hap_and_load_to_db()
+        self.load_p_and_l()
+
+        # if month is closed, 
+        # write to own table before
+
+    def load_p_and_l(self):
+        path = Config.TEST_ANNFIN_PATH
+        breakpoint()
+
+    def match_hap(self):
+        print('attempt to match hap, send to db, and write')
+        # findex = FileIndexer(path=self.path, db=self.main_db)
+
+        op_cash_hap = [(row.hap, row.period) for row in Findexer.select().where(Findexer.hap != '0').namedtuples()]
+
+
+
+
+
+    
 
     def qb_extract_p_and_l(self, filename, keyword=None, path=None):
         db_file = 'data/qb_output.txt'
@@ -125,6 +151,9 @@ class AnnFin:
             return data
 
     def start_here(self):
+        self.receivables_actual()()
+
+    def start_here2(self):
 
         choice = str(input('enter target month (mm/yyyy): '))
         choice = '01 2022' #need to reup December qbo, right now still showing 1-29 of december
@@ -134,13 +163,13 @@ class AnnFin:
         year_choice = year_choice[1]
 
         if year_choice == '2022':
-            bank_stmts = Config.path_qbo_test_reports
-            p_and_l = Config.path_qbo_test_reports
-            path_security_deposit = Config.path_qbo_test_reports
+            bank_stmts = Config.TEST_ANNFIN_PATH
+            p_and_l = Config.TEST_ANNFIN_PATH 
+            path_security_deposit = Config.TEST_ANNFIN_PATH 
     
-        three_letter_month = [str(month_str) for month_str, month_int in month_match_dict.items() if int(month_choice) == month_int]
+        three_letter_month = [str(month_str) for month_str, month_int in self.month_match_dict.items() if int(month_choice) == month_int]
 
-        titles_dict = get_existing_sheets(service, CURRENT_YEAR_RS)
+        titles_dict = Utils.get_existing_sheets(self.service, Config.CURRENT_YEAR_RS)
         target_sheet = {sheet_name for (sheet_name, sheet_id) in titles_dict.items() if three_letter_month[0] in sheet_name}
         target_sheet = min(target_sheet)
         print(target_sheet)

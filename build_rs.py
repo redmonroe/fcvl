@@ -74,7 +74,7 @@ class BuildRS(MonthSheet):
         self.main_db.close()
 
     def iterate_over_remaining_months(self):       
-                # load remaining months rent
+        # load remaining months rent
         populate = PopulateTable()
         rent_roll_list = [(item.fn, item.period, item.path) for item in Findexer().select().
             where(Findexer.doc_type == 'rent').

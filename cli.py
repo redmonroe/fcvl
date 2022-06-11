@@ -69,15 +69,18 @@ def autors(mode=None):
 
 @click.command()
 def sqlite_dump():
+    click.echo('backup db')
     click.echo('Dumping current tables to sqlite folder on GDrive.')
     DBUtils.dump_sqlite(path_to_existing_db=Config.sqlite_test_db_path, path_to_backup=Config.sqlite_dump_path)
 
 @click.command()
 def balanceletters():
+    click.echo('balance letters')
     balance_letters()
 
 @click.command()
 def receipts():
+    click.echo('receipts')
     status = StatusRS()
     status.rent_receipts_wrapper()
 
