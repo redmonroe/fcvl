@@ -3,10 +3,15 @@
     # do I want to do something with "TOTal" part of p and l?  I have it busted out into its own dict
     # do I want to do something with "mtd" part of p and L?  I have it also busted out into its own dict
 
+import numpy as np
+import pandas as pd
+
 from auth_work import oauth
+from backend import Findexer, PopulateTable
 from config import Config
+from file_indexer import FileIndexer
 from utils import Utils
-from backend import PopulateTable, Findexer
+
 
 class AnnFin:   
 
@@ -44,38 +49,41 @@ class AnnFin:
 
     def receivables_actual(self):
         # self.match_hap_and_load_to_db()
-        self.load_p_and_l()
+        self.load_pl_wrapper()
 
         # if month is closed, 
         # write to own table before
 
-    def load_p_and_l(self):
-        path = Config.TEST_ANNFIN_PATH
-        breakpoint()
+    def load_pl_wrapper(self):
+        # path = Config.TEST_ANNFIN_PATH
+        findexer = FileIndexer(path=Config.TEST_ANNFIN_PATH,db=Config.TEST_DB)
+        path_to_pl = findexer.load_pl()
+        self.qb_extract_p_and_l(keyword='5121', path=path_to_pl)
+
 
     def match_hap(self):
         print('attempt to match hap, send to db, and write')
         # findex = FileIndexer(path=self.path, db=self.main_db)
 
         op_cash_hap = [(row.hap, row.period) for row in Findexer.select().where(Findexer.hap != '0').namedtuples()]
-
-
-
-
-
     
 
-    def qb_extract_p_and_l(self, filename, keyword=None, path=None):
+    def qb_extract_p_and_l(self, keyword=None, path=None):
         db_file = 'data/qb_output.txt'
         
-        abs_file_path = os.path.join(path, filename)
-        print(abs_file_path)
-        df = pd.read_excel(abs_file_path)
+        # abs_file_path = os.path.join(path, filename)
+        # print(abs_file_path)
+        path = path[0]
+        df = pd.read_excel(path)
+        breakpoint()
         
-        extract = df.loc[df['Fall Creek Village I'].str.contains(keyword, na=False)]
+        extract = df.loc[df['Fall Creek Village I'].str.contains(keyword, 
+        # na=False
+        )]
         extract = extract.values[0]
+
+
         amount = [item for item in extract if type(item) != str]
-        
         df = pd.read_excel(abs_file_path, header=4)
         date = list(df.columns)
         date = date[1:]
@@ -188,6 +196,7 @@ class AnnFin:
     dateq, hap_stmt = nbofi_pdf_extract_hap(target_report[0], path=target_bank_stmt_path)
     
     target_pl_path, profit_and_loss_ytd = path_to_statements(path=p_and_l, keyword='Profit')
+
     hap_date_dict = qb_extract_p_and_l(profit_and_loss_ytd[0], keyword='5121', path=target_pl_path)
     for dateh, amount in hap_date_dict.items():
         if dateh == choice:
