@@ -59,7 +59,7 @@ class RentReceipts(object):
             documentId=doc_id, body={'requests': requests}).execute()
 
     @staticmethod
-    def run_script(service, deploy_id, function_name, parameters):
+    def run_script(service, deploy_id, function_name, parameters=None):
 
         request = {
         "function": function_name, 
@@ -73,10 +73,21 @@ class RentReceipts(object):
                         ).execute()
         print(request, 'response:', response)
 
+    def work_orders(self):
+        service_scripts = oauth(Config.my_scopes, 'script')
+        service = oauth(Config.my_scopes, 'sheet')
+        deploy_id = 'AKfycbw5Sdkkqq6f34el5uz_wRGSWdORN8BNyzay2HYLyh6JIW1hwcGTn06zYVR5RMuUiFr_JA'
+        RentReceipts.run_script(service=service_scripts, deploy_id=deploy_id, function_name='myFunction', 
+        # parameters=parameters
+        ) 
+
     def rent_receipts(self):
         
         service_scripts = oauth(Config.my_scopes, 'script')
         service = oauth(Config.my_scopes, 'sheet')
+
+        
+        '''if there is an issue, check deployment id'''
     
         deploy_id = "AKfycby3_qnppVYUo9g7DE3dQgu2l_xd97td8smvs66gExs8AOH00CPlxT2ciXjbS4l94qD0"
     
@@ -104,4 +115,5 @@ class RentReceipts(object):
         if choice == 'y':
             RentReceipts.run_script(service=service_scripts, deploy_id=deploy_id, function_name="test1", parameters=parameters) 
     
+
 

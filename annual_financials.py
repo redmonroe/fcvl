@@ -2,7 +2,43 @@
 
     # do I want to do something with "TOTal" part of p and l?  I have it busted out into its own dict
     # do I want to do something with "mtd" part of p and L?  I have it also busted out into its own dict
+
+from auth_work import oauth
+from config import Config
+
 class AnnFin:   
+
+    service = oauth(Config.my_scopes, 'sheet')
+    sheet_id = Config.rec_act_2021
+    worksheet_name = Config.TEST_REC_ACT
+    hap_range = Config.current_year_hap
+    laundry_range = Config.current_year_laundry
+    sec_dep_range = Config.current_year_sec_dep
+    rr_range = Config.current_year_rr
+    dim = 'COLUMNS'
+
+    LAUNDRY_RANGE_FROM_RS = '!N71:N71'
+    RR_RANGE_FROM_RS = '!D80:D80'
+    SEC_DEP_RANGE_FROM_RS = '!N73:N73'
+    CURRENT_YEAR_RS = Config.RS_2022
+    month_match_dict = {
+        'jan': 1, 
+        'feb': 2, 
+        'mar': 3, 
+        'apr': 4, 
+        'may': 5, 
+        'june': 6, 
+        'july': 7, 
+        'aug': 8, 
+        'sep': 9, 
+        'oct': 10, 
+        'nov': 11, 
+        'dec': 12, 
+        }
+
+    def return_path(self):
+        pass
+
     def qb_extract_p_and_l(self, filename, keyword=None, path=None):
         db_file = 'data/qb_output.txt'
         
@@ -88,53 +124,29 @@ class AnnFin:
             data = [min(result)]
             return data
 
-    LAUNDRY_RANGE_FROM_RS = '!N71:N71'
-    RR_RANGE_FROM_RS = '!D80:D80'
-    SEC_DEP_RANGE_FROM_RS = '!N73:N73'
-    CURRENT_YEAR_RS = Config.RS_2022
-    month_match_dict = {
-        'jan': 1, 
-        'feb': 2, 
-        'mar': 3, 
-        'apr': 4, 
-        'may': 5, 
-        'june': 6, 
-        'july': 7, 
-        'aug': 8, 
-        'sep': 9, 
-        'oct': 10, 
-        'nov': 11, 
-        'dec': 12, 
-        }
+    def start_here(self):
 
-    # choice = str(input('enter target month (mm/yyyy): '))
-    service = oauth(my_scopes, 'sheet')
-    sheet_id = Config.rec_act_2021
-    worksheet_name = Config.TEST_REC_ACT
-    hap_range = Config.current_year_hap
-    laundry_range = Config.current_year_laundry
-    sec_dep_range = Config.current_year_sec_dep
-    rr_range = Config.current_year_rr
+        choice = str(input('enter target month (mm/yyyy): '))
+        choice = '01 2022' #need to reup December qbo, right now still showing 1-29 of december
+        print('you picked:', choice)
+        year_choice = choice.split(' ')
+        month_choice = year_choice[0]
+        year_choice = year_choice[1]
 
-    dim = 'COLUMNS'
-
-    choice = '01 2022' #need to reup December qbo, right now still showing 1-29 of december
-    print('you picked:', choice)
-    year_choice = choice.split(' ')
-    month_choice = year_choice[0]
-    year_choice = year_choice[1]
-    # pick reports here
-    if year_choice == '2022':
-        bank_stmts = Config.path_qbo_test_reports
-        p_and_l = Config.path_qbo_test_reports
-        path_security_deposit = Config.path_qbo_test_reports
+        if year_choice == '2022':
+            bank_stmts = Config.path_qbo_test_reports
+            p_and_l = Config.path_qbo_test_reports
+            path_security_deposit = Config.path_qbo_test_reports
     
-    three_letter_month = [str(month_str) for month_str, month_int in month_match_dict.items() if int(month_choice) == month_int]
+        three_letter_month = [str(month_str) for month_str, month_int in month_match_dict.items() if int(month_choice) == month_int]
 
-    titles_dict = get_existing_sheets(service, CURRENT_YEAR_RS)
-    target_sheet = {sheet_name for (sheet_name, sheet_id) in titles_dict.items() if three_letter_month[0] in sheet_name}
-    target_sheet = min(target_sheet)
+        titles_dict = get_existing_sheets(service, CURRENT_YEAR_RS)
+        target_sheet = {sheet_name for (sheet_name, sheet_id) in titles_dict.items() if three_letter_month[0] in sheet_name}
+        target_sheet = min(target_sheet)
+        print(target_sheet)
 
+
+    '''
     sh_col = Liltilities.get_letter_by_choice(int(month_choice), 0)
     hap_wrange = f'{worksheet_name}!{sh_col}{hap_range}:{sh_col}{hap_range}'
     laundry_wrange =f'{worksheet_name}!{sh_col}{laundry_range}:{sh_col}{laundry_range}' 
@@ -204,3 +216,4 @@ class AnnFin:
     print(data)
 
     print('joe')
+    '''

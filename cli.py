@@ -5,12 +5,12 @@ import click
 import pytest
 from peewee import *
 
+from annual_financials import AnnFin
 from auth_work import oauth
 from backend import PopulateTable, StatusRS
 from balance_letter import balance_letters
 from build_rs import BuildRS
 from config import Config
-
 from db_utils import DBUtils
 from file_indexer import FileIndexer
 from file_manager import path_to_statements, write_hap
@@ -20,11 +20,13 @@ from setup_month import MonthSheet
 from setup_year import YearSheet
 
 '''
-cli.add_command(merchants)
+# corrections: need to deal with that issue with deposit corrections
 cli.add_command(nbofi)
-cli.add_command(annual_financial)
 cli.add_command(consume_and_backup_invoices)
-cli.add_command(workorders_todo)
+@click.command()
+def merchants():
+    click.echo('merchants')
+    pass
 '''
 
 @click.group()
@@ -79,10 +81,24 @@ def receipts():
     status = StatusRS()
     status.rent_receipts_wrapper()
 
+@click.command()
+def workorders():
+    click.echo('work orders')
+    work_orders = RentReceipts()
+    work_orders.work_orders()
+
+@click.command()
+def recvactuals():
+    click.echo('receivable actuals')
+    annfin = AnnFin()
+    annfin.start_here()
+
 cli.add_command(receipts)
 cli.add_command(autors)
 cli.add_command(sqlite_dump)
 cli.add_command(balanceletters)
+cli.add_command(workorders)
+cli.add_command(recvactuals)
 
 if __name__ == '__main__':
     cli()
