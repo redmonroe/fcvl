@@ -632,6 +632,13 @@ class QueryHC():
         where(NTPayment.date_posted <= last_dt).
         namedtuples()])
 
+    def get_ntp_by_period_and_type(self, first_dt=None, last_dt=None):
+        return list([(float(rec.amount), rec.genus) for rec in NTPayment().
+        select().
+        where(NTPayment.date_posted >= first_dt).
+        where(NTPayment.date_posted <= last_dt).
+        namedtuples()])
+
     def get_rent_charges_by_tenant_by_period(self, first_dt=None, last_dt=None):   
         '''what happens on a moveout'''
         return [(rec.tenant_name, rec.rent_amount) for rec in Tenant.select(

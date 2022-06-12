@@ -66,8 +66,8 @@ def autors(mode=None):
 
     if mode == 'write_from_db':
         sample_month_list = ['2022-01']
-        # ms.auto_control(month_list=sample_month_list)
-        ms.auto_control()
+        ms.auto_control(month_list=sample_month_list)
+        # ms.auto_control()
 
 @click.command()
 def sqlite_dump():

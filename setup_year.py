@@ -27,13 +27,10 @@ class YearSheet:
     'tenant rent collected', 'total', '0.08']
     DEPOSIT_BOX_VERTICAL = ['rr', 'hap', 'ten', 'ten', 'ten', 'ten', 'ten', 'ten', 'ten','ten']
     DEPOSIT_BOX_HORIZONTAL = ['month', 'date']
-    G_SHEETS_LAUNDRY_STOTAL = ["=sum(K71:K72)"]
     G_SHEETS_SD_TOTAL = ['total by hand']
 
     sd_total = ['sd_total']
-    csc = ['type:', 'csc', 'csc', 'other', 'other', 'other', 'total tr MIs']
-    laundry_income = ["laundry income"]
-    grand_total = ["GRAND TOTAL"]
+    csc = ['type:', 'csc_total', 'other', 'other', 'other', 'other', 'total tr MIs', '', '', '', 'GRAND TOTAL']
     calls = GoogleApiCalls()
     base_month = 'base'
     
@@ -83,9 +80,7 @@ class YearSheet:
             self.calls.format_row(self.service, self.full_sheet, f'{sheet}!H81:H81', 'ROWS', self.G_SHEETS_HAP_COLLECTED)
             self.calls.format_row(self.service, self.full_sheet, f'{sheet}!H84:H84', 'ROWS', self.G_SHEETS_TENANT_COLLECTED)
 
-            self.calls.format_row(self.service, self.full_sheet, f'{sheet}!J70:J76', 'COLUMNS', self.csc)
-            self.calls.format_row(self.service, self.full_sheet, f'{sheet}!M71:M71', 'ROWS', self.laundry_income)
-            self.calls.format_row(self.service, self.full_sheet, f'{sheet}!J80:J80', 'ROWS', self.grand_total)
+            self.calls.format_row(self.service, self.full_sheet, f'{sheet}!J70:J80', 'COLUMNS', self.csc)
             self.calls.format_row(self.service, self.full_sheet, f'{sheet}!M73:M74', 'ROWS', self.sd_total)
             
             self.calls.format_row(self.service, self.full_sheet, f'{sheet}!A1:M1', 'ROWS', self.HEADER_NAMES)
@@ -96,7 +91,6 @@ class YearSheet:
             
             self.calls.write_formula_column(self.service, self.full_sheet, self.G_SHEETS_SD_TOTAL, f'{sheet}!N73:N73')
             self.calls.write_formula_column(self.service, self.full_sheet, self.G_SHEETS_GRAND_TOTAL, f'{sheet}!K80')
-            self.calls.write_formula_column(self.service, self.full_sheet, self.G_SHEETS_LAUNDRY_STOTAL, f'{sheet}!N71:N71')
             
             self.calls.date_stamp(self.service, self.full_sheet, f'{sheet}!A70:A70')
 

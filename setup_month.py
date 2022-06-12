@@ -52,6 +52,7 @@ class MonthSheet(YearSheet):
             print('generating list of months where either scrape or opcash has reconciled to tenant.')
             month_list = [rec.month for rec in StatusObject().select().where(       (StatusObject.tenant_reconciled==1) |
                     (StatusObject.scrape_reconciled==1)).namedtuples()]
+            print(f'reconciled months = {month_list}')
 
         self.reset_spreadsheet()
         self.make_base_sheet()
@@ -69,9 +70,11 @@ class MonthSheet(YearSheet):
                 self.write_deposit_detail_from_opcash(date)
             
             ntp = self.get_ntp_wrapper(date)
+            sum_laundry, other_list = self.split_ntp(ntp)
             sum_mi_payments = self.get_move_ins(date)
             self.write_move_in_box(date)
-            self.write_ntp(date, ntp)
+            self.write_ntp(date, [sum_laundry], start_row=71)
+            self.write_ntp(date, other_list, start_row=72)
             self.write_sum_mi_payments(date, sum_mi_payments)
             self.check_totals_reconcile(date)
     
@@ -135,15 +138,22 @@ class MonthSheet(YearSheet):
     def get_ntp_wrapper(self, date):
         populate = PopulateTable()
         first_dt, last_dt = populate.make_first_and_last_dates(date_str=date)
-        return populate.get_ntp_by_period(first_dt=first_dt, last_dt=last_dt)
+        agg_ntp = populate.get_ntp_by_period_and_type(first_dt=first_dt, last_dt=last_dt)
+        return agg_ntp
+
+    def split_ntp(self, ntp=None):
+        sum_laundry = sum([amount for amount, genus in ntp if genus == 'laundry'])
+        other_list = [amount for amount, genus in ntp if genus != 'laundry']
+
+        return sum_laundry, other_list
 
     def write_sum_mi_payments(self, date, data):
         gc = GoogleApiCalls()
         gc.update_int(self.service, self.full_sheet, [data], f'{date}' + f'{self.wrange_sum_mi_payments}', value_input_option='USER_ENTERED')   
 
-    def write_ntp(self, date, data):
+    def write_ntp(self, date, data, start_row=None):
         gc = GoogleApiCalls()
-        self.write_list_to_col(func=gc.update_int, start_row=71, list1=data, col_letter='K', gc=gc, date=date)
+        self.write_list_to_col(func=gc.update_int, start_row=start_row, list1=data, col_letter='K', gc=gc, date=date)
 
     def write_move_in_box(self, date):
         populate = PopulateTable()
