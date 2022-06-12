@@ -50,6 +50,7 @@ class AnnFin:
         populate = PopulateTable()
         self.tables = populate.return_tables_list()
         self.hap_code = '5121'
+        self.laundry_code = '5910'
         self.db = db
 
     def connect_to_db(self, mode=None):
@@ -60,33 +61,38 @@ class AnnFin:
         self.db.create_tables(models=self.tables)
 
     def receivables_actual(self):    
+        '''notes on canonical amounts:'''
+        '''01/22: 501.71 laundry'''
+        '''01/22: 15 nationwide'''
+        '''02/22: 700 greiner sd'''
+        '''02/22: 26.30 laundry'''
+        '''03/22: 272.95 laundry'''
+        '''04/22: 227.27 laundry'''
+        '''04/22: 115.17 nationwide refund'''
+        '''04/22: 92.96 laundry'''
+        '''04/22: 322.26 laundry'''
+        self.connect_to_db()
         path = Config.TEST_ANNFIN_PATH
         directory_contents = [item for item in path.iterdir()]
         path_to_pl = [path for path in directory_contents if path.name != 'desktop.ini']
         
         closed_month_list = [dt.strptime(rec.month, '%Y-%m') for rec in StatusObject().select().where(StatusObject.tenant_reconciled==1).namedtuples()]
 
-        hap = self.load_pl_wrapper(keyword=self.hap_code, path=path_to_pl)
+        hap = self.qb_extract_pl_line(keyword=self.hap_code, path=path_to_pl)
+
+        laundry = self.qb_extract_pl_line(keyword=self.laundry_code, path=path_to_pl)
+
 
         for month in closed_month_list:
             for date, hap_amount in hap.items():
                 if month == date:
-                    # print(month, hap_amount)
                     hap_db = IncomeMonth(year=Config.current_year, month=month, hap=hap_amount)
-                    hap_db.save()
-            
-        breakpoint()    
-        # write to own table before
-
-    def load_pl_wrapper(self, keyword, path):
-        return self.qb_extract_pl_line(keyword=keyword, path=path)
-
+    
     def match_hap(self):
         print('attempt to match hap, send to db, and write')
         # findex = FileIndexer(path=self.path, db=self.main_db)
 
         op_cash_hap = [(row.hap, row.period) for row in Findexer.select().where(Findexer.hap != '0').namedtuples()]
-    
 
     def qb_extract_pl_line(self, keyword=None, path=None):
         '''limits: cells with formulas will not be extracted properly; however, the workaround is to put an x in a cell and save and close.  we need a no-touch way to do this'''        
@@ -96,6 +102,7 @@ class AnnFin:
         extract = df.loc[df['Fall Creek Village I'].str.contains(keyword, 
         na=False
         )]
+        breakpoint()
         extract = extract.values[0]
         line_items = [item for item in extract if type(item) != str]
         line_items = self.qbo_cleanup_line(path=path, dirty_list=line_items) 
