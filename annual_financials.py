@@ -63,7 +63,7 @@ class AnnFin:
     def receivables_actual(self):    
         '''notes on canonical amounts:'''
         '''01/22: 501.71 laundry'''
-        '''01/22: 15 nationwide: should be other'''
+        '''01/22: 15 nationwide: fixed'''
         '''02/22: 700 greiner sd: should be other at least'''
         '''02/22: 26.30 laundry'''
         '''03/22: 272.95 laundry'''

@@ -828,8 +828,6 @@ class QueryHC():
 
 class PopulateTable(QueryHC):
 
-    ntp_cases = ['laundry', 'insurance', 'other', 'sd']
-
     def init_tenant_load(self, filename=None, date=None):
         nt_list, total_tenant_charges, explicit_move_outs = self.init_load_ten_unit_ten_rent(filename=filename, date=date)
 
@@ -965,6 +963,7 @@ class PopulateTable(QueryHC):
         df = self.read_excel_payments(path=filename)
         df = self.remove_nan_lines(df=df)
         grand_total = self.grand_total(df=df)
+
         tenant_payment_df, ntp_df = self.return_and_remove_ntp(df=df, col='unit', remove_str=0, drop_col='description')
 
         ntp_sum = sum(ntp_df['amount'].astype(float).tolist())  # can split up ntp further here
@@ -997,21 +996,38 @@ class PopulateTable(QueryHC):
             - sd(if not sure, use other)
             - other
             '''
+        '''oddly named descriptions are getting pushed out bc they are not in ntp_cases'''
+        # breakpoint()
 
         insert_iter = []
         for (deposit_id, genus, name, date_posted, amount, date_code, description) in ntp_df.values:
-            for item in description.split(' '):
-                if item in self.ntp_cases:
-                    insert_iter.append({
-                        'payee': description.lower(), 
-                        'amount': amount, 
-                        'date_posted': datetime.strptime(date_posted, '%m/%d/%Y'),  
-                        'date_code': date_code, 
-                        'genus': description, 
-                        'deposit_id': deposit_id, 
-                        })
+            for description in self.ntp_classify(description):
+                insert_iter.append({
+                    'payee': description.lower(), 
+                    'amount': amount, 
+                    'date_posted': datetime.strptime(date_posted, '%m/%d/%Y'),  
+                    'date_code': date_code, 
+                    'genus': self.genus_renamer(description.lower()), 
+                    'deposit_id': deposit_id, 
+                    })
 
         return insert_iter
+    
+    def ntp_classify(self, description):
+        description_split_list = [desc.lower() for desc in description.split(' ')]
+        if 'laundry' in description_split_list:
+            checked_description = 'laundry'
+        else:
+            checked_description = ('other' + '_' + f'({description})')
+        return [checked_description]
+
+    def genus_renamer(self, description):
+        genus_list = description.split(' ')
+        if 'laundry' not in genus_list:
+            genus = 'other'
+        else:
+            genus = 'laundry'
+        return genus
 
     def read_excel_payments(self, path):
         df = pd.read_excel(path, header=9)

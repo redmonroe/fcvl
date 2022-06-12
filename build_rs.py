@@ -48,7 +48,7 @@ class BuildRS(MonthSheet):
     def drop_then_create_tables(self):
         populate = PopulateTable()
         findex = FileIndexer(path=self.path, db=self.main_db)
-        
+
         self.create_tables_list1 = populate.return_tables_list()
         findex.drop_findex_table() 
         if self.main_db.is_closed() == True:
@@ -85,6 +85,7 @@ class BuildRS(MonthSheet):
         
         for date1, path in processed_dates_and_paths:
             grand_total, ntp, tenant_payment_df = populate.payment_load_full(filename=path)
+            # breakpoint()
             first_dt, last_dt = populate.make_first_and_last_dates(date_str=date1)
         return processed_rentr_dates_and_paths
 
