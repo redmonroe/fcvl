@@ -73,8 +73,10 @@ class MoveIn(BaseModel):
     mi_date = DateField('0')
     name = CharField(default='move_in_name')
 
-class SubsidyRent(BaseModel):
-    pass
+class IncomeMonth(BaseModel):
+    year = CharField()
+    month = CharField()
+    hap = CharField()
 
 class Damages(BaseModel):
     tenant = ForeignKeyField(Tenant, backref='damage')

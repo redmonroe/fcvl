@@ -3,11 +3,14 @@
     # do I want to do something with "TOTal" part of p and l?  I have it busted out into its own dict
     # do I want to do something with "mtd" part of p and L?  I have it also busted out into its own dict
 
+import math
+from datetime import datetime as dt
+
 import numpy as np
 import pandas as pd
 
 from auth_work import oauth
-from backend import Findexer, PopulateTable
+from backend import Findexer, PopulateTable, StatusObject
 from config import Config
 from file_indexer import FileIndexer
 from utils import Utils
@@ -46,20 +49,28 @@ class AnnFin:
     def __init__(self):
         populate = PopulateTable()
         self.tables = populate.return_tables_list()
+        self.hap_code = '5121'
 
-    def receivables_actual(self):
-        # self.match_hap_and_load_to_db()
-        self.load_pl_wrapper()
+    def receivables_actual(self):        
+        closed_month_list = [dt.strptime(rec.month, '%Y-%m') for rec in StatusObject().select().where(StatusObject.tenant_reconciled==1).namedtuples()]
 
-        # if month is closed, 
+        hap = self.load_pl_wrapper(keyword=self.hap_code)
+
+        for month in closed_month_list:
+            for date, hap_amount in hap.items():
+                if month == date:
+                    print(month, hap_amount)
+            
+
+        breakpoint()
+
         # write to own table before
 
-    def load_pl_wrapper(self):
-        # path = Config.TEST_ANNFIN_PATH
+    def load_pl_wrapper(self, keyword):
         findexer = FileIndexer(path=Config.TEST_ANNFIN_PATH,db=Config.TEST_DB)
         path_to_pl = findexer.load_pl()
-        self.qb_extract_p_and_l(keyword='5121', path=path_to_pl)
-
+        line_items = self.qb_extract_pl_line(keyword=keyword, path=path_to_pl)
+        return line_items
 
     def match_hap(self):
         print('attempt to match hap, send to db, and write')
@@ -68,31 +79,45 @@ class AnnFin:
         op_cash_hap = [(row.hap, row.period) for row in Findexer.select().where(Findexer.hap != '0').namedtuples()]
     
 
-    def qb_extract_p_and_l(self, keyword=None, path=None):
-        db_file = 'data/qb_output.txt'
-        
-        # abs_file_path = os.path.join(path, filename)
-        # print(abs_file_path)
+    def qb_extract_pl_line(self, keyword=None, path=None):
+        '''limits: cells with formulas will not be extracted properly; however, the workaround is to put an x in a cell and save and close.  we need a no-touch way to do this'''        
         path = path[0]
         df = pd.read_excel(path)
-        breakpoint()
         
         extract = df.loc[df['Fall Creek Village I'].str.contains(keyword, 
-        # na=False
+        na=False
         )]
         extract = extract.values[0]
+        line_items = [item for item in extract if type(item) != str]
+        line_items = self.qbo_cleanup_line(path=path, dirty_list=line_items) 
 
+        return line_items 
 
-        amount = [item for item in extract if type(item) != str]
-        df = pd.read_excel(abs_file_path, header=4)
+    def qbo_cleanup_line(self, path=None, dirty_list=None):
+
+        df = pd.read_excel(path, header=4)
         date = list(df.columns)
         date = date[1:]
-        target_date_dict = dict(zip(date, amount))
+        target_date_dict = dict(zip(date, dirty_list))
+        
+        line_items = {k: v for (k, v) in target_date_dict.items() if 'Total' not in k}
+
+        line_items = {k: v for (k, v) in line_items.items() if math.isnan(v) == False}
+
+        line_items = {dt.strptime(k, '%b %Y'): v for (k, v) in line_items.items() if '-' not in k}
+
+        return line_items
+    
+    def remainder_code(self):
+        '''remainder code'''
+        
         total = {k: v for (k, v) in target_date_dict.items() if 'Total' in k}
-        dict_wo_total = {k: v for (k, v) in target_date_dict.items() if 'Total' not in k}
+
         dict_wo_total_and_mtd = {k:v for (k, v) in dict_wo_total.items() if '-' not in k}
-        fixed_target_date_dict = {dt.strptime(k, '%b %Y'): v for (k, v) in dict_wo_total_and_mtd.items() if '-' not in k}
-        fixed_target_date_dict = {k.strftime('%m %Y'): v for (k, v) in fixed_target_date_dict.items()}
+
+
+        '''model date YYYY-MM'''
+        fixed_target_date_dict = {k.strftime('%Y-%M'): v for (k, v) in fixed_target_date_dict.items()}
         fixed_target_date_dict = {dateq: (0 if math.isnan(amount) else amount) for (dateq, amount) in fixed_target_date_dict.items() }
     
         return fixed_target_date_dict
@@ -159,7 +184,7 @@ class AnnFin:
             return data
 
     def start_here(self):
-        self.receivables_actual()()
+        self.receivables_actual()
 
     def start_here2(self):
 
