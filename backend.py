@@ -202,11 +202,13 @@ class StatusRS(BaseModel):
                 mid_month_choice = True
             else:
                 mid_month_choice = False
+
+        first_incomplete_month = incomplete_month_bool[0]
         
         if mid_month_choice:
             print('load midmonth scrape from bank website')
             from file_indexer import FileIndexer
-            target_mid_month = incomplete_month_bool[0]
+            target_mid_month = first_incomplete_month
             target_mm_date = datetime.strptime(list(target_mid_month.items())[0][0], '%Y-%m')
             findex = FileIndexer()
             all_relevant_scrape_txn_list = findex.load_mm_scrape(list1=target_mid_month)
@@ -223,7 +225,8 @@ class StatusRS(BaseModel):
             all_tp, all_ntp = populate.check_db_tp_and_ntp(grand_total=scrape_deposit_sum, first_dt=first_dt, last_dt=last_dt)    
 
         if all_tp:
-            mr_status_object = [item for item in StatusObject().select().where(StatusObject.month==months_ytd[-1])][0]
+            target_month = list(first_incomplete_month.items())[0][0]
+            mr_status_object = [item for item in StatusObject().select().where(StatusObject.month==target_month)][0]
             mr_status_object.scrape_reconciled = True
             mr_status_object.save()   
 

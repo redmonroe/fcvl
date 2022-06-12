@@ -65,6 +65,8 @@ def autors(mode=None):
         build.determine_ctx(flag='reset')
 
     if mode == 'write_from_db':
+        sample_month_list = ['2022-01']
+        # ms.auto_control(month_list=sample_month_list)
         ms.auto_control()
 
 @click.command()
