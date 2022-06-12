@@ -56,7 +56,7 @@ def autors(mode=None):
         # make expllicit reset_db command
         # breakpoint()
 
-        build.new_auto_build()
+        build.build_db_from_scratch()
 
     if mode == 'iter_testing':
         build.iter_build()

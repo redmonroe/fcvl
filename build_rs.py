@@ -28,37 +28,10 @@ class BuildRS(MonthSheet):
 
     def __repr__(self):
         return f'BuildRS object path: {self.path} write sheet: {self.full_sheet} service:{self.service}'
-
-    def determine_ctx(self, flag=None):
-        populate = PopulateTable()
-        if flag == 'reset':
-            self.create_tables_list1 = populate.return_tables_list()
-            self.main_db.drop_tables(models=self.create_tables_list1)
-        elif flag == 'run':
-            if self.main_db.get_tables() == []:
-                self.new_auto_build()
-            # determine if unprocessed files in folder
-            else:
-                self.iter_build()  # else explicitly state nothing new to add
-            # do tables exist? if not run new_auto_build
-            pass
-
-    def iter_build(self):
-        print('iter_build')
-        findex = FileIndexer(path=self.path, db=self.main_db)
-        findex.iter_build_runner() # this is not complete
     
-    @record
-    def new_auto_build(self):
-        print('new_auto_build')
-        populate = PopulateTable()
-        self.create_tables_list1 = populate.return_tables_list()
-        findex = FileIndexer(path=self.path, db=self.main_db)
-        findex.drop_findex_table() 
-        if self.main_db.is_closed() == True:
-            self.main_db.connect()
-        self.main_db.drop_tables(models=self.create_tables_list1)
-        self.main_db.create_tables(self.create_tables_list1)
+    def build_db_from_scratch(self):
+        print('building db from scratch')
+        findex, populate = self.drop_then_create_tables()
         findex.build_index_runner() # this is a findex method
         self.load_initial_tenants_and_balances()
         processed_rentr_dates_and_paths = self.iterate_over_remaining_months()
@@ -69,9 +42,20 @@ class BuildRS(MonthSheet):
 
         status = StatusRS()
         status.set_current_date()
-        '''from show we can do rs_write, rent_sheets, balance_letters'''
         status.show() 
         self.main_db.close()
+
+    def drop_then_create_tables(self):
+        populate = PopulateTable()
+        findex = FileIndexer(path=self.path, db=self.main_db)
+        
+        self.create_tables_list1 = populate.return_tables_list()
+        findex.drop_findex_table() 
+        if self.main_db.is_closed() == True:
+            self.main_db.connect()
+        self.main_db.drop_tables(models=self.create_tables_list1)
+        self.main_db.create_tables(self.create_tables_list1)
+        return findex, populate
 
     def iterate_over_remaining_months(self):       
         # load remaining months rent
@@ -127,18 +111,6 @@ class BuildRS(MonthSheet):
         target_balance_file = self.path.joinpath(self.target_bal_load_file)
         populate.balance_load(filename=target_balance_file)
 
-    def remove_already_made_sheets_from_list(self, input_dict=None):
-        for mon_year, id1 in input_dict.items():
-            for month in self.final_to_process_list:
-                already_month = month + ' ' + str(Config.current_year)
-                if mon_year == already_month:
-                    print(f'{month} already exists in Google Sheets')
-                    self.final_to_process_list.remove(month)
-        return self.final_to_process_list
-    
-    def get_name_from_record(self, record):
-        name = record['fn'].split('_')[0]
-        return name 
 
     
 

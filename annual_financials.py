@@ -63,12 +63,12 @@ class AnnFin:
     def receivables_actual(self):    
         '''notes on canonical amounts:'''
         '''01/22: 501.71 laundry'''
-        '''01/22: 15 nationwide'''
-        '''02/22: 700 greiner sd'''
+        '''01/22: 15 nationwide: should be other'''
+        '''02/22: 700 greiner sd: should be other at least'''
         '''02/22: 26.30 laundry'''
         '''03/22: 272.95 laundry'''
         '''04/22: 227.27 laundry'''
-        '''04/22: 115.17 nationwide refund'''
+        '''04/22: 115.17 nationwide refund: should be other'''
         '''04/22: 92.96 laundry'''
         '''04/22: 322.26 laundry'''
         self.connect_to_db()
