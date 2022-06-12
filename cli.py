@@ -93,7 +93,7 @@ def workorders():
 @click.command()
 def recvactuals():
     click.echo('receivable actuals')
-    annfin = AnnFin()
+    annfin = AnnFin(db=Config.TEST_DB)
     annfin.start_here()
 
 cli.add_command(receipts)

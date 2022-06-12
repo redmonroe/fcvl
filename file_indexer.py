@@ -106,13 +106,6 @@ class FileIndexer(Utils):
       
         return deposit_list
 
-    def load_pl(self):
-        '''related to annual financials'''
-        self.connect_to_db()
-        self.directory_contents = self.articulate_directory()
-        directory_contents = [path for path in self.directory_contents if path.name not in self.excluded_file_names]
-        return directory_contents
-
     def connect_to_db(self, mode=None):
         if self.db.is_closed():
             self.db.connect()

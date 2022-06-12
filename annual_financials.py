@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 
 from auth_work import oauth
-from backend import Findexer, PopulateTable, StatusObject
+from backend import Findexer, PopulateTable, StatusObject, IncomeMonth
 from config import Config
 from file_indexer import FileIndexer
 from utils import Utils
@@ -46,31 +46,40 @@ class AnnFin:
         'dec': 12, 
         }
 
-    def __init__(self):
+    def __init__(self, db=None):
         populate = PopulateTable()
         self.tables = populate.return_tables_list()
         self.hap_code = '5121'
+        self.db = db
 
-    def receivables_actual(self):        
+    def connect_to_db(self, mode=None):
+        if self.db.is_closed():
+            self.db.connect()
+        if mode == 'autodrop':
+            self.db.drop_tables(models=self.tables)
+        self.db.create_tables(models=self.tables)
+
+    def receivables_actual(self):    
+        path = Config.TEST_ANNFIN_PATH
+        directory_contents = [item for item in path.iterdir()]
+        path_to_pl = [path for path in directory_contents if path.name != 'desktop.ini']
+        
         closed_month_list = [dt.strptime(rec.month, '%Y-%m') for rec in StatusObject().select().where(StatusObject.tenant_reconciled==1).namedtuples()]
 
-        hap = self.load_pl_wrapper(keyword=self.hap_code)
+        hap = self.load_pl_wrapper(keyword=self.hap_code, path=path_to_pl)
 
         for month in closed_month_list:
             for date, hap_amount in hap.items():
                 if month == date:
-                    print(month, hap_amount)
+                    # print(month, hap_amount)
+                    hap_db = IncomeMonth(year=Config.current_year, month=month, hap=hap_amount)
+                    hap_db.save()
             
-
-        breakpoint()
-
+        breakpoint()    
         # write to own table before
 
-    def load_pl_wrapper(self, keyword):
-        findexer = FileIndexer(path=Config.TEST_ANNFIN_PATH,db=Config.TEST_DB)
-        path_to_pl = findexer.load_pl()
-        line_items = self.qb_extract_pl_line(keyword=keyword, path=path_to_pl)
-        return line_items
+    def load_pl_wrapper(self, keyword, path):
+        return self.qb_extract_pl_line(keyword=keyword, path=path)
 
     def match_hap(self):
         print('attempt to match hap, send to db, and write')
