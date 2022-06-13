@@ -19,7 +19,6 @@ from utils import Utils
 
 class MonthSheet(YearSheet):
 
-    G_DEPDETAIL = ["=sum(D82:D89)"]
     wrange_hap_partial = '!D81:D81'
     wrange_rr_partial = '!D80:D80'
     wrange_reconciled = '!E90:E90'
@@ -173,7 +172,6 @@ class MonthSheet(YearSheet):
         gc.update_int(self.service, self.full_sheet, [kw['res_rep']], f'{date}' + f'{self.wrange_rr_partial}', value_input_option='USER_ENTERED')   
         dep_detail_amounts = [item.amount for item in kw['dep_detail']]
         self.write_list_to_col(func=gc.update_int, start_row=82, list1=dep_detail_amounts, col_letter='D', date=date)
-        self.write_sum_forumula1(date=date)
 
     def write_list_to_col(self, **kw):
         start_row = kw['start_row']
@@ -185,9 +183,9 @@ class MonthSheet(YearSheet):
             kw['func'](self.service, self.full_sheet, [item], f'{kw["date"]}' + cat_str, value_input_option='USER_ENTERED')
             start_row += 1
             
-    def write_sum_forumula1(self, date):
-        gc = GoogleApiCalls()
-        gc.write_formula_column(self.service, self.full_sheet, self.G_DEPDETAIL, f'{date}!D90:D90')
+    # def write_sum_forumula1(self, date):
+    #     gc = GoogleApiCalls()
+ 
     
     def check_totals_reconcile(self, date):
         gc = GoogleApiCalls()

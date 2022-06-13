@@ -13,14 +13,12 @@ class YearSheet:
 
     G_SHEETS_HAP_COLLECTED = ["=D81"]
     G_SHEETS_TENANT_COLLECTED = ["=K69"]
-    G_SUM_STARTBAL = ["=sum(D2:D68)"]
-    G_SUM_ENDBAL = ["=sum(L2:L68)"]
-    G_SHEETS_SUM_PAYMENT = ["=sum(K2:K68)"]
     G_SHEETS_GRAND_TOTAL = ["=sum(K69:K78)"]
     MF_SUM_FORMULA = ["=sum(K82:K85)"]
     MF_PERCENT_FORMULA = ["=product(K86, .08)"]
     MF_FORMULA = ["=H86"]
 
+    G_SUM_STARTBAL = ["=sum(D2:D68)"]
     G_SUM_KRENT = ["=sum(E2:E68)"]
     G_SUM_ACTSUBSIDY = ["=sum(F2:F68)"]
     G_SUM_ACTRENT = ["=sum(H2:H68)"]
@@ -31,6 +29,7 @@ class YearSheet:
     'Hap received', 'Tenant Rent', 'Charge Type', 'Charge Amount', 'Payment Made', 'Balance Current', 'Payment Plan/Action']
     MI_HEADER = ['Move-Ins']
     DEPOSIT_BOX_VERTICAL = ['dc total','rr', 'hap', 'ten', 'ten', 'ten', 'ten', 'ten', 'ten', 'ten','ten']
+    G_DEPDETAIL = ["=sum(D82:D89)"]
     csc = ['type:', 'csc_total', 'other', 'other', 'other', 'other', 'total tr MIs', '', '', 'GRAND TOTAL', '', '', 'hap collected', 'positive adj', 'damages', 'tenant rent collected', 'total', 'mgmt @ 8%']
     calls = GoogleApiCalls()
     base_month = 'base'
@@ -79,7 +78,7 @@ class YearSheet:
             self.calls.write_formula_column(self.service, self.full_sheet, self.G_CURBAL, f'{sheet}!L69:L69')
     
             self.calls.write_formula_column(self.service, self.full_sheet, self.G_SUM_STARTBAL, f'{sheet}!D69:D69')
-            self.calls.write_formula_column(self.service, self.full_sheet, self.G_SUM_ENDBAL, f'{sheet}!K69:K69')
+            # self.calls.write_formula_column(self.service, self.full_sheet, self.G_SUM_ENDBAL, f'{sheet}!K69:K69')
             self.calls.write_formula_column(self.service, self.full_sheet, self.MF_SUM_FORMULA, f'{sheet}!K86:K86')
             self.calls.write_formula_column(self.service, self.full_sheet, self.MF_PERCENT_FORMULA, f'{sheet}!K87:K87')
             
@@ -91,6 +90,7 @@ class YearSheet:
             self.calls.format_row(self.service, self.full_sheet, f'{sheet}!A1:M1', 'ROWS', self.HEADER_NAMES)
             self.calls.format_row(self.service, self.full_sheet, f'{sheet}!B72:B72', 'ROWS', self.MI_HEADER)
             self.calls.format_row(self.service, self.full_sheet, f'{sheet}!E79:E89', 'COLUMNS', self.DEPOSIT_BOX_VERTICAL)
+            self.calls.write_formula_column(self.service, self.full_sheet, self.G_DEPDETAIL, f'{sheet}!D90:D90')
             
             self.calls.write_formula_column(self.service, self.full_sheet, self.G_SHEETS_GRAND_TOTAL, f'{sheet}!K79')
             
