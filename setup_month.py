@@ -58,11 +58,17 @@ class MonthSheet(YearSheet):
         status_list = []
         for date in month_list:
             self.write_rs_col(date)
-            reconciliation_type = [rec.scrape_reconciled for rec in StatusObject().select().where(StatusObject.month==date).namedtuples()]
-            if reconciliation_type[0] == True:
+            try:
+                reconciliation_type = [rec.scrape_reconciled for rec in StatusObject().select().where(StatusObject.month==date).namedtuples()][0]              
+            except IndexError as e:
+                print(f'for {date} you have returned an empty list indicating that your db did not reconcile for that month for File_Indexer or StatusObject')
+                raise
+            
+            if reconciliation_type == True:
                 self.write_deposit_detail_from_scrape(date)
-            else:
+            elif reconciliation_type == False:
                 self.write_deposit_detail_from_opcash(date)
+            
             
             ntp = self.get_ntp_wrapper(date)
             sum_laundry, other_list = self.split_ntp(ntp)

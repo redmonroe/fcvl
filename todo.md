@@ -2,14 +2,19 @@
 
 - requirements:
 
+  - how am I going to handle attributing deposit corrections?
+  - what format do I want to use for documentation?
   - why is file_indexer func write_to_dep_list so ugly, comes from extract_deposits_by_type
+
+  - corrections will not write to db from scrape & will not write to rs from scrape
+
+  - is key_id in StatusObject doing anything?
 
   - operations:
     - segregate scrape_loading functionality
   - testing:
     - need to write tests for statusrs and balance letters (this is not an auto-flow now; triggered from cli )
   - incremental processing of files (comes from statusRS)
-  - make rent sheets (JUST USE PANDAS)
   - S/M: export files for audit once they are processed, async, profiling, cython, frontend api structure
   - structure:
     - use interfaces and getters when referencing other classes
