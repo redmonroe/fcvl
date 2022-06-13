@@ -29,7 +29,7 @@ class YearSheet:
     'Hap received', 'Tenant Rent', 'Charge Type', 'Charge Amount', 'Payment Made', 'Balance Current', 'Payment Plan/Action']
     MI_HEADER = ['Move-Ins']
     DEPOSIT_BOX_VERTICAL = ['dc total','rr', 'hap', 'ten', 'ten', 'ten', 'ten', 'ten', 'ten', 'ten','ten']
-    G_DEPDETAIL = ["=sum(D82:D89)"]
+    G_DEPDETAIL = ["=sum(-D79, D82, D83, D84, D85, D86, D87, D88, D89)"]
     csc = ['type:', 'csc_total', 'other', 'other', 'other', 'other', 'total tr MIs', '', '', 'GRAND TOTAL', '', '', 'hap collected', 'positive adj', 'damages', 'tenant rent collected', 'total', 'mgmt @ 8%']
     calls = GoogleApiCalls()
     base_month = 'base'

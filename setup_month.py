@@ -19,8 +19,9 @@ from utils import Utils
 
 class MonthSheet(YearSheet):
 
-    wrange_hap_partial = '!D81:D81'
+    wrange_corr_partial = '!D79:D79'
     wrange_rr_partial = '!D80:D80'
+    wrange_hap_partial = '!D81:D81'
     wrange_reconciled = '!E90:E90'
     wrange_ntp = '!K71:K71'
     wrange_sum_mi_payments = '!K76:K76'
@@ -80,22 +81,6 @@ class MonthSheet(YearSheet):
         print(f'\n\t\t{month_list}\n')
         print(f'\n\t\t{wrange}\n')
         print(f'\n\t\t{status}')
-    
-    def get_move_ins(self, date):
-        query = QueryHC()
-        first_dt, last_dt = query.make_first_and_last_dates(date_str=date)
-        move_ins = query.get_move_ins_by_period(first_dt=first_dt, last_dt=last_dt)
-
-        move_in_names = [name[1] for name in move_ins]
-
-        mi_payments = []
-        for name in move_in_names:                
-            mi_tp = query.get_single_ten_pay_by_period(first_dt=first_dt, last_dt=last_dt, name=name)
-            mi_payments.append(mi_tp)
-
-        sum_mi_payments = self.sum_move_in_payments_period(mi_payments=mi_payments)
-
-        return sum_mi_payments
 
     def sum_move_in_payments_period(self, mi_payments=None):
         sum_mi_payments = sum([float(item[1]) for item in mi_payments])
@@ -168,7 +153,8 @@ class MonthSheet(YearSheet):
         first_dt, last_dt = populate.make_first_and_last_dates(date_str=date)
         rec = populate.get_opcash_by_period(first_dt=first_dt, last_dt=last_dt)
         dep_detail = populate.get_opcashdetail_by_stmt(stmt_key=rec[0][0])
-        self.export_deposit_detail(date=date, res_rep=rec[0][2], hap=rec[0][3], dep_sum=rec[0][4], dep_detail=dep_detail)
+        # breakpoint()
+        self.export_deposit_detail(date=date, res_rep=rec[0][2], hap=rec[0][3], dep_sum=rec[0][4], corr_sum=rec[0][5], dep_detail=dep_detail)
 
     def write_deposit_detail_from_scrape(self, date):
         populate = PopulateTable()
@@ -182,6 +168,7 @@ class MonthSheet(YearSheet):
         date = kw['date']
         gc.update_int(self.service, self.full_sheet, [kw['hap']], f'{date}' + f'{self.wrange_hap_partial}', value_input_option='USER_ENTERED')
         gc.update_int(self.service, self.full_sheet, [kw['res_rep']], f'{date}' + f'{self.wrange_rr_partial}', value_input_option='USER_ENTERED')   
+        gc.update_int(self.service, self.full_sheet, [kw['corr_sum']], f'{date}' + f'{self.wrange_corr_partial}', value_input_option='USER_ENTERED')   
         dep_detail_amounts = [item.amount for item in kw['dep_detail']]
         self.write_list_to_col(func=gc.update_int, start_row=82, list1=dep_detail_amounts, col_letter='D', date=date)
 
@@ -209,6 +196,7 @@ class MonthSheet(YearSheet):
         else:
             message = ['does not balance']
             gc.update(self.service, self.full_sheet, message, f'{date}' + self.wrange_reconciled)
+            dict1 = {date: message}
             status_list.append(dict1)
 
         return status_list
@@ -233,6 +221,22 @@ class MonthSheet(YearSheet):
         final_df = merged_df.sort_values(by='Rank', axis=0)
         df = final_df.set_index('Rank')
         return df
+
+    def get_move_ins(self, date):
+        query = QueryHC()
+        first_dt, last_dt = query.make_first_and_last_dates(date_str=date)
+        move_ins = query.get_move_ins_by_period(first_dt=first_dt, last_dt=last_dt)
+
+        move_in_names = [name[1] for name in move_ins]
+
+        mi_payments = []
+        for name in move_in_names:                
+            mi_tp = query.get_single_ten_pay_by_period(first_dt=first_dt, last_dt=last_dt, name=name)
+            mi_payments.append(mi_tp)
+
+        sum_mi_payments = self.sum_move_in_payments_period(mi_payments=mi_payments)
+
+        return sum_mi_payments
 
     def capitalize_name(self, tenant_list=None):
         t_list = []

@@ -544,12 +544,12 @@ class QueryHC():
         return damages
 
     def consolidated_get_stmt_by_month(self, first_dt=None, last_dt=None):
-            opcash_sum = self.get_opcash_by_period(first_dt=first_dt, last_dt=last_dt)
-            opcash_detail = self.get_opcashdetail_by_stmt(stmt_key=opcash_sum[0][0])
-            return opcash_sum, opcash_detail
+        opcash_sum = self.get_opcash_by_period(first_dt=first_dt, last_dt=last_dt)
+        opcash_detail = self.get_opcashdetail_by_stmt(stmt_key=opcash_sum[0][0])
+        return opcash_sum, opcash_detail
 
     def get_opcash_by_period(self, first_dt=None, last_dt=None):
-        return [(row.stmt_key, row.date, row.rr, row.hap, row.dep_sum) for row in OpCash.select(OpCash.stmt_key, OpCash.date, OpCash.rr, OpCash.hap, OpCash.dep_sum).
+        return [(row.stmt_key, row.date, row.rr, row.hap, row.dep_sum, row.corr_sum) for row in OpCash.select(OpCash.stmt_key, OpCash.date, OpCash.rr, OpCash.hap, OpCash.dep_sum, OpCash.corr_sum).
         where(OpCash.date >= first_dt).
         where(OpCash.date <= last_dt).namedtuples()]
 
