@@ -183,10 +183,6 @@ class MonthSheet(YearSheet):
             kw['func'](self.service, self.full_sheet, [item], f'{kw["date"]}' + cat_str, value_input_option='USER_ENTERED')
             start_row += 1
             
-    # def write_sum_forumula1(self, date):
-    #     gc = GoogleApiCalls()
- 
-    
     def check_totals_reconcile(self, date):
         gc = GoogleApiCalls()
         onesite_total = gc.broad_get(self.service, self.full_sheet, f'{date}!K79:K79')

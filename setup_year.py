@@ -78,7 +78,6 @@ class YearSheet:
             self.calls.write_formula_column(self.service, self.full_sheet, self.G_CURBAL, f'{sheet}!L69:L69')
     
             self.calls.write_formula_column(self.service, self.full_sheet, self.G_SUM_STARTBAL, f'{sheet}!D69:D69')
-            # self.calls.write_formula_column(self.service, self.full_sheet, self.G_SUM_ENDBAL, f'{sheet}!K69:K69')
             self.calls.write_formula_column(self.service, self.full_sheet, self.MF_SUM_FORMULA, f'{sheet}!K86:K86')
             self.calls.write_formula_column(self.service, self.full_sheet, self.MF_PERCENT_FORMULA, f'{sheet}!K87:K87')
             
