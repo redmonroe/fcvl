@@ -121,6 +121,7 @@ class OpCash(BaseModel):
     rr = CharField(default='0')
     hap = CharField(default='0')
     dep_sum = CharField(default='0')
+    corr_sum = CharField(default='0')
 
 class OpCashDetail(BaseModel):
     stmt_key = ForeignKeyField(OpCash, backref='detail')
@@ -1134,13 +1135,14 @@ class PopulateTable(QueryHC):
             unit.save()
 
     def transfer_opcash_to_db(self):
-        file_list = [(item.fn, item.period, item.path, item.hap, item.rr, item.depsum, item.deplist) for item in Findexer().select().
+        file_list = [(item.fn, item.period, item.path, item.hap, item.rr, item.depsum, item.deplist, item.corr_sum) for item in Findexer().select().
             where(Findexer.doc_type == 'opcash').
             where(Findexer.status == 'processed').
             namedtuples()]
 
         for item in file_list:
-            oc = OpCash.create(stmt_key=item[0], date=datetime.strptime(item[1], '%Y-%m'), rr=item[4], hap=item[3], dep_sum=item[5])
+            breakpoint()
+            oc = OpCash.create(stmt_key=item[0], date=datetime.strptime(item[1], '%Y-%m'), rr=item[4], hap=item[3], dep_sum=item[5], corr_sum=item[7])
             oc.save()
 
             for lst in json.loads(item[6])[0]:
