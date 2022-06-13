@@ -151,7 +151,6 @@ class FileIndexer(Utils):
         if mode == self.doc_mode.pdf:   
             self.raw_list = [(item.path, item.doc_id) for item in Findexer().select().where(Findexer.status==self.status_str.raw).where(Findexer.file_ext == self.ext_mode.pdf).namedtuples()]
 
-
     def find_by_content(self, style, target_string=None):
         '''kwargs into loop below'''
         '''this should be moved up'''
@@ -234,6 +233,9 @@ class FileIndexer(Utils):
         elif style == self.style_term.dep_detail:
             depdet_list = self.pdf.nbofi_pdf_extract_deposit(path, style=style, target_str=target_str)
             return depdet_list
+
+        # correction_return = self.pdf.nbofi_pdf_extract_corrections(path)
+        # breakpoint()
 
         kdict[str(date)] = [amount, path, style]
         return_list.append(kdict)            

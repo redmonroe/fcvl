@@ -243,3 +243,40 @@ class StructDataExtract:
             line_list.append(target[0])
 
         return stmt_date, sum(line_list)
+    
+    def nbofi_pdf_extract_corrections(self, path, style=None, target_str=None):
+        target_str = 'Chargeback'
+        file1 = self.open_pdf_and_output_txt(path, txtfile='temp_output.txt')
+        index = [(count, line) for count, line in enumerate(file1)]
+        stmt_date = self.get_stmt_date(index)
+        line = [line for count, line in index if target_str in line]
+        if line == []:
+            return stmt_date, 0
+        lines = [line.split(' ') for line in line]
+        lines = [line for line in lines if 'Fee' not in line][0]
+        lines = [line.rstrip() for line in lines if line != '']
+        lines = [line for line in lines if line.endswith('-')]
+        sum_corrections = sum([float(line.replace('-', '')) for line in lines])
+        
+        return stmt_date, sum_corrections 
+    
+        # breakpoint()
+    '''
+    def get_cleaned_target_line(self, target_line, no_pop=None):
+        hap_line = [line for line in target_line if type(line) == str]
+        hap_line = [line for line in hap_line if line.isalnum() == False]
+        hap_line = [line for line in hap_line if '.' in line]
+        hap_line = [line.strip() for line in hap_line]
+        hap_line = [line.replace(',', '')  for line in hap_line]
+        target = [float(line)  for line in hap_line]
+        if no_pop:
+            target = target.pop()
+
+        return target
+    '''
+
+from pathlib import Path
+pdf = StructDataExtract()
+pdf.nbofi_pdf_extract_corrections(path=Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/testing_sources_may/op_cash_2022_02.pdf'))
+
+# op_cash_2022_02.pdf"
