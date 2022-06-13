@@ -1141,7 +1141,6 @@ class PopulateTable(QueryHC):
             namedtuples()]
 
         for item in file_list:
-            breakpoint()
             oc = OpCash.create(stmt_key=item[0], date=datetime.strptime(item[1], '%Y-%m'), rr=item[4], hap=item[3], dep_sum=item[5], corr_sum=item[7])
             oc.save()
 

@@ -19,13 +19,6 @@ from utils import Utils
 
 class MonthSheet(YearSheet):
 
-    HEADER_NAMES = ['Unit', 'Tenant Name', 'Notes', 'Balance Start', 'Contract Rent', 'Subsity Entitlement',
-    'Hap received', 'Tenant Rent', 'Charge Type', 'Charge Amount', 'Payment Made', 'Balance Current', 'Payment Plan/Action']
-    G_SUM_KRENT = ["=sum(E2:E68)"]
-    G_SUM_ACTSUBSIDY = ["=sum(F2:F68)"]
-    G_SUM_ACTRENT = ["=sum(H2:H68)"]
-    G_PAYMENT_MADE = ["=sum(K2:K68)"]
-    G_CURBAL = ["=sum(L2:L68)"]
     G_DEPDETAIL = ["=sum(D82:D89)"]
     wrange_hap_partial = '!D81:D81'
     wrange_rr_partial = '!D80:D80'
@@ -61,7 +54,6 @@ class MonthSheet(YearSheet):
         self.remove_base_sheet()
 
         for date in month_list:
-            self.export_month_format(date)
             self.write_rs_col(date)
             reconciliation_type = [rec.scrape_reconciled for rec in StatusObject().select().where(StatusObject.month==date).namedtuples()]
             if reconciliation_type[0] == True:
@@ -125,15 +117,6 @@ class MonthSheet(YearSheet):
         gc.update_int(self.service, self.full_sheet, charge_month, f'{date}!H2:H68', value_input_option='USER_ENTERED')
         gc.update_int(self.service, self.full_sheet, pay_month, f'{date}!K2:K68', value_input_option='USER_ENTERED')
         gc.update_int(self.service, self.full_sheet, dam_month, f'{date}!J2:J68', value_input_option='USER_ENTERED')
-
-    def export_month_format(self, sheet_choice):
-        gc = GoogleApiCalls()
-        gc.format_row(self.service, self.full_sheet, f'{sheet_choice}!A1:M1', "ROWS", self.HEADER_NAMES)
-        gc.write_formula_column(self.service, self.full_sheet, self.G_SUM_KRENT, f'{sheet_choice}!E69:E69')
-        gc.write_formula_column(self.service, self.full_sheet, self.G_SUM_ACTSUBSIDY, f'{sheet_choice}!F69:F69')
-        gc.write_formula_column(self.service, self.full_sheet, self.G_SUM_ACTRENT, f'{sheet_choice}!H69:H69')
-        gc.write_formula_column(self.service, self.full_sheet, self.G_PAYMENT_MADE, f'{sheet_choice}!K69:K69')
-        gc.write_formula_column(self.service, self.full_sheet, self.G_CURBAL, f'{sheet_choice}!L69:L69')
 
     def get_ntp_wrapper(self, date):
         populate = PopulateTable()
@@ -208,7 +191,7 @@ class MonthSheet(YearSheet):
     
     def check_totals_reconcile(self, date):
         gc = GoogleApiCalls()
-        onesite_total = gc.broad_get(self.service, self.full_sheet, f'{date}!K80:K80')
+        onesite_total = gc.broad_get(self.service, self.full_sheet, f'{date}!K79:K79')
         nbofi_total = gc.broad_get(self.service, self.full_sheet, f'{date}!D90:D90')
         if onesite_total == nbofi_total:
             message = [f'balances at {str(dt.today().date())}']
