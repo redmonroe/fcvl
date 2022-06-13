@@ -39,8 +39,10 @@ class MonthSheet(YearSheet):
     
     def auto_control(self, month_list=None):
         if month_list != None:
-            print(f'writing rent sheets for {month_list}.  This list has been expressly passed from cli.py.')
+            wrange = 'This list has been expressly passed from cli.py.'
+            print(f'writing rent sheets for {month_list}. {wrange}')
         else:
+            wrange = 'This list has been generated from reconciled scrapes or opcash.'
             print('generating list of months where either scrape or opcash has reconciled to tenant.')
             month_list = [rec.month for rec in StatusObject().select().where(       (StatusObject.tenant_reconciled==1) |
                     (StatusObject.scrape_reconciled==1)).namedtuples()]
@@ -52,6 +54,7 @@ class MonthSheet(YearSheet):
         self.duplicate_formatted_sheets(month_list=month_list)
         self.remove_base_sheet()
 
+        status_list = []
         for date in month_list:
             self.write_rs_col(date)
             reconciliation_type = [rec.scrape_reconciled for rec in StatusObject().select().where(StatusObject.month==date).namedtuples()]
@@ -67,7 +70,16 @@ class MonthSheet(YearSheet):
             self.write_ntp(date, [sum_laundry], start_row=71)
             self.write_ntp(date, other_list, start_row=72)
             self.write_sum_mi_payments(date, sum_mi_payments)
-            self.check_totals_reconcile(date)
+            status = self.check_totals_reconcile(date)
+            status_list.append(status)
+
+        self.report_status(month_list=month_list, status=status_list, wrange=wrange)
+    
+    def report_status(self, month_list=None, status=None, wrange=None):
+        print('\n\tcompleted writing to sheets\n')
+        print(f'\n\t\t{month_list}\n')
+        print(f'\n\t\t{wrange}\n')
+        print(f'\n\t\t{status}')
     
     def get_move_ins(self, date):
         query = QueryHC()
@@ -187,14 +199,19 @@ class MonthSheet(YearSheet):
         gc = GoogleApiCalls()
         onesite_total = gc.broad_get(self.service, self.full_sheet, f'{date}!K79:K79')
         nbofi_total = gc.broad_get(self.service, self.full_sheet, f'{date}!D90:D90')
+
+        status_list = []
         if onesite_total == nbofi_total:
             message = [f'balances at {str(dt.today().date())}']
             gc.update(self.service, self.full_sheet, message, f'{date}' + self.wrange_reconciled)
-            return True
+            dict1 = {date: message}
+            status_list.append(dict1)
         else:
             message = ['does not balance']
             gc.update(self.service, self.full_sheet, message, f'{date}' + self.wrange_reconciled)
-            return False
+            status_list.append(dict1)
+
+        return status_list
 
     def index_np_with_df(self, np):
         unit_raw = [unit.unit_name for unit in Unit().select()]
