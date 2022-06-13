@@ -275,8 +275,8 @@ class StructDataExtract:
         return target
     '''
 
-from pathlib import Path
-pdf = StructDataExtract()
-pdf.nbofi_pdf_extract_corrections(path=Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/testing_sources_may/op_cash_2022_02.pdf'))
+# from pathlib import Path
+# pdf = StructDataExtract()
+# pdf.nbofi_pdf_extract_corrections(path=Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/testing_sources_may/op_cash_2022_02.pdf'))
 
 # op_cash_2022_02.pdf"

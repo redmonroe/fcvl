@@ -24,16 +24,17 @@ class FileIndexer(Utils):
     hap_list = []
     rr_list = []
     dep_list = []
+    corrections_list = []
     deposit_and_date_list = []
     scrape_path = Config.TEST_MM_SCRAPE
 
     '''move to config.json'''
     doc_mode = Utils.dotdict({'xls': 'xls', 'pdf': 'pdf'})
     ext_mode = Utils.dotdict({'xls': '.xls', 'pdf': '.pdf', 'xlsx': '.xlsx'})
-    style_term = Utils.dotdict({'rent': 'rent', 'deposits': 'deposits', 'opcash': 'opcash', 'hap': 'hap', 'r4r': 'rr', 'dep': 'dep', 'dep_detail': 'dep_detail'})
+    style_term = Utils.dotdict({'rent': 'rent', 'deposits': 'deposits', 'opcash': 'opcash', 'hap': 'hap', 'r4r': 'rr', 'dep': 'dep', 'dep_detail': 'dep_detail', 'corrections': 'corrections'})
     bank_acct_str = ' XXXXXXX1891'
     excluded_file_names = ['desktop.ini', 'beginning_balance_2022.xlsx']
-    target_string = Utils.dotdict({'affordable':'Affordable Rent Roll Detail/ GPR Report', 'bank': 'BANK DEPOSIT DETAILS', 'quadel': 'QUADEL', 'r4r': 'Incoming Wire', 'oc_deposit': 'Deposit',  })
+    target_string = Utils.dotdict({'affordable':'Affordable Rent Roll Detail/ GPR Report', 'bank': 'BANK DEPOSIT DETAILS', 'quadel': 'QUADEL', 'r4r': 'Incoming Wire', 'oc_deposit': 'Deposit', 'corrections': 'Chargeback'  })
     status_str = Utils.dotdict({'raw': 'raw', 'processed': 'processed'})
 
     def __init__(self, path=None, db=None, mode=None):
@@ -212,14 +213,17 @@ class FileIndexer(Utils):
             rr_iter_one_month, stmt_date1 = self.extract_deposits_by_type(op_cash_stmt_path, style=self.style_term.r4r, target_str=self.target_string.r4r)
             dep_iter_one_month, stmt_date2 = self.extract_deposits_by_type(op_cash_stmt_path, style=self.style_term.dep, target_str=self.target_string.oc_deposit)
             deposit_and_date_iter_one_month = self.extract_deposits_by_type(op_cash_stmt_path, style=self.style_term.dep_detail, target_str=self.target_string.oc_deposit)
+            corrections_sum = self.extract_deposits_by_type(op_cash_stmt_path, style=self.style_term.corrections, target_str=self.target_string.corrections)
             assert stmt_date == stmt_date1
         
+            # this is for testing visibility, maybe optimization later
             self.hap_list.append(hap_iter_one_month)
             self.rr_list.append(rr_iter_one_month)
             self.dep_list.append(dep_iter_one_month)
             self.deposit_and_date_list.append(deposit_and_date_iter_one_month)
+            self.corrections_list.append(corrections_sum)
 
-            self.write_deplist_to_db(hap_iter_one_month, rr_iter_one_month, dep_iter_one_month, deposit_and_date_iter_one_month, stmt_date)
+            self.write_deplist_to_db(hap_iter_one_month, rr_iter_one_month, dep_iter_one_month, deposit_and_date_iter_one_month, corrections_sum, stmt_date)
 
     def extract_deposits_by_type(self, path, style=None, target_str=None):
         return_list = []
@@ -233,15 +237,14 @@ class FileIndexer(Utils):
         elif style == self.style_term.dep_detail:
             depdet_list = self.pdf.nbofi_pdf_extract_deposit(path, style=style, target_str=target_str)
             return depdet_list
-
-        # correction_return = self.pdf.nbofi_pdf_extract_corrections(path)
-        # breakpoint()
+        elif style == self.style_term.corrections:
+            date, amount = self.pdf.nbofi_pdf_extract_corrections(path, style=style, target_str=target_str)
 
         kdict[str(date)] = [amount, path, style]
         return_list.append(kdict)            
         return return_list, date
     
-    def write_deplist_to_db(self, hap_iter, rr_iter, depsum_iter, deposit_iter, stmt_date):
+    def write_deplist_to_db(self, hap_iter, rr_iter, depsum_iter, deposit_iter, corrections_iter, stmt_date):
         opcash_records = [(item.fn, item.doc_id) for item in Findexer().
             select().
             where(Findexer.doc_type==self.style_term.opcash).
@@ -254,6 +257,7 @@ class FileIndexer(Utils):
                 hap = [*hap_iter[0].values()][0][0] 
                 depsum = [*depsum_iter[0].values()][0][0]
                 deplist = json.dumps([*deposit_iter[0].values()])
+                corr_sum = [*corrections_iter[0][0].values()][0][0]
                 
                 find_change = Findexer.get(Findexer.doc_id==doc_id)
                 find_change.status = self.status_str.processed 
@@ -262,6 +266,7 @@ class FileIndexer(Utils):
                 find_change.rr = rr
                 find_change.depsum = depsum
                 find_change.deplist = deplist
+                find_change.corr_sum = corr_sum 
                 find_change.save()
 
     def get_date_from_opcash_name(self, record):

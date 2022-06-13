@@ -143,7 +143,7 @@ class Findexer(BaseModel):
     status = CharField(default='raw')
     indexed = CharField(default='false')
     period = CharField(default='0')
-    correction_bool = CharField(default='false')
+    corr_sum = CharField(default='0')
     hap = CharField(default='0')
     rr = CharField(default='0')
     depsum = CharField(default='0')

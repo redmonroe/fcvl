@@ -2,6 +2,8 @@
 
 - requirements:
 
+  - why is file_indexer func write_to_dep_list so ugly, comes from extract_deposits_by_type
+
   - operations:
     - segregate scrape_loading functionality
   - testing:
