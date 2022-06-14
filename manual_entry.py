@@ -1,9 +1,13 @@
-from backend import db, PopulateTable, Payment
-from datetime import datetime as dt
 import sys
+from datetime import datetime as dt
+
+from backend import Mentry, Payment, PopulateTable, db
+from db_utils import DBUtils
 
 # we can do a manual entry and then to persist it for testing we will
 # use an entry on Config 
+
+# process config corrections
 
 # we would want to select based on 
     # year
@@ -14,10 +18,14 @@ import sys
 
 class ManualEntry:
 
-    def __init__(self):
+    def __init__(self, db=None):
         self.populate = PopulateTable()
+        self.tables_list = self.populate.return_tables_list()
+        self.db = db
 
     def main(self):
+        self.connect_to_db()
+
         months = set([rec.date_posted for rec in Payment.select()])
         year = list(months)[0].year
         months = set([month.month for month in months])
@@ -31,6 +39,7 @@ class ManualEntry:
         choice = input('press 1 to update and Z to delete: ')
 
         if choice == 1:
+            """this goes nowhere rn"""
             modified_item = self.update_ui(selected_item=selected_item)
         elif choice == 'Z':
             modified_item = self.delete_ui(selected_item=selected_item)
@@ -38,9 +47,11 @@ class ManualEntry:
     def delete_ui(self, selected_item=None):
         print('delete ui')
         payment = Payment.delete_by_id(selected_item.id)
-
+        selected_item = selected_item.__data__
+        self.record_delete_to_db(selected_item=selected_item)
     
     def update_ui(self, selected_item=None):
+        '''this does nothing right now'''
         count = 1
         for key, value in selected_item.__dict__['__data__'].items():
             print(count, key, value)
@@ -81,3 +92,10 @@ class ManualEntry:
             return list(years)
         else:
             return list(years)
+
+    def connect_to_db(self):
+        DBUtils.pw_connect_to_db(db=self.db, tables_list=self.tables_list)
+
+    def record_delete_to_db(self, selected_item=None):
+        mentry = Mentry.create(obj_type='Payment', ch_type='delete', original_item=str(selected_item), change_time=dt.now())
+        mentry.save()

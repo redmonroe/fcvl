@@ -8,6 +8,12 @@ from config import Config
 class DBUtils:
 
     @staticmethod
+    def pw_connect_to_db(db=None, tables_list=None):
+        if db.is_closed() == True:
+            db.connect()
+        db.create_tables(tables_list)
+
+    @staticmethod
     def dump_sqlite(path_to_existing_db=None, path_to_backup=None):
         import sqlite3
         backup_time = dt.now()

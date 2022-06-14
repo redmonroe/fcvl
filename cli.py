@@ -7,7 +7,7 @@ from peewee import *
 
 from annual_financials import AnnFin
 from auth_work import oauth
-from backend import PopulateTable, StatusRS
+from backend import db, PopulateTable, StatusRS
 from balance_letter import balance_letters
 from build_rs import BuildRS
 from config import Config
@@ -74,7 +74,7 @@ def autors(mode=None):
 @click.command()
 def manentry():
     click.echo('delete or modify rows of the database')
-    manentry = ManualEntry()
+    manentry = ManualEntry(db=db)
     manentry.main()
 
 @click.command()

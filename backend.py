@@ -422,10 +422,16 @@ class ScrapeDetail(BaseModel):
     amount = CharField(default='0')
     dep_type = CharField(default='undef_str')
 
-class QueryHC():
+class Mentry(BaseModel):
+    obj_type = CharField(default='0')
+    ch_type = CharField(default='0')
+    change_time = DateField()
+    original_item = CharField(default='0')
+
+class QueryHC:
 
     def return_tables_list(self):
-        return [IncomeMonth, LP_EndBal, ContractRent, Subsidy, BalanceLetter, StatusRS, StatusObject, OpCash, OpCashDetail, Damages, Tenant, Unit, Payment, NTPayment, TenantRent, Findexer, ScrapeDetail, MoveIn]
+        return [Mentry, IncomeMonth, LP_EndBal, ContractRent, Subsidy, BalanceLetter, StatusRS, StatusObject, OpCash, OpCashDetail, Damages, Tenant, Unit, Payment, NTPayment, TenantRent, Findexer, ScrapeDetail, MoveIn]
 
     def make_first_and_last_dates(self, date_str=None):
         dt_obj = datetime.strptime(date_str, '%Y-%m')
