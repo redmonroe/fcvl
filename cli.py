@@ -14,13 +14,14 @@ from config import Config
 from db_utils import DBUtils
 from file_indexer import FileIndexer
 from file_manager import path_to_statements, write_hap
+from manual_entry import ManualEntry
 from receipts import RentReceipts
 from records import record
 from setup_month import MonthSheet
 from setup_year import YearSheet
 
 '''
-# corrections: need to deal with that issue with deposit corrections
+# corrections: need to deal with that issue with deposit corrections: we can do with manual entry class for now
 cli.add_command(nbofi)
 cli.add_command(consume_and_backup_invoices)
 @click.command()
@@ -66,9 +67,15 @@ def autors(mode=None):
 
     if mode == 'write_from_db':
         # sample_month_list = ['2022-01']
-        sample_month_list = ['2022-01', '2022-02']
-        ms.auto_control(month_list=sample_month_list)
-        # ms.auto_control()
+        # sample_month_list = ['2022-01', '2022-02']
+        # ms.auto_control(month_list=sample_month_list)
+        ms.auto_control()
+    
+@click.command()
+def manentry():
+    click.echo('delete or modify rows of the database')
+    manentry = ManualEntry()
+    manentry.main()
 
 @click.command()
 def sqlite_dump():
@@ -105,6 +112,7 @@ cli.add_command(sqlite_dump)
 cli.add_command(balanceletters)
 cli.add_command(workorders)
 cli.add_command(recvactuals)
+cli.add_command(manentry)
 
 if __name__ == '__main__':
     cli()
