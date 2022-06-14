@@ -1,4 +1,5 @@
-from backend import db, PopulateTable
+from backend import db, BaseModel, PopulateTable, Payment
+import sys
 
 # we can do a manual entry and then to persist it for testing we will
 # use an entry on Config 
@@ -19,9 +20,13 @@ class ManualEntry:
         print('\n starting manual entry flow')
         tables_list = self.what_tables_available()
         selection = self.selection_ui(list1=tables_list)
-        xxx = self.what_years_available(selection=selection)
-        breakpoint()
+        years = self.what_years_available(selection=selection)
 
+        if len(years) > 1:
+            selection = self.selection_ui(list1=years)
+        else:
+            print(f'working with year {years[0]}')
+            
     def selection_ui(self, list1=None):
         choices = []
         for count, item in enumerate(list1, 1):
@@ -35,20 +40,14 @@ class ManualEntry:
         return selection
 
     def what_tables_available(self):
-        # tables_list = db.get_tables()
-        # can I get globals from other module? mapping dict
+        tables_list = self.populate.return_tables_list()
         return tables_list
 
     def what_years_available(self, selection=None):
-        table_name = 'Payment'
-        table = globals()[table_name].create(amount=10.00)
-        breakpoint()
-
-# class Table(Model):
-#     text = TextField()
-
-#     class Meta:
-#         database = DB
-
-# table_name = 'Table'
-# table = globals()[table_name].create(text='lorem ipsum')
+        years = set([rec.date_posted for rec in selection.select()])
+        years = set([year.year for year in years])
+    
+        if len(years) <= 1:
+            return list(years)
+        else:
+            return list(years)
