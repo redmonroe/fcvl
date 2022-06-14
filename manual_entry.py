@@ -27,10 +27,25 @@ class ManualEntry:
         selection = self.selection_ui(list1=rows, header1=year, header2='transactions', header3=Payment)
 
         selected_item = self.find_by_id(selection=selection)
-        breakpoint()
 
-        modified_item = self.selection_ui(list1=selected_item, header1=year, header2='transactions', header3=Payment)
-        
+        choice = input('press 1 to update and Z to delete: ')
+
+        if choice == 1:
+            modified_item = self.update_ui(selected_item=selected_item)
+        elif choice == 'Z':
+            modified_item = self.delete_ui(selected_item=selected_item)
+
+    def delete_ui(self, selected_item=None):
+        print('delete ui')
+        payment = Payment.delete_by_id(selected_item.id)
+
+    
+    def update_ui(self, selected_item=None):
+        count = 1
+        for key, value in selected_item.__dict__['__data__'].items():
+            print(count, key, value)
+            count += 1              
+        breakpoint()
             
     def selection_ui(self, list1=None, header1=None, header2=None, header3=None):
         print(f'showing {header2} in {header1} for table {header3}')
