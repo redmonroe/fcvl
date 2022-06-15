@@ -6,17 +6,7 @@ from backend import Mentry, Payment, PopulateTable, db
 from config import Config
 from db_utils import DBUtils
 
-# we can do a manual entry and then to persist it for testing we will
-# use an entry on Config 
-
-# process config corrections
-
-# we would want to select based on 
-    # year
-    # month
-    # db/class
-    # id
-    # we have some foreign keys so we may have to look at dependencies & cascades
+# this works for payments; col name issues prevent the query from working properly for other types; I can address this
 
 class ManualEntry:
 
@@ -24,21 +14,25 @@ class ManualEntry:
         self.populate = PopulateTable()
         self.tables_list = self.populate.return_tables_list()
         self.db = db
-
-    def apply_persisted_changes(self):
-        self.connect_to_db()
-        self.find_persisted_changes_from_config()
-        
+    
     def main(self):
         self.connect_to_db()
 
         months = set([rec.date_posted for rec in Payment.select()])
         year = list(months)[0].year
         months = set([month.month for month in months])
-        selection = self.selection_ui(list1=months, header1=year, header2='months', header3=Payment)
-        rows = self.what_rows_payments(target=selection)
 
-        selection = self.selection_ui(list1=rows, header1=year, header2='transactions', header3=Payment)
+        tables_list = self.what_tables_available()
+        tables_zip = self.map_table_obj_to_table_str(tables_list=tables_list)
+
+        selection1 = self.selection_ui_tables(list1=tables_zip, header1=year, header2='months')
+
+        selection2 = self.selection_ui(list1=months, header1=year, header2='months', header3=selection1._meta.__dict__['name'])
+
+        rows = self.what_rows_payments(target=selection2, obj=selection1)
+
+        selection = self.selection_ui(list1=rows, header1=year, header2='rows', header3=selection1._meta.__dict__['name'])
+        breakpoint()
 
         selected_item = self.find_by_id(selection=selection)
 
@@ -49,6 +43,10 @@ class ManualEntry:
             modified_item = self.update_ui(selected_item=selected_item)
         elif choice == 'Z':
             modified_item = self.delete_ui(selected_item=selected_item)
+
+    def apply_persisted_changes(self):
+        self.connect_to_db()
+        self.find_persisted_changes_from_config()
 
     def delete_ui(self, selected_item=None):
         print('delete ui')
@@ -81,6 +79,25 @@ class ManualEntry:
         choice = int(input('please enter a number from the above list: '))
         selection = [item for count, item in choices if count == choice][0]
         print(f'you chose {selection}')
+        return selection   
+
+    def selection_ui_tables(self, list1=None, header1=None, header2=None,):
+        print(f'showing {header2} in {header1}')
+
+        choices = []
+        count = 1
+        for item in list1:
+            table_name = list(item.keys())[0]
+            if table_name in ['mentry', 'payment', 'ntpayment']:
+                table_obj = list(item.values())[0]
+                print(count, table_name)
+                tup = (count, table_obj)
+                choices.append(tup)
+                count += 1
+        
+        choice = int(input('please enter a number from the above list: '))
+        selection = [item for count, item in choices if count == choice][0]
+        print(f'you chose {selection}')
         return selection            
     
     def find_by_id(self, selection=None):
@@ -91,8 +108,13 @@ class ManualEntry:
         tables_list = self.populate.return_tables_list()
         return tables_list
 
-    def what_rows_payments(self, target=None):
-        rows = [(row.id, row.tenant, row.amount, dt.strftime(row.date_posted, '%Y-%m-%b')) for row in Payment.select().where(Payment.date_code==target).namedtuples()]
+    def map_table_obj_to_table_str(self, tables_list=None):
+        tables_list_str = [table._meta.__dict__['name'] for table in tables_list ]
+        tables_zip = [{name_str: obj} for obj, name_str in zip(tables_list, tables_list_str)]
+        return tables_zip
+
+    def what_rows_payments(self, target=None, obj=None):
+        rows = [(row.id, row.tenant, row.amount, dt.strftime(row.date_posted, '%Y-%m-%b')) for row in obj.select().where(obj.date_code==target).namedtuples()]
         return rows
 
     def what_years_available(self, selection=None):

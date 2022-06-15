@@ -185,7 +185,12 @@ class StatusRS(BaseModel):
         self.write_processed_to_db(ref_rec=most_recent_status, report_list=report_list)
 
         if mode != 'just_asserting_empty':
+            # this is where determination of 'reconciled' is made
             self.assert_reconcile_payments(month_list=months_ytd, ref_rec=most_recent_status)
+
+        from manual_entry import ManualEntry # circular import workaround
+        manentry = ManualEntry(db=db)
+        manentry.apply_persisted_changes()
 
         if most_recent_status:
             print(f'\n\n*****************************AUTORS: welcome!********************')
