@@ -75,8 +75,7 @@ def autors(mode=None):
 def manentry():
     click.echo('delete or modify rows of the database')
     manentry = ManualEntry(db=db)
-    # manentry.main()
-    manentry.main_apply_changes()
+    manentry.main()
 
 @click.command()
 def sqlite_dump():

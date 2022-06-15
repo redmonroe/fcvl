@@ -9,7 +9,7 @@ from config import Config
 from file_indexer import FileIndexer
 from records import record
 from setup_month import MonthSheet
-
+from manual_entry import ManualEntry
 
 class BuildRS(MonthSheet):
     def __init__(self, sleep=None, full_sheet=None, path=None, mode=None, main_db=None, test_service=None):
@@ -23,7 +23,6 @@ class BuildRS(MonthSheet):
             print(e, 'using testing configuration for Google Api Calls')
             self.service = oauth(Config.my_scopes, 'sheet', mode='testing')
         self.create_tables_list1 = None
-
         self.target_bal_load_file = Config.beg_bal_xlsx
 
     def __repr__(self):
@@ -36,6 +35,8 @@ class BuildRS(MonthSheet):
         self.load_initial_tenants_and_balances()
         processed_rentr_dates_and_paths = self.iterate_over_remaining_months()
         
+        manentry = ManualEntry(db=self.main_db)
+        manentry.apply_persisted_changes()
         Damages.load_damages()
 
         populate.transfer_opcash_to_db() # PROCESSED OPCASHES MOVED INTO DB

@@ -1,9 +1,11 @@
 import sys
 from datetime import datetime as dt
+from operator import attrgetter
 
 from backend import Mentry, Payment, PopulateTable, db
-from db_utils import DBUtils
 from config import Config
+from db_utils import DBUtils
+
 # we can do a manual entry and then to persist it for testing we will
 # use an entry on Config 
 
@@ -23,7 +25,7 @@ class ManualEntry:
         self.tables_list = self.populate.return_tables_list()
         self.db = db
 
-    def main_apply_changes(self):
+    def apply_persisted_changes(self):
         self.connect_to_db()
         self.find_persisted_changes_from_config()
         
@@ -110,11 +112,10 @@ class ManualEntry:
         mentry.save()
 
     def find_persisted_changes_from_config(self):
-        from operator import attrgetter
         
         for item in Config.persisted_changes:
             obj_type = item['obj_type']
-            model_name, model_fields = self.get_nm_and_flds_from_obj(obj_type=obj_type)
+            model_name= self.get_name_from_obj(obj_type=obj_type)
 
             col_name1 = item['col_name1'][0]
             col_value1 = item['col_name1'][1]
@@ -126,17 +127,19 @@ class ManualEntry:
                 where(attrgetter(col_name1)(model_name) == col_value1).
                 where(attrgetter(col_name2)(model_name) == col_value2).
                 where(attrgetter(col_name3)(model_name) == col_value3).
-                namedtuples()][0]
+                namedtuples()]
+            
+            try:
+                result = result[0]
+            except IndexError as e:
+                print('You probably already deleted the transaction.  Check mentry db for further information.')
+                print(e)
+                print('exiting program')
+                break
 
             if item['action'] == 'delete':
                 self.delete_ui_dynamic(obj_type=model_name, selected_item=result)
-                
-            
-                # breakpoint()
 
-
-
-    def get_nm_and_flds_from_obj(self, obj_type=None):
+    def get_name_from_obj(self, obj_type=None):
         model_name = getattr(sys.modules[__name__], obj_type)
-        model_fields = list(model_name._meta.fields.keys())
-        return model_name, model_fields
+        return model_name
