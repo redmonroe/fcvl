@@ -84,26 +84,11 @@ class TestFileIndexer:
         findex.make_a_list_of_raw(mode='pdf')
         assert len(findex.raw_list) == 0
 
-    # def test_iter_run_with_may_dir(self):
-    #     may_path = Config.TEST_RS_PATH_MAY
-    #     may_findex = FileIndexer(path=may_path, db=Config.TEST_DB)
-    #     index_dict = may_findex.iter_build_runner()
-    #     assert may_findex.unproc_file_for_testing == ['op_cash_2022_04.pdf']
-    #     assert list(may_findex.index_dict_iter.values())[0][0] == '.pdf'
-
-    #     '''show that db after may update includes raw opcash_04'''
-    #     assert Path(may_findex.raw_list[0][0]).name == 'op_cash_2022_04.pdf'
-    #     '''show that db after may update includes proc"d opcash_04'''
-    #     proc_items = [item.fn for item in Findexer().select().where(Findexer.status=='processed').namedtuples() if item.fn not in findex.excluded_file_names]
-    #     assert 'op_cash_2022_04.pdf' in proc_items
-
     def test_close(self):
         findex.drop_findex_table()
         findex.close_findex_table()
         assert Config.TEST_DB.is_closed() == True
 
-
-    
 @pytest.mark.testing_db
 class TestDB:
 
@@ -253,24 +238,24 @@ class TestDB:
                  'opcash_amount': '3639.0',
                  'opcash_det_id': 13, 
                  'what_processed': [{'opcash_processed': True, 'tenant_reconciled': True, 'scrape_reconciled': False}], 
-                 'endbal_cumsum': 2115.0, 
+                 'endbal_cumsum': 2591.0, 
                  'bal_letters': []
                 }, 
-                #   {
-                #  'date': '2022-04', 
-                #  'processed_record1': 'deposits_04_2022.xlsx', 
-                #  'rr_len': 64, 
-                #  'current_vacants': ['CD-101', 'CD-115', 'PT-211'], 
-                #  'vacant_len': 3, 
-                #  'sum_ntp': 227.27,
-                #  'damages': [],  
-                #  'opcash_name': None, 
-                #  'opcash_amount': None,
-                #  'opcash_det_id': 13, 
-                #  'what_processed': [{'opcash_processed': False, 'tenant_reconciled': False, 'scrape_reconciled': False}], 
-                #  'endbal_cumsum': 2933.0, 
-                #  'bal_letters': []
-                # }, 
+                  {
+                 'date': '2022-04', 
+                 'processed_record1': 'deposits_04_2022.xlsx', 
+                 'rr_len': 64, 
+                 'current_vacants': ['CD-101', 'CD-115', 'PT-211'], 
+                 'vacant_len': 3, 
+                 'sum_ntp': 227.27,
+                 'damages': [],  
+                 'opcash_amount': '3714.0',
+                 'opcash_name': 'op_cash_2022_04.pdf', 
+                 'opcash_det_id': 19, 
+                 'what_processed': [{'opcash_processed': True, 'tenant_reconciled': True, 'scrape_reconciled': False}], 
+                 'endbal_cumsum': 3409.0, 
+                 'bal_letters': []
+                }, 
 
         ]
         return assert_list
@@ -362,15 +347,14 @@ class TestDB:
             bal_letters = populate.get_balance_letters_by_month(first_dt=first_dt, last_dt=last_dt)
     
             assert bal_letters == assert_list[i]['bal_letters']
-            breakpoint()
 
     def test_teardown(self):
         db.drop_tables(models=create_tables_list)
-        db.close()    
+        db.close()
 
     def test_close_db(self):
         if db.is_closed() == False:
-            db.close()
+            db.close()    
 
 @pytest.mark.testing_db
 class DBBackup:
@@ -381,19 +365,17 @@ class DBBackup:
         match_bool = DBUtils.find_sqlite(path_to_existing_db=Config.sqlite_test_db_path, path_to_backup=Config.sqlite_dump_path)
 
         assert match_bool == True
-   
- 
 
+"""start here"""
 
-'''how can I import object names without having to import object in Config class'''
-
-@pytest.mark.testing_rs
+@pytest.mark.testing_db
 class TestWrite:
 
     def test_assert_all_db_empty_and_connections_closed(self):
         if db.get_tables() != []:
             db.drop_tables(models=create_tables_list)
         assert db.get_tables() == []
+        breakpoint()
 
     # def test_statusrs_starts_empty(self):
     #     status = StatusRS()

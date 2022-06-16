@@ -114,7 +114,7 @@ class ManualEntry:
         return tables_zip
 
     def what_rows_payments(self, target=None, obj=None):
-        rows = [(row.id, row.tenant, row.amount, dt.strftime(row.date_posted, '%Y-%m-%b')) for row in obj.select().where(obj.date_code==target).namedtuples()]
+        rows = [(row.id, row.tenant, row.amount, dt.strftime(row.date_posted, '%Y-%m-%d')) for row in obj.select().where(obj.date_code==target).namedtuples()]
         return rows
 
     def what_years_available(self, selection=None):
@@ -134,7 +134,6 @@ class ManualEntry:
         mentry.save()
 
     def find_persisted_changes_from_config(self):
-        
         for item in Config.persisted_changes:
             obj_type = item['obj_type']
             model_name= self.get_name_from_obj(obj_type=obj_type)

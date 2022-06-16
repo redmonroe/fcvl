@@ -39,7 +39,7 @@ class BuildRS(MonthSheet):
         populate.transfer_opcash_to_db() # PROCESSED OPCASHES MOVED INTO DB
         status = StatusRS()
         status.set_current_date()
-
+       
         status.show() 
         self.main_db.close()
 
