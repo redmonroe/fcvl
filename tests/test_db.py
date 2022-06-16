@@ -1,8 +1,32 @@
+import json
+import os
+import sys
+import time
+from datetime import datetime
+
+import pytest
+
+current = os.path.dirname(os.path.realpath(__file__))
+parent = os.path.dirname(current)
+sys.path.append(parent)
 import calendar
 import datetime
 import json
 import os
 import sys
+from pathlib import Path
+
+from auth_work import oauth
+from backend import (Damages, Findexer, NTPayment, OpCash, OpCashDetail,
+                     Payment, PopulateTable, StatusObject, StatusRS, Subsidy,
+                     Tenant, TenantRent, Unit, db)
+from build_rs import BuildRS
+from config import Config
+from file_indexer import FileIndexer
+from google_api_calls_abstract import GoogleApiCalls
+from googleapiclient.errors import HttpError
+from setup_month import MonthSheet
+from setup_year import YearSheet
 
 current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
@@ -22,13 +46,18 @@ from file_indexer import FileIndexer
 from peewee import JOIN, fn
 from records import record
 
-
-target_bal_load_file = 'beginning_balance_2022.xlsx'
-path = Config.TEST_RS_PATH_APRIL
+# from rs
+full_sheet = Config.TEST_RS
+path = Config.TEST_RS_PATH_MAY 
+target_bal_load_file = Config.beg_bal_xlsx
+service = oauth(Config.my_scopes, 'sheet', mode='testing')
+calls = GoogleApiCalls()
+ms = MonthSheet(full_sheet=full_sheet, path=path, mode='testing', test_service=service)
 populate = PopulateTable()
 tenant = Tenant()
 unit = Unit()
 findex = FileIndexer(path=path, db=Config.TEST_DB)
+
 create_tables_list = populate.return_tables_list()
 
 '''arrange, act, assert, cleanup'''
@@ -55,43 +84,42 @@ class TestFileIndexer:
         findex.make_a_list_of_raw(mode='pdf')
         assert len(findex.raw_list) == 0
 
-    def test_iter_run_with_may_dir(self):
-        may_path = Config.TEST_RS_PATH_MAY
-        may_findex = FileIndexer(path=may_path, db=Config.TEST_DB)
-        index_dict = may_findex.iter_build_runner()
-        assert may_findex.unproc_file_for_testing == ['op_cash_2022_04.pdf']
-        assert list(may_findex.index_dict_iter.values())[0][0] == '.pdf'
+    # def test_iter_run_with_may_dir(self):
+    #     may_path = Config.TEST_RS_PATH_MAY
+    #     may_findex = FileIndexer(path=may_path, db=Config.TEST_DB)
+    #     index_dict = may_findex.iter_build_runner()
+    #     assert may_findex.unproc_file_for_testing == ['op_cash_2022_04.pdf']
+    #     assert list(may_findex.index_dict_iter.values())[0][0] == '.pdf'
 
-        '''show that db after may update includes raw opcash_04'''
-        assert Path(may_findex.raw_list[0][0]).name == 'op_cash_2022_04.pdf'
-        '''show that db after may update includes proc"d opcash_04'''
-        proc_items = [item.fn for item in Findexer().select().where(Findexer.status=='processed').namedtuples() if item.fn not in findex.excluded_file_names]
-        assert 'op_cash_2022_04.pdf' in proc_items
+    #     '''show that db after may update includes raw opcash_04'''
+    #     assert Path(may_findex.raw_list[0][0]).name == 'op_cash_2022_04.pdf'
+    #     '''show that db after may update includes proc"d opcash_04'''
+    #     proc_items = [item.fn for item in Findexer().select().where(Findexer.status=='processed').namedtuples() if item.fn not in findex.excluded_file_names]
+    #     assert 'op_cash_2022_04.pdf' in proc_items
 
     def test_close(self):
         findex.drop_findex_table()
         findex.close_findex_table()
         assert Config.TEST_DB.is_closed() == True
+
+
     
 @pytest.mark.testing_db
 class TestDB:
 
     def test_reset_all(self):
         db.connect()
-        # if db.get_tables() != []:
         db.drop_tables(models=create_tables_list)
 
     def test_db(self):
         db.create_tables(create_tables_list)
         assert db.database == '/home/joe/local_dev_projects/fcvl/sqlite/test_pw_db.db'
-        # assert sorted(db.get_tables()) == sorted(['balanceletter, statusobject', 'opcash', 'opcashdetail', 'damages', 'tenantrent', 'ntpayment', 'payment', 'tenant', 'unit', 'statusrs', 'findexer'])
         assert [*db.get_columns(table='payment')[0]._asdict().keys()] == ['name', 'data_type', 'null', 'primary_key', 'table', 'default']
 
     def test_set_init_state_at_end_of_april(self):
         build = BuildRS(path=path, main_db=Config.TEST_DB)
-        build.new_auto_build()                      
+        build.build_db_from_scratch()                      
 
-    # @record
     def test_initial_tenant_load(self):
         '''JANUARY IS DIFFERENT'''
         '''processed records+''' 
@@ -135,22 +163,14 @@ class TestDB:
         assert 'johnson, thomas' in tenants
         assert 'greiner, richard' not in tenants
 
-        # '''current occupied: johnson in, greiner, kelly out'''
-        # tenants = populate.get_current_tenants_by_month(first_dt=first_dt, last_dt=last_dt)
-        # assert len(tenants) == 64
-        # assert 'johnson, thomas' in tenants
-        # assert 'greiner, richard' not in tenants
+        '''jan occupied: johnson in, greiner, kelly out'''
+        tenants = populate.get_current_tenants_by_month(first_dt=first_dt, last_dt=last_dt)
+        assert len(tenants) == 64
+        assert 'johnson, thomas' in tenants
+        assert 'greiner, richard' not in tenants
 
-        # '''current vacant: '''
-        # vacant_units = populate.get_current_vacants_by_month(last_dt=last_dt)
-
-        # vacant_units = [item[1] for item in vacant_units]
-        # breakpoint()
-        # assert vacant_units == ['CD-101', 'CD-115', 'PT-201']
-        # assert len(vacant_units) == 3
-
-        # '''sum of vacants and currents'''
-        # assert len(vacant_units) + len(tenants) == 67
+        '''jan vacant: '''
+        """I dont have a way to access historical vacants by date at this time; I should be able to use existing get_rentroll_by_first_of_month in query"""
 
         '''get current charges: individual and sum'''
         current_charges = populate.get_rent_charges_by_tenant_by_period(last_dt=last_dt, first_dt=first_dt)
@@ -180,7 +200,7 @@ class TestDB:
 
         '''check statusobject'''
         what_is_processed = populate.get_status_object_by_month(first_dt=first_dt, last_dt=last_dt)
-        assert what_is_processed == [{'processed': True, 'tenant_reconciled': True, 'scrape_reconciled': False}]
+        assert what_is_processed == [{'opcash_processed': True, 'tenant_reconciled': True, 'scrape_reconciled': False}]
 
         '''tenant end bal'''
         positions, cumsum = populate.net_position_by_tenant_by_month(first_dt=first_dt, last_dt=last_dt)
@@ -217,8 +237,8 @@ class TestDB:
                  'opcash_name': 'op_cash_2022_02.pdf', 
                  'opcash_amount': '3434.0',
                  'opcash_det_id': 7, 
-                 'what_processed': [{'processed': True, 'tenant_reconciled': True, 'scrape_reconciled': False}], 
-                 'endbal_cumsum': 2649.0, 
+                 'what_processed': [{'opcash_processed': True, 'tenant_reconciled': True, 'scrape_reconciled': False}], 
+                 'endbal_cumsum': 3125.0, 
                  'bal_letters': []
                 }, 
                 {
@@ -232,7 +252,7 @@ class TestDB:
                  'opcash_name': 'op_cash_2022_03.pdf', 
                  'opcash_amount': '3639.0',
                  'opcash_det_id': 13, 
-                 'what_processed': [{'processed': True, 'tenant_reconciled': True, 'scrape_reconciled': False}], 
+                 'what_processed': [{'opcash_processed': True, 'tenant_reconciled': True, 'scrape_reconciled': False}], 
                  'endbal_cumsum': 2115.0, 
                  'bal_letters': []
                 }, 
@@ -247,7 +267,7 @@ class TestDB:
                 #  'opcash_name': None, 
                 #  'opcash_amount': None,
                 #  'opcash_det_id': 13, 
-                #  'what_processed': [{'processed': False, 'tenant_reconciled': False, 'scrape_reconciled': False}], 
+                #  'what_processed': [{'opcash_processed': False, 'tenant_reconciled': False, 'scrape_reconciled': False}], 
                 #  'endbal_cumsum': 2933.0, 
                 #  'bal_letters': []
                 # }, 
@@ -342,6 +362,7 @@ class TestDB:
             bal_letters = populate.get_balance_letters_by_month(first_dt=first_dt, last_dt=last_dt)
     
             assert bal_letters == assert_list[i]['bal_letters']
+            breakpoint()
 
     def test_teardown(self):
         db.drop_tables(models=create_tables_list)
@@ -362,6 +383,72 @@ class DBBackup:
         assert match_bool == True
    
  
+
+
+'''how can I import object names without having to import object in Config class'''
+
+@pytest.mark.testing_rs
+class TestWrite:
+
+    def test_assert_all_db_empty_and_connections_closed(self):
+        if db.get_tables() != []:
+            db.drop_tables(models=create_tables_list)
+        assert db.get_tables() == []
+
+    # def test_statusrs_starts_empty(self):
+    #     status = StatusRS()
+    #     status.set_current_date(mode='autodrop')
+    #     status.show(mode='just_asserting_empty')
+    #     most_recent_status = [item for item in StatusRS().select().order_by(-StatusRS.status_id).namedtuples()][0]
+    #     proc_file = json.loads(most_recent_status.proc_file)
+    #     assert proc_file == []
+
+    def test_generic_build(self):
+        basedir = os.path.abspath(os.path.dirname(__file__))
+        build = BuildRS(path=path, main_db=db)
+        build.new_auto_build()
+
+    def test_end_status(self):
+        most_recent_status = [item for item in StatusRS().select().order_by(-StatusRS.status_id).namedtuples()][0]
+        proc_file = json.loads(most_recent_status.proc_file)
+        assert proc_file[0] == {'deposits_01_2022.xls': '2022-01'}
+
+@pytest.mark.testing_rs
+class TestRSOnly:
+
+    def test_setup_sheet_prime(self):
+        title_dict = ms.show_current_sheets()
+        for name, id2, in title_dict.items():
+            if name != 'intake':
+                calls.del_one_sheet(service, full_sheet, id2)
+
+    def test_send_to_setup_month(self):
+        ms.auto_control()
+
+    def test_select_from_sheets_after_writing(self):
+        result = calls.broad_get(service, full_sheet, '2022-01!k68:k68')
+        result2 = calls.broad_get(service, full_sheet, '2022-02!f68:fq68')
+        grand_total = calls.broad_get(service, full_sheet, '2022-01!k77:k77')
+        assert result[0][0] == '153'
+        assert result2[0][0] == '588'
+        assert grand_total[0][0] == '15491.71'
+       
+    def test_teardown_sheets(self):
+        title_dict = ms.show_current_sheets()
+        for name, id2, in title_dict.items():
+            if name != 'intake':
+                calls.del_one_sheet(service, full_sheet, id2)
+                  
+    def test_teardown(self):
+        if db.get_tables() != []:
+            db.drop_tables(models=create_tables_list)
+        db.close()    
+
+    def test_close_db(self):
+        if db.is_closed() == False:
+            db.close()
+
+
 
 
 

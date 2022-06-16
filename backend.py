@@ -209,6 +209,8 @@ class StatusRS(BaseModel):
                 mid_month_choice = True
             else:
                 mid_month_choice = False
+                print('exiting program')
+                exit
 
         first_incomplete_month = incomplete_month_bool[0]
         
@@ -231,33 +233,33 @@ class StatusRS(BaseModel):
             '''if this function asserts ok, then we can write balance letters & rent receipts for current month'''
             all_tp, all_ntp = populate.check_db_tp_and_ntp(grand_total=scrape_deposit_sum, first_dt=first_dt, last_dt=last_dt)    
 
-        if all_tp:
-            target_month = list(first_incomplete_month.items())[0][0]
-            mr_status_object = [item for item in StatusObject().select().where(StatusObject.month==target_month)][0]
-            mr_status_object.scrape_reconciled = True
-            mr_status_object.save()   
+            if all_tp:
+                target_month = list(first_incomplete_month.items())[0][0]
+                mr_status_object = [item for item in StatusObject().select().where(StatusObject.month==target_month)][0]
+                mr_status_object.scrape_reconciled = True
+                mr_status_object.save()   
 
-            choice1 = input(f'\nWould you like to make rent receipts for period between {incomplete_month_bool[0]} ? Y/n ')
-            if choice1 == 'Y':
-                write_rr_letters = True
-            else:
-                write_rr_letters = False
+                choice1 = input(f'\nWould you like to make rent receipts for period between {incomplete_month_bool[0]} ? Y/n ')
+                if choice1 == 'Y':
+                    write_rr_letters = True
+                else:
+                    write_rr_letters = False
 
-            choice2 = input(f'\nWould you like to make balance letters for period between {incomplete_month_bool[0]} ? Y/n ')
-            if choice2 == 'Y':
-                write_bal_letters = True
-            else:
-                write_bal_letters = False
+                choice2 = input(f'\nWould you like to make balance letters for period between {incomplete_month_bool[0]} ? Y/n ')
+                if choice2 == 'Y':
+                    write_bal_letters = True
+                else:
+                    write_bal_letters = False
             
-        if write_bal_letters:
-            print('generating balance letters')
-            balance_letter_list, mr_good_month = self.generate_balance_letter_list_mr_reconciled()
+            if write_bal_letters:
+                print('generating balance letters')
+                balance_letter_list, mr_good_month = self.generate_balance_letter_list_mr_reconciled()
 
-            if balance_letter_list:
-                print(f'balance letter list for {mr_good_month}: {balance_letter_list}')
+                if balance_letter_list:
+                    print(f'balance letter list for {mr_good_month}: {balance_letter_list}')
 
-        if write_rr_letters:
-            self.rent_receipts_wrapper()
+            if write_rr_letters:
+                self.rent_receipts_wrapper()
         
         return most_recent_status 
 
@@ -588,7 +590,7 @@ class QueryHC:
         month = first_dt.strftime('%m')
         year = first_dt.year
         period = str(year) + '-' + str(month)
-        return [{'processed': item.processed, 'tenant_reconciled': item.tenant_reconciled, 'scrape_reconciled': item.scrape_reconciled} for item in StatusObject().select().where(StatusObject.month==period).namedtuples()]
+        return [{'opcash_processed': item.opcash_processed, 'tenant_reconciled': item.tenant_reconciled, 'scrape_reconciled': item.scrape_reconciled} for item in StatusObject().select().where(StatusObject.month==period).namedtuples()]
 
     def match_tp_db_to_df(self, df=None, first_dt=None, last_dt=None):
         sum_this_month_db = sum([float(row.amount) for row in 

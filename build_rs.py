@@ -18,7 +18,7 @@ class BuildRS(MonthSheet):
         self.path = path
         try:
             self.service = oauth(Config.my_scopes, 'sheet')
-        except FileNotFoundError as e:
+        except (FileNotFoundError, NameError) as e:
             print(e, 'using testing configuration for Google Api Calls')
             self.service = oauth(Config.my_scopes, 'sheet', mode='testing')
         self.create_tables_list1 = None
