@@ -41,7 +41,8 @@ class FileIndexer(Utils):
         self.path = path
         self.db = db
         self.mode = mode
-        self.unproc_file_for_testing = None
+        self.unproc_file_for_testing = []
+        self.unfinalized_months = []
         self.index_dict = {}
         self.index_dict_iter = {} 
         self.indexed_list = []
@@ -49,6 +50,10 @@ class FileIndexer(Utils):
 
     def iter_build_runner(self):
         print('iter_build_runner; a FileIndexer method')
+        # if month is :
+            # unfinalized
+            # not scrape reconciled
+            # csv with current month is in index_dict, load_scrape
         self.connect_to_db() # no autodrop
         populate = PopulateTable()
         months_ytd = Utils.months_in_ytd(Config.current_year)
@@ -59,6 +64,7 @@ class FileIndexer(Utils):
 
         # are there any unfinalized months?
         unfinalized_months = list(set(months_ytd) - set(finalized_months))
+        self.unfinalized_months = unfinalized_months
 
         if len(unfinalized_months) > 0:
             # are there any new files in path?
@@ -70,18 +76,13 @@ class FileIndexer(Utils):
             if len(unproc_files) == 0:
                 print('there are no new files in path')
                 print('here we should look to see whether we want to make any new rent sheets')
+                return [], []
             else:
                 print('adding new files to findexer')
-                # add path back to unproc_files
-
-
-
                 index_dict = self.sort_directory_by_extension2() 
                 self.load_what_is_in_dir_as_indexed(dict1=self.index_dict_iter)
-                # breakpoint()
 
-                self.make_a_list_of_indexed( mode=self.doc_mode.xls)
-                print('evaluating:', self.indexed_list)
+                self.make_a_list_of_indexed(mode=self.doc_mode.xls)
         
                 if self.indexed_list:
                     self.find_by_content(style=self.style_term.rent, target_string=self.target_string.affordable)
@@ -96,14 +97,15 @@ class FileIndexer(Utils):
                 self.make_a_list_of_indexed(mode=self.doc_mode.csv)
                 if self.indexed_list:
                     self.get_period_from_scrape_fn()
-        else:
-            print('no unfinalize months; you are presumptively caught up!')
+                
+                index_list = self.get_date_from_xls_name(records=index_dict)
 
-        breakpoint()
-        # if month is :
-            # unfinalized
-            # not scrape reconciled
-            # csv with current month is in index_dict, load_scrape
+                return index_list, self.unfinalized_months
+        else:
+            print('no unfinalized months; you are presumptively caught up!')
+            print('exiting program')
+            exit
+
     def build_index_runner(self):
         self.connect_to_db()
         self.directory_contents = self.articulate_directory()
@@ -315,6 +317,14 @@ class FileIndexer(Utils):
                 find_change.deplist = deplist
                 find_change.corr_sum = corr_sum 
                 find_change.save()
+
+    def get_date_from_xls_name(self, records=None):
+        records1 = []
+        for path, name in records.items():
+            date_str = '-'.join(name[1].split('.')[0].split('_')[1:][::-1])
+            tup = (date_str, path)
+            records1.append(tup)
+        return records1
 
     def get_date_from_opcash_name(self, record):
         date_list = record.split('.')[0].split('_')[2:]

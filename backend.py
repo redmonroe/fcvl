@@ -206,14 +206,16 @@ class StatusRS(BaseModel):
         if report_list:
             incomplete_month_bool = self.is_there_mid_month(months_ytd, report_list)
 
-        if incomplete_month_bool:
-            choice = input(f'\nWould you like to import mid-month report from bank for {incomplete_month_bool[0]} ? Y/n ')
-            if choice == 'Y':
-                mid_month_choice = True
-            else:
-                mid_month_choice = False
-                print('exiting program')
-                exit
+        mid_month_choice = False
+
+        # if incomplete_month_bool:
+        #     choice = input(f'\nWould you like to import mid-month report from bank for {incomplete_month_bool[0]} ? Y/n ')
+        #     if choice == 'Y':
+        #         mid_month_choice = True
+        #     else:
+        #         mid_month_choice = False
+        #         print('exiting program')
+        #         exit
 
         first_incomplete_month = incomplete_month_bool[0]
         
@@ -263,6 +265,8 @@ class StatusRS(BaseModel):
 
             if write_rr_letters:
                 self.rent_receipts_wrapper()
+        else:
+            print('no scrape available or scrape ask path suppressed')
         
         return most_recent_status 
 

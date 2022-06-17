@@ -65,6 +65,19 @@ def autors(mode=None):
         build = BuildRS(path=path, main_db=Config.TEST_DB)
         build.iter_build()
 
+    if mode == 'iter_all':
+        populate = PopulateTable()
+        create_tables_list1 = populate.return_tables_list()
+        if build.main_db.is_closed() == True:
+            build.main_db.connect()
+        build.main_db.drop_tables(models=create_tables_list1)
+        path = Config.TEST_RS_PATH_ITER_BUILD1
+        build = BuildRS(path=path, main_db=Config.TEST_DB)
+        build.iter_build()
+        path = Config.TEST_RS_PATH_ITER_BUILD2
+        build = BuildRS(path=path, main_db=Config.TEST_DB)
+        build.iter_build()
+
     if mode == 'iter_reset':
         populate = PopulateTable()
         create_tables_list1 = populate.return_tables_list()

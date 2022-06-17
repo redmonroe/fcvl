@@ -25,6 +25,8 @@ class BuildRS(MonthSheet):
         self.target_bal_load_file = Config.beg_bal_xlsx
         self.populate = PopulateTable()
         self.findex = FileIndexer(path=self.path, db=self.main_db)
+        self.new_files = None
+        self.unfinalized_months = None
 
     def __repr__(self):
         return f'BuildRS object path: {self.path} write sheet: {self.full_sheet} service:{self.service}'
@@ -36,7 +38,7 @@ class BuildRS(MonthSheet):
             self.build_db_from_scratch(fresh_build=True)
         else:
             print('db not empty')
-            self.findex.iter_build_runner()
+            self.new_files, self.unfinalized_months = self.findex.iter_build_runner()
             self.build_db_from_scratch(fresh_build=False)
 
     def ur_query_wrapper(self):
@@ -54,16 +56,24 @@ class BuildRS(MonthSheet):
             processed_rentr_dates_and_paths = self.iterate_over_remaining_months()
             Damages.load_damages()
             self.populate.transfer_opcash_to_db() # PROCESSED OPCASHES MOVED INTO DB
-        else:
-            findex, populate = self.just_create_tables()
-
+            status = StatusRS()
+            status.set_current_date()
         
+            status.show() 
+            self.main_db.close()
+        else:
+            # we are working on this branch today
+            findex, populate = self.just_create_tables()
+            self.iterate_over_remaining_months_incremental(list1=self.new_files)
+            breakpoint()
 
-        status = StatusRS()
-        status.set_current_date()
-       
-        status.show() 
-        self.main_db.close()
+            # [('rent_roll_02_2022.xlsx', '2022-02', '/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/testing_sources_may/rent_roll_02_2022.xlsx')]
+
+            # self.load_initial_tenants_and_balances() # this would not be in a rebuild
+
+            # let's bring down unfinalized_months
+            # consume new files
+
 
     def drop_then_create_tables(self):
         populate = PopulateTable()
@@ -85,6 +95,11 @@ class BuildRS(MonthSheet):
             self.main_db.connect()
         self.main_db.create_tables(self.create_tables_list1)
         return findex, populate
+
+    def iterate_over_remaining_months_incremental(self, list1=None):
+        populate = PopulateTable()
+        list1.sort()
+        breakpoint()
 
     def iterate_over_remaining_months(self):       
         # load remaining months rent
