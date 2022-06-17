@@ -61,24 +61,32 @@ class FileIndexer(Utils):
 
         if len(unfinalized_months) > 0:
             print('search for new files in path')
+            processed_fn = [item.fn for item in Findexer().select().where(Findexer.status=='processed').namedtuples()]        
+            directory_contents = self.articulate_directory2()        
+            unproc_file = list(set(directory_contents) - set(processed_fn))
+            self.unproc_file_for_testing = unproc_file    
+            if len(unproc_file) == 0:
+                print('there are no new files in path')
+                print('here we should look to see whether we want to make any new rent sheets')
+            else:
+                print('adding new files to findexer')
+                index_dict = self.sort_directory_by_extension2() 
+                breakpoint()
             # are there any new files in path?
         else:
             print('no unfinalize months; you are presumptively caught up!')
 
 
+        # if month is :
+            # unfinalized
+            # not scrape reconciled
+            # csv with current month is in index_dict, load_scrape
+
+
 
         breakpoint()
 
 
-
-        breakpoint()
-
-
-        processed_fn = [item.fn for item in Findexer().select().where(Findexer.status=='processed').namedtuples()]        
-        directory_contents = self.articulate_directory2()        
-        unproc_file = list(set(directory_contents) - set(processed_fn))
-        self.unproc_file_for_testing = unproc_file    
-        index_dict = self.sort_directory_by_extension2() 
         self.load_what_is_in_dir_as_indexed(dict1=self.index_dict_iter)
        
         self.make_a_list_of_indexed(mode=self.doc_mode.xls)

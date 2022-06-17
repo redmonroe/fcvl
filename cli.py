@@ -49,21 +49,24 @@ def autors(mode=None):
     ms = MonthSheet(full_sheet=full_sheet, path=path, mode='testing', test_service=service)
 
     if mode == 'testing':
-        # basedir = os.path.abspath(os.path.dirname(__file__))
-        # build.determine_ctx(flag='run')
-
-        #if empty run new_auto_build() 
-        #if unproc'd files exists run iter build
-        # make expllicit reset_db command
-        # breakpoint()
-
         build.build_db_from_scratch()
 
     if mode == 'iter_testing':
+        build = BuildRS(path=path, main_db=Config.TEST_DB)
+        build.iter_build()
+    
+    if mode == 'iter_first':
+        path = Config.TEST_RS_PATH_ITER_BUILD1
+        build = BuildRS(path=path, main_db=Config.TEST_DB)
         build.iter_build()
 
-    if mode == 'reset':
-        build.determine_ctx(flag='reset')
+    if mode == 'iter_second':
+        path = Config.TEST_RS_PATH_ITER_BUILD2
+        build = BuildRS(path=path, main_db=Config.TEST_DB)
+        build.iter_build()
+
+    if mode == 'iter_reset':
+        build.drop_then_create_tables()        
 
     if mode == 'write_from_db':
         sample_month_list = ['2022-01']
