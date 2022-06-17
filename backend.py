@@ -185,8 +185,6 @@ class StatusRS(BaseModel):
 
         report_list = populate.get_processed_by_month(month_list=months_ytd)
 
-        breakpoint()
-
         self.write_processed_to_db(ref_rec=most_recent_status, report_list=report_list)
 
         if mode != 'just_asserting_empty':

@@ -33,33 +33,32 @@ class BuildRS(MonthSheet):
         print('iter build')
         if self.main_db.get_tables() == []:
             print('db empty')
-            self.build_db_from_scratch()
+            self.build_db_from_scratch(fresh_build=True)
         else:
-            print('db not empty; proceed')
+            print('db not empty')
             self.findex.iter_build_runner()
-
-        # is db empty?
-
-        # is db not empty? 
+            self.build_db_from_scratch(fresh_build=False)
 
     def ur_query_wrapper(self):
 
         populate = PopulateTable()
         first_dt, last_dt = populate.make_first_and_last_dates(date_str='2022-01')
         populate.ur_query(model='Tenant', query_fields={'move_in_date': first_dt, 'move_out_date': last_dt})
-        breakpoint()
 
-
-    def build_db_from_scratch(self):
+    def build_db_from_scratch(self, fresh_build=None):
         print('building db from scratch')
-        findex, populate = self.drop_then_create_tables()
-        findex.build_index_runner() # this is a findex method
+        if fresh_build == True:
+            findex, populate = self.drop_then_create_tables()
+            findex.build_index_runner() # this is a findex method
+        else:
+            findex, populate = self.just_create_tables()
+
         self.load_initial_tenants_and_balances()
         processed_rentr_dates_and_paths = self.iterate_over_remaining_months()
         
         Damages.load_damages()
 
-        populate.transfer_opcash_to_db() # PROCESSED OPCASHES MOVED INTO DB
+        self.populate.transfer_opcash_to_db() # PROCESSED OPCASHES MOVED INTO DB
         status = StatusRS()
         status.set_current_date()
        
@@ -75,6 +74,15 @@ class BuildRS(MonthSheet):
         if self.main_db.is_closed() == True:
             self.main_db.connect()
         self.main_db.drop_tables(models=self.create_tables_list1)
+        self.main_db.create_tables(self.create_tables_list1)
+        return findex, populate
+
+    def just_create_tables(self):
+        populate = PopulateTable()
+        findex = self.findex
+        self.create_tables_list1 = populate.return_tables_list()
+        if self.main_db.is_closed() == True:
+            self.main_db.connect()
         self.main_db.create_tables(self.create_tables_list1)
         return findex, populate
 

@@ -51,7 +51,7 @@ class FileIndexer(Utils):
         self.connect_to_db() # no autodrop
         populate = PopulateTable()
         months_ytd = Utils.months_in_ytd(Config.current_year)
-    
+        breakpoint()
         # get fully finalized months
         finalized_months = [rec.month for rec in StatusObject().select().where((StatusObject.tenant_reconciled==1) &
                     (StatusObject.opcash_processed==1)).namedtuples()]
@@ -60,7 +60,7 @@ class FileIndexer(Utils):
         unfinalized_months = list(set(months_ytd) - set(finalized_months))
 
         if len(unfinalized_months) > 0:
-            print('search for new files in path')
+            print('searching for new files in path')
             processed_fn = [item.fn for item in Findexer().select().where(Findexer.status=='processed').namedtuples()]        
             directory_contents = self.articulate_directory2()        
             unproc_file = list(set(directory_contents) - set(processed_fn))
@@ -71,41 +71,33 @@ class FileIndexer(Utils):
             else:
                 print('adding new files to findexer')
                 index_dict = self.sort_directory_by_extension2() 
+                self.load_what_is_in_dir_as_indexed(dict1=self.index_dict_iter)
+            
+                self.make_a_list_of_indexed(mode=self.doc_mode.xls)
+                print('evaluating:', self.indexed_list)
+                if self.indexed_list:
+                    self.find_by_content(style=self.style_term.rent, target_string=self.target_string.affordable)
+                    self.find_by_content(style=self.style_term.deposits, target_string=self.target_string.bank)
+                
+                self.make_a_list_of_indexed(mode=self.doc_mode.pdf)
+                if self.indexed_list:
+                    self.find_opcashes()
+                    self.type_opcashes()
+                    self.rename_by_content_pdf()
+
+                self.make_a_list_of_indexed(mode=self.doc_mode.csv)
+                if self.indexed_list:
+                    self.get_period_from_scrape_fn()
+                print('evaluating:', self.indexed_list)
                 breakpoint()
             # are there any new files in path?
         else:
             print('no unfinalize months; you are presumptively caught up!')
 
-
         # if month is :
             # unfinalized
             # not scrape reconciled
             # csv with current month is in index_dict, load_scrape
-
-
-
-        breakpoint()
-
-
-        self.load_what_is_in_dir_as_indexed(dict1=self.index_dict_iter)
-       
-        self.make_a_list_of_indexed(mode=self.doc_mode.xls)
-        print('evaluating:', self.indexed_list)
-        if self.indexed_list:
-            self.find_by_content(style=self.style_term.rent, target_string=self.target_string.affordable)
-            self.find_by_content(style=self.style_term.deposits, target_string=self.target_string.bank)
-        
-        self.make_a_list_of_indexed(mode=self.doc_mode.pdf)
-        if self.indexed_list:
-            self.find_opcashes()
-            self.type_opcashes()
-            self.rename_by_content_pdf()
-
-        self.make_a_list_of_indexed(mode=self.doc_mode.csv)
-        if self.indexed_list:
-            self.get_period_from_scrape_fn()
-        print('evaluating:', self.indexed_list)
-
     def build_index_runner(self):
         self.connect_to_db()
         self.directory_contents = self.articulate_directory()

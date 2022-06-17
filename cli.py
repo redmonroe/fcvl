@@ -49,7 +49,7 @@ def autors(mode=None):
     ms = MonthSheet(full_sheet=full_sheet, path=path, mode='testing', test_service=service)
 
     if mode == 'testing':
-        build.build_db_from_scratch()
+        build.build_db_from_scratch(fresh_build=True)
 
     if mode == 'iter_testing':
         build = BuildRS(path=path, main_db=Config.TEST_DB)
@@ -66,7 +66,11 @@ def autors(mode=None):
         build.iter_build()
 
     if mode == 'iter_reset':
-        build.drop_then_create_tables()        
+        populate = PopulateTable()
+        create_tables_list1 = populate.return_tables_list()
+        if build.main_db.is_closed() == True:
+            build.main_db.connect()
+        build.main_db.drop_tables(models=create_tables_list1)
 
     if mode == 'write_from_db':
         sample_month_list = ['2022-01']
