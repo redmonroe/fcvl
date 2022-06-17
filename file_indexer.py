@@ -44,6 +44,7 @@ class FileIndexer(Utils):
         self.unproc_file_for_testing = None
         self.index_dict = {}
         self.index_dict_iter = {} 
+        self.indexed_list = []
         self.op_cash_list = []
 
     def iter_build_runner(self):
@@ -51,7 +52,7 @@ class FileIndexer(Utils):
         self.connect_to_db() # no autodrop
         populate = PopulateTable()
         months_ytd = Utils.months_in_ytd(Config.current_year)
-        breakpoint()
+    
         # get fully finalized months
         finalized_months = [rec.month for rec in StatusObject().select().where((StatusObject.tenant_reconciled==1) &
                     (StatusObject.opcash_processed==1)).namedtuples()]
@@ -60,21 +61,28 @@ class FileIndexer(Utils):
         unfinalized_months = list(set(months_ytd) - set(finalized_months))
 
         if len(unfinalized_months) > 0:
+            # are there any new files in path?
             print('searching for new files in path')
             processed_fn = [item.fn for item in Findexer().select().where(Findexer.status=='processed').namedtuples()]        
             directory_contents = self.articulate_directory2()        
-            unproc_file = list(set(directory_contents) - set(processed_fn))
-            self.unproc_file_for_testing = unproc_file    
-            if len(unproc_file) == 0:
+            unproc_files = list(set(directory_contents) - set(processed_fn))
+            self.unproc_file_for_testing = unproc_files    
+            if len(unproc_files) == 0:
                 print('there are no new files in path')
                 print('here we should look to see whether we want to make any new rent sheets')
             else:
                 print('adding new files to findexer')
+                # add path back to unproc_files
+
+
+
                 index_dict = self.sort_directory_by_extension2() 
                 self.load_what_is_in_dir_as_indexed(dict1=self.index_dict_iter)
-            
-                self.make_a_list_of_indexed(mode=self.doc_mode.xls)
+                # breakpoint()
+
+                self.make_a_list_of_indexed( mode=self.doc_mode.xls)
                 print('evaluating:', self.indexed_list)
+        
                 if self.indexed_list:
                     self.find_by_content(style=self.style_term.rent, target_string=self.target_string.affordable)
                     self.find_by_content(style=self.style_term.deposits, target_string=self.target_string.bank)
@@ -88,12 +96,10 @@ class FileIndexer(Utils):
                 self.make_a_list_of_indexed(mode=self.doc_mode.csv)
                 if self.indexed_list:
                     self.get_period_from_scrape_fn()
-                print('evaluating:', self.indexed_list)
-                breakpoint()
-            # are there any new files in path?
         else:
             print('no unfinalize months; you are presumptively caught up!')
 
+        breakpoint()
         # if month is :
             # unfinalized
             # not scrape reconciled
@@ -175,6 +181,11 @@ class FileIndexer(Utils):
         insert_dir_contents = [{'path': path, 'fn': name, 'c_date': path.lstat().st_ctime, 'indexed': 'true', 'file_ext': suffix} for path, (suffix, name) in dict1.items()]
         query = Findexer.insert_many(insert_dir_contents)
         query.execute()
+
+    # def make_a_list_of_indexed_from_mem(self, dict1=None, mode=None):
+    #     print(dict1)
+    #     if mode == self.doc_mode.xls:
+    #         self.indexed_list = [(path, 'xls_from_mem') for path, tup in dict1.items() if tup[0] == self.ext_mode.xlsx or tup[0] == self.ext_mode.xls]
 
     def make_a_list_of_indexed(self, mode=None):
         '''instead of making this from a list in memory (faster), I will make the list from db, so that I can control whether to process it or reprocessed it; otherwise, everything that is in dir will just be fully processed again'''

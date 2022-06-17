@@ -50,15 +50,15 @@ class BuildRS(MonthSheet):
         if fresh_build == True:
             findex, populate = self.drop_then_create_tables()
             findex.build_index_runner() # this is a findex method
+            self.load_initial_tenants_and_balances()
+            processed_rentr_dates_and_paths = self.iterate_over_remaining_months()
+            Damages.load_damages()
+            self.populate.transfer_opcash_to_db() # PROCESSED OPCASHES MOVED INTO DB
         else:
             findex, populate = self.just_create_tables()
 
-        self.load_initial_tenants_and_balances()
-        processed_rentr_dates_and_paths = self.iterate_over_remaining_months()
         
-        Damages.load_damages()
 
-        self.populate.transfer_opcash_to_db() # PROCESSED OPCASHES MOVED INTO DB
         status = StatusRS()
         status.set_current_date()
        
