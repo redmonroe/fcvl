@@ -24,6 +24,7 @@ from recordtype import \
 from config import Config
 from receipts import RentReceipts
 from records import record
+from utils import Utils
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
@@ -177,12 +178,14 @@ class StatusRS(BaseModel):
         query.save()   
 
     def show(self, mode=None):
-        most_recent_status = [item for item in StatusRS().select().order_by(-StatusRS.status_id).namedtuples()][0]
+        populate = PopulateTable()
+        most_recent_status = [item for item in StatusRS().select().order_by(-StatusRS.status_id).namedtuples()][0] # note: - = descending order syntax in peewee
 
-        months_ytd = self.months_in_ytd()
+        months_ytd = Utils.months_in_ytd(Config.current_year)
+
+        report_list = populate.get_processed_by_month(month_list=months_ytd)
+
         breakpoint()
-
-        report_list = self.get_processed_by_month(month_list=months_ytd)
 
         self.write_processed_to_db(ref_rec=most_recent_status, report_list=report_list)
 
@@ -190,7 +193,7 @@ class StatusRS(BaseModel):
             # this is where determination of 'reconciled' is made
             self.assert_reconcile_payments(month_list=months_ytd, ref_rec=most_recent_status)
 
-        from manual_entry import ManualEntry # circular import workaround
+        from manual_entry import ManualEntry  # circular import workaround
         manentry = ManualEntry(db=db)
         manentry.apply_persisted_changes()
 
@@ -360,27 +363,20 @@ class StatusRS(BaseModel):
 
         return send_to_write
 
-    def months_in_ytd(self, style=None):
-        range_month = datetime.now().strftime('%m')
-        str_month = datetime.now().strftime('%b').lower()
-        date_info = monthrange(int(Config.current_year), int(range_month))
-        last_day = date_info[1]
+    # def months_in_ytd(self, style=None):
+    #     range_month = datetime.now().strftime('%m')
+    #     str_month = datetime.now().strftime('%b').lower()
+    #     date_info = monthrange(int(Config.current_year), int(range_month))
+    #     last_day = date_info[1]
         
-        if style == 'three_letter_month':
-            month_list = pd.date_range(f'{Config.current_year}-01-01',f'{Config.current_year}-{range_month}-{last_day}',freq='MS').strftime("%b").tolist()
-            month_list = [item.lower() for item in month_list]
-        else:
-            month_list = pd.date_range(f'{Config.current_year}-01-01',f'{Config.current_year}-{range_month}-{last_day}',freq='MS').strftime("%Y-%m").tolist()
-            month_list = [item for item in month_list]
+    #     if style == 'three_letter_month':
+    #         month_list = pd.date_range(f'{Config.current_year}-01-01',f'{Config.current_year}-{range_month}-{last_day}',freq='MS').strftime("%b").tolist()
+    #         month_list = [item.lower() for item in month_list]
+    #     else:
+    #         month_list = pd.date_range(f'{Config.current_year}-01-01',f'{Config.current_year}-{range_month}-{last_day}',freq='MS').strftime("%Y-%m").tolist()
+    #         month_list = [item for item in month_list]
 
-        return month_list
-
-    def get_processed_by_month(self, month_list=None):
-        report_list = []
-        for month in month_list:
-            reports_by_month = {rec.fn: (month, rec.path, rec.doc_type) for rec in Findexer().select().where(Findexer.period==month).where(Findexer.status=='processed').namedtuples()}
-            report_list.append(reports_by_month)
-        return report_list
+    #     return month_list
 
     def write_processed_to_db(self, ref_rec=None, report_list=None):
         mr_status = StatusRS().get(StatusRS.status_id==ref_rec.status_id)
@@ -475,8 +471,8 @@ class QueryHC:
 
     def ur_query(self, model=None, query_fields=None):
         # data = {'field_a': 1, 'field_b': 33, 'field_c': 'test'}
-        import sys
         import operator
+        import sys
         from functools import reduce
         model = getattr(sys.modules[__name__], model)
         clauses = []
@@ -604,6 +600,13 @@ class QueryHC:
         year = first_dt.year
         period = str(year) + '-' + str(month)
         return [{'opcash_processed': item.opcash_processed, 'tenant_reconciled': item.tenant_reconciled, 'scrape_reconciled': item.scrape_reconciled} for item in StatusObject().select().where(StatusObject.month==period).namedtuples()]
+
+    def get_processed_by_month(self, month_list=None):
+        report_list = []
+        for month in month_list:
+            reports_by_month = {rec.fn: (month, rec.path, rec.doc_type) for rec in Findexer().select().where(Findexer.period==month).where(Findexer.status=='processed').namedtuples()}
+            report_list.append(reports_by_month)
+        return report_list
 
     def match_tp_db_to_df(self, df=None, first_dt=None, last_dt=None):
         sum_this_month_db = sum([float(row.amount) for row in 

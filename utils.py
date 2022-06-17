@@ -3,6 +3,7 @@ import os.path
 from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
+from calendar import monthrange
 
 import pandas as pd
 import xlrd
@@ -19,6 +20,22 @@ class Utils:
         __getattr__ = dict.get
         __setattr__ = dict.__setitem__
         __delattr__ = dict.__delitem__
+
+    @staticmethod
+    def months_in_ytd(current_year, style=None):
+        range_month = datetime.now().strftime('%m')
+        str_month = datetime.now().strftime('%b').lower()
+        date_info = monthrange(int(current_year), int(range_month))
+        last_day = date_info[1]
+        
+        if style == 'three_letter_month':
+            month_list = pd.date_range(f'{current_year}-01-01',f'{current_year}-{range_month}-{last_day}',freq='MS').strftime("%b").tolist()
+            month_list = [item.lower() for item in month_list]
+        else:
+            month_list = pd.date_range(f'{current_year}-01-01',f'{current_year}-{range_month}-{last_day}',freq='MS').strftime("%Y-%m").tolist()
+            month_list = [item for item in month_list]
+
+        return month_list
 
     @staticmethod
     def pickle_jar(self, target_data, pknm_string):

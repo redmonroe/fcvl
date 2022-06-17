@@ -80,9 +80,9 @@ class TestFileIndexer:
         dir_contents = [item for item in findex.path.iterdir() if item.name not in findex.excluded_file_names] 
         assert len(dir_contents) == len(db_items)
         findex.make_a_list_of_indexed(mode='xls')
-        assert len(findex.indexed_list) == 0  
+        assert len(findex.unproc_list) == 0  
         findex.make_a_list_of_indexed(mode='pdf')
-        assert len(findex.indexed_list) == 0
+        assert len(findex.unproc_list) == 0
 
     def test_close(self):
         findex.drop_findex_table()

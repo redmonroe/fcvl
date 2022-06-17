@@ -7,7 +7,7 @@ from pprint import pprint
 import numpy as np
 import pandas as pd
 
-from backend import Findexer
+from backend import Findexer, PopulateTable, StatusObject
 from config import Config
 from pdf import StructDataExtract
 from utils import Utils
@@ -49,10 +49,24 @@ class FileIndexer(Utils):
     def iter_build_runner(self):
         print('iter_build_runner; a FileIndexer method')
         self.connect_to_db() # no autodrop
+        populate = PopulateTable()
+        months_ytd = Utils.months_in_ytd(Config.current_year)
+        
+        finalized_months = [rec.month for rec in StatusObject().select().where(       (StatusObject.tenant_reconciled==1) &
+                    (StatusObject.opcash_processed==1)).namedtuples()]
+
+        # get finalized months
+
+        breakpoint()
+
+
+
+        breakpoint()
+
+
         processed_fn = [item.fn for item in Findexer().select().where(Findexer.status=='processed').namedtuples()]        
         directory_contents = self.articulate_directory2()        
         unproc_file = list(set(directory_contents) - set(processed_fn))
-        breakpoint()
         self.unproc_file_for_testing = unproc_file    
         index_dict = self.sort_directory_by_extension2() 
         self.load_what_is_in_dir_as_indexed(dict1=self.index_dict_iter)
@@ -68,6 +82,10 @@ class FileIndexer(Utils):
             self.find_opcashes()
             self.type_opcashes()
             self.rename_by_content_pdf()
+
+        self.make_a_list_of_indexed(mode=self.doc_mode.csv)
+        if self.indexed_list:
+            self.get_period_from_scrape_fn()
         print('evaluating:', self.indexed_list)
 
     def build_index_runner(self):
