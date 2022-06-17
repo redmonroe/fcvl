@@ -47,10 +47,12 @@ class FileIndexer(Utils):
         self.op_cash_list = []
 
     def iter_build_runner(self):
+        print('iter_build_runner; a FileIndexer method')
         self.connect_to_db() # no autodrop
         processed_fn = [item.fn for item in Findexer().select().where(Findexer.status=='processed').namedtuples()]        
         directory_contents = self.articulate_directory2()        
         unproc_file = list(set(directory_contents) - set(processed_fn))
+        breakpoint()
         self.unproc_file_for_testing = unproc_file    
         index_dict = self.sort_directory_by_extension2() 
         self.load_what_is_in_dir_as_raw(dict1=self.index_dict_iter)

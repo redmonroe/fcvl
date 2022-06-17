@@ -143,6 +143,7 @@ class Findexer(BaseModel):
     doc_type = CharField(default='untyped`')
     status = CharField(default='raw')
     indexed = CharField(default='false')
+    c_date = CharField(default='0')
     period = CharField(default='0')
     corr_sum = CharField(default='0')
     hap = CharField(default='0')
@@ -179,6 +180,7 @@ class StatusRS(BaseModel):
         most_recent_status = [item for item in StatusRS().select().order_by(-StatusRS.status_id).namedtuples()][0]
 
         months_ytd = self.months_in_ytd()
+        breakpoint()
 
         report_list = self.get_processed_by_month(month_list=months_ytd)
 
@@ -471,15 +473,26 @@ class QueryHC:
             return different_names
         return []
 
+    def ur_query(self, model=None, query_fields=None):
+        # data = {'field_a': 1, 'field_b': 33, 'field_c': 'test'}
+        import sys
+        import operator
+        from functools import reduce
+        model = getattr(sys.modules[__name__], model)
+        clauses = []
+        for key, value in query_fields.items():
+            field = model._meta.fields[key]
+            clauses.append(field == value)
+
+        expr = reduce(operator.and_, clauses) # from itertools import reduce in Py3
+        breakpoint()
+
     def get_all_tenants_beg_bal(self, cumsum=False):
         '''returns a list of all tenants and their all time beginning balances'''
         '''does not consider active status at this point'''
-        if cumsum:
-            return [row.beg_bal_amount for row in Tenant.select(
+        return [row.beg_bal_amount for row in Tenant.select(
             fn.SUM(Tenant.beg_bal_amount)).
             namedtuples()][0] 
-        else:
-            return [(row.tenant_name, row.amount, row.beg_bal_amount) for row in Tenant.select(Tenant.tenant_name, Tenant.beg_bal_amount, Payment.amount).join(Payment).namedtuples()] 
 
     def get_current_tenants_by_month(self, last_dt=None, first_dt=None):
         '''must be a tenant on first day of month; midmonths move-ins need an adjustment'''
@@ -619,7 +632,6 @@ class QueryHC:
             where(Payment.date_posted >= first_dt).
             where(Payment.date_posted <= last_dt).
             join(Payment).namedtuples()]))
-
             return sum([float(item[2]) for item in payments])
         else:
             return list(set([(rec.tenant_name, rec.beg_bal_amount, rec.total_payments) for rec in Tenant.select(

@@ -135,10 +135,9 @@ class TestDB:
         first_dt, last_dt = populate.make_first_and_last_dates(date_str=jan_date)
 
         '''all tenants beginning balance amount'''
-        all_ten_beg_bal = populate.get_all_tenants_beg_bal(cumsum=True)
+        all_ten_beg_bal = populate.get_all_tenants_beg_bal()
         assert all_ten_beg_bal == 793
 
-        first_dt, last_dt = populate.make_first_and_last_dates(date_str=jan_date)
         rent_roll, vacants, tenants = populate.get_rent_roll_by_month_at_first_of_month(first_dt=first_dt, last_dt=last_dt)
 
         assert len(rent_roll) == 67
@@ -275,7 +274,7 @@ class TestDB:
             first_dt, last_dt = populate.make_first_and_last_dates(date_str=assert_list[i]['date'])
 
             '''all tenants beginning balance amount'''
-            all_ten_beg_bal = populate.get_all_tenants_beg_bal(cumsum=True)
+            all_ten_beg_bal = populate.get_all_tenants_beg_bal()
             assert all_ten_beg_bal == 793
 
             '''current occupied'''
@@ -375,20 +374,20 @@ class TestWrite:
         if db.get_tables() != []:
             db.drop_tables(models=create_tables_list)
         assert db.get_tables() == []
-        breakpoint()
 
-    # def test_statusrs_starts_empty(self):
-    #     status = StatusRS()
-    #     status.set_current_date(mode='autodrop')
-    #     status.show(mode='just_asserting_empty')
-    #     most_recent_status = [item for item in StatusRS().select().order_by(-StatusRS.status_id).namedtuples()][0]
-    #     proc_file = json.loads(most_recent_status.proc_file)
-    #     assert proc_file == []
+    def test_statusrs_starts_empty(self):
+        status = StatusRS()
+        status.set_current_date(mode='autodrop')
+        status.show(mode='just_asserting_empty')
+        most_recent_status = [item for item in StatusRS().select().order_by(-StatusRS.status_id).namedtuples()][0]
+        proc_file = json.loads(most_recent_status.proc_file)
+        assert proc_file == []
 
     def test_generic_build(self):
         basedir = os.path.abspath(os.path.dirname(__file__))
         build = BuildRS(path=path, main_db=db)
-        build.new_auto_build()
+        build.build_db_from_scratch()
+        breakpoint()
 
     def test_end_status(self):
         most_recent_status = [item for item in StatusRS().select().order_by(-StatusRS.status_id).namedtuples()][0]

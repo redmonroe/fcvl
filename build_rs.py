@@ -23,10 +23,33 @@ class BuildRS(MonthSheet):
             self.service = oauth(Config.my_scopes, 'sheet', mode='testing')
         self.create_tables_list1 = None
         self.target_bal_load_file = Config.beg_bal_xlsx
+        self.populate = PopulateTable()
+        self.findex = FileIndexer(path=self.path, db=self.main_db)
 
     def __repr__(self):
         return f'BuildRS object path: {self.path} write sheet: {self.full_sheet} service:{self.service}'
     
+    def iter_build(self):
+        print('iter build')
+        if self.main_db.get_tables() == []:
+            print('db empty')
+            self.build_db_from_scratch()
+        else:
+            print('db not empty; proceed')
+            self.findex.iter_build_runner()
+
+        # is db empty?
+
+        # is db not empty? 
+
+    def ur_query_wrapper(self):
+
+        populate = PopulateTable()
+        first_dt, last_dt = populate.make_first_and_last_dates(date_str='2022-01')
+        populate.ur_query(model='Tenant', query_fields={'move_in_date': first_dt, 'move_out_date': last_dt})
+        breakpoint()
+
+
     def build_db_from_scratch(self):
         print('building db from scratch')
         findex, populate = self.drop_then_create_tables()
@@ -45,7 +68,7 @@ class BuildRS(MonthSheet):
 
     def drop_then_create_tables(self):
         populate = PopulateTable()
-        findex = FileIndexer(path=self.path, db=self.main_db)
+        findex = self.findex
 
         self.create_tables_list1 = populate.return_tables_list()
         findex.drop_findex_table() 
