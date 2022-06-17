@@ -79,10 +79,10 @@ class TestFileIndexer:
         db_items = [item.fn for item in Findexer().select().namedtuples() if item.fn not in findex.excluded_file_names]
         dir_contents = [item for item in findex.path.iterdir() if item.name not in findex.excluded_file_names] 
         assert len(dir_contents) == len(db_items)
-        findex.make_a_list_of_raw(mode='xls')
-        assert len(findex.raw_list) == 0  
-        findex.make_a_list_of_raw(mode='pdf')
-        assert len(findex.raw_list) == 0
+        findex.make_a_list_of_indexed(mode='xls')
+        assert len(findex.indexed_list) == 0  
+        findex.make_a_list_of_indexed(mode='pdf')
+        assert len(findex.indexed_list) == 0
 
     def test_close(self):
         findex.drop_findex_table()

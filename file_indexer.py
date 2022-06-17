@@ -29,8 +29,8 @@ class FileIndexer(Utils):
     scrape_path = Config.TEST_MM_SCRAPE
 
     '''move to config.json'''
-    doc_mode = Utils.dotdict({'xls': 'xls', 'pdf': 'pdf'})
-    ext_mode = Utils.dotdict({'xls': '.xls', 'pdf': '.pdf', 'xlsx': '.xlsx'})
+    doc_mode = Utils.dotdict({'xls': 'xls', 'pdf': 'pdf', 'csv': 'csv'})
+    ext_mode = Utils.dotdict({'xls': '.xls', 'pdf': '.pdf', 'xlsx': '.xlsx', 'csv': '.csv'})
     style_term = Utils.dotdict({'rent': 'rent', 'deposits': 'deposits', 'opcash': 'opcash', 'hap': 'hap', 'r4r': 'rr', 'dep': 'dep', 'dep_detail': 'dep_detail', 'corrections': 'corrections'})
     bank_acct_str = ' XXXXXXX1891'
     excluded_file_names = ['desktop.ini', 'beginning_balance_2022.xlsx']
@@ -55,37 +55,40 @@ class FileIndexer(Utils):
         breakpoint()
         self.unproc_file_for_testing = unproc_file    
         index_dict = self.sort_directory_by_extension2() 
-        self.load_what_is_in_dir_as_raw(dict1=self.index_dict_iter)
+        self.load_what_is_in_dir_as_indexed(dict1=self.index_dict_iter)
        
-        self.make_a_list_of_raw(mode=self.doc_mode.xls)
-        print('evaluating:', self.raw_list)
-        if self.raw_list:
+        self.make_a_list_of_indexed(mode=self.doc_mode.xls)
+        print('evaluating:', self.indexed_list)
+        if self.indexed_list:
             self.find_by_content(style=self.style_term.rent, target_string=self.target_string.affordable)
             self.find_by_content(style=self.style_term.deposits, target_string=self.target_string.bank)
         
-        self.make_a_list_of_raw(mode=self.doc_mode.pdf)
-        if self.raw_list:
+        self.make_a_list_of_indexed(mode=self.doc_mode.pdf)
+        if self.indexed_list:
             self.find_opcashes()
             self.type_opcashes()
             self.rename_by_content_pdf()
-        print('evaluating:', self.raw_list)
+        print('evaluating:', self.indexed_list)
 
     def build_index_runner(self):
         self.connect_to_db()
         self.directory_contents = self.articulate_directory()
         self.index_dict = self.sort_directory_by_extension() # this doesn't do the sorting anymore but we still use it
-        self.load_what_is_in_dir_as_raw(dict1=self.index_dict)
-
-        self.make_a_list_of_raw(mode=self.doc_mode.xls)
-        if self.raw_list:
+        self.load_what_is_in_dir_as_indexed(dict1=self.index_dict)
+        self.make_a_list_of_indexed(mode=self.doc_mode.xls)
+        if self.indexed_list:
             self.find_by_content(style=self.style_term.rent, target_string=self.target_string.affordable)
             self.find_by_content(style=self.style_term.deposits, target_string=self.target_string.bank)
 
-        self.make_a_list_of_raw(mode=self.doc_mode.pdf)
-        if self.raw_list:
+        self.make_a_list_of_indexed(mode=self.doc_mode.pdf)
+        if self.indexed_list:
             self.find_opcashes()
             self.type_opcashes()
             self.rename_by_content_pdf()
+
+        self.make_a_list_of_indexed(mode=self.doc_mode.csv)
+        if self.indexed_list:
+            self.get_period_from_scrape_fn()
 
     def load_mm_scrape(self, list1=None):
         '''still rough and raw'''
@@ -126,7 +129,7 @@ class FileIndexer(Utils):
     def sort_directory_by_extension2(self, verbose=None):
         index_dict = {}
         for fn in self.unproc_file_for_testing:
-            index_dict[Path.joinpath(self.path, fn)] = (Path(fn).suffix ,fn )
+            index_dict[Path.joinpath(self.path, fn)] = (Path(fn).suffix, fn)
         
         self.index_dict_iter = index_dict # for testing, do not just erase this
         return index_dict        
@@ -140,19 +143,22 @@ class FileIndexer(Utils):
             pprint(self.index_dict)
         return self.index_dict
 
-    def load_what_is_in_dir_as_raw(self, dict1={}, autodrop=None, verbose=None):
-        insert_dir_contents = [{'path': path, 'fn': name, 'indexed': 'false', 'file_ext': suffix} for path, (suffix, name) in dict1.items()]
+    def load_what_is_in_dir_as_indexed(self, dict1={}, autodrop=None, verbose=None):
+        insert_dir_contents = [{'path': path, 'fn': name, 'c_date': path.lstat().st_ctime, 'indexed': 'true', 'file_ext': suffix} for path, (suffix, name) in dict1.items()]
         query = Findexer.insert_many(insert_dir_contents)
         query.execute()
 
-    def make_a_list_of_raw(self, mode=None):
+    def make_a_list_of_indexed(self, mode=None):
         '''instead of making this from a list in memory (faster), I will make the list from db, so that I can control whether to process it or reprocessed it; otherwise, everything that is in dir will just be fully processed again'''
         if mode == self.doc_mode.xls:   
-            self.raw_list = [(item.path, item.doc_id) for item in Findexer().select().where(Findexer.status==self.status_str.raw).where(
+            self.indexed_list = [(item.path, item.doc_id) for item in Findexer().select().where(Findexer.status==self.status_str.raw).where(
                 (Findexer.file_ext == self.ext_mode.xlsx) | (Findexer.file_ext == self.ext_mode.xls)).namedtuples()]
 
         if mode == self.doc_mode.pdf:   
-            self.raw_list = [(item.path, item.doc_id) for item in Findexer().select().where(Findexer.status==self.status_str.raw).where(Findexer.file_ext == self.ext_mode.pdf).namedtuples()]
+            self.indexed_list = [(item.path, item.doc_id) for item in Findexer().select().where(Findexer.status==self.status_str.raw).where(Findexer.file_ext == self.ext_mode.pdf).namedtuples()]
+
+        if mode == self.doc_mode.csv:
+            self.indexed_list = [(item.path, item.doc_id) for item in Findexer().select().where(Findexer.status==self.status_str.raw).where(Findexer.file_ext == self.ext_mode.csv).namedtuples()]
 
     def find_by_content(self, style, target_string=None):
         '''kwargs into loop below'''
@@ -170,7 +176,7 @@ class FileIndexer(Utils):
             split_type = '/'
             date_split = 0              
 
-        for path, doc_id in self.raw_list:
+        for path, doc_id in self.indexed_list:
             part_list = ((Path(path).stem)).split('_')
             if style in part_list:
                 df = pd.read_excel(path)
@@ -197,7 +203,7 @@ class FileIndexer(Utils):
         return period
 
     def find_opcashes(self):
-        for item, doc_id in self.raw_list:
+        for item, doc_id in self.indexed_list:
             op_cash_path = self.pdf.select_stmt_by_str(path=item, target_str=self.bank_acct_str)
             if op_cash_path != None:
                 self.op_cash_list.append(op_cash_path)
@@ -276,6 +282,16 @@ class FileIndexer(Utils):
         date_list.reverse()
         date_list = ' '.join(date_list)
         return date_list
+
+    def get_period_from_scrape_fn(self):
+        for item, doc_id in self.indexed_list:
+            scrape_file = Findexer.get(Findexer.doc_id==doc_id)
+            date_str = [part.split('_') for part in item.split('/')][-1][-2]
+            date_str = '-'.join(date_str.split('-')[0:2])
+            scrape_file.status = 'processed'
+            scrape_file.period = date_str
+            scrape_file.doc_type = 'scrape'
+            scrape_file.save()
 
     def drop_findex_table(self):
         self.db.drop_tables(models=self.create_findex_list)
