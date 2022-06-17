@@ -196,12 +196,20 @@ class MonthSheet(YearSheet):
         status_list = []
         if onesite_total == nbofi_total:
             message = [f'balances at {str(dt.today().date())}']
+            status_object_row = [(row.id, row.month) for row in StatusObject.select().where(StatusObject.month==date).namedtuples()][0]
+            status_object = StatusObject.get(status_object_row[0])
+            status_object.rs_reconciled = True
+            status_object.save()
             gc.update(self.service, self.full_sheet, message, f'{date}' + self.wrange_reconciled)
             dict1 = {date: message}
             status_list.append(dict1)
         else:
             message = ['does not balance']
             gc.update(self.service, self.full_sheet, message, f'{date}' + self.wrange_reconciled)
+            status_object_row = [(row.id, row.month) for row in StatusObject.select().where(StatusObject.month==date).namedtuples()][0]
+            status_object = StatusObject.get(status_object_row[0])
+            status_object.rs_reconciled = False
+            status_object.save()
             dict1 = {date: message}
             status_list.append(dict1)
 

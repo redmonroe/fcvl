@@ -419,6 +419,7 @@ class StatusObject(BaseModel):
     opcash_processed = BooleanField(default=False)
     tenant_reconciled = BooleanField(default=False)
     scrape_reconciled = BooleanField(default=False)
+    rs_reconciled = BooleanField(default=False)
 
 class ScrapeDetail(BaseModel):
     period = CharField(default='0')

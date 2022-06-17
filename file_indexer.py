@@ -51,11 +51,21 @@ class FileIndexer(Utils):
         self.connect_to_db() # no autodrop
         populate = PopulateTable()
         months_ytd = Utils.months_in_ytd(Config.current_year)
-        
-        finalized_months = [rec.month for rec in StatusObject().select().where(       (StatusObject.tenant_reconciled==1) &
+    
+        # get fully finalized months
+        finalized_months = [rec.month for rec in StatusObject().select().where((StatusObject.tenant_reconciled==1) &
                     (StatusObject.opcash_processed==1)).namedtuples()]
 
-        # get finalized months
+        # are there any unfinalized months?
+        unfinalized_months = list(set(months_ytd) - set(finalized_months))
+
+        if len(unfinalized_months) > 0:
+            print('search for new files in path')
+            # are there any new files in path?
+        else:
+            print('no unfinalize months; you are presumptively caught up!')
+
+
 
         breakpoint()
 
