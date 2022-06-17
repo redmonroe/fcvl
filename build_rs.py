@@ -67,14 +67,7 @@ class BuildRS(MonthSheet):
             self.iterate_over_remaining_months_incremental(list1=self.new_files)
             breakpoint()
 
-            # [('rent_roll_02_2022.xlsx', '2022-02', '/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/testing_sources_may/rent_roll_02_2022.xlsx')]
-
             # self.load_initial_tenants_and_balances() # this would not be in a rebuild
-
-            # let's bring down unfinalized_months
-            # consume new files
-
-
     def drop_then_create_tables(self):
         populate = PopulateTable()
         findex = self.findex
@@ -98,8 +91,22 @@ class BuildRS(MonthSheet):
 
     def iterate_over_remaining_months_incremental(self, list1=None):
         populate = PopulateTable()
-        list1.sort()
-        breakpoint()
+        
+        # rent has to go first; otherwise if you have a move-in during the month there is no reference for the fk for a payment
+        for item in list1:
+            for typ, data in item.items():
+                first_dt, last_dt = populate.make_first_and_last_dates(date_str=data[0])
+                if typ == 'rent':
+                    cleaned_nt_list, total_tenant_charges, cleaned_mos = populate.after_jan_load(filename=data[1], date=data[0])
+
+                    
+        for item in list1:
+            for typ, data in item.items():
+                first_dt, last_dt = populate.make_first_and_last_dates(date_str=data[0])
+                if typ == 'deposits':
+                    grand_total, ntp, tenant_payment_df = populate.payment_load_full(filename=data[1])
+        
+        # breakpoint()
 
     def iterate_over_remaining_months(self):       
         # load remaining months rent
@@ -129,8 +136,6 @@ class BuildRS(MonthSheet):
         
         for date1, path in processed_dates_and_paths:
             grand_total, ntp, tenant_payment_df = populate.payment_load_full(filename=path)
-            # breakpoint()
-            first_dt, last_dt = populate.make_first_and_last_dates(date_str=date1)
         return processed_rentr_dates_and_paths
 
     def load_initial_tenants_and_balances(self):

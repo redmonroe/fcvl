@@ -954,7 +954,7 @@ class PopulateTable(QueryHC):
         cleaned_nt_list = [row for row in self.return_nt_list_with_no_vacants(keyword='vacant', nt_list=nt_list)]
 
         insert_many_rent = [{'t_name': row.name, 'unit': row.unit, 'rent_amount': row.rent.replace(',',''), 'rent_date': row.date} for row in cleaned_nt_list]  
-
+        # breakpoint()
         '''update last_occupied for occupied: SLOW, Don't like'''
         for row in cleaned_nt_list:
             try:
@@ -1016,6 +1016,8 @@ class PopulateTable(QueryHC):
             query = NTPayment.insert_many(insert_nt_list)
             query.execute()
         
+        # if filename == '/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/iter_build_first/deposits_04_2022.xlsx':
+        #     breakpoint()
         insert_many_list = [{
             'tenant': name.lower(),
             'amount': amount, 
@@ -1024,7 +1026,7 @@ class PopulateTable(QueryHC):
             'unit': unit, 
             'deposit_id': deposit_id, 
              } for (deposit_id, unit, name, date_posted, amount, date_code) in tenant_payment_df.values]
-
+        
         query = Payment.insert_many(insert_many_list)
         query.execute()
 

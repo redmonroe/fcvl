@@ -98,9 +98,10 @@ class FileIndexer(Utils):
                 if self.indexed_list:
                     self.get_period_from_scrape_fn()
                 
-                index_list = self.get_date_from_xls_name(records=index_dict)
+                new_files_dict = self.get_report_type_from_name(records=index_dict)
+                new_files_dict = self.get_date_from_xls_name(records=new_files_dict)
 
-                return index_list, self.unfinalized_months
+                return new_files_dict, self.unfinalized_months
         else:
             print('no unfinalized months; you are presumptively caught up!')
             print('exiting program')
@@ -318,12 +319,24 @@ class FileIndexer(Utils):
                 find_change.corr_sum = corr_sum 
                 find_change.save()
 
-    def get_date_from_xls_name(self, records=None):
+    def get_report_type_from_name(self, records=None):
         records1 = []
         for path, name in records.items():
-            date_str = '-'.join(name[1].split('.')[0].split('_')[1:][::-1])
-            tup = (date_str, path)
-            records1.append(tup)
+            typ = name[1].split('_')[0]
+            dict1 = {typ: (path, path.name)}
+            records1.append(dict1)
+        return records1
+
+    def get_date_from_xls_name(self, records=None):
+        records1 = []
+        for item in records:
+            for typ, data in item.items():
+                if typ == 'deposits':
+                    date_str = '-'.join(data[1].split('.')[0].split('_')[1:][::-1])
+                elif typ == 'rent':
+                    date_str = '-'.join(data[1].split('.')[0].split('_')[2:][::-1])
+                dict1 = {typ: (date_str, data[0])}
+                records1.append(dict1)
         return records1
 
     def get_date_from_opcash_name(self, record):
@@ -331,6 +344,7 @@ class FileIndexer(Utils):
         date_list.reverse()
         date_list = ' '.join(date_list)
         return date_list
+
 
     def get_period_from_scrape_fn(self):
         for item, doc_id in self.indexed_list:
