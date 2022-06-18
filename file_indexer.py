@@ -15,23 +15,10 @@ from utils import Utils
 
 class FileIndexer(Utils):
 
-    '''move to instance variables'''
-    create_findex_list = [Findexer]
-    index_dict = {}
-    raw_list = []
-    op_cash_list = []
-    pdf = StructDataExtract()
-    hap_list = []
-    rr_list = []
-    dep_list = []
-    corrections_list = []
-    deposit_and_date_list = []
-    scrape_path = Config.TEST_MM_SCRAPE
-
     '''move to config.json'''
     query_mode = Utils.dotdict({'xls': ('raw', ('.xls', '.xlsx')), 'pdf': ('raw', ('.pdf', '.pdf')), 'csv': ('raw', ('.csv', '.csv'))})
-    # doc_mode = Utils.dotdict({'xls': 'xls', 'pdf': 'pdf', 'csv': 'csv'})
-    # ext_mode = Utils.dotdict({'xls': '.xls', 'pdf': '.pdf', 'xlsx': '.xlsx', 'csv': '.csv'})
+    rent_format = {'get_col': 0, 'split_col': 11, 'split_type': ' ', 'date_split': 2}
+    deposits_format = {'get_col': 9, 'split_col': 9, 'split_type': '/', 'date_split': 0}
     style_term = Utils.dotdict({'rent': 'rent', 'deposits': 'deposits', 'opcash': 'opcash', 'hap': 'hap', 'r4r': 'rr', 'dep': 'dep', 'dep_detail': 'dep_detail', 'corrections': 'corrections'})
     bank_acct_str = ' XXXXXXX1891'
     excluded_file_names = ['desktop.ini', 'beginning_balance_2022.xlsx']
@@ -48,6 +35,9 @@ class FileIndexer(Utils):
         self.index_dict_iter = {} 
         self.indexed_list = []
         self.op_cash_list = []
+        self.create_findex_list = [Findexer]
+        self.pdf = StructDataExtract()
+        self.scrape_path = Config.TEST_MM_SCRAPE
 
     def iter_build_runner(self):
         print('iter_build_runner; a FileIndexer method')
@@ -110,13 +100,13 @@ class FileIndexer(Utils):
 
     def build_index_runner(self):
         self.connect_to_db()
-        self.directory_contents = self.articulate_directory()
-        self.index_dict = self.sort_directory_by_extension() # this doesn't do the sorting anymore but we still use it
+        self.index_dict = self.articulate_directory()
         self.load_what_is_in_dir_as_indexed(dict1=self.index_dict)
+        
         self.make_a_list_of_indexed(mode=self.query_mode.xls)
         if self.indexed_list:
-            self.find_by_content(style=self.style_term.rent, target_string=self.target_string.affordable)
-            self.find_by_content(style=self.style_term.deposits, target_string=self.target_string.bank)
+            self.find_by_content(style=self.style_term.rent, target_string=self.target_string.affordable, format=self.rent_format)
+            self.find_by_content(style=self.style_term.deposits, target_string=self.target_string.bank, format=self.deposits_format)
 
         self.make_a_list_of_indexed(mode=self.query_mode.pdf)
         if self.indexed_list:
@@ -160,26 +150,22 @@ class FileIndexer(Utils):
     def articulate_directory2(self):
         dir_cont = [item.name for item in self.path.iterdir() if item.name not in self.excluded_file_names] 
         return dir_cont
-        
+   
     def articulate_directory(self):
-        return [item for item in self.path.iterdir()] 
+        dir_contents = [item for item in self.path.iterdir()] 
+        for item in dir_contents:
+            full_path = Path(item)
+            if item.name not in self.excluded_file_names:
+                self.index_dict[full_path] = (item.suffix, item.name)        
+        return self.index_dict
 
-    def sort_directory_by_extension2(self, verbose=None):
+    def sort_directory_by_extension2(self):
         index_dict = {}
         for fn in self.unproc_file_for_testing:
             index_dict[Path.joinpath(self.path, fn)] = (Path(fn).suffix, fn)
         
         self.index_dict_iter = index_dict # for testing, do not just erase this
         return index_dict        
-
-    def sort_directory_by_extension(self, verbose=None):
-        for item in self.directory_contents:
-            full_path = Path(item)
-            if item.name not in self.excluded_file_names:
-                self.index_dict[full_path] = (item.suffix, item.name)        
-        if verbose:
-            pprint(self.index_dict)
-        return self.index_dict
 
     def load_what_is_in_dir_as_indexed(self, dict1={}, autodrop=None, verbose=None):
         insert_dir_contents = [{'path': path, 'fn': name, 'c_date': path.lstat().st_ctime, 'indexed': 'true', 'file_ext': suffix} for path, (suffix, name) in dict1.items()]
@@ -190,46 +176,31 @@ class FileIndexer(Utils):
         self.indexed_list = [(item.path, item.doc_id) for item in Findexer().select().where(Findexer.status==kw['mode'][0]).where(
                 (Findexer.file_ext == kw['mode'][1][0]) | (Findexer.file_ext == kw['mode'][1][1])).namedtuples()]
 
-    def find_by_content(self, style, target_string=None):
-        '''kwargs into loop below'''
-        '''this should be moved up'''
-        if style == self.style_term.rent:
-            get_col = 0
-            split_col = 11
-            split_type = ' '
-            date_split = 2
-
-        '''this should be moved up'''
-        if style == self.style_term.deposits:
-            get_col = 9
-            split_col = 9
-            split_type = '/'
-            date_split = 0              
-
+    def find_by_content(self, style, target_string=None, **kw):
         for path, doc_id in self.indexed_list:
             part_list = ((Path(path).stem)).split('_')
             if style in part_list:
                 df = pd.read_excel(path)
                 df = df.iloc[:, 0].to_list()
                 if target_string in df:
-                    period = self.df_date_wrapper(path, get_col=get_col, split_col=split_col, split_type=split_type, date_split=date_split)
+                    period = self.df_date_wrapper(path, kw=kw['format'])
                     find_change = Findexer.get(Findexer.doc_id==doc_id)
                     find_change.period = period
                     find_change.status = self.status_str.processed
                     find_change.doc_type = style
                     find_change.save()
 
-    def df_date_wrapper(self, item, get_col=None, split_col=None, split_type=None, date_split=None):
-        df_date = pd.read_excel(item)
-        df_date = df_date.iloc[:, get_col].to_list()
-        df_date = df_date[split_col].split(split_type)
-        period = df_date[date_split]
+    def df_date_wrapper(self, path, **kw):
+        split_col = kw['kw']['split_col']
+        df_date = pd.read_excel(path)
+        df_date = df_date.iloc[:, kw['kw']['get_col']].to_list()
+        df_date = df_date[split_col].split(kw['kw']['split_type'])
+        period = df_date[kw['kw']['date_split']]
         period = period.rstrip()
         period = period.lstrip()        
         month = period[:-4]
         year = period[-4:]
         period = year + '-' + month
-
         return period
 
     def find_opcashes(self):
@@ -253,13 +224,6 @@ class FileIndexer(Utils):
             deposit_and_date_iter_one_month = self.extract_deposits_by_type(op_cash_stmt_path, style=self.style_term.dep_detail, target_str=self.target_string.oc_deposit)
             corrections_sum = self.extract_deposits_by_type(op_cash_stmt_path, style=self.style_term.corrections, target_str=self.target_string.corrections)
             assert stmt_date == stmt_date1
-        
-            # this is for testing visibility, maybe optimization later
-            self.hap_list.append(hap_iter_one_month)
-            self.rr_list.append(rr_iter_one_month)
-            self.dep_list.append(dep_iter_one_month)
-            self.deposit_and_date_list.append(deposit_and_date_iter_one_month)
-            self.corrections_list.append(corrections_sum)
 
             self.write_deplist_to_db(hap_iter_one_month, rr_iter_one_month, dep_iter_one_month, deposit_and_date_iter_one_month, corrections_sum, stmt_date)
 
