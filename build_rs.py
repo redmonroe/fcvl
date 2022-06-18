@@ -62,12 +62,15 @@ class BuildRS(MonthSheet):
             status.show() 
             self.main_db.close()
         else:
-            # we are working on this branch today
             findex, populate = self.just_create_tables()
             self.iterate_over_remaining_months_incremental(list1=self.new_files)
             breakpoint()
+            status = StatusRS()
+            status.set_current_date()
+        
+            status.show() 
+            self.main_db.close()
 
-            # self.load_initial_tenants_and_balances() # this would not be in a rebuild
     def drop_then_create_tables(self):
         populate = PopulateTable()
         findex = self.findex

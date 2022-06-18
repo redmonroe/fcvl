@@ -29,8 +29,9 @@ class FileIndexer(Utils):
     scrape_path = Config.TEST_MM_SCRAPE
 
     '''move to config.json'''
-    doc_mode = Utils.dotdict({'xls': 'xls', 'pdf': 'pdf', 'csv': 'csv'})
-    ext_mode = Utils.dotdict({'xls': '.xls', 'pdf': '.pdf', 'xlsx': '.xlsx', 'csv': '.csv'})
+    query_mode = Utils.dotdict({'xls': ('raw', ('.xls', '.xlsx')), 'pdf': ('raw', ('.pdf', '.pdf')), 'csv': ('raw', ('.csv', '.csv'))})
+    # doc_mode = Utils.dotdict({'xls': 'xls', 'pdf': 'pdf', 'csv': 'csv'})
+    # ext_mode = Utils.dotdict({'xls': '.xls', 'pdf': '.pdf', 'xlsx': '.xlsx', 'csv': '.csv'})
     style_term = Utils.dotdict({'rent': 'rent', 'deposits': 'deposits', 'opcash': 'opcash', 'hap': 'hap', 'r4r': 'rr', 'dep': 'dep', 'dep_detail': 'dep_detail', 'corrections': 'corrections'})
     bank_acct_str = ' XXXXXXX1891'
     excluded_file_names = ['desktop.ini', 'beginning_balance_2022.xlsx']
@@ -112,18 +113,18 @@ class FileIndexer(Utils):
         self.directory_contents = self.articulate_directory()
         self.index_dict = self.sort_directory_by_extension() # this doesn't do the sorting anymore but we still use it
         self.load_what_is_in_dir_as_indexed(dict1=self.index_dict)
-        self.make_a_list_of_indexed(mode=self.doc_mode.xls)
+        self.make_a_list_of_indexed(mode=self.query_mode.xls)
         if self.indexed_list:
             self.find_by_content(style=self.style_term.rent, target_string=self.target_string.affordable)
             self.find_by_content(style=self.style_term.deposits, target_string=self.target_string.bank)
 
-        self.make_a_list_of_indexed(mode=self.doc_mode.pdf)
+        self.make_a_list_of_indexed(mode=self.query_mode.pdf)
         if self.indexed_list:
             self.find_opcashes()
             self.type_opcashes()
             self.rename_by_content_pdf()
 
-        self.make_a_list_of_indexed(mode=self.doc_mode.csv)
+        self.make_a_list_of_indexed(mode=self.query_mode.csv)
         if self.indexed_list:
             self.get_period_from_scrape_fn()
 
@@ -185,22 +186,9 @@ class FileIndexer(Utils):
         query = Findexer.insert_many(insert_dir_contents)
         query.execute()
 
-    # def make_a_list_of_indexed_from_mem(self, dict1=None, mode=None):
-    #     print(dict1)
-    #     if mode == self.doc_mode.xls:
-    #         self.indexed_list = [(path, 'xls_from_mem') for path, tup in dict1.items() if tup[0] == self.ext_mode.xlsx or tup[0] == self.ext_mode.xls]
-
-    def make_a_list_of_indexed(self, mode=None):
-        '''instead of making this from a list in memory (faster), I will make the list from db, so that I can control whether to process it or reprocessed it; otherwise, everything that is in dir will just be fully processed again'''
-        if mode == self.doc_mode.xls:   
-            self.indexed_list = [(item.path, item.doc_id) for item in Findexer().select().where(Findexer.status==self.status_str.raw).where(
-                (Findexer.file_ext == self.ext_mode.xlsx) | (Findexer.file_ext == self.ext_mode.xls)).namedtuples()]
-
-        if mode == self.doc_mode.pdf:   
-            self.indexed_list = [(item.path, item.doc_id) for item in Findexer().select().where(Findexer.status==self.status_str.raw).where(Findexer.file_ext == self.ext_mode.pdf).namedtuples()]
-
-        if mode == self.doc_mode.csv:
-            self.indexed_list = [(item.path, item.doc_id) for item in Findexer().select().where(Findexer.status==self.status_str.raw).where(Findexer.file_ext == self.ext_mode.csv).namedtuples()]
+    def make_a_list_of_indexed(self, **kw):
+        self.indexed_list = [(item.path, item.doc_id) for item in Findexer().select().where(Findexer.status==kw['mode'][0]).where(
+                (Findexer.file_ext == kw['mode'][1][0]) | (Findexer.file_ext == kw['mode'][1][1])).namedtuples()]
 
     def find_by_content(self, style, target_string=None):
         '''kwargs into loop below'''
@@ -344,8 +332,7 @@ class FileIndexer(Utils):
         date_list.reverse()
         date_list = ' '.join(date_list)
         return date_list
-
-
+        
     def get_period_from_scrape_fn(self):
         for item, doc_id in self.indexed_list:
             scrape_file = Findexer.get(Findexer.doc_id==doc_id)

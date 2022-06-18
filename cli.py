@@ -86,10 +86,10 @@ def autors(mode=None):
         build.main_db.drop_tables(models=create_tables_list1)
 
     if mode == 'write_from_db':
-        sample_month_list = ['2022-01']
+        # sample_month_list = ['2022-01']
         # sample_month_list = ['2022-01', '2022-02']
-        ms.auto_control(month_list=sample_month_list)
-        # ms.auto_control()
+        # ms.auto_control(month_list=sample_month_list)
+        ms.auto_control()
     
 @click.command()
 def manentry():

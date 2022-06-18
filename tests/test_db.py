@@ -79,10 +79,10 @@ class TestFileIndexer:
         db_items = [item.fn for item in Findexer().select().namedtuples() if item.fn not in findex.excluded_file_names]
         dir_contents = [item for item in findex.path.iterdir() if item.name not in findex.excluded_file_names] 
         assert len(dir_contents) == len(db_items)
-        findex.make_a_list_of_indexed(mode='xls')
-        assert len(findex.unproc_list) == 0  
-        findex.make_a_list_of_indexed(mode='pdf')
-        assert len(findex.unproc_list) == 0
+        findex.make_a_list_of_indexed(mode=findex.query_mode.xls)
+        assert len(findex.unproc_file_for_testing) == 0  
+        findex.make_a_list_of_indexed(mode=findex.query_mode.pdf)
+        assert len(findex.unproc_file_for_testing) == 0
 
     def test_close(self):
         findex.drop_findex_table()
@@ -103,7 +103,7 @@ class TestDB:
 
     def test_set_init_state_at_end_of_april(self):
         build = BuildRS(path=path, main_db=Config.TEST_DB)
-        build.build_db_from_scratch()                      
+        build.build_db_from_scratch(fresh_build=True)                      
 
     def test_initial_tenant_load(self):
         '''JANUARY IS DIFFERENT'''
@@ -242,7 +242,8 @@ class TestDB:
                 }, 
                   {
                  'date': '2022-04', 
-                 'processed_record1': 'deposits_04_2022.xlsx', 
+                #  'processed_record1': 'deposits_04_2022.xlsx', 
+                 'processed_record1': 'CHECKING_1891_Transactions_2022-04-01_2022-04-27.csv', 
                  'rr_len': 64, 
                  'current_vacants': ['CD-101', 'CD-115', 'PT-211'], 
                  'vacant_len': 3, 
@@ -270,6 +271,7 @@ class TestDB:
                 namedtuples()]
 
             assert records[0][0] == assert_list[i]['processed_record1']
+            break
 
             first_dt, last_dt = populate.make_first_and_last_dates(date_str=assert_list[i]['date'])
 
@@ -356,6 +358,18 @@ class TestDB:
             db.close()    
 
 @pytest.mark.testing_db
+class TestIterBuild:
+
+    def test_setup(self):
+        pass
+
+    def test_iter_build1(self):
+        pass
+
+    def test_iter_build2(self):
+        pass
+
+@pytest.mark.testing_db
 class DBBackup:
 
     def test_db_backup(self):
@@ -386,8 +400,7 @@ class TestWrite:
     def test_generic_build(self):
         basedir = os.path.abspath(os.path.dirname(__file__))
         build = BuildRS(path=path, main_db=db)
-        build.build_db_from_scratch()
-        breakpoint()
+        build.build_db_from_scratch(fresh_build=True)
 
     def test_end_status(self):
         most_recent_status = [item for item in StatusRS().select().order_by(-StatusRS.status_id).namedtuples()][0]
