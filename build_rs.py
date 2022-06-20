@@ -27,6 +27,7 @@ class BuildRS(MonthSheet):
         self.findex = FileIndexer(path=self.path, db=self.main_db)
         self.new_files = None
         self.unfinalized_months = None
+        self.ctx = None
 
     def __repr__(self):
         return f'BuildRS object path: {self.path} write sheet: {self.full_sheet} service:{self.service}'
@@ -34,10 +35,13 @@ class BuildRS(MonthSheet):
     def iter_build(self):
         print('iter build')
         if self.main_db.get_tables() == []:
-            print('db empty')
+            self.ctx = 'db empty'
+            print(f'{self.ctx}')
+            breakpoint()
             self.build_db_from_scratch(fresh_build=True)
         else:
-            print('db not empty')
+            self.ctx = 'db is not empty'
+            print(f'{self.ctx}')
             self.new_files, self.unfinalized_months = self.findex.iter_build_runner()
             self.build_db_from_scratch(fresh_build=False)
 
@@ -59,12 +63,12 @@ class BuildRS(MonthSheet):
             status = StatusRS()
             status.set_current_date()
         
+            # breakpoint()
             status.show() 
             self.main_db.close()
         else:
             findex, populate = self.just_create_tables()
             self.iterate_over_remaining_months_incremental(list1=self.new_files)
-            breakpoint()
             status = StatusRS()
             status.set_current_date()
         
@@ -108,8 +112,6 @@ class BuildRS(MonthSheet):
                 first_dt, last_dt = populate.make_first_and_last_dates(date_str=data[0])
                 if typ == 'deposits':
                     grand_total, ntp, tenant_payment_df = populate.payment_load_full(filename=data[1])
-        
-        # breakpoint()
 
     def iterate_over_remaining_months(self):       
         # load remaining months rent

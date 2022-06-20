@@ -45,7 +45,8 @@ class FileIndexer(Utils):
             # unfinalized
             # not scrape reconciled
             # csv with current month is in index_dict, load_scrape
-        self.connect_to_db() # no autodrop
+        
+        self.connect_to_db() 
         populate = PopulateTable()
         months_ytd = Utils.months_in_ytd(Config.current_year)
     
@@ -54,10 +55,9 @@ class FileIndexer(Utils):
                     (StatusObject.opcash_processed==1)).namedtuples()]
 
         # are there any unfinalized months?
-        unfinalized_months = list(set(months_ytd) - set(finalized_months))
-        self.unfinalized_months = unfinalized_months
+        self.unfinalized_months = list(set(months_ytd) - set(finalized_months))
 
-        if len(unfinalized_months) > 0:
+        if len(self.unfinalized_months) > 0:
             # are there any new files in path?
             print('searching for new files in path')
             processed_fn = [item.fn for item in Findexer().select().where(Findexer.status=='processed').namedtuples()]        
@@ -70,27 +70,25 @@ class FileIndexer(Utils):
                 return [], []
             else:
                 print('adding new files to findexer')
-                index_dict = self.sort_directory_by_extension2() 
+                self.index_dict = self.sort_directory_by_extension2() 
                 self.load_what_is_in_dir_as_indexed(dict1=self.index_dict_iter)
-
-                self.make_a_list_of_indexed(mode=self.doc_mode.xls)
         
+                self.make_a_list_of_indexed(mode=self.query_mode.xls)
                 if self.indexed_list:
-                    self.find_by_content(style=self.style_term.rent, target_string=self.target_string.affordable)
-                    self.find_by_content(style=self.style_term.deposits, target_string=self.target_string.bank)
+                    self.xls_wrapper()
                 
-                self.make_a_list_of_indexed(mode=self.doc_mode.pdf)
-                if self.indexed_list:
-                    self.find_opcashes()
-                    self.type_opcashes()
-                    self.rename_by_content_pdf()
 
-                self.make_a_list_of_indexed(mode=self.doc_mode.csv)
+                self.make_a_list_of_indexed(mode=self.query_mode.pdf)
+                if self.indexed_list:
+                    self.pdf_wrapper()
+                
+                self.make_a_list_of_indexed(mode=self.query_mode.csv)
                 if self.indexed_list:
                     self.get_period_from_scrape_fn()
                 
-                new_files_dict = self.get_report_type_from_name(records=index_dict)
+                new_files_dict = self.get_report_type_from_name(records=self.index_dict)
                 new_files_dict = self.get_date_from_xls_name(records=new_files_dict)
+                breakpoint()
 
                 return new_files_dict, self.unfinalized_months
         else:
@@ -105,18 +103,24 @@ class FileIndexer(Utils):
         
         self.make_a_list_of_indexed(mode=self.query_mode.xls)
         if self.indexed_list:
-            self.find_by_content(style=self.style_term.rent, target_string=self.target_string.affordable, format=self.rent_format)
-            self.find_by_content(style=self.style_term.deposits, target_string=self.target_string.bank, format=self.deposits_format)
+            self.xls_wrapper()
 
         self.make_a_list_of_indexed(mode=self.query_mode.pdf)
         if self.indexed_list:
-            self.find_opcashes()
-            self.type_opcashes()
-            self.rename_by_content_pdf()
+            self.pdf_wrapper()
 
         self.make_a_list_of_indexed(mode=self.query_mode.csv)
         if self.indexed_list:
             self.get_period_from_scrape_fn()
+
+    def xls_wrapper(self):
+        self.find_by_content(style=self.style_term.rent, target_string=self.target_string.affordable, format=self.rent_format)
+        self.find_by_content(style=self.style_term.deposits, target_string=self.target_string.bank, format=self.deposits_format)
+    
+    def pdf_wrapper(self):
+        self.find_opcashes()
+        self.type_opcashes()
+        self.rename_by_content_pdf()
 
     def load_mm_scrape(self, list1=None):
         '''still rough and raw'''
@@ -173,8 +177,11 @@ class FileIndexer(Utils):
         query.execute()
 
     def make_a_list_of_indexed(self, **kw):
-        self.indexed_list = [(item.path, item.doc_id) for item in Findexer().select().where(Findexer.status==kw['mode'][0]).where(
-                (Findexer.file_ext == kw['mode'][1][0]) | (Findexer.file_ext == kw['mode'][1][1])).namedtuples()]
+        self.indexed_list = [(item.path, item.doc_id) for item in Findexer().select().
+                where(Findexer.status==kw['mode'][0]).
+                where(
+                (Findexer.file_ext == kw['mode'][1][0]) |
+                (Findexer.file_ext == kw['mode'][1][1])).namedtuples()]
 
     def find_by_content(self, style, target_string=None, **kw):
         for path, doc_id in self.indexed_list:
@@ -287,8 +294,11 @@ class FileIndexer(Utils):
                     date_str = '-'.join(data[1].split('.')[0].split('_')[1:][::-1])
                 elif typ == 'rent':
                     date_str = '-'.join(data[1].split('.')[0].split('_')[2:][::-1])
+                else:
+                    date_str = 'not_set'
                 dict1 = {typ: (date_str, data[0])}
                 records1.append(dict1)
+                # breakpoint()
         return records1
 
     def get_date_from_opcash_name(self, record):
@@ -302,7 +312,7 @@ class FileIndexer(Utils):
             scrape_file = Findexer.get(Findexer.doc_id==doc_id)
             date_str = [part.split('_') for part in item.split('/')][-1][-2]
             date_str = '-'.join(date_str.split('-')[0:2])
-            scrape_file.status = 'processed'
+            scrape_file.status = self.status_str.processed
             scrape_file.period = date_str
             scrape_file.doc_type = 'scrape'
             scrape_file.save()

@@ -357,17 +357,29 @@ class TestDB:
         if db.is_closed() == False:
             db.close()    
 
-@pytest.mark.testing_db
+@pytest.mark.testing_db_iter
 class TestIterBuild:
 
     def test_setup(self):
-        pass
+        """build needs empty db and will handle initialization at run-time; does not need additional layer of dropping/creating from test"""
+        db.connect()
+        db.drop_tables(models=create_tables_list)
+        assert db.database == '/home/joe/local_dev_projects/fcvl/sqlite/test_pw_db.db'
+        breakpoint()
 
     def test_iter_build1(self):
-        pass
+        path = Config.TEST_RS_PATH_ITER_BUILD1
+        build = BuildRS(path=path, main_db=Config.TEST_DB)
+        build.iter_build()
+        assert build.ctx == 'db empty'
+        # test path variables
+        # test unfinalized months variables
+        db.drop_tables(models=create_tables_list)
 
     def test_iter_build2(self):
-        pass
+        path = Config.TEST_RS_PATH_ITER_BUILD1
+        build = BuildRS(path=path, main_db=Config.TEST_DB)
+        build.iter_build()
 
 @pytest.mark.testing_db
 class DBBackup:
