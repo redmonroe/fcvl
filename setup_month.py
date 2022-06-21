@@ -28,19 +28,16 @@ class MonthSheet(YearSheet):
 
     def __init__(self, full_sheet, path, mode=None, test_service=None):
         self.full_sheet = full_sheet
+        self.file_input_path = path
         if mode == 'testing':
             self.service = test_service
         else:
-            self.service = oauth(my_scopes, 'sheet')
+            self.service = oauth(Config.my_scopes, 'sheet')
 
-        self.file_input_path = path
-
-    def iterative_control(self, month_list=None):
-        pass
-    
-    def auto_control(self, month_list=None):
+    def auto_control(self, source=None, mode='clean_build', month_list=None):
+        breakpoint()
         if month_list != None:
-            wrange = 'This list has been expressly passed from cli.py.'
+            wrange = f'This list has been expressly passed from {source}.'
             print(f'writing rent sheets for {month_list}. {wrange}')
         else:
             wrange = 'This list has been generated from reconciled scrapes or opcash.'
@@ -49,7 +46,10 @@ class MonthSheet(YearSheet):
                     (StatusObject.scrape_reconciled==1)).namedtuples()]
             print(f'reconciled months = {month_list}')
 
-        self.reset_spreadsheet()
+        breakpoint()
+        if mode == 'clean_build':
+            self.reset_spreadsheet()
+
         self.make_base_sheet()
         self.formatting_runner()
         self.duplicate_formatted_sheets(month_list=month_list)
@@ -68,8 +68,7 @@ class MonthSheet(YearSheet):
                 self.write_deposit_detail_from_scrape(date)
             elif reconciliation_type == False:
                 self.write_deposit_detail_from_opcash(date)
-            
-            
+                    
             ntp = self.get_ntp_wrapper(date)
             sum_laundry, other_list = self.split_ntp(ntp)
             sum_mi_payments = self.get_move_ins(date)

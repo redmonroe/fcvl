@@ -44,7 +44,7 @@ def autors(mode=None):
 
     path = Config.TEST_RS_PATH_MAY
     full_sheet = Config.TEST_RS
-    build = BuildRS(path=path, main_db=Config.TEST_DB)
+    build = BuildRS(path=path, full_sheet=full_sheet, main_db=Config.TEST_DB)
     service = oauth(Config.my_scopes, 'sheet', mode='testing')
     ms = MonthSheet(full_sheet=full_sheet, path=path, mode='testing', test_service=service)
 
@@ -87,7 +87,7 @@ def autors(mode=None):
         # sample_month_list = ['2022-01']
         # sample_month_list = ['2022-01', '2022-02']
         # ms.auto_control(month_list=sample_month_list)
-        ms.auto_control()
+        ms.auto_control(source='cli.py')
     
 @click.command()
 def manentry():

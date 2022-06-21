@@ -77,7 +77,6 @@ class FileIndexer(Utils):
                 if self.indexed_list:
                     self.xls_wrapper()
                 
-
                 self.make_a_list_of_indexed(mode=self.query_mode.pdf)
                 if self.indexed_list:
                     self.pdf_wrapper()

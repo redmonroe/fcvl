@@ -177,7 +177,7 @@ class StatusRS(BaseModel):
         query = StatusRS.create(current_date=date1)
         query.save()   
 
-    def show(self, ctx, mode=None):
+    def show(self, ctx=None, path=None, service=None, full_sheet=None, ms=None, mode=None):
         populate = PopulateTable()
         most_recent_status = [item for item in StatusRS().select().order_by(-StatusRS.status_id).namedtuples()][0] # note: - = descending order syntax in peewee
 
@@ -202,7 +202,16 @@ class StatusRS(BaseModel):
             print('\n')
 
         if report_list:
-            incomplete_month_bool = self.is_there_mid_month(months_ytd, report_list)
+            incomplete_month_bool, paperwork_complete_months = self.is_there_mid_month(months_ytd, report_list)
+            existing_sheets_dict = Utils.get_existing_sheets(service, full_sheet)
+            existing_sheets = [sheet for sheet in [*existing_sheets_dict.keys()] if sheet != 'intake']
+
+            paperwork_complete_months_with_no_rs = list(set(paperwork_complete_months) - set(existing_sheets))
+            pw_complete_ms = sorted(paperwork_complete_months_with_no_rs)
+            ms.auto_control(source='StatusRS.show()', mode='iter_build', month_list=pw_complete_ms)
+
+
+
 
         mid_month_choice = False
 
@@ -311,16 +320,20 @@ class StatusRS(BaseModel):
 
     def is_there_mid_month(self, months_ytd, report_list):
         mid_month_list = []
+        final_list = []
         for month, item in zip(months_ytd, report_list):
             look_dict = {fn: (tup[0], tup[1], tup[2]) for fn, tup in item.items() if month == tup[0]}
             ready_to_write_final_dt = self.is_ready_to_write_final(month=month, dict1=look_dict)
+            final_list.append(ready_to_write_final_dt)
             if [*ready_to_write_final_dt.values()][0] == False:
                 self.is_there_mid_month_print(month, look_dict, ready_to_write_final_dt)            
                 mid_month_list.append(ready_to_write_final_dt)
             else:
                 self.is_there_mid_month_print(month, look_dict, ready_to_write_final_dt)            
                 mid_month_list = []
-        return mid_month_list
+
+        final_list = [[*date.keys()][0] for date in final_list if [*date.values()][0] == True]
+        return mid_month_list, final_list
 
     def is_there_mid_month_print(self, month, look_dict, rtwdt):
         if [*rtwdt.values()][0] == True:

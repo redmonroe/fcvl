@@ -24,6 +24,7 @@ class BuildRS(MonthSheet):
         self.create_tables_list1 = None
         self.target_bal_load_file = Config.beg_bal_xlsx
         self.populate = PopulateTable()
+        self.ms = MonthSheet(full_sheet=self.full_sheet, path=self.path)
         self.findex = FileIndexer(path=self.path, db=self.main_db)
         self.new_files = None
         self.unfinalized_months = None
@@ -52,7 +53,7 @@ class BuildRS(MonthSheet):
             self.iterate_over_remaining_months_incremental(list1=self.new_files)
         
         status.set_current_date()
-        status.show(ctx=self.ctx) 
+        status.show(ctx=self.ctx, path=self.path, ms=self.ms, service=self.service, full_sheet=self.full_sheet) 
         self.main_db.close()
 
     def setup_tables(self, mode=None):
