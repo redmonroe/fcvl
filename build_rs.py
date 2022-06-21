@@ -37,7 +37,6 @@ class BuildRS(MonthSheet):
         if self.main_db.get_tables() == []:
             self.ctx = 'db empty'
             print(f'{self.ctx}')
-            breakpoint()
             self.build_db_from_scratch(fresh_build=True)
         else:
             self.ctx = 'db is not empty'

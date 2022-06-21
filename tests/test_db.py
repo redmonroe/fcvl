@@ -357,7 +357,8 @@ class TestDB:
         if db.is_closed() == False:
             db.close()    
 
-@pytest.mark.testing_db_iter
+# @pytest.mark.testing_db_iter
+@pytest.mark.testing_db
 class TestIterBuild:
 
     def test_setup(self):
@@ -365,21 +366,74 @@ class TestIterBuild:
         db.connect()
         db.drop_tables(models=create_tables_list)
         assert db.database == '/home/joe/local_dev_projects/fcvl/sqlite/test_pw_db.db'
-        breakpoint()
 
     def test_iter_build1(self):
+        """tests include:
+        - coverage of 2022-01-01 to 2022-03-30
+        - number of files in file_index db
+        - tenant payment sum for entire period
+        - ntp sum for entire period: 2022-01-01 to
+        - moveins
+        - opcash
+         2022-03-30
+        """
+        populate = PopulateTable()
         path = Config.TEST_RS_PATH_ITER_BUILD1
         build = BuildRS(path=path, main_db=Config.TEST_DB)
         build.iter_build()
         assert build.ctx == 'db empty'
-        # test path variables
-        # test unfinalized months variables
-        db.drop_tables(models=create_tables_list)
+        assert path.stem == 'iter_build_first'
+        first_dt, _ = populate.make_first_and_last_dates(date_str='2022-01')
+        _, last_dt = populate.make_first_and_last_dates(date_str='2022-03')
+
+        snapshot_of_all_recs = [item for item in Findexer.select().namedtuples()]
+        assert len(snapshot_of_all_recs) == 9
+
+        ntp_1q = populate.get_ntp_by_period(first_dt=first_dt, last_dt=last_dt)
+        assert sum(ntp_1q) == 1515.96
+        
+        tp_1q = populate.get_payments_by_tenant_by_period(first_dt=first_dt, last_dt=last_dt, cumsum=True)
+        assert tp_1q == 46210.0
+
+        mi_1q = populate.get_move_ins_by_period(first_dt=first_dt, last_dt=last_dt)
+        assert mi_1q[0] == ('2022-02-07', 'greiner, richard')
+
+        opcash_1q = populate.get_opcash_by_period(first_dt=first_dt, last_dt=last_dt)
+        assert len(opcash_1q) == 3
 
     def test_iter_build2(self):
-        path = Config.TEST_RS_PATH_ITER_BUILD1
+        """tests include:
+        - coverage of 2022-01-01 to 2022-04-30
+        - number of files in file_index db
+        - tenant payment sum for entire period
+        - ntp sum for entire period: 2022-01-01 to
+        - moveins
+        - opcash
+        """
+        path = Config.TEST_RS_PATH_ITER_BUILD2
         build = BuildRS(path=path, main_db=Config.TEST_DB)
         build.iter_build()
+        snapshot_of_all_recs = [item for item in Findexer.select().namedtuples()]
+        assert len(snapshot_of_all_recs) == 11
+
+        first_dt, _ = populate.make_first_and_last_dates(date_str='2022-01')
+        _, last_dt = populate.make_first_and_last_dates(date_str='2022-04')
+
+        ntp_4m = populate.get_ntp_by_period(first_dt=first_dt, last_dt=last_dt)
+        assert sum(ntp_4m) == 1743.23
+        
+        tp_4m = populate.get_payments_by_tenant_by_period(first_dt=first_dt, last_dt=last_dt, cumsum=True)
+        assert tp_4m == 61452.0
+
+        mi_4m = populate.get_move_ins_by_period(first_dt=first_dt, last_dt=last_dt)
+        assert mi_4m[1] == ('2022-04-15', 'kelly, daniel')
+
+        opcash_4m = populate.get_opcash_by_period(first_dt=first_dt, last_dt=last_dt)
+        assert len(opcash_4m) == 3
+        assert opcash_4m[-1][-2] == '16778.95'
+
+    def test_iter_cleanup(self):
+        db.drop_tables(models=create_tables_list)
 
 @pytest.mark.testing_db
 class DBBackup:
