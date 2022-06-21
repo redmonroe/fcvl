@@ -32,27 +32,11 @@ class BuildRS(MonthSheet):
     def __repr__(self):
         return f'BuildRS object path: {self.path} write sheet: {self.full_sheet} service:{self.service}'
     
-    def iter_build(self):
-        print('iter build')
+    def build_db_from_scratch(self):
         if self.main_db.get_tables() == []:
+            print('building db from scratch')
             self.ctx = 'db empty'
             print(f'{self.ctx}')
-            self.build_db_from_scratch(fresh_build=True)
-        else:
-            self.ctx = 'db is not empty'
-            print(f'{self.ctx}')
-            self.new_files, self.unfinalized_months = self.findex.iter_build_runner()
-            self.build_db_from_scratch(fresh_build=False)
-
-    def ur_query_wrapper(self):
-
-        populate = PopulateTable()
-        first_dt, last_dt = populate.make_first_and_last_dates(date_str='2022-01')
-        populate.ur_query(model='Tenant', query_fields={'move_in_date': first_dt, 'move_out_date': last_dt})
-
-    def build_db_from_scratch(self, fresh_build=None):
-        print('building db from scratch')
-        if fresh_build == True:
             findex, populate = self.drop_then_create_tables()
             findex.build_index_runner() # this is a findex method
             self.load_initial_tenants_and_balances()
@@ -61,11 +45,12 @@ class BuildRS(MonthSheet):
             self.populate.transfer_opcash_to_db() # PROCESSED OPCASHES MOVED INTO DB
             status = StatusRS()
             status.set_current_date()
-        
-            # breakpoint()
             status.show() 
             self.main_db.close()
         else:
+            self.ctx = 'db is not empty'
+            print(f'{self.ctx}')
+            self.new_files, self.unfinalized_months = self.findex.iter_build_runner()
             findex, populate = self.just_create_tables()
             self.iterate_over_remaining_months_incremental(list1=self.new_files)
             status = StatusRS()

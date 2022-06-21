@@ -472,6 +472,12 @@ class QueryHC:
             return different_names
         return []
 
+    def ur_query_wrapper(self):
+
+        populate = PopulateTable()
+        first_dt, last_dt = populate.make_first_and_last_dates(date_str='2022-01')
+        populate.ur_query(model='Tenant', query_fields={'move_in_date': first_dt, 'move_out_date': last_dt})
+
     def ur_query(self, model=None, query_fields=None):
         # data = {'field_a': 1, 'field_b': 33, 'field_c': 'test'}
         import operator

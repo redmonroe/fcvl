@@ -96,14 +96,9 @@ class TestDB:
         db.connect()
         db.drop_tables(models=create_tables_list)
 
-    def test_db(self):
-        db.create_tables(create_tables_list)
-        assert db.database == '/home/joe/local_dev_projects/fcvl/sqlite/test_pw_db.db'
-        assert [*db.get_columns(table='payment')[0]._asdict().keys()] == ['name', 'data_type', 'null', 'primary_key', 'table', 'default']
-
     def test_set_init_state_at_end_of_april(self):
         build = BuildRS(path=path, main_db=Config.TEST_DB)
-        build.build_db_from_scratch(fresh_build=True)                      
+        build.build_db_from_scratch()       
 
     def test_initial_tenant_load(self):
         '''JANUARY IS DIFFERENT'''
@@ -380,7 +375,7 @@ class TestIterBuild:
         populate = PopulateTable()
         path = Config.TEST_RS_PATH_ITER_BUILD1
         build = BuildRS(path=path, main_db=Config.TEST_DB)
-        build.iter_build()
+        build.build_db_from_scratch()
         assert build.ctx == 'db empty'
         assert path.stem == 'iter_build_first'
         first_dt, _ = populate.make_first_and_last_dates(date_str='2022-01')
@@ -412,7 +407,7 @@ class TestIterBuild:
         """
         path = Config.TEST_RS_PATH_ITER_BUILD2
         build = BuildRS(path=path, main_db=Config.TEST_DB)
-        build.iter_build()
+        build.build_db_from_scratch()
         snapshot_of_all_recs = [item for item in Findexer.select().namedtuples()]
         assert len(snapshot_of_all_recs) == 11
 
@@ -447,7 +442,7 @@ class DBBackup:
 
 """start here"""
 
-@pytest.mark.testing_db
+@pytest.mark.testing_rs
 class TestWrite:
 
     def test_assert_all_db_empty_and_connections_closed(self):
@@ -466,7 +461,7 @@ class TestWrite:
     def test_generic_build(self):
         basedir = os.path.abspath(os.path.dirname(__file__))
         build = BuildRS(path=path, main_db=db)
-        build.build_db_from_scratch(fresh_build=True)
+        build.build_db_from_scratch()
 
     def test_end_status(self):
         most_recent_status = [item for item in StatusRS().select().order_by(-StatusRS.status_id).namedtuples()][0]
