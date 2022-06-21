@@ -51,6 +51,12 @@ def autors(mode=None):
     if mode == 'testing':
         build.build_db_from_scratch(stop_write=True)
 
+    if mode == 'write_from_db':
+        # sample_month_list = ['2022-01']
+        # sample_month_list = ['2022-01', '2022-02']
+        # ms.auto_control(month_list=sample_month_list)
+        ms.auto_control(source='cli.py', mode='clean_build')
+        
     if mode == 'reset': # basic drop of all tables
         populate = PopulateTable()
         create_tables_list1 = populate.return_tables_list()
@@ -83,11 +89,6 @@ def autors(mode=None):
         build = BuildRS(path=path, main_db=Config.TEST_DB)
         build.build_db_from_scratch()
 
-    if mode == 'write_from_db':
-        # sample_month_list = ['2022-01']
-        # sample_month_list = ['2022-01', '2022-02']
-        # ms.auto_control(month_list=sample_month_list)
-        ms.auto_control(source='cli.py', mode='clean_build')
     
 @click.command()
 def manentry():
