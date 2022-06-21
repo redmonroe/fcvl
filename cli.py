@@ -49,7 +49,16 @@ def autors(mode=None):
     ms = MonthSheet(full_sheet=full_sheet, path=path, mode='testing', test_service=service)
 
     if mode == 'testing':
-        build.build_db_from_scratch()
+        build.build_db_from_scratch(stop_write=True)
+
+    if mode == 'reset': # basic drop of all tables
+        populate = PopulateTable()
+        create_tables_list1 = populate.return_tables_list()
+        if build.main_db.is_closed() == True:
+            build.main_db.connect()
+        build.main_db.drop_tables(models=create_tables_list1)
+        if build.main_db.get_tables() == []:
+            print('db successfully dropped')
     
     if mode == 'iter_first':
         path = Config.TEST_RS_PATH_ITER_BUILD1
@@ -74,20 +83,11 @@ def autors(mode=None):
         build = BuildRS(path=path, main_db=Config.TEST_DB)
         build.build_db_from_scratch()
 
-    if mode == 'reset':
-        populate = PopulateTable()
-        create_tables_list1 = populate.return_tables_list()
-        if build.main_db.is_closed() == True:
-            build.main_db.connect()
-        build.main_db.drop_tables(models=create_tables_list1)
-        if build.main_db.get_tables() == []:
-            print('db successfully dropped')
-
     if mode == 'write_from_db':
         # sample_month_list = ['2022-01']
         # sample_month_list = ['2022-01', '2022-02']
         # ms.auto_control(month_list=sample_month_list)
-        ms.auto_control(source='cli.py')
+        ms.auto_control(source='cli.py', mode='clean_build')
     
 @click.command()
 def manentry():

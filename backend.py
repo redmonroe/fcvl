@@ -177,7 +177,7 @@ class StatusRS(BaseModel):
         query = StatusRS.create(current_date=date1)
         query.save()   
 
-    def show(self, ctx=None, path=None, service=None, full_sheet=None, ms=None, mode=None):
+    def show(self, ctx=None, path=None, service=None, full_sheet=None, ms=None, mode=None, **kw):
         populate = PopulateTable()
         most_recent_status = [item for item in StatusRS().select().order_by(-StatusRS.status_id).namedtuples()][0] # note: - = descending order syntax in peewee
 
@@ -203,12 +203,16 @@ class StatusRS(BaseModel):
 
         if report_list:
             incomplete_month_bool, paperwork_complete_months = self.is_there_mid_month(months_ytd, report_list)
-            existing_sheets_dict = Utils.get_existing_sheets(service, full_sheet)
-            existing_sheets = [sheet for sheet in [*existing_sheets_dict.keys()] if sheet != 'intake']
+            if kw['stop_write'] != True:
+                '''passing results of get_existing_sheets would reduce calls'''
+                existing_sheets_dict = Utils.get_existing_sheets(service, full_sheet) 
+                existing_sheets = [sheet for sheet in [*existing_sheets_dict.keys()] if sheet != 'intake']
 
-            paperwork_complete_months_with_no_rs = list(set(paperwork_complete_months) - set(existing_sheets))
-            pw_complete_ms = sorted(paperwork_complete_months_with_no_rs)
-            ms.auto_control(source='StatusRS.show()', mode='iter_build', month_list=pw_complete_ms)
+                paperwork_complete_months_with_no_rs = list(set(paperwork_complete_months) - set(existing_sheets))
+                pw_complete_ms = sorted(paperwork_complete_months_with_no_rs)
+                ms.auto_control(source='StatusRS.show()', mode='iter_build', month_list=pw_complete_ms)
+            else:
+                print('you have selected to bypass writing to RS.')
 
 
 

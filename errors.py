@@ -23,7 +23,6 @@ def retry_google_api(times, sleep1, exceptions):
                 try:
                     return func(*args, **kwargs)
                 except HttpError as e:
-                    breakpoint()
                     if e.resp.status == exceptions:
                         print('Exception thrown when attempting to run %s, attempt '
                             '%d of %d' % (func, attempt, times))

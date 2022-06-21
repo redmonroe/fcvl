@@ -49,7 +49,8 @@ class MonthSheet(YearSheet):
             self.reset_spreadsheet()
 
         self.make_base_sheet()
-        self.formatting_runner()
+        self.formatting_runner() # need to make this susceptiable to month list
+        # also remove show_current_sheets
         self.duplicate_formatted_sheets(month_list=month_list)
         self.remove_base_sheet()
 

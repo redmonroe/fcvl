@@ -33,7 +33,7 @@ class BuildRS(MonthSheet):
     def __repr__(self):
         return f'BuildRS object path: {self.path} write sheet: {self.full_sheet} service:{self.service}'
     
-    def build_db_from_scratch(self):
+    def build_db_from_scratch(self, **kw):
         status = StatusRS()
         if self.main_db.get_tables() == []:
             print('building db from scratch')
@@ -53,7 +53,7 @@ class BuildRS(MonthSheet):
             self.iterate_over_remaining_months_incremental(list1=self.new_files)
         
         status.set_current_date()
-        status.show(ctx=self.ctx, path=self.path, ms=self.ms, service=self.service, full_sheet=self.full_sheet) 
+        status.show(ctx=self.ctx, path=self.path, ms=self.ms, service=self.service, full_sheet=self.full_sheet, **kw) 
         self.main_db.close()
 
     def setup_tables(self, mode=None):
