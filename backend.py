@@ -177,7 +177,7 @@ class StatusRS(BaseModel):
         query = StatusRS.create(current_date=date1)
         query.save()   
 
-    def show(self, mode=None):
+    def show(self, ctx, mode=None):
         populate = PopulateTable()
         most_recent_status = [item for item in StatusRS().select().order_by(-StatusRS.status_id).namedtuples()][0] # note: - = descending order syntax in peewee
 
@@ -197,11 +197,9 @@ class StatusRS(BaseModel):
 
         if most_recent_status:
             print(f'\n\n*****************************AUTORS: welcome!********************')
-            print(f'current date: {most_recent_status.current_date}\n')
-
-        if months_ytd:
-            print(f'current month: {months_ytd[-1]}')
-            print(f'months ytd {Config.current_year}: {months_ytd}\n')
+            print(f'current date: {most_recent_status.current_date} | current month: {months_ytd[-1]}\n')
+            print('months ytd ' + Config.current_year + ': ' + '  '.join(m for m in months_ytd))
+            print('\n')
 
         if report_list:
             incomplete_month_bool = self.is_there_mid_month(months_ytd, report_list)
@@ -311,20 +309,26 @@ class StatusRS(BaseModel):
 
         return mr_good_month
 
-
     def is_there_mid_month(self, months_ytd, report_list):
-        look_list = []
         mid_month_list = []
         for month, item in zip(months_ytd, report_list):
             look_dict = {fn: (tup[0], tup[1], tup[2]) for fn, tup in item.items() if month == tup[0]}
             ready_to_write_final_dt = self.is_ready_to_write_final(month=month, dict1=look_dict)
-            print(f'For period {month} these files have been processed: \n {[*look_dict.keys()]} \n Ready to Write? {[*ready_to_write_final_dt.values()][0]}' )
-            
             if [*ready_to_write_final_dt.values()][0] == False:
+                self.is_there_mid_month_print(month, look_dict, ready_to_write_final_dt)            
                 mid_month_list.append(ready_to_write_final_dt)
             else:
+                self.is_there_mid_month_print(month, look_dict, ready_to_write_final_dt)            
                 mid_month_list = []
         return mid_month_list
+
+    def is_there_mid_month_print(self, month, look_dict, rtwdt):
+        if [*rtwdt.values()][0] == True:
+            print(f'For period {month} these files have been processed: ')
+            print(*list(look_dict.keys()), sep=', ')
+            print(f'Ready to Write? {[*rtwdt.values()][0]}')
+        else:
+            print(f'For period {month} NO files have been processed.')
 
     def generate_balance_letter_list_mr_reconciled(self):
         query = QueryHC()
@@ -364,21 +368,6 @@ class StatusRS(BaseModel):
             send_to_write = {month: ready_to_process}
 
         return send_to_write
-
-    # def months_in_ytd(self, style=None):
-    #     range_month = datetime.now().strftime('%m')
-    #     str_month = datetime.now().strftime('%b').lower()
-    #     date_info = monthrange(int(Config.current_year), int(range_month))
-    #     last_day = date_info[1]
-        
-    #     if style == 'three_letter_month':
-    #         month_list = pd.date_range(f'{Config.current_year}-01-01',f'{Config.current_year}-{range_month}-{last_day}',freq='MS').strftime("%b").tolist()
-    #         month_list = [item.lower() for item in month_list]
-    #     else:
-    #         month_list = pd.date_range(f'{Config.current_year}-01-01',f'{Config.current_year}-{range_month}-{last_day}',freq='MS').strftime("%Y-%m").tolist()
-    #         month_list = [item for item in month_list]
-
-    #     return month_list
 
     def write_processed_to_db(self, ref_rec=None, report_list=None):
         mr_status = StatusRS().get(StatusRS.status_id==ref_rec.status_id)

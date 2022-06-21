@@ -74,13 +74,14 @@ def autors(mode=None):
         build = BuildRS(path=path, main_db=Config.TEST_DB)
         build.build_db_from_scratch()
 
-    if mode == 'iter_reset':
+    if mode == 'reset':
         populate = PopulateTable()
         create_tables_list1 = populate.return_tables_list()
         if build.main_db.is_closed() == True:
             build.main_db.connect()
         build.main_db.drop_tables(models=create_tables_list1)
-        breakpoint()
+        if build.main_db.get_tables() == []:
+            print('db successfully dropped')
 
     if mode == 'write_from_db':
         # sample_month_list = ['2022-01']

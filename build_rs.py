@@ -33,52 +33,39 @@ class BuildRS(MonthSheet):
         return f'BuildRS object path: {self.path} write sheet: {self.full_sheet} service:{self.service}'
     
     def build_db_from_scratch(self):
+        status = StatusRS()
         if self.main_db.get_tables() == []:
             print('building db from scratch')
             self.ctx = 'db empty'
             print(f'{self.ctx}')
-            findex, populate = self.drop_then_create_tables()
-            findex.build_index_runner() # this is a findex method
+            populate = self.setup_tables(mode='drop_and_create')
+            self.findex.build_index_runner() # this is a findex method
             self.load_initial_tenants_and_balances()
             processed_rentr_dates_and_paths = self.iterate_over_remaining_months()
             Damages.load_damages()
             self.populate.transfer_opcash_to_db() # PROCESSED OPCASHES MOVED INTO DB
-            status = StatusRS()
-            status.set_current_date()
-            status.show() 
-            self.main_db.close()
         else:
             self.ctx = 'db is not empty'
             print(f'{self.ctx}')
             self.new_files, self.unfinalized_months = self.findex.iter_build_runner()
-            findex, populate = self.just_create_tables()
+            populate = self.setup_tables(mode='create_only')
             self.iterate_over_remaining_months_incremental(list1=self.new_files)
-            status = StatusRS()
-            status.set_current_date()
         
-            status.show() 
-            self.main_db.close()
+        status.set_current_date()
+        status.show(ctx=self.ctx) 
+        self.main_db.close()
 
-    def drop_then_create_tables(self):
+    def setup_tables(self, mode=None):
         populate = PopulateTable()
-        findex = self.findex
-
-        self.create_tables_list1 = populate.return_tables_list()
-        findex.drop_findex_table() 
-        if self.main_db.is_closed() == True:
-            self.main_db.connect()
-        self.main_db.drop_tables(models=self.create_tables_list1)
-        self.main_db.create_tables(self.create_tables_list1)
-        return findex, populate
-
-    def just_create_tables(self):
-        populate = PopulateTable()
-        findex = self.findex
         self.create_tables_list1 = populate.return_tables_list()
         if self.main_db.is_closed() == True:
             self.main_db.connect()
-        self.main_db.create_tables(self.create_tables_list1)
-        return findex, populate
+        if mode == 'create_only':
+            self.main_db.create_tables(self.create_tables_list1)
+        elif mode == 'drop_and_create':
+            self.main_db.drop_tables(models=self.create_tables_list1)
+            self.main_db.create_tables(self.create_tables_list1)
+        return populate
 
     def iterate_over_remaining_months_incremental(self, list1=None):
         populate = PopulateTable()
