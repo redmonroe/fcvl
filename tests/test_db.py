@@ -27,6 +27,7 @@ from google_api_calls_abstract import GoogleApiCalls
 from googleapiclient.errors import HttpError
 from setup_month import MonthSheet
 from setup_year import YearSheet
+from utils import Utils
 
 current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
@@ -472,7 +473,7 @@ class TestWrite:
 class TestRSOnly:
 
     def test_setup_sheet_prime(self):
-        title_dict = ms.show_current_sheets()
+        title_dict = Utils.get_existing_sheets(self.service, self.full_sheet)
         for name, id2, in title_dict.items():
             if name != 'intake':
                 calls.del_one_sheet(service, full_sheet, id2)
@@ -489,7 +490,7 @@ class TestRSOnly:
         assert grand_total[0][0] == '15491.71'
        
     def test_teardown_sheets(self):
-        title_dict = ms.show_current_sheets()
+        title_dict = Utils.get_existing_sheets(self.service, self.full_sheet)
         for name, id2, in title_dict.items():
             if name != 'intake':
                 calls.del_one_sheet(service, full_sheet, id2)

@@ -126,6 +126,7 @@ class GoogleApiCalls:
             spreadsheetId=sh_id,
             body=data
         ).execute()
+        return response
 
     @retry_google_api(times, sleep1, exceptions)
     def del_one_sheet(self, service, spreadsheet_id, id):

@@ -47,6 +47,9 @@ def autors(mode=None):
     build = BuildRS(path=path, full_sheet=full_sheet, main_db=Config.TEST_DB)
     service = oauth(Config.my_scopes, 'sheet', mode='testing')
     ms = MonthSheet(full_sheet=full_sheet, path=path, mode='testing', test_service=service)
+    
+    if mode == 'write_to_db':
+        click.echo('NOT A COMMAND; try write_from_db instead')
 
     if mode == 'testing':
         build.build_db_from_scratch(stop_write=True)
@@ -56,7 +59,7 @@ def autors(mode=None):
         # sample_month_list = ['2022-01', '2022-02']
         # ms.auto_control(month_list=sample_month_list)
         ms.auto_control(source='cli.py', mode='clean_build')
-        
+
     if mode == 'reset': # basic drop of all tables
         populate = PopulateTable()
         create_tables_list1 = populate.return_tables_list()

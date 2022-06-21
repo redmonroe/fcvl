@@ -48,8 +48,8 @@ class MonthSheet(YearSheet):
         if mode == 'clean_build':
             self.reset_spreadsheet()
 
-        self.make_base_sheet()
-        self.formatting_runner() # need to make this susceptiable to month list
+        title_dict = self.make_base_sheet()
+        self.formatting_runner(title_dict=title_dict) # need to make this susceptiable to month list
         # also remove show_current_sheets
         self.duplicate_formatted_sheets(month_list=month_list)
         self.remove_base_sheet()
@@ -259,7 +259,7 @@ class MonthSheet(YearSheet):
 
     def reset_spreadsheet(self):
         print('resetting spreadsheet')
-        current_sheets = self.show_current_sheets()
+        current_sheets = Utils.get_existing_sheets(self.service, self.full_sheet)
         gc = GoogleApiCalls()
         for name, id2, in current_sheets.items():
             if name != 'intake':

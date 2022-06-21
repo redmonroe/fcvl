@@ -43,16 +43,19 @@ class YearSheet:
         
         self.source_id = None
 
-    def show_current_sheets(self, interactive=False):
-        print('showing current sheets')
-        titles_dict = Utils.get_existing_sheets(self.service, self.full_sheet)
-        path = Utils.show_files_as_choices(titles_dict, interactive=interactive)
-        if interactive == True:
-            return path
-        return titles_dict
+    # def show_current_sheets(self, interactive=False):
+    #     print('showing current sheets')
+    #     titles_dict = Utils.get_existing_sheets(self.service, self.full_sheet)
+    #     path = Utils.show_files_as_choices(titles_dict, interactive=interactive)
+    #     if interactive == True:
+    #         return path
+    #     return titles_dict
 
     def make_base_sheet(self):  
-        self.calls.make_one_sheet(self.service, self.full_sheet, self.base_month + ' ' + f'{Config.current_year}')
+        response = self.calls.make_one_sheet(self.service, self.full_sheet, self.base_month + ' ' + f'{Config.current_year}')
+        dict1 = {}
+        dict1[response['replies'][0]['addSheet']['properties']['title']] = response['replies'][0]['addSheet']['properties']['sheetId']
+        return dict1
 
     def duplicate_formatted_sheets(self, month_list=None):       
         titles_dict = Utils.get_existing_sheets(self.service, self.full_sheet)
@@ -65,13 +68,13 @@ class YearSheet:
             insert_index += 1
             self.calls.api_duplicate_sheet(self.service, self.full_sheet, source_id=self.source_id, insert_index=insert_index, title=name)
 
-    def formatting_runner(self):
-        titles_dict = Utils.get_existing_sheets(self.service, self.full_sheet)
-        titles_dict = {name:id2 for name, id2 in titles_dict.items() if name != 'intake'}
+    def formatting_runner(self, title_dict=None):
+        # titles_dict = Utils.get_existing_sheets(self.service, self.full_sheet)
+        # titles_dict = {name:id2 for name, id2 in titles_dict.items() if name != 'intake'}
         
-        for sheet, sheet_id in titles_dict.items():
+        for sheet, sheet_id in title_dict.items():
             '''writes the sum formulas in a row'''
-
+            # breakpoint()
             self.calls.write_formula_column(self.service, self.full_sheet, self.G_SUM_KRENT, f'{sheet}!E69:E69')
             self.calls.write_formula_column(self.service, self.full_sheet, self.G_SUM_ACTSUBSIDY, f'{sheet}!F69:F69')
             self.calls.write_formula_column(self.service, self.full_sheet, self.G_SUM_ACTRENT, f'{sheet}!H69:H69')
