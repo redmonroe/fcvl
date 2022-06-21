@@ -35,7 +35,6 @@ class MonthSheet(YearSheet):
             self.service = oauth(Config.my_scopes, 'sheet')
 
     def auto_control(self, source=None, mode='clean_build', month_list=None):
-        breakpoint()
         if month_list != None:
             wrange = f'This list has been expressly passed from {source}.'
             print(f'writing rent sheets for {month_list}. {wrange}')
@@ -46,7 +45,6 @@ class MonthSheet(YearSheet):
                     (StatusObject.scrape_reconciled==1)).namedtuples()]
             print(f'reconciled months = {month_list}')
 
-        breakpoint()
         if mode == 'clean_build':
             self.reset_spreadsheet()
 

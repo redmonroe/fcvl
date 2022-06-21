@@ -51,7 +51,7 @@ class YearSheet:
             return path
         return titles_dict
 
-    def make_base_sheet(self, gc=None):  
+    def make_base_sheet(self):  
         self.calls.make_one_sheet(self.service, self.full_sheet, self.base_month + ' ' + f'{Config.current_year}')
 
     def duplicate_formatted_sheets(self, month_list=None):       
@@ -59,7 +59,8 @@ class YearSheet:
         for title, id1 in titles_dict.items():
             if title == 'base 2022':
                 self.source_id = id1   
-        insert_index = 2
+        # offset == len(titles_dict) 
+        insert_index = len(titles_dict)
         for name in month_list:
             insert_index += 1
             self.calls.api_duplicate_sheet(self.service, self.full_sheet, source_id=self.source_id, insert_index=insert_index, title=name)
