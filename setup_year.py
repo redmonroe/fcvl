@@ -74,7 +74,6 @@ class YearSheet:
         
         for sheet, sheet_id in title_dict.items():
             '''writes the sum formulas in a row'''
-            # breakpoint()
             self.calls.write_formula_column(self.service, self.full_sheet, self.G_SUM_KRENT, f'{sheet}!E69:E69')
             self.calls.write_formula_column(self.service, self.full_sheet, self.G_SUM_ACTSUBSIDY, f'{sheet}!F69:F69')
             self.calls.write_formula_column(self.service, self.full_sheet, self.G_SUM_ACTRENT, f'{sheet}!H69:H69')

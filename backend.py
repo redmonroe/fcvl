@@ -203,7 +203,7 @@ class StatusRS(BaseModel):
 
         if report_list:
             incomplete_month_bool, paperwork_complete_months = self.is_there_mid_month(months_ytd, report_list)
-            if kw['stop_write'] != True:
+            if kw.get('write_db') == True:
                 '''passing results of get_existing_sheets would reduce calls'''
                 existing_sheets_dict = Utils.get_existing_sheets(service, full_sheet) 
                 existing_sheets = [sheet for sheet in [*existing_sheets_dict.keys()] if sheet != 'intake']

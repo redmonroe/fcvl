@@ -49,8 +49,7 @@ class MonthSheet(YearSheet):
             self.reset_spreadsheet()
 
         title_dict = self.make_base_sheet()
-        self.formatting_runner(title_dict=title_dict) # need to make this susceptiable to month list
-        # also remove show_current_sheets
+        self.formatting_runner(title_dict=title_dict) 
         self.duplicate_formatted_sheets(month_list=month_list)
         self.remove_base_sheet()
 
@@ -127,7 +126,6 @@ class MonthSheet(YearSheet):
     def split_ntp(self, ntp=None):
         sum_laundry = sum([amount for amount, genus in ntp if genus == 'laundry'])
         other_list = [amount for amount, genus in ntp if genus != 'laundry']
-
         return sum_laundry, other_list
 
     def write_sum_mi_payments(self, date, data):
@@ -157,7 +155,6 @@ class MonthSheet(YearSheet):
         first_dt, last_dt = populate.make_first_and_last_dates(date_str=date)
         rec = populate.get_opcash_by_period(first_dt=first_dt, last_dt=last_dt)
         dep_detail = populate.get_opcashdetail_by_stmt(stmt_key=rec[0][0])
-        # breakpoint()
         self.export_deposit_detail(date=date, res_rep=rec[0][2], hap=rec[0][3], dep_sum=rec[0][4], corr_sum=rec[0][5], dep_detail=dep_detail)
 
     def write_deposit_detail_from_scrape(self, date):

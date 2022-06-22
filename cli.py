@@ -52,7 +52,7 @@ def autors(mode=None):
         click.echo('NOT A COMMAND; try write_from_db instead')
 
     if mode == 'testing':
-        build.build_db_from_scratch(stop_write=True)
+        build.build_db_from_scratch()
 
     if mode == 'write_from_db':
         # sample_month_list = ['2022-01']
@@ -68,6 +68,9 @@ def autors(mode=None):
         build.main_db.drop_tables(models=create_tables_list1)
         if build.main_db.get_tables() == []:
             print('db successfully dropped')
+
+    if mode == 'test_and_write':
+        build.build_db_from_scratch(write_db=True)
     
     if mode == 'iter_first':
         path = Config.TEST_RS_PATH_ITER_BUILD1
