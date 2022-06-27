@@ -21,7 +21,6 @@ from setup_month import MonthSheet
 from setup_year import YearSheet
 
 '''
-# corrections: need to deal with that issue with deposit corrections: we can do with manual entry class for now
 cli.add_command(nbofi)
 cli.add_command(consume_and_backup_invoices)
 @click.command()

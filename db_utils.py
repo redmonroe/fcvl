@@ -2,6 +2,8 @@ import os
 from datetime import datetime as dt
 from pathlib import Path
 
+import pandas as pd
+
 from config import Config
 
 
@@ -71,7 +73,7 @@ class DBUtils:
                 print(f'You chose to delete option {selection}: {v}')
                 table = db[v]
                 table.drop()
-    
+
     def pg_dump_one():
         bu_time = dt.now()
         print(bu_time)
@@ -80,3 +82,20 @@ class DBUtils:
     def pg_restore_one(infile, testing=True):
         print('infile name:', infile)
         os.system(f'psql -d fcvfin_tables -U postgres -f "{infile}') #just need the relative path, should be in working directory of fcvfin here
+
+    def pg_get_sql_as_csv(table, dbname=None, username=None):
+        """Gets a postgres table and outputs it to a .csv file
+        
+        :param table: The name of the postgresql table that you will be selecting all from
+        :type table: str
+        :param dbname: The postgres database name.
+        :type table: str
+        :param username: The username of the postgresql database in question
+        :returns: nothing, but generates .csv in working dir       
+        
+        """
+
+        conn = psycopg2.connect(f"dbname={dbname} user={username}")
+        query = f'SELECT * from {table}'
+        df = pd.read_sql(query, conn)
+        df.to_csv(f'{table}.csv')
