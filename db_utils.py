@@ -94,7 +94,6 @@ class DBUtils:
         :returns: nothing, but generates .csv in working dir       
         
         """
-
         conn = psycopg2.connect(f"dbname={dbname} user={username}")
         query = f'SELECT * from {table}'
         df = pd.read_sql(query, conn)

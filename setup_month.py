@@ -43,6 +43,7 @@ class MonthSheet(YearSheet):
             print('generating list of months where either scrape or opcash has reconciled to tenant.')
             month_list = [rec.month for rec in StatusObject().select().where(       (StatusObject.tenant_reconciled==1) |
                     (StatusObject.scrape_reconciled==1)).namedtuples()]
+    
             print(f'reconciled months = {month_list}')
 
         if mode == 'clean_build':

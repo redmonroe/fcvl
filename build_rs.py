@@ -47,11 +47,12 @@ class BuildRS(MonthSheet):
             self.populate.transfer_opcash_to_db() # PROCESSED OPCASHES MOVED INTO DB
         else:
             self.ctx = 'db is not empty'
+            breakpoint() 
             print(f'{self.ctx}')
             self.new_files, self.unfinalized_months = self.findex.iter_build_runner()
             populate = self.setup_tables(mode='create_only')
             self.iterate_over_remaining_months_incremental(list1=self.new_files)
-        
+
         status.set_current_date()
         status.show(ctx=self.ctx, path=self.path, ms=self.ms, service=self.service, full_sheet=self.full_sheet, **kw) 
         self.main_db.close()

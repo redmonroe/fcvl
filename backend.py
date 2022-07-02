@@ -184,7 +184,7 @@ class StatusRS(BaseModel):
         months_ytd = Utils.months_in_ytd(Config.current_year)
 
         report_list = populate.get_processed_by_month(month_list=months_ytd)
-
+        
         self.write_processed_to_db(ref_rec=most_recent_status, report_list=report_list)
 
         if mode != 'just_asserting_empty':
@@ -214,19 +214,16 @@ class StatusRS(BaseModel):
             else:
                 print('you have selected to bypass writing to RS.')
 
-
-
-
         mid_month_choice = False
 
-        # if incomplete_month_bool:
-        #     choice = input(f'\nWould you like to import mid-month report from bank for {incomplete_month_bool[0]} ? Y/n ')
-        #     if choice == 'Y':
-        #         mid_month_choice = True
-        #     else:
-        #         mid_month_choice = False
-        #         print('exiting program')
-        #         exit
+        if incomplete_month_bool:
+            choice = input(f'\nWould you like to import mid-month report from bank for {incomplete_month_bool[0]} ? Y/n ')
+            if choice == 'Y':
+                mid_month_choice = True
+            else:
+                mid_month_choice = False
+                print('exiting program')
+                exit
 
         first_incomplete_month = incomplete_month_bool[0]
         
