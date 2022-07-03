@@ -347,10 +347,10 @@ class QueryHC:
         where(ScrapeDetail.dep_type=='deposit').namedtuples()]
         return recs
 
-    def get_scrape_detail_by_month_hap(self, first_dt=None, last_dt=None):
+    def get_scrape_detail_by_month_by_type(self, type1, first_dt=None, last_dt=None):
         recs = [row.amount for row in ScrapeDetail.select().where(ScrapeDetail.scrape_dep_date >= first_dt).
         where(ScrapeDetail.scrape_dep_date <= last_dt).
-        where(ScrapeDetail.dep_type=='hap').namedtuples()]
+        where(ScrapeDetail.dep_type==type1).namedtuples()]
         return recs
 
     def get_status_object_by_month(self, first_dt=None, last_dt=None):

@@ -161,10 +161,12 @@ class MonthSheet(YearSheet):
     def write_deposit_detail_from_scrape(self, date):
         populate = PopulateTable()
         first_dt, last_dt = populate.make_first_and_last_dates(date_str=date)
-        hap = populate.get_scrape_detail_by_month_hap(first_dt=first_dt, last_dt=last_dt)
-        deposit_correction_sum = 0
+        hap = populate.get_scrape_detail_by_month_by_type(type1='hap', first_dt=first_dt, last_dt=last_dt)
+        dep_correction_sum = populate.get_scrape_detail_by_month_by_type(type1='corr', first_dt=first_dt, last_dt=last_dt)
+        dep_correction_sum = sum([float(item) for item in dep_correction_sum])
+        breakpoint()
         dep_detail = populate.get_scrape_detail_by_month_deposit(first_dt=first_dt, last_dt=last_dt)
-        self.export_deposit_detail(date=date, res_rep=0, hap=hap[0], dep_sum=0, corr_sum=deposit_correction_sum, dep_detail=dep_detail)
+        self.export_deposit_detail(date=date, res_rep=0, hap=hap[0], dep_sum=0, corr_sum=dep_correction_sum, dep_detail=dep_detail)
 
     def export_deposit_detail(self, **kw):
         gc = GoogleApiCalls()
