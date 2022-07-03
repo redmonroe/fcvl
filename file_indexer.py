@@ -12,7 +12,6 @@ from config import Config
 from pdf import StructDataExtract
 from utils import Utils
 
-
 class FileIndexer(Utils):
 
     '''move to config.json'''

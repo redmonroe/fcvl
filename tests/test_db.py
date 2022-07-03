@@ -14,7 +14,9 @@ import datetime
 import json
 import os
 import sys
+from decimal import ROUND_DOWN, ROUND_UP, Decimal
 from pathlib import Path
+from pprint import pprint
 
 from auth_work import oauth
 from backend import (Damages, Findexer, NTPayment, OpCash, OpCashDetail,
@@ -22,30 +24,15 @@ from backend import (Damages, Findexer, NTPayment, OpCash, OpCashDetail,
                      Tenant, TenantRent, Unit, db)
 from build_rs import BuildRS
 from config import Config
+from db_utils import DBUtils
 from file_indexer import FileIndexer
 from google_api_calls_abstract import GoogleApiCalls
 from googleapiclient.errors import HttpError
+from peewee import JOIN, fn
+from records import record
 from setup_month import MonthSheet
 from setup_year import YearSheet
 from utils import Utils
-
-current = os.path.dirname(os.path.realpath(__file__))
-parent = os.path.dirname(current)
-sys.path.append(parent)
-from decimal import ROUND_DOWN, ROUND_UP, Decimal
-from pathlib import Path
-from pprint import pprint
-
-import pytest
-from backend import (BalanceLetter, Damages, Findexer, NTPayment, OpCash,
-                     OpCashDetail, Payment, PopulateTable, StatusObject,
-                     StatusRS, Tenant, TenantRent, Unit, db)
-from build_rs import BuildRS
-from config import Config
-from db_utils import DBUtils
-from file_indexer import FileIndexer
-from peewee import JOIN, fn
-from records import record
 
 # from rs
 full_sheet = Config.TEST_RS
@@ -64,7 +51,7 @@ create_tables_list = populate.return_tables_list()
 '''arrange, act, assert, cleanup'''
 '''basically, we just arrange to end of april, then check the state of the db'''
 
-@pytest.mark.testing_db
+@pytest.mark.testing_db1
 class TestFileIndexer:
     
     '''simple test to pin predictably end-state for file_index db as I make changes; all functionality is'''
@@ -90,7 +77,7 @@ class TestFileIndexer:
         findex.close_findex_table()
         assert Config.TEST_DB.is_closed() == True
 
-@pytest.mark.testing_db
+@pytest.mark.testing_db1
 class TestDB:
 
     def test_reset_all(self):
@@ -99,6 +86,7 @@ class TestDB:
 
     def test_set_init_state_at_end_of_april(self):
         build = BuildRS(path=path, main_db=Config.TEST_DB)
+        breakpoint()
         build.build_db_from_scratch()       
 
     def test_initial_tenant_load(self):

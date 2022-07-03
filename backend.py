@@ -162,261 +162,7 @@ class BalanceLetter(BaseModel):
 class StatusRS(BaseModel):
     status_id = AutoField()
     current_date = DateField()
-    proc_file = CharField(default='0')
-
-    def set_current_date(self, mode=None):
-        if db.is_closed() == True:
-            db.connect()
-        if mode == 'autodrop':
-            print(f'StatusRS set to {mode}')
-
-            ''' so this needs access to all these models but I want to drop status to test fresh, tricky;  can we assume that if we keep all the db up at the end of the loop that we will have access to ntp & payment or init seperately'''
-            db.drop_tables(models=[NTPayment, Payment, StatusRS, StatusObject, Findexer, BalanceLetter])
-            db.create_tables(models=[NTPayment, Payment, StatusRS, StatusObject, Findexer, BalanceLetter])
-        date1 = datetime.now()
-        query = StatusRS.create(current_date=date1)
-        query.save()   
-
-    def show(self, ctx=None, path=None, service=None, full_sheet=None, ms=None, mode=None, **kw):
-        populate = PopulateTable()
-        most_recent_status = [item for item in StatusRS().select().order_by(-StatusRS.status_id).namedtuples()][0] # note: - = descending order syntax in peewee
-
-        months_ytd = Utils.months_in_ytd(Config.current_year)
-
-        report_list = populate.get_processed_by_month(month_list=months_ytd)
-        
-        self.write_processed_to_db(ref_rec=most_recent_status, report_list=report_list)
-
-        if mode != 'just_asserting_empty':
-            # this is where determination of 'reconciled' is made
-            self.assert_reconcile_payments(month_list=months_ytd, ref_rec=most_recent_status)
-
-        from manual_entry import ManualEntry  # circular import workaround
-        manentry = ManualEntry(db=db)
-        manentry.apply_persisted_changes()
-
-        if most_recent_status:
-            print(f'\n\n*****************************AUTORS: welcome!********************')
-            print(f'current date: {most_recent_status.current_date} | current month: {months_ytd[-1]}\n')
-            print('months ytd ' + Config.current_year + ': ' + '  '.join(m for m in months_ytd))
-            print('\n')
-
-        if report_list:
-            incomplete_month_bool, paperwork_complete_months = self.is_there_mid_month(months_ytd, report_list)
-            if kw.get('write_db') == True:
-                '''passing results of get_existing_sheets would reduce calls'''
-                existing_sheets_dict = Utils.get_existing_sheets(service, full_sheet) 
-                existing_sheets = [sheet for sheet in [*existing_sheets_dict.keys()] if sheet != 'intake']
-
-                paperwork_complete_months_with_no_rs = list(set(paperwork_complete_months) - set(existing_sheets))
-                pw_complete_ms = sorted(paperwork_complete_months_with_no_rs)
-                ms.auto_control(source='StatusRS.show()', mode='iter_build', month_list=pw_complete_ms)
-            else:
-                print('you have selected to bypass writing to RS.')
-
-        mid_month_choice = False
-
-        if incomplete_month_bool:
-            choice = input(f'\nWould you like to import mid-month report from bank for {incomplete_month_bool[0]} ? Y/n ')
-            if choice == 'Y':
-                mid_month_choice = True
-            else:
-                mid_month_choice = False
-                print('exiting program')
-                exit
-
-        first_incomplete_month = incomplete_month_bool[0]
-        
-        if mid_month_choice:
-            print('load midmonth scrape from bank website')
-            from file_indexer import FileIndexer
-            target_mid_month = first_incomplete_month
-            target_mm_date = datetime.strptime(list(target_mid_month.items())[0][0], '%Y-%m')
-            findex = FileIndexer()
-            all_relevant_scrape_txn_list = findex.load_mm_scrape(list1=target_mid_month)
-            scrape_deposit_sum = sum([float(item['amount']) for item in all_relevant_scrape_txn_list if item['dep_type'] == 'deposit'])
-
-            populate = PopulateTable()
-            populate.load_scrape_to_db(deposit_list=all_relevant_scrape_txn_list, target_date=target_mm_date)
-
-            first_dt = target_mm_date.replace(day = 1)
-            most_recent_status.current_date.replace(day = 1)
-            last_dt = target_mm_date.replace(day = calendar.monthrange(target_mm_date.year, target_mm_date.month)[1])
-
-            '''if this function asserts ok, then we can write balance letters & rent receipts for current month'''
-            all_tp, all_ntp = populate.check_db_tp_and_ntp(grand_total=scrape_deposit_sum, first_dt=first_dt, last_dt=last_dt)    
-
-            if all_tp:
-                target_month = list(first_incomplete_month.items())[0][0]
-                mr_status_object = [item for item in StatusObject().select().where(StatusObject.month==target_month)][0]
-                mr_status_object.scrape_reconciled = True
-                mr_status_object.save()   
-
-                choice1 = input(f'\nWould you like to make rent receipts for period between {incomplete_month_bool[0]} ? Y/n ')
-                if choice1 == 'Y':
-                    write_rr_letters = True
-                else:
-                    write_rr_letters = False
-
-                choice2 = input(f'\nWould you like to make balance letters for period between {incomplete_month_bool[0]} ? Y/n ')
-                if choice2 == 'Y':
-                    write_bal_letters = True
-                else:
-                    write_bal_letters = False
-            
-            if write_bal_letters:
-                print('generating balance letters')
-                balance_letter_list, mr_good_month = self.generate_balance_letter_list_mr_reconciled()
-
-                if balance_letter_list:
-                    print(f'balance letter list for {mr_good_month}: {balance_letter_list}')
-
-            if write_rr_letters:
-                self.rent_receipts_wrapper()
-        else:
-            print('no scrape available or scrape ask path suppressed')
-        
-        return most_recent_status 
-
-    def rent_receipts_wrapper(self):
-        print('generating rent receipts')
-        receipts = RentReceipts()
-        receipts.rent_receipts()
-
-    def show_balance_letter_list_mr_reconciled(self):
-        query = QueryHC()
-        mr_good_month = self.get_mr_good_month()
-        if mr_good_month:
-            first_dt, last_dt = query.make_first_and_last_dates(date_str=mr_good_month)
-
-            balance_letters = [rec for rec in BalanceLetter.select(BalanceLetter, Tenant).
-                where(Tenant.active==True).
-                where(
-                    (BalanceLetter.target_month_end>=first_dt) &
-                    (BalanceLetter.target_month_end<=last_dt)).
-                join(Tenant).
-                namedtuples()]
-
-            return balance_letters
-        else:
-            return []
-
-    def get_mr_good_month(self):
-        query = QueryHC()
-        '''get most recent finalized month'''
-        try:
-            mr_good_month = [rec.month for rec in StatusObject().select(StatusObject.month).
-            where(
-                ((StatusObject.opcash_processed==1) &
-                (StatusObject.tenant_reconciled==1)) |
-                ((StatusObject.opcash_processed==0) &
-                (StatusObject.scrape_reconciled==1))).
-                namedtuples()][-1]
-        except IndexError as e:
-            print('bypassing error on mr_good_month', e)
-            mr_good_month = False
-            return mr_good_month
-
-        return mr_good_month
-
-    def is_there_mid_month(self, months_ytd, report_list):
-        mid_month_list = []
-        final_list = []
-        for month, item in zip(months_ytd, report_list):
-            look_dict = {fn: (tup[0], tup[1], tup[2]) for fn, tup in item.items() if month == tup[0]}
-            ready_to_write_final_dt = self.is_ready_to_write_final(month=month, dict1=look_dict)
-            final_list.append(ready_to_write_final_dt)
-            if [*ready_to_write_final_dt.values()][0] == False:
-                self.is_there_mid_month_print(month, look_dict, ready_to_write_final_dt)            
-                mid_month_list.append(ready_to_write_final_dt)
-            else:
-                self.is_there_mid_month_print(month, look_dict, ready_to_write_final_dt)            
-                mid_month_list = []
-
-        final_list = [[*date.keys()][0] for date in final_list if [*date.values()][0] == True]
-        return mid_month_list, final_list
-
-    def is_there_mid_month_print(self, month, look_dict, rtwdt):
-        if [*rtwdt.values()][0] == True:
-            print(f'For period {month} these files have been processed: ')
-            print(*list(look_dict.keys()), sep=', ')
-            print(f'Ready to Write? {[*rtwdt.values()][0]}')
-        else:
-            print(f'For period {month} NO files have been processed.')
-
-    def generate_balance_letter_list_mr_reconciled(self):
-        query = QueryHC()
-
-        mr_good_month = self.get_mr_good_month()
-
-        if mr_good_month:
-            first_dt, last_dt = query.make_first_and_last_dates(date_str=mr_good_month)
-            position_list, cumsum = query.net_position_by_tenant_by_month(first_dt=first_dt, last_dt=last_dt)
-            
-            bal_letter_list = []
-            for rec in position_list:
-                if float(rec.end_bal) >= float(100):
-                    b_letter = BalanceLetter(tenant=rec.name, end_bal=rec.end_bal, target_month_end=last_dt)
-                    b_letter.save()
-                    tup = (rec.name, rec.end_bal, last_dt)
-                    bal_letter_list.append(tup)
-            return bal_letter_list, mr_good_month
-        else:
-            return [], None
-
-    def is_ready_to_write_final(self, month=None, dict1=None):
-        count = 0
-        ready_to_process = False
-        for fn, tup in dict1.items():
-            if tup[2] == 'deposits' and tup[0] == month:
-                count += 1
-            if tup[2] == 'rent' and tup[0] == month:
-                count += 1
-            if tup[2] == 'opcash' and tup[0] == month:
-                count += 1
-
-        if count == 3:
-            ready_to_process = True
-            send_to_write = {month: ready_to_process}
-        else:
-            send_to_write = {month: ready_to_process}
-
-        return send_to_write
-
-    def write_processed_to_db(self, ref_rec=None, report_list=None):
-        mr_status = StatusRS().get(StatusRS.status_id==ref_rec.status_id)
-
-        dump_list = []
-        for item in report_list:
-            for fn, tup in item.items():
-                dict1 = {}
-                dict1[fn] = tup[0] 
-                dump_list.append(dict1)
-
-        mr_status.proc_file = json.dumps(dump_list)
-        mr_status.save()
-
-    def assert_reconcile_payments(self, month_list=None, ref_rec=None):
-        populate = PopulateTable()
-        for month in month_list:
-            first_dt, last_dt = populate.make_first_and_last_dates(date_str=month)
-        
-            ten_payments = sum([float(row[2]) for row in populate.get_payments_by_tenant_by_period(first_dt=first_dt, last_dt=last_dt)])
-            ntp = sum(populate.get_ntp_by_period(first_dt=first_dt, last_dt=last_dt))
-            opcash = populate.get_opcash_by_period(first_dt=first_dt, last_dt=last_dt)
-
-            if opcash != []:
-                opcash_deposits = float(opcash[0][4])
-                sum_from_payments = ten_payments + ntp
-
-                if opcash_deposits == sum_from_payments:
-                    mr_status = StatusRS().get(StatusRS.status_id==ref_rec.status_id)                
-                    s_object = StatusObject.create(key=mr_status.status_id, month=month, opcash_processed=True, tenant_reconciled=True)
-                    s_object.save()
-            else:
-                mr_status = StatusRS().get(StatusRS.status_id==ref_rec.status_id)                
-                s_object = StatusObject.create(key=mr_status.status_id, month=month, processed=False, tenant_reconciled=False)
-                s_object.save()
+    proc_file = CharField(default='0') 
 
 class StatusObject(BaseModel):
     key = ForeignKeyField(StatusRS, backref='zzzzzz')
@@ -614,6 +360,7 @@ class QueryHC:
         return [{'opcash_processed': item.opcash_processed, 'tenant_reconciled': item.tenant_reconciled, 'scrape_reconciled': item.scrape_reconciled} for item in StatusObject().select().where(StatusObject.month==period).namedtuples()]
 
     def get_processed_by_month(self, month_list=None):
+        """returns list of dicts from Findexer of files that have been attribute 'processed' and packaged with month, path, and report_type(ie 'rent', 'deposits')"""
         report_list = []
         for month in month_list:
             reports_by_month = {rec.fn: (month, rec.path, rec.doc_type) for rec in Findexer().select().where(Findexer.period==month).where(Findexer.status=='processed').namedtuples()}
@@ -1202,4 +949,248 @@ class PopulateTable(QueryHC):
                 if key == 'dep_type':
                     scrape_dep.dep_type = value
                 scrape_dep.save()    
+
+class ProcessingLayer(StatusRS):
+
+    def set_current_date(self):
+        date1 = datetime.now()
+        query = StatusRS.create(current_date=date1)
+        query.save()  
+
+    def get_most_recent_status(self):
+        populate = PopulateTable()
+        most_recent_status = [item for item in StatusRS().select().order_by(-StatusRS.status_id).namedtuples()][0] # note: - = descending order syntax in peewee
+        return most_recent_status
+
+    def get_all_months_ytd(self):
+        return Utils.months_in_ytd(Config.current_year)
+
+    def write_manual_entries_from_config(self):
+        from manual_entry import ManualEntry  # circular import workaround
+        manentry = ManualEntry(db=db)
+        manentry.apply_persisted_changes()
+
+    def display_most_recent_status(self, mr_status=None, months_ytd=None, ):
+        print(f'\n\n*****************************AUTORS: welcome!********************')
+        print(f'current date: {mr_status.current_date} | current month: {months_ytd[-1]}\n')
+        print('months ytd ' + Config.current_year + ': ' + '  '.join(m for m in months_ytd))
+        print('\n')
+
+    def find_complete_pw_months_and_iter_write(self, paperwork_complete_months=None):
+        '''passing results of get_existing_sheets would reduce calls'''
+        existing_sheets_dict = Utils.get_existing_sheets(service, full_sheet) 
+        existing_sheets = [sheet for sheet in [*existing_sheets_dict.keys()] if sheet != 'intake']
+
+        paperwork_complete_months_with_no_rs = list(set(paperwork_complete_months) - set(existing_sheets))
+        pw_complete_ms = sorted(paperwork_complete_months_with_no_rs)
+        ms.auto_control(source='StatusRS.show()', mode='iter_build', month_list=pw_complete_ms)
+
+    def load_scrape_and_mark_as_processed(self, most_recent_status=None, target_mid_month=None):
+        '''this function can be broken up even more'''
+        print('load midmonth scrape from bank website')
+        from file_indexer import FileIndexer #circular import workaroud
+        target_mm_date = datetime.strptime(list(target_mid_month.items())[0][0], '%Y-%m')
+        findex = FileIndexer()
+        populate = PopulateTable()
+        all_relevant_scrape_txn_list = findex.load_mm_scrape(list1=target_mid_month)
+        scrape_deposit_sum = sum([float(item['amount']) for item in all_relevant_scrape_txn_list if item['dep_type'] == 'deposit'])
+
+        populate.load_scrape_to_db(deposit_list=all_relevant_scrape_txn_list, target_date=target_mm_date)
+
+        first_dt = target_mm_date.replace(day = 1)
+        most_recent_status.current_date.replace(day = 1)
+        last_dt = target_mm_date.replace(day = calendar.monthrange(target_mm_date.year, target_mm_date.month)[1])
+
+        '''if this function asserts ok, then we can write balance letters & rent receipts for current month'''
+        all_tp, all_ntp = populate.check_db_tp_and_ntp(grand_total=scrape_deposit_sum, first_dt=first_dt, last_dt=last_dt)    
+
+        if all_tp:
+            target_month = list(target_mid_month.items())[0][0]
+            mr_status_object = [item for item in StatusObject().select().where(StatusObject.month==target_month)][0]
+            mr_status_object.scrape_reconciled = True
+            mr_status_object.save()   
+            return True
+        else:
+            return False
+
+    def make_rent_receipts(self, first_incomplete_month=None):
+        choice1 = input(f'\nWould you like to make rent receipts for period between {first_incomplete_month} ? Y/n ')
+        if choice1 == 'Y':
+            write_rr_letters = True
+        else:
+            write_rr_letters = False
+
+        return write_rr_letters
+
+    def make_balance_letters(self, first_incomplete_month=None):
+        choice2 = input(f'\nWould you like to make balance letters for period between {incomplete_month_bool[0]} ? Y/n ')
+        if choice2 == 'Y':
+            write_bal_letters = True
+        else:
+            write_bal_letters = False
+        return write_bal_letters
+
+    # def show(self, ctx=None, path=None, service=None, full_sheet=None, ms=None, mode=None, **kw):
+    #     populate = PopulateTable()
+            
+    #     if write_bal_letters:
+
+    #     if write_rr_letters:
+    #         self.rent_receipts_wrapper()
+    #     else:
+    #         print('no scrape available or scrape ask path suppressed')
+        
+    #     return most_recent_status 
+
+    def bal_letter_wrapper(self):
+        print('generating balance letters')
+        balance_letter_list, mr_good_month = self.generate_balance_letter_list_mr_reconciled()
+
+        if balance_letter_list:
+            print(f'balance letter list for {mr_good_month}: {balance_letter_list}')
+
+    def rent_receipts_wrapper(self):
+        print('generating rent receipts')
+        receipts = RentReceipts()
+        receipts.rent_receipts()
+
+    def show_balance_letter_list_mr_reconciled(self):
+        query = QueryHC()
+        mr_good_month = self.get_mr_good_month()
+        if mr_good_month:
+            first_dt, last_dt = query.make_first_and_last_dates(date_str=mr_good_month)
+
+            balance_letters = [rec for rec in BalanceLetter.select(BalanceLetter, Tenant).
+                where(Tenant.active==True).
+                where(
+                    (BalanceLetter.target_month_end>=first_dt) &
+                    (BalanceLetter.target_month_end<=last_dt)).
+                join(Tenant).
+                namedtuples()]
+
+            return balance_letters
+        else:
+            return []
+
+    def get_mr_good_month(self):
+        query = QueryHC()
+        '''get most recent finalized month'''
+        try:
+            mr_good_month = [rec.month for rec in StatusObject().select(StatusObject.month).
+            where(
+                ((StatusObject.opcash_processed==1) &
+                (StatusObject.tenant_reconciled==1)) |
+                ((StatusObject.opcash_processed==0) &
+                (StatusObject.scrape_reconciled==1))).
+                namedtuples()][-1]
+        except IndexError as e:
+            print('bypassing error on mr_good_month', e)
+            mr_good_month = False
+            return mr_good_month
+
+        return mr_good_month
+
+    def is_there_mid_month(self, months_ytd, report_list):
+        mid_month_list = []
+        final_list = []
+        for month, item in zip(months_ytd, report_list):
+            look_dict = {fn: (tup[0], tup[1], tup[2]) for fn, tup in item.items() if month == tup[0]}
+            ready_to_write_final_dt = self.is_ready_to_write_final(month=month, dict1=look_dict)
+            final_list.append(ready_to_write_final_dt)
+            if [*ready_to_write_final_dt.values()][0] == False:
+                self.is_there_mid_month_print(month, look_dict, ready_to_write_final_dt)            
+                mid_month_list.append(ready_to_write_final_dt)
+            else:
+                self.is_there_mid_month_print(month, look_dict, ready_to_write_final_dt)            
+                mid_month_list = []
+
+        final_list = [[*date.keys()][0] for date in final_list if [*date.values()][0] == True]
+        return mid_month_list, final_list
+
+    def is_there_mid_month_print(self, month, look_dict, rtwdt):
+        if [*rtwdt.values()][0] == True:
+            print(f'For period {month} these files have been processed: ')
+            print(*list(look_dict.keys()), sep=', ')
+            print(f'Ready to Write? {[*rtwdt.values()][0]}')
+        else:
+            print(f'For period {month} NO files have been processed.')
+
+    def generate_balance_letter_list_mr_reconciled(self):
+        query = QueryHC()
+
+        mr_good_month = self.get_mr_good_month()
+
+        if mr_good_month:
+            first_dt, last_dt = query.make_first_and_last_dates(date_str=mr_good_month)
+            position_list, cumsum = query.net_position_by_tenant_by_month(first_dt=first_dt, last_dt=last_dt)
+            
+            bal_letter_list = []
+            for rec in position_list:
+                if float(rec.end_bal) >= float(100):
+                    b_letter = BalanceLetter(tenant=rec.name, end_bal=rec.end_bal, target_month_end=last_dt)
+                    b_letter.save()
+                    tup = (rec.name, rec.end_bal, last_dt)
+                    bal_letter_list.append(tup)
+            return bal_letter_list, mr_good_month
+        else:
+            return [], None
+
+    def is_ready_to_write_final(self, month=None, dict1=None):
+        count = 0
+        ready_to_process = False
+        for fn, tup in dict1.items():
+            if tup[2] == 'deposits' and tup[0] == month:
+                count += 1
+            if tup[2] == 'rent' and tup[0] == month:
+                count += 1
+            if tup[2] == 'opcash' and tup[0] == month:
+                count += 1
+
+        if count == 3:
+            ready_to_process = True
+            send_to_write = {month: ready_to_process}
+        else:
+            send_to_write = {month: ready_to_process}
+
+        return send_to_write
+
+    def write_processed_to_status_rs_db(self, ref_rec=None, report_list=None):
+        """Function takes iter of processed files and writes them as json to statusRS db; as far as I can tell this does not do anything important at this time"""
+        mr_status = StatusRS().get(StatusRS.status_id==ref_rec.status_id)
+
+        dump_list = []
+        for item in report_list:
+            for fn, tup in item.items():
+                dict1 = {}
+                dict1[fn] = tup[0] 
+                dump_list.append(dict1)
+
+        mr_status.proc_file = json.dumps(dump_list)
+        mr_status.save()
+
+    def assert_reconcile_payments(self, month_list=None, ref_rec=None):
+        """takes list of months in year to date, gets tenant payments by period, non-tenant payments, and opcash information and reconciles the deposits on the opcash statement to the sum of tenant payments and non-tenant payments
+        
+        then updates existing StatusRS db and, most importantly, writes to StatusObject db whether opcash has been processed and whether tenant has reconciled: DOES NOT DEAL WITH MARKING SCRAPES AS RECONCILED"""
+        populate = PopulateTable()
+        for month in month_list:
+            first_dt, last_dt = populate.make_first_and_last_dates(date_str=month)
+        
+            ten_payments = sum([float(row[2]) for row in populate.get_payments_by_tenant_by_period(first_dt=first_dt, last_dt=last_dt)])
+            ntp = sum(populate.get_ntp_by_period(first_dt=first_dt, last_dt=last_dt))
+            opcash = populate.get_opcash_by_period(first_dt=first_dt, last_dt=last_dt)
+
+            if opcash != []:
+                opcash_deposits = float(opcash[0][4])
+                sum_from_payments = ten_payments + ntp
+
+                if opcash_deposits == sum_from_payments:
+                    mr_status = StatusRS().get(StatusRS.status_id==ref_rec.status_id)                
+                    s_object = StatusObject.create(key=mr_status.status_id, month=month, opcash_processed=True, tenant_reconciled=True)
+                    s_object.save()
+            else:
+                mr_status = StatusRS().get(StatusRS.status_id==ref_rec.status_id)                
+                s_object = StatusObject.create(key=mr_status.status_id, month=month, processed=False, tenant_reconciled=False)
+                s_object.save()
+
 

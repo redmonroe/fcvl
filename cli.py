@@ -37,9 +37,12 @@ def cli():
 @click.option('--mode', required=True)
 @record
 def autors(mode=None):
-    '''now: build db > run status against it to generate rs, receipts, letters'''
-    '''convention: rent roll is good for beginning of month:
-    does not pick up move in'''
+    """commands for creating rent sheet database and running rent sheet writing program
+    
+    TO GENERATE DATABASE FROM SCRATCH: USE 'build_from_scratch'
+    TO RESET DATABASE: USE 'reset'
+    TO WRITE ALL MONTHS TO RENT SHEETS: USE 'write_from_db'
+    """
 
     path = Config.TEST_RS_PATH_MAY
     full_sheet = Config.TEST_RS
@@ -47,12 +50,9 @@ def autors(mode=None):
     service = oauth(Config.my_scopes, 'sheet', mode='testing')
     ms = MonthSheet(full_sheet=full_sheet, path=path, mode='testing', test_service=service)
     
-    if mode == 'write_to_db':
-        click.echo('NOT A COMMAND; try write_from_db instead')
-
-    if mode == 'testing':
+    if mode == 'build_from_scratch':
         build.build_db_from_scratch()
-
+    
     if mode == 'write_from_db':
         # sample_month_list = ['2022-01']
         # sample_month_list = ['2022-01', '2022-02']
@@ -81,7 +81,7 @@ def autors(mode=None):
         build = BuildRS(path=path, main_db=Config.TEST_DB)
         build.build_db_from_scratch()
 
-    if mode == 'iter_all':
+    if mode == 'iter_both':
         populate = PopulateTable()
         create_tables_list1 = populate.return_tables_list()
         if build.main_db.is_closed() == True:
@@ -94,6 +94,8 @@ def autors(mode=None):
         build = BuildRS(path=path, main_db=Config.TEST_DB)
         build.build_db_from_scratch()
 
+    if mode == 'write_to_db':
+        click.echo('NOT A COMMAND; try write_from_db instead')
     
 @click.command()
 def manentry():

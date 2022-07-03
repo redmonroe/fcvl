@@ -2,8 +2,7 @@ import json
 from datetime import datetime
 
 from auth_work import oauth
-from backend import (BalanceLetter, Damages, Findexer, NTPayment, OpCash,
-                     OpCashDetail, Payment, PopulateTable, StatusObject,
+from backend import (ProcessingLayer, BalanceLetter, Damages, Findexer, NTPayment, OpCash, OpCashDetail, Payment, PopulateTable, StatusObject,
                      StatusRS, Subsidy, Tenant, TenantRent, Unit, db)
 from config import Config
 from file_indexer import FileIndexer
@@ -20,6 +19,7 @@ class BuildRS(MonthSheet):
             self.service = oauth(Config.my_scopes, 'sheet')
         except (FileNotFoundError, NameError) as e:
             print(e, 'using testing configuration for Google Api Calls')
+            breakpoint()
             self.service = oauth(Config.my_scopes, 'sheet', mode='testing')
         self.create_tables_list1 = None
         self.target_bal_load_file = Config.beg_bal_xlsx
@@ -47,14 +47,61 @@ class BuildRS(MonthSheet):
             self.populate.transfer_opcash_to_db() # PROCESSED OPCASHES MOVED INTO DB
         else:
             self.ctx = 'db is not empty'
-            breakpoint() 
             print(f'{self.ctx}')
             self.new_files, self.unfinalized_months = self.findex.iter_build_runner()
             populate = self.setup_tables(mode='create_only')
             self.iterate_over_remaining_months_incremental(list1=self.new_files)
 
-        status.set_current_date()
-        status.show(ctx=self.ctx, path=self.path, ms=self.ms, service=self.service, full_sheet=self.full_sheet, **kw) 
+        """may need to breakdown incomplete month bool depending on context"""
+        player = ProcessingLayer()
+        player.set_current_date()
+        most_recent_status = player.get_most_recent_status()
+        all_months_ytd = player.get_all_months_ytd()
+        report_list = populate.get_processed_by_month(month_list=all_months_ytd)
+        player.write_processed_to_status_rs_db(ref_rec=most_recent_status, report_list=report_list)
+        
+        # this is where determination of 'reconciled' is made
+        player.assert_reconcile_payments(month_list=all_months_ytd, ref_rec=most_recent_status)
+        player.write_manual_entries_from_config()
+        player.display_most_recent_status(mr_status=most_recent_status, months_ytd=all_months_ytd)
+        incomplete_month_bool, paperwork_complete_months = player.is_there_mid_month(all_months_ytd, report_list)
+
+        if kw.get('write_db') == True:
+            player.find_complete_pw_months_and_iter_write(paperwork_complete_months=paperwork_complete_months)
+        else:
+            print('you have selected to bypass writing to RS.')
+            print('if you would like to write to rent spreadsheet enable "write_db" flag')
+
+        """only show this if I have deposits and rent roll for the month, do not show for any month after first incomplete month, there are other cases"""
+
+        if incomplete_month_bool:
+            choice = input(f'\nWould you like to import mid-month report from bank for {incomplete_month_bool[0]} ? Y/n ')
+            if choice == 'Y':
+                mid_month_choice = True
+            else:
+                mid_month_choice = False
+                print('you chose not to attempt to write scrape')
+
+        first_incomplete_month = incomplete_month_bool[0]
+        if mid_month_choice:
+            did_ten_pay_reconcile = player.load_scrape_and_mark_as_processed(most_recent_status=most_recent_status, target_mid_month=first_incomplete_month)
+
+        if did_ten_pay_reconcile == True:
+            do_i_write_receipts = player.make_rent_receipts(first_incomplete_month=first_incomplete_month)
+            if do_i_write_receipts == True:
+                player.rent_receipts_wrapper()
+
+            do_i_write_bal_letters = player.make_balance_letters(first_incomplete_month=first_incomplete_month)
+            if do_i_write_bal_letters == True:
+                player.bal_letter_wrapper()
+
+        breakpoint()
+
+
+
+
+
+        # player.show(ctx=self.ctx, path=self.path, ms=self.ms, service=self.service, full_sheet=self.full_sheet, **kw) 
         self.main_db.close()
 
     def setup_tables(self, mode=None):
@@ -78,7 +125,6 @@ class BuildRS(MonthSheet):
                 first_dt, last_dt = populate.make_first_and_last_dates(date_str=data[0])
                 if typ == 'rent':
                     cleaned_nt_list, total_tenant_charges, cleaned_mos = populate.after_jan_load(filename=data[1], date=data[0])
-
                     
         for item in list1:
             for typ, data in item.items():
