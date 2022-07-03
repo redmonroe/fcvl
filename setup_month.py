@@ -162,8 +162,9 @@ class MonthSheet(YearSheet):
         populate = PopulateTable()
         first_dt, last_dt = populate.make_first_and_last_dates(date_str=date)
         hap = populate.get_scrape_detail_by_month_hap(first_dt=first_dt, last_dt=last_dt)
+        deposit_correction_sum = 0
         dep_detail = populate.get_scrape_detail_by_month_deposit(first_dt=first_dt, last_dt=last_dt)
-        self.export_deposit_detail(date=date, res_rep=0, hap=hap[0], dep_sum=0, dep_detail=dep_detail)
+        self.export_deposit_detail(date=date, res_rep=0, hap=hap[0], dep_sum=0, corr_sum=deposit_correction_sum, dep_detail=dep_detail)
 
     def export_deposit_detail(self, **kw):
         gc = GoogleApiCalls()

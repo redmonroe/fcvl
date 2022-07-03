@@ -59,7 +59,7 @@ class BuildRS(MonthSheet):
         all_months_ytd = player.get_all_months_ytd()
         report_list = populate.get_processed_by_month(month_list=all_months_ytd)
         player.write_processed_to_status_rs_db(ref_rec=most_recent_status, report_list=report_list)
-        
+
         # this is where determination of 'reconciled' is made
         player.assert_reconcile_payments(month_list=all_months_ytd, ref_rec=most_recent_status)
         player.write_manual_entries_from_config()
@@ -94,14 +94,7 @@ class BuildRS(MonthSheet):
             do_i_write_bal_letters = player.make_balance_letters(first_incomplete_month=first_incomplete_month)
             if do_i_write_bal_letters == True:
                 player.bal_letter_wrapper()
-
-        breakpoint()
-
-
-
-
-
-        # player.show(ctx=self.ctx, path=self.path, ms=self.ms, service=self.service, full_sheet=self.full_sheet, **kw) 
+        
         self.main_db.close()
 
     def setup_tables(self, mode=None):

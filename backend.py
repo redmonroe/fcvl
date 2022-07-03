@@ -1019,28 +1019,15 @@ class ProcessingLayer(StatusRS):
             write_rr_letters = True
         else:
             write_rr_letters = False
-
         return write_rr_letters
 
     def make_balance_letters(self, first_incomplete_month=None):
-        choice2 = input(f'\nWould you like to make balance letters for period between {incomplete_month_bool[0]} ? Y/n ')
+        choice2 = input(f'\nWould you like to make balance letters for period between {first_incomplete_month} ? Y/n ')
         if choice2 == 'Y':
             write_bal_letters = True
         else:
             write_bal_letters = False
         return write_bal_letters
-
-    # def show(self, ctx=None, path=None, service=None, full_sheet=None, ms=None, mode=None, **kw):
-    #     populate = PopulateTable()
-            
-    #     if write_bal_letters:
-
-    #     if write_rr_letters:
-    #         self.rent_receipts_wrapper()
-    #     else:
-    #         print('no scrape available or scrape ask path suppressed')
-        
-    #     return most_recent_status 
 
     def bal_letter_wrapper(self):
         print('generating balance letters')

@@ -116,11 +116,15 @@ class FileIndexer(Utils):
     
     def pdf_wrapper(self):
         self.find_opcashes()
-        self.type_opcashes()
+        self.type_opcashes()    
         self.rename_by_content_pdf()
 
     def load_mm_scrape(self, list1=None):
-        '''still rough and raw'''
+        """
+        This function runs through main file path and finds most recent scrape and select lines containing 'DEPOSIT', 'QUADEL', and 'CHARGEBACK to get tenant deposits, quadel, and deposit corrections
+
+        returns a list of dicts
+        """
         mr_dict = {}
         for fn in self.scrape_path.iterdir():
             if fn.suffix == '.csv' and fn.name not in self.excluded_file_names:
@@ -129,6 +133,7 @@ class FileIndexer(Utils):
         most_recent_scrape = pd.read_csv(max(list(mr_dict)))        
 
         deposit_list = []
+        corr_count = 0
         for index, row in most_recent_scrape.iterrows():
             if row['Description'] == 'DEPOSIT':
                 dict1 = {}
@@ -136,9 +141,19 @@ class FileIndexer(Utils):
                 deposit_list.append(dict1)
             if 'QUADEL' in row['Description']:
                 dict1 = {}
-                dict1 = {'date': row['Processed Date'], 'amount': row['Amount'], 'dep_type': 'hap'}
+                dict1 = {'date': row['Processed Date'], 'amount': row['Amount'], 'dep_type': 'hap'}                
                 deposit_list.append(dict1)
-      
+
+            if 'CHARGEBACK' in row['Description']:
+                corr_count += 1
+                dict1 = {}
+                dict1 = {'date': row['Processed Date'], 'amount': row['Amount'], 'dep_type': 'corr'}
+                deposit_list.append(dict1)
+
+        if corr_count == 0:
+            dict1 = {'date': row['Processed Date'], 'amount': 0, 'dep_type': 'corr'}
+            deposit_list.append(dict1)
+        
         return deposit_list
 
     def connect_to_db(self, mode=None):
