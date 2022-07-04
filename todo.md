@@ -6,8 +6,6 @@
   - what format do I want to use for documentation?
   - why is file_indexer func write_to_dep_list so ugly, comes from extract_deposits_by_type
 
-  - corrections will not write to db from scrape & will not write to rs from scrape
-
   - is key_id in StatusObject doing anything?
 
   - operations:

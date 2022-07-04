@@ -80,20 +80,21 @@ class BuildRS(MonthSheet):
                 mid_month_choice = True
             else:
                 mid_month_choice = False
-                print('you chose not to attempt to write scrape')
+                print(f'you chose not to attempt to write scrape for {incomplete_month_bool[0]}')
+                print(f'last complete reconciliation is {most_recent_status.current_date}')
 
         first_incomplete_month = incomplete_month_bool[0]
         if mid_month_choice:
             did_ten_pay_reconcile = player.load_scrape_and_mark_as_processed(most_recent_status=most_recent_status, target_mid_month=first_incomplete_month)
 
-        if did_ten_pay_reconcile == True:
-            do_i_write_receipts = player.make_rent_receipts(first_incomplete_month=first_incomplete_month)
-            if do_i_write_receipts == True:
-                player.rent_receipts_wrapper()
+            if did_ten_pay_reconcile == True:
+                do_i_write_receipts = player.make_rent_receipts(first_incomplete_month=first_incomplete_month)
+                if do_i_write_receipts == True:
+                    player.rent_receipts_wrapper()
 
-            do_i_write_bal_letters = player.make_balance_letters(first_incomplete_month=first_incomplete_month)
-            if do_i_write_bal_letters == True:
-                player.bal_letter_wrapper()
+                do_i_write_bal_letters = player.make_balance_letters(first_incomplete_month=first_incomplete_month)
+                if do_i_write_bal_letters == True:
+                    player.bal_letter_wrapper()
         
         self.main_db.close()
 
