@@ -2,7 +2,6 @@
 
 - requirements:
 
-  - how am I going to handle attributing deposit corrections?
   - what format do I want to use for documentation?
   - why is file_indexer func write_to_dep_list so ugly, comes from extract_deposits_by_type
 

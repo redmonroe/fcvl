@@ -127,11 +127,17 @@ def workorders():
     work_orders.work_orders()
 
 @click.command()
+def escrow():
+    click.echo('take apart escrow report')
+    print('escrow')
+
+@click.command()
 def recvactuals():
     click.echo('receivable actuals')
     annfin = AnnFin(db=Config.TEST_DB)
     annfin.start_here()
 
+cli.add_command(escrow)
 cli.add_command(receipts)
 cli.add_command(autors)
 cli.add_command(sqlite_dump)
