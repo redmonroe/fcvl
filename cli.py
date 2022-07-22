@@ -7,7 +7,7 @@ from peewee import *
 
 from annual_financials import AnnFin
 from auth_work import oauth
-from backend import db, PopulateTable, StatusRS
+from backend import PopulateTable, StatusRS, db
 from balance_letter import balance_letters
 from build_rs import BuildRS
 from config import Config
@@ -15,6 +15,7 @@ from db_utils import DBUtils
 from file_indexer import FileIndexer
 from file_manager import path_to_statements, write_hap
 from manual_entry import ManualEntry
+from pdf import StructDataExtract
 from receipts import RentReceipts
 from records import record
 from setup_month import MonthSheet
@@ -129,7 +130,8 @@ def workorders():
 @click.command()
 def escrow():
     click.echo('take apart escrow report')
-    print('escrow')
+    StructDataExtract.escrow_wrapper()
+    
 
 @click.command()
 def recvactuals():

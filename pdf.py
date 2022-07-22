@@ -12,6 +12,9 @@ class StructDataExtract:
     def __init__(self):
         self.deposits_list = None
 
+    def escrow_wrapper(path=None):
+        self.merchants_pdf_extract()
+
     def merchants_pdf(self, file1=None, start_string=None, end_string=None, start_idx=0, end_idx=0):
         index = [(count, line) for count, line in enumerate(file1)]
 
@@ -99,6 +102,7 @@ class StructDataExtract:
     
     def merchants_pdf_extract():
         script_dir = os.path.dirname(__file__)
+        breakpoint()
         rel_path = 'data/escrow_ytd'
         abs_file_path = os.path.join(script_dir, rel_path)
 
@@ -260,23 +264,4 @@ class StructDataExtract:
         
         return stmt_date, sum_corrections 
     
-        # breakpoint()
-    '''
-    def get_cleaned_target_line(self, target_line, no_pop=None):
-        hap_line = [line for line in target_line if type(line) == str]
-        hap_line = [line for line in hap_line if line.isalnum() == False]
-        hap_line = [line for line in hap_line if '.' in line]
-        hap_line = [line.strip() for line in hap_line]
-        hap_line = [line.replace(',', '')  for line in hap_line]
-        target = [float(line)  for line in hap_line]
-        if no_pop:
-            target = target.pop()
-
-        return target
-    '''
-
-# from pathlib import Path
-# pdf = StructDataExtract()
-# pdf.nbofi_pdf_extract_corrections(path=Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/testing_sources_may/op_cash_2022_02.pdf'))
-
-# op_cash_2022_02.pdf"
+ 
