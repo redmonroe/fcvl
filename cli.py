@@ -7,7 +7,7 @@ from peewee import *
 
 from annual_financials import AnnFin
 from auth_work import oauth
-from backend import PopulateTable, StatusRS, db
+from backend import PopulateTable, StatusRS, ProcessingLayer, db
 from balance_letter import balance_letters
 from build_rs import BuildRS
 from config import Config
@@ -24,10 +24,6 @@ from setup_year import YearSheet
 '''
 cli.add_command(nbofi)
 cli.add_command(consume_and_backup_invoices)
-@click.command()
-def merchants():
-    click.echo('merchants')
-    pass
 '''
 
 @click.group()
@@ -142,6 +138,16 @@ def recvactuals():
 @click.command()
 def where():
     click.echo('description of state')
+    from backend import QueryHC
+    player = ProcessingLayer()
+    query = QueryHC()
+    month_ytd = player.get_all_months_ytd()
+    so = query.get_all_status_objects() # move this to backend > processingLayer func
+    for item in so:
+        print(item.month, item.opcash_processed, item.tenant_reconciled, item.rs_reconciled, item.scrape_reconciled)
+
+    breakpoint()
+    '''show unprocessed files that exist in path'''
 
 cli.add_command(escrow)
 cli.add_command(receipts)

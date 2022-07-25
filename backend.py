@@ -241,6 +241,9 @@ class QueryHC:
         expr = reduce(operator.and_, clauses) # from itertools import reduce in Py3
         breakpoint()
 
+    def get_all_status_objects(self):
+        return [row for row in StatusObject.select().namedtuples()]
+
     def get_all_tenants_beg_bal(self, cumsum=False):
         '''returns a list of all tenants and their all time beginning balances'''
         '''does not consider active status at this point'''

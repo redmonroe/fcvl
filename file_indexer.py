@@ -56,6 +56,7 @@ class FileIndexer(Utils):
         # are there any unfinalized months?
         self.unfinalized_months = list(set(months_ytd) - set(finalized_months))
 
+        breakpoint()
         if len(self.unfinalized_months) > 0:
             # are there any new files in path?
             print('searching for new files in path')
