@@ -129,15 +129,19 @@ def workorders():
 
 @click.command()
 def escrow():
+    """ For now we output each dataframe into fcvl/escrow"""
     click.echo('take apart escrow report')
-    StructDataExtract.escrow_wrapper()
+    StructDataExtract.escrow_wrapper(output_path=Config.TEST_FCVL_BASE)
     
-
 @click.command()
 def recvactuals():
     click.echo('receivable actuals')
     annfin = AnnFin(db=Config.TEST_DB)
     annfin.start_here()
+
+@click.command()
+def where():
+    click.echo('description of state')
 
 cli.add_command(escrow)
 cli.add_command(receipts)
@@ -146,6 +150,7 @@ cli.add_command(sqlite_dump)
 cli.add_command(balanceletters)
 cli.add_command(workorders)
 cli.add_command(recvactuals)
+cli.add_command(where)
 cli.add_command(manentry)
 
 if __name__ == '__main__':

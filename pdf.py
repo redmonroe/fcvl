@@ -1,21 +1,53 @@
+import csv
+import itertools
+import math
 import os
-import csv, itertools
-import pdftotext
-import pandas as pd
-from datetime import datetime as dt
-from config import Config
-import math 
 from collections import defaultdict
+from datetime import datetime as dt
+
+import pandas as pd
+import pdftotext
+
+from config import Config
+
 
 class StructDataExtract:
 
     def __init__(self):
         self.deposits_list = None
 
-    def escrow_wrapper(path=None):
-        self.merchants_pdf_extract()
+    @staticmethod
+    def escrow_wrapper(output_path=None):
+        StructDataExtract.merchants_pdf_extract(output_path=output_path)
+    
+    @staticmethod
+    def merchants_pdf_extract(output_path=None):
+        dir1 = Config.TEST_FCVL_BASE
+        rel_path = 'escrow/escrow_history_05_2022.pdf'
+        abs_file_path = os.path.join(dir1, rel_path)
 
-    def merchants_pdf(self, file1=None, start_string=None, end_string=None, start_idx=0, end_idx=0):
+        with open(abs_file_path, "rb") as f:
+            pdf = pdftotext.PDF(f)
+
+        # Read all the text into one string
+        with open('output.txt', 'w') as f:
+            f.write("\n\n".join(pdf))
+
+        report_dict = {
+            'Insurance':'Ending', 
+            'MIP': 'Replacement', 
+            'Replacement': None,
+        }
+
+        for start, end in report_dict.items():
+            with open('output.txt', 'rb') as f:
+                file1 = open('output.txt', 'r')
+                StructDataExtract.merchants_pdf(output_path=output_path, file1=file1, start_string=start, end_string=end)
+
+        file1.close()
+
+    @staticmethod
+    def merchants_pdf(output_path=None, file1=None, start_string=None, end_string=None, start_idx=0, end_idx=0):
         index = [(count, line) for count, line in enumerate(file1)]
 
         start_index = [count for (count, line) in index if start_string in line]
@@ -97,34 +129,10 @@ class StructDataExtract:
             result.at[index, 'credit'] = 0.00
         
         print(result.head(1))
+        abs_file_path = os.path.join(output_path, f'escrow/{start_string}.xlsx')
+        # breakpoint()
 
-        result.to_csv(f'{start_string}.csv')
-    
-    def merchants_pdf_extract():
-        script_dir = os.path.dirname(__file__)
-        breakpoint()
-        rel_path = 'data/escrow_ytd'
-        abs_file_path = os.path.join(script_dir, rel_path)
-
-        with open(abs_file_path, "rb") as f:
-            pdf = pdftotext.PDF(f)
-
-        # Read all the text into one string
-        with open('output.txt', 'w') as f:
-            f.write("\n\n".join(pdf))
-
-            report_dict = {
-                'Insurance':'Ending', 
-                'MIP': 'Replacement', 
-                'Replacement': None,
-            }
-
-            for start, end in report_dict.items():
-                with open('output.txt', 'rb') as f:
-                    file1 = open('output.txt', 'r')
-                merchants_pdf(file1=file1, start_string=start, end_string=end)
-
-        file1.close()
+        result.to_excel(abs_file_path)
 
     def open_pdf_and_output_txt(self, path, txtfile=None):
         db_file = os.path.abspath(os.path.join(os.path.dirname( __file__ ), txtfile))
