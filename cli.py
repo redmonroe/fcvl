@@ -140,10 +140,10 @@ def reset_dry_run():
     click.echo('reset dry run by deleting 07 deposit')
     from backend import Findexer
     findex = FileIndexer(path=Config.TEST_RS_PATH_MAY, db=Config.TEST_DB)
-    target_deposit_file = Findexer.get(Findexer.fn == 'deposits_07_2022.xls')
-    target_deposit_file.delete_instance()
-    # breakpoint()
-
+    target_deposit_file`` = Findexer.get(Findexer.fn == 'deposits_07_2022.xls')
+    target_deposit_file2 = Findexer.get(Findexer.fn == 'rent_roll_07_2022.xls')
+    target_deposit_file1.delete_instance()
+    target_deposit_file2.delete_instance()
     
 @click.command()
 def dry_run():
@@ -152,48 +152,26 @@ def dry_run():
     findex = FileIndexer(path=Config.TEST_RS_PATH_MAY, db=Config.TEST_DB)
     query = QueryHC()
     player = ProcessingLayer()
-    months_ytd, unfin_month = findex.test_for_unfinalized_months()
-    
-    status_objects = query.get_all_status_objects() # move this to backend > processingLayer func
-    deposits = query.get_all_findexer_by_type(type1='deposits')
-    deposit_months = [month for name, month in deposits]
-
-    deposits = [(True, month) if month in deposit_months else (False, month) for month in months_ytd]    
-
-    rent = query.get_all_findexer_by_type(type1='rent')
     click.echo('description of db')
-    rent_months = [month for name, month in rent]
-    rent = [(True, month) if month in rent_months else (False, month) for month in months_ytd]    
-
-    dl_tup_list = list(zip(deposits, rent))
-    breakpoint()
-    header = ['month', 'deps', 'rtroll', 'oc_rec', 'ten_rec', 'rs_rec', 'scrape_rec']
-    table = [header]
-    for item, dep in zip(status_objects, dl_tup_list):
-        row_list = []
-        row_list.append(item.month)
-        row_list.append(str(dep[0]))
-        row_list.append('   ')
-        row_list.append(str(item.opcash_processed))
-        row_list.append(str(item.tenant_reconciled))
-        row_list.append(str(item.rs_reconciled))
-        row_list.append(str(item.scrape_reconciled))
-        table.append(row_list)
+    player.show_status_table(findex=findex)
     
-    print('\n'.join([''.join(['{:8}'.format(x) for x in r]) for r in table]))
-
+    print('\n')
     click.echo('unfinalized months')
+    months_ytd, unfin_month = findex.test_for_unfinalized_months()
     for item in unfin_month:
         print(item)
-    breakpoint()
 
-    click.echo('unprocessed files in path')
+    print('\n')
+    click.echo('check for unprocessed files in path')
     unproc_files, dir_contents = findex.test_for_unprocessed_file()
-
-    for item in unproc_files:
-        print(item)
-    choice = int(input('running findexer now would input the above file(s)?  press 1 to proceed ...'))
-    findex.iter_build_runner()
+    
+    if unproc_files == []:
+        print('no new files to add')
+    else:
+        for item in unproc_files:
+            print(item)
+        choice = int(input('running findexer now would input the above file(s)?  press 1 to proceed ...'))
+        findex.iter_build_runner()
 
 cli.add_command(escrow)
 cli.add_command(receipts)

@@ -60,7 +60,6 @@ class FileIndexer(Utils):
                 return [], []
             else:
                 print('adding new files to findexer')
-                breakpoint()
                 self.index_dict = self.sort_directory_by_extension2() 
                 self.load_what_is_in_dir_as_indexed(dict1=self.index_dict_iter)
         
@@ -78,7 +77,6 @@ class FileIndexer(Utils):
                 
                 new_files_dict = self.get_report_type_from_name(records=self.index_dict)
                 new_files_dict = self.get_date_from_xls_name(records=new_files_dict)
-                breakpoint()
 
                 return new_files_dict, self.unfinalized_months
         else:
