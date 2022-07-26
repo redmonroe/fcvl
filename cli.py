@@ -140,7 +140,7 @@ def reset_dry_run():
     click.echo('reset dry run by deleting 07 deposit')
     from backend import Findexer
     findex = FileIndexer(path=Config.TEST_RS_PATH_MAY, db=Config.TEST_DB)
-    target_deposit_file`` = Findexer.get(Findexer.fn == 'deposits_07_2022.xls')
+    target_deposit_file1 = Findexer.get(Findexer.fn == 'deposits_07_2022.xls')
     target_deposit_file2 = Findexer.get(Findexer.fn == 'rent_roll_07_2022.xls')
     target_deposit_file1.delete_instance()
     target_deposit_file2.delete_instance()
