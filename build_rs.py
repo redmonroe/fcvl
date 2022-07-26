@@ -53,8 +53,7 @@ class BuildRS(MonthSheet):
                 self.ctx = 'db is not empty; iter_build; bypass findexer'
                 print(f'{self.ctx}')
                 populate = self.setup_tables(mode='create_only')
-                breakpoint()
-                self.iterate_over_remaining_months_incremental(list1=kw.get('new_files_add'))
+                self.iterate_over_remaining_months_incremental(list1=kw.get('new_files_add')[0])
             else:
                 """this branch is used to trigger iterative build of findex using new file list created here"""
                 self.ctx = 'db is not empty; iter_build; do NOT bypass findexer'
@@ -123,7 +122,6 @@ class BuildRS(MonthSheet):
 
     def iterate_over_remaining_months_incremental(self, list1=None):
         populate = PopulateTable()
-        breakpoint()
         # rent has to go first; otherwise if you have a move-in during the month there is no reference for the fk for a payment
         for item in list1:
             for typ, data in item.items():
@@ -136,6 +134,13 @@ class BuildRS(MonthSheet):
                 first_dt, last_dt = populate.make_first_and_last_dates(date_str=data[0])
                 if typ == 'deposits':
                     grand_total, ntp, tenant_payment_df = populate.payment_load_full(filename=data[1])
+
+        findex = FileIndexer()
+        for item in list1:
+            for typ, data in item.items():
+                first_dt, last_dt = populate.make_first_and_last_dates(date_str=data[0])
+                if typ == 'scrape':
+                    findex.load_directed_scrape(path_to_scrape=data[1], target_date=data[0])
 
     def iterate_over_remaining_months(self):       
         # load remaining months rent

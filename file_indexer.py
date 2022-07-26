@@ -110,6 +110,13 @@ class FileIndexer(Utils):
         self.type_opcashes()    
         self.rename_by_content_pdf()
 
+    def load_directed_scrape(self, path_to_scrape=None, target_date=None):
+        populate = PopulateTable() 
+        df = self.get_df_of_scrape(path=path_to_scrape)
+        scrape_txn_list = self.get_targeted_rows_for_scrape(scrape_df=df)
+        populate.load_scrape_to_db(deposit_list=scrape_txn_list, target_date=target_date)
+        breakpoint()
+
     def load_mm_scrape(self, list1=None):
         """
         This function runs through main file path and finds most recent scrape and select lines containing 'DEPOSIT', 'QUADEL', and 'CHARGEBACK to get tenant deposits, quadel, and deposit corrections
@@ -121,11 +128,21 @@ class FileIndexer(Utils):
             if fn.suffix == '.csv' and fn.name not in self.excluded_file_names:
                 mr_dict[fn] = fn.lstat().st_ctime
 
-        most_recent_scrape = pd.read_csv(max(list(mr_dict)))        
+        most_recent_scrape = self.get_most_recent_scrape(most_recent_dict=mr_dict)
+
+        return self.get_targeted_rows_for_scrape(scrape_df=most_recent_scrape) 
+
+    def get_most_recent_scrape(self, most_recent_dict=None):
+        return pd.read_csv(max(list(most_recent_dict)))   
+
+    def get_df_of_scrape(self, path=None):
+        return pd.read_csv(path)
+
+    def get_targeted_rows_for_scrape(self, scrape_df=None):
 
         deposit_list = []
         corr_count = 0
-        for index, row in most_recent_scrape.iterrows():
+        for index, row in scrape_df.iterrows():
             if row['Description'] == 'DEPOSIT':
                 dict1 = {}
                 dict1 = {'date': row['Processed Date'], 'amount': row['Amount'], 'dep_type': 'deposit'}
@@ -313,6 +330,8 @@ class FileIndexer(Utils):
         records1 = []
         for path, name in records.items():
             typ = name[1].split('_')[0]
+            if typ == 'CHECKING':
+                typ = 'scrape'
             dict1 = {typ: (path, path.name)}
             records1.append(dict1)
         return records1
@@ -325,11 +344,10 @@ class FileIndexer(Utils):
                     date_str = '-'.join(data[1].split('.')[0].split('_')[1:][::-1])
                 elif typ == 'rent':
                     date_str = '-'.join(data[1].split('.')[0].split('_')[2:][::-1])
-                else:
-                    date_str = 'not_set'
+                elif typ == 'scrape':
+                    date_str = data[1].split('_')[3][0:7]
                 dict1 = {typ: (date_str, data[0])}
                 records1.append(dict1)
-                # breakpoint()
         return records1
 
     def get_date_from_opcash_name(self, record):

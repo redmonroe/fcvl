@@ -948,7 +948,10 @@ class PopulateTable(QueryHC):
         for line_item in deposit_list:
             for key, value in line_item.items():
                 if key == 'date':
-                    period = target_date.strftime('%Y-%m')
+                    if isinstance(target_date, str):
+                        period = target_date
+                    else:
+                        period = target_date.strftime('%Y-%m')
                     scrape_dep = ScrapeDetail(period=period, scrape_date=datetime.now(), scrape_dep_date=0, amount=0)
                     scrape_dep.scrape_dep_date = value 
                 if key == 'amount':
@@ -995,12 +998,11 @@ class ProcessingLayer(StatusRS):
     def load_scrape_and_mark_as_processed(self, most_recent_status=None, target_mid_month=None):
         '''this function can be broken up even more'''
         print('load midmonth scrape from bank website')
-        from file_indexer import FileIndexer #circular import workaroud
-        target_mm_date = datetime.strptime(list(target_mid_month.items())[0][0], '%Y-%m')
-        findex = FileIndexer()
         populate = PopulateTable()
-        all_relevant_scrape_txn_list = findex.load_mm_scrape(list1=target_mid_month)
-        scrape_deposit_sum = sum([float(item['amount']) for item in all_relevant_scrape_txn_list if item['dep_type'] == 'deposit'])
+
+        target_mm_date = datetime.strptime(list(target_mid_month.items())[0][0], '%Y-%m')
+
+        all_relevant_scrape_txn_list, scrape_deposit_sum = self.load_scrape_wrapper(target_mid_month=target_mid_month)
 
         populate.load_scrape_to_db(deposit_list=all_relevant_scrape_txn_list, target_date=target_mm_date)
 
@@ -1019,6 +1021,14 @@ class ProcessingLayer(StatusRS):
             return True
         else:
             return False
+
+    def load_scrape_wrapper(self, target_mid_month=None):
+        from file_indexer import FileIndexer #circular import workaroud
+        findex = FileIndexer()
+        scrape_txn_list = findex.load_mm_scrape(list1=target_mid_month)
+        scrape_deposit_sum = sum([float(item['amount']) for item in all_relevant_scrape_txn_list if item['dep_type'] == 'deposit'])
+
+        return scrape_txn_list, scrape_deposit_sum
 
     def make_rent_receipts(self, first_incomplete_month=None):
         choice1 = input(f'\nWould you like to make rent receipts for period between {first_incomplete_month} ? Y/n ')

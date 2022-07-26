@@ -194,7 +194,6 @@ def dry_run():
         ms = MonthSheet(full_sheet=full_sheet, path=path, mode='testing', test_service=service)
         print('building db')
         # build.build_db_from_scratch()
-        breakpoint()
         build.build_db_from_scratch(bypass_findexer=True, new_files_add=new_files_add)
 
 
