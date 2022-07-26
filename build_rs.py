@@ -121,9 +121,8 @@ class BuildRS(MonthSheet):
         return populate
 
     def iterate_over_remaining_months_incremental(self, list1=None):
+        """rent has to go first; otherwise if you have a move-in during the month there is no reference for the fk for a payment"""
         populate = PopulateTable()
-        player = ProcessingLayer()
-        # rent has to go first; otherwise if you have a move-in during the month there is no reference for the fk for a payment
         for item in list1:
             for typ, data in item.items():
                 first_dt, last_dt = populate.make_first_and_last_dates(date_str=data[0])
@@ -141,8 +140,13 @@ class BuildRS(MonthSheet):
             for typ, data in item.items():
                 first_dt, last_dt = populate.make_first_and_last_dates(date_str=data[0])
                 if typ == 'scrape':
-                    findex.load_directed_scrape(path_to_scrape=data[1], target_date=data[0])
-                    all_tp, all_ntp = populate.check_db_tp_and_ntp(grand_total=scrape_deposit_sum, first_dt=first_dt, last_dt=last_dt)  
+                    scrape_txn_list = findex.load_directed_scrape(path_to_scrape=data[1], target_date=data[0])
+                    scrape_deposit_sum = sum([float(item['amount']) for item in scrape_txn_list if item['dep_type'] == 'deposit'])
+
+                    assert scrape_deposit_sum == grand_total
+                    target_status_object = [item for item in StatusObject().select().where(StatusObject.month==data[0])][0]
+                    target_status_object.scrape_reconciled = True
+                    target_status_object.save() 
 
     def iterate_over_remaining_months(self):       
         # load remaining months rent

@@ -116,8 +116,7 @@ class FileIndexer(Utils):
         scrape_txn_list = self.get_targeted_rows_for_scrape(scrape_df=df)
         populate.load_scrape_to_db(deposit_list=scrape_txn_list, target_date=target_date)
 
-        target_date = datetime.strptime(target_date, '%Y-%m')
-        breakpoint()
+        return scrape_txn_list
 
     def load_mm_scrape(self, list1=None):
         """
