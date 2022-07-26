@@ -136,12 +136,21 @@ def recvactuals():
     annfin.start_here()
 
 @click.command()
+def reset_dry_run():
+    click.echo('reset dry run by deleting 07 deposit')
+    from backend import Findexer
+    findex = FileIndexer(path=Config.TEST_RS_PATH_MAY, db=Config.TEST_DB)
+    target_deposit_file = Findexer.get(Findexer.fn == 'deposits_07_2022.xls')
+    target_deposit_file.delete_instance()
+    # breakpoint()
+
+    
+@click.command()
 def dry_run():
     from backend import QueryHC
     click.echo('dry run of findexer with new files vel non')
     findex = FileIndexer(path=Config.TEST_RS_PATH_MAY, db=Config.TEST_DB)
     query = QueryHC()
-    # findex.iter_build_runner()
     player = ProcessingLayer()
     so = query.get_all_status_objects() # move this to backend > processingLayer func
 
@@ -160,6 +169,7 @@ def dry_run():
     for item in unproc_files:
         print(item)
     choice = int(input('running findexer now would input the above file(s)?  press 1 to proceed ...'))
+    findex.iter_build_runner()
 
 cli.add_command(escrow)
 cli.add_command(receipts)
@@ -169,6 +179,7 @@ cli.add_command(balanceletters)
 cli.add_command(workorders)
 cli.add_command(recvactuals)
 cli.add_command(dry_run)
+cli.add_command(reset_dry_run)
 cli.add_command(manentry)
 
 if __name__ == '__main__':

@@ -78,6 +78,7 @@ class FileIndexer(Utils):
                 
                 new_files_dict = self.get_report_type_from_name(records=self.index_dict)
                 new_files_dict = self.get_date_from_xls_name(records=new_files_dict)
+                breakpoint()
 
                 return new_files_dict, self.unfinalized_months
         else:
