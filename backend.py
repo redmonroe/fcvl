@@ -244,6 +244,10 @@ class QueryHC:
     def get_all_status_objects(self):
         return [row for row in StatusObject.select().namedtuples()]
 
+    def get_all_findexer_by_type(self, type1=None):
+        rows = [(row.fn, row.period) for row in Findexer.select().where(Findexer.doc_type == type1).namedtuples()]
+        return rows
+
     def get_all_tenants_beg_bal(self, cumsum=False):
         '''returns a list of all tenants and their all time beginning balances'''
         '''does not consider active status at this point'''
