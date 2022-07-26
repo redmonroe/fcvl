@@ -122,6 +122,7 @@ class BuildRS(MonthSheet):
 
     def iterate_over_remaining_months_incremental(self, list1=None):
         populate = PopulateTable()
+        player = ProcessingLayer()
         # rent has to go first; otherwise if you have a move-in during the month there is no reference for the fk for a payment
         for item in list1:
             for typ, data in item.items():
@@ -141,6 +142,7 @@ class BuildRS(MonthSheet):
                 first_dt, last_dt = populate.make_first_and_last_dates(date_str=data[0])
                 if typ == 'scrape':
                     findex.load_directed_scrape(path_to_scrape=data[1], target_date=data[0])
+                    all_tp, all_ntp = populate.check_db_tp_and_ntp(grand_total=scrape_deposit_sum, first_dt=first_dt, last_dt=last_dt)  
 
     def iterate_over_remaining_months(self):       
         # load remaining months rent

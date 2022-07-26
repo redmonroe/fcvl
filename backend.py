@@ -1011,6 +1011,7 @@ class ProcessingLayer(StatusRS):
         last_dt = target_mm_date.replace(day = calendar.monthrange(target_mm_date.year, target_mm_date.month)[1])
 
         '''if this function asserts ok, then we can write balance letters & rent receipts for current month'''
+
         all_tp, all_ntp = populate.check_db_tp_and_ntp(grand_total=scrape_deposit_sum, first_dt=first_dt, last_dt=last_dt)    
 
         if all_tp:

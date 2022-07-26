@@ -114,8 +114,8 @@ def balanceletters():
 @click.command()
 def receipts():
     click.echo('receipts')
-    status = StatusRS()
-    status.rent_receipts_wrapper()
+    player = ProcessingLayer()
+    player.rent_receipts_wrapper()
 
 @click.command()
 def workorders():
