@@ -36,6 +36,7 @@ class BuildRS(MonthSheet):
     def build_db_from_scratch(self, **kw):
         status = StatusRS()
         if self.main_db.get_tables() == []:
+            """this is used for rebuilding db from scratch"""
             print('building db from scratch')
             self.ctx = 'db empty'
             print(f'{self.ctx}')
@@ -46,11 +47,20 @@ class BuildRS(MonthSheet):
             Damages.load_damages()
             self.populate.transfer_opcash_to_db() # PROCESSED OPCASHES MOVED INTO DB
         else:
-            self.ctx = 'db is not empty'
-            print(f'{self.ctx}')
-            self.new_files, self.unfinalized_months = self.findex.iter_build_runner()
-            populate = self.setup_tables(mode='create_only')
-            self.iterate_over_remaining_months_incremental(list1=self.new_files)
+            if kw.get('bypass_findexer') == True:
+                """this branch is used to trigger iterative build by passing in list of new added files"""
+
+                self.ctx = 'db is not empty; iter_build; bypass findexer'
+                print(f'{self.ctx}')
+                populate = self.setup_tables(mode='create_only')
+                self.iterate_over_remaining_months_incremental(list1=kw.get('new_files_add'))
+            else:
+                """this branch is used to trigger iterative build of findex using new file list created here"""
+                self.ctx = 'db is not empty; iter_build; do NOT bypass findexer'
+                print(f'{self.ctx}')
+                self.new_files, self.unfinalized_months = self.findex.iter_build_runner()
+                populate = self.setup_tables(mode='create_only')
+                self.iterate_over_remaining_months_incremental(list1=self.new_files)
 
         """may need to breakdown incomplete month bool depending on context"""
         player = ProcessingLayer()

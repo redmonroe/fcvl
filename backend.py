@@ -1175,15 +1175,21 @@ class ProcessingLayer(StatusRS):
         rent = query.get_all_findexer_by_type(type1='rent')
         rent_months = [month for name, month in rent]
         rent = [(True, month) if month in rent_months else (False, month) for month in months_ytd]    
+        
+        scrapes = query.get_all_findexer_by_type(type1='scrape')
+        scrape_months = [month for name, month in scrapes]
+        scrapes = [(True, month) if month in scrape_months else (False, month) for month in months_ytd]    
 
-        dl_tup_list = list(zip(deposits, rent))
-        header = ['month', 'deps', 'rtroll', 'oc_rec', 'ten_rec', 'rs_rec', 'scrape_rec']
+        dl_tup_list = list(zip(deposits, rent, scrapes))
+        # breakpoint()
+        header = ['month', 'deps', 'rtroll', 'scrapes', 'oc_rec', 'ten_rec', 'rs_rec', 'scrape_rec']
         table = [header]
         for item, dep in zip(status_objects, dl_tup_list):
             row_list = []
             row_list.append(item.month)
             row_list.append(str(dep[0][0]))
             row_list.append(str(dep[1][0]))
+            row_list.append(str(dep[2][0]))
             row_list.append(str(item.opcash_processed))
             row_list.append(str(item.tenant_reconciled))
             row_list.append(str(item.rs_reconciled))
