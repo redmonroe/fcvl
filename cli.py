@@ -136,18 +136,30 @@ def recvactuals():
     annfin.start_here()
 
 @click.command()
-def where():
-    click.echo('description of state')
+def dry_run():
     from backend import QueryHC
-    player = ProcessingLayer()
+    click.echo('dry run of findexer with new files vel non')
+    findex = FileIndexer(path=Config.TEST_RS_PATH_MAY, db=Config.TEST_DB)
     query = QueryHC()
-    month_ytd = player.get_all_months_ytd()
+    # findex.iter_build_runner()
+    player = ProcessingLayer()
     so = query.get_all_status_objects() # move this to backend > processingLayer func
+
+    click.echo('description of db')
     for item in so:
         print(item.month, item.opcash_processed, item.tenant_reconciled, item.rs_reconciled, item.scrape_reconciled)
 
-    breakpoint()
-    '''show unprocessed files that exist in path'''
+    click.echo('unfinalized months')
+    months_ytd, unfin_month = findex.test_for_unfinalized_months()
+    for item in unfin_month:
+        print(item)
+
+    click.echo('unprocessed files in path')
+    unproc_files, dir_contents = findex.test_for_unprocessed_file()
+
+    for item in unproc_files:
+        print(item)
+    choice = int(input('running findexer now would input the above file(s)?  press 1 to proceed ...'))
 
 cli.add_command(escrow)
 cli.add_command(receipts)
@@ -156,7 +168,7 @@ cli.add_command(sqlite_dump)
 cli.add_command(balanceletters)
 cli.add_command(workorders)
 cli.add_command(recvactuals)
-cli.add_command(where)
+cli.add_command(dry_run)
 cli.add_command(manentry)
 
 if __name__ == '__main__':

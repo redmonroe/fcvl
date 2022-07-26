@@ -47,29 +47,20 @@ class FileIndexer(Utils):
         
         self.connect_to_db() 
         populate = PopulateTable()
-        months_ytd = Utils.months_in_ytd(Config.current_year)
-    
-        # get fully finalized months
-        finalized_months = [rec.month for rec in StatusObject().select().where((StatusObject.tenant_reconciled==1) &
-                    (StatusObject.opcash_processed==1)).namedtuples()]
 
-        # are there any unfinalized months?
-        self.unfinalized_months = list(set(months_ytd) - set(finalized_months))
+        months_ytd, unf_months = self.test_for_unfinalized_months()
 
-        breakpoint()
         if len(self.unfinalized_months) > 0:
-            # are there any new files in path?
-            print('searching for new files in path')
-            processed_fn = [item.fn for item in Findexer().select().where(Findexer.status=='processed').namedtuples()]        
-            directory_contents = self.articulate_directory2()        
-            unproc_files = list(set(directory_contents) - set(processed_fn))
-            self.unproc_file_for_testing = unproc_files    
+
+            unproc_files, directory_contents = self.test_for_unprocessed_file()
+
             if len(unproc_files) == 0:
                 print('there are no new files in path')
                 print('here we should look to see whether we want to make any new rent sheets')
                 return [], []
             else:
                 print('adding new files to findexer')
+                breakpoint()
                 self.index_dict = self.sort_directory_by_extension2() 
                 self.load_what_is_in_dir_as_indexed(dict1=self.index_dict_iter)
         
@@ -156,6 +147,31 @@ class FileIndexer(Utils):
             deposit_list.append(dict1)
         
         return deposit_list
+
+    def test_for_unfinalized_months(self):
+        months_ytd = Utils.months_in_ytd(Config.current_year)
+    
+        # get fully finalized months
+        finalized_months = [rec.month for rec in StatusObject().select().where((StatusObject.tenant_reconciled==1) &
+                    (StatusObject.opcash_processed==1)).namedtuples()]
+
+        # are there any unfinalized months?
+        self.unfinalized_months = list(set(months_ytd) - set(finalized_months))
+
+        return months_ytd, self.unfinalized_months
+
+    def test_for_unprocessed_file(self):
+        # are there any new files in path?
+        print('searching for new files in path')
+        processed_fn = [item.fn for item in Findexer().select().where(Findexer.status=='processed').namedtuples()]  
+
+        directory_contents = self.articulate_directory2()    
+
+        unproc_files = list(set(directory_contents) - set(processed_fn))
+
+        self.unproc_file_for_testing = unproc_files  
+        
+        return self.unproc_file_for_testing, directory_contents
 
     def connect_to_db(self, mode=None):
         if self.db.is_closed():
