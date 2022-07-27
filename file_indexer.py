@@ -101,9 +101,31 @@ class FileIndexer(Utils):
         scrapes = [(row.path, row.period) for row in Findexer.select().where(Findexer.doc_type == 'scrape').namedtuples()]
 
         for scrape_path, scrape_period in scrapes:
-            self.load_directed_scrape(path_to_scrape=scrape_path, target_date=scrape_period)
-        breakpoint()
+            scrape_txn_list = self.load_directed_scrape(path_to_scrape=scrape_path, target_date=scrape_period)
 
+            check = sum([item['amount'] for item in scrape_txn_list])
+
+            dep_sum = sum([item['amount'] for item in scrape_txn_list if item['dep_type'] == 'deposit'])
+
+            hap_sum = sum([item['amount'] for item in scrape_txn_list if item['dep_type'] == 'hap'])
+
+            rr_sum = sum([item['amount'] for item in scrape_txn_list if item['dep_type'] == 'rr'])
+
+            corr_sum = sum([item['amount'] for item in scrape_txn_list if item['dep_type'] == 'corr'])
+
+            double_check =            dep_sum + hap_sum + corr_sum + rr_sum
+            assert check == round(double_check, 2)            
+
+            target_scr_id = [row for row in Findexer.select().where(
+                (Findexer.period == scrape_period) &
+                (Findexer.doc_type == 'scrape')).namedtuples()][0]
+
+            scrape_to_update = Findexer.get(target_scr_id.doc_id)
+            scrape_to_update.corr_sum = corr_sum
+            scrape_to_update.hap = hap_sum
+            scrape_to_update.depsum = dep_sum
+            scrape_to_update.rr = rr_sum
+            scrape_to_update.save()
 
     def load_directed_scrape(self, path_to_scrape=None, target_date=None):
         populate = PopulateTable() 
@@ -142,6 +164,11 @@ class FileIndexer(Utils):
                 dict1 = {}
                 dict1 = {'date': row['Processed Date'], 'amount': row['Amount'], 'dep_type': 'deposit'}
                 deposit_list.append(dict1)
+            if 'INCOMING' in row['Description']:
+                dict1 = {}
+                dict1 = {'date': row['Processed Date'], 'amount': row['Amount'], 'dep_type': 'rr'}                
+                deposit_list.append(dict1)
+
             if 'QUADEL' in row['Description']:
                 dict1 = {}
                 dict1 = {'date': row['Processed Date'], 'amount': row['Amount'], 'dep_type': 'hap'}                
