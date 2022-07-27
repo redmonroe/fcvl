@@ -186,15 +186,16 @@ def dry_run():
             print('exiting program')
             exit
 
-    choice2 = int(input('would you like to reconcile and build db for rent sheets?  press 1 to proceed ...'))
+        choice2 = int(input('would you like to reconcile and build db for rent sheets?  press 1 to proceed ...'))
 
-    if choice2 == 1:
-        build = BuildRS(path=path, full_sheet=full_sheet, main_db=db)
-        service = oauth(scopes, 'sheet', mode='testing')
-        ms = MonthSheet(full_sheet=full_sheet, path=path, mode='testing', test_service=service)
-        print('building db')
-        # build.build_db_from_scratch()
-        build.build_db_from_scratch(bypass_findexer=True, new_files_add=new_files_add)
+        if choice2 == 1:
+            build = BuildRS(path=path, full_sheet=full_sheet, main_db=db)
+            service = oauth(scopes, 'sheet', mode='testing')
+            ms = MonthSheet(full_sheet=full_sheet, path=path, mode='testing', test_service=service)
+            print('building db')
+            # build.build_db_from_scratch()
+            build.build_db_from_scratch(bypass_findexer=True, new_files_add=new_files_add)
+            player.show_status_table(findex=findex)
 
 
 

@@ -327,7 +327,6 @@ class FileIndexer(Utils):
     def get_report_type_from_name(self, records=None):
         """name it scrape!!"""
 
-
         records1 = []
         for path, name in records.items():
             typ = name[1].split('_')[0]

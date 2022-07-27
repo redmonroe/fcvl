@@ -980,6 +980,16 @@ class ProcessingLayer(StatusRS):
         manentry = ManualEntry(db=db)
         manentry.apply_persisted_changes()
 
+    def write_to_statusrs_wrapper(self):
+        populate = PopulateTable()
+        self.set_current_date()
+        most_recent_status = self.get_most_recent_status()
+        all_months_ytd = self.get_all_months_ytd()
+        report_list = populate.get_processed_by_month(month_list=all_months_ytd)
+        self.write_processed_to_status_rs_db(ref_rec=most_recent_status, report_list=report_list)
+
+        return all_months_ytd, report_list, most_recent_status
+
     def display_most_recent_status(self, mr_status=None, months_ytd=None, ):
         print(f'\n\n*****************************AUTORS: welcome!********************')
         print(f'current date: {mr_status.current_date} | current month: {months_ytd[-1]}\n')
@@ -1175,6 +1185,7 @@ class ProcessingLayer(StatusRS):
 
     def show_status_table(self, findex=None):
         query = QueryHC()
+        populate  = PopulateTable()
         months_ytd, unfin_month = findex.test_for_unfinalized_months()
     
         status_objects = query.get_all_status_objects() # move this to backend > processingLayer func
@@ -1189,11 +1200,37 @@ class ProcessingLayer(StatusRS):
         
         scrapes = query.get_all_findexer_by_type(type1='scrape')
         scrape_months = [month for name, month in scrapes]
-        scrapes = [(True, month) if month in scrape_months else (False, month) for month in months_ytd]    
+        scrapes = [(True, month) if month in scrape_months else (False, month) for month in months_ytd]  
 
-        dl_tup_list = list(zip(deposits, rent, scrapes))
+        tp_list = []
+        ntp_list = []
+        total_list = []
+
+        for month in months_ytd:
+            first_dt, last_dt = populate.make_first_and_last_dates(date_str=month)
+        
+            ten_payments = sum([float(row[2]) for row in populate.get_payments_by_tenant_by_period(first_dt=first_dt, last_dt=last_dt)])
+            tp_tup = (ten_payments, first_dt)
+            tp_list.append(tp_tup)
+
+
+            ntp = sum(populate.get_ntp_by_period(first_dt=first_dt, last_dt=last_dt))
+            ntp_tup = (ntp, first_dt)
+            ntp_list.append(ntp_tup)
+
+            total = float(ten_payments) + float(ntp)
+
+            total_list.append((total, first_dt))
+            
+            opcash = populate.get_opcash_by_period(first_dt=first_dt, last_dt=last_dt)
+
+            # breakpoint()
+
+        # deposit_amounts = query.get  
+
+        dl_tup_list = list(zip(deposits, rent, scrapes, tp_list, ntp_list, total_list))
         # breakpoint()
-        header = ['month', 'deps', 'rtroll', 'scrapes', 'oc_rec', 'ten_rec', 'rs_rec', 'scrape_rec']
+        header = ['month', 'deps', 'rtroll', 'scrapes', 'ten_pay', 'ntp', 'tot_pay',  'oc_rec', 'ten_rec', 'rs_rec', 'scrape_rec']
         table = [header]
         for item, dep in zip(status_objects, dl_tup_list):
             row_list = []
@@ -1201,6 +1238,9 @@ class ProcessingLayer(StatusRS):
             row_list.append(str(dep[0][0]))
             row_list.append(str(dep[1][0]))
             row_list.append(str(dep[2][0]))
+            row_list.append(str(dep[3][0]))
+            row_list.append(str(dep[4][0]))
+            row_list.append(str(dep[5][0]))
             row_list.append(str(item.opcash_processed))
             row_list.append(str(item.tenant_reconciled))
             row_list.append(str(item.rs_reconciled))

@@ -35,6 +35,7 @@ class BuildRS(MonthSheet):
     
     def build_db_from_scratch(self, **kw):
         status = StatusRS()
+        player = ProcessingLayer()
         if self.main_db.get_tables() == []:
             """this is used for rebuilding db from scratch"""
             print('building db from scratch')
@@ -54,6 +55,15 @@ class BuildRS(MonthSheet):
                 print(f'{self.ctx}')
                 populate = self.setup_tables(mode='create_only')
                 self.iterate_over_remaining_months_incremental(list1=kw.get('new_files_add')[0])
+                player = ProcessingLayer()
+                player.set_current_date()
+                most_recent_status = player.get_most_recent_status()
+                all_months_ytd = player.get_all_months_ytd()
+
+                # reconcile all available
+                    # if already reconciled, don't reconcile again
+
+                breakpoint()
             else:
                 """this branch is used to trigger iterative build of findex using new file list created here"""
                 self.ctx = 'db is not empty; iter_build; do NOT bypass findexer'
@@ -61,18 +71,18 @@ class BuildRS(MonthSheet):
                 self.new_files, self.unfinalized_months = self.findex.iter_build_runner()
                 populate = self.setup_tables(mode='create_only')
                 self.iterate_over_remaining_months_incremental(list1=self.new_files)
+                
 
         """may need to breakdown incomplete month bool depending on context"""
-        player = ProcessingLayer()
-        player.set_current_date()
-        most_recent_status = player.get_most_recent_status()
-        all_months_ytd = player.get_all_months_ytd()
-        report_list = populate.get_processed_by_month(month_list=all_months_ytd)
-        player.write_processed_to_status_rs_db(ref_rec=most_recent_status, report_list=report_list)
+        all_months_ytd, report_list, most_recent_status = player.write_to_statusrs_wrapper()
+        player.write_manual_entries_from_config()
+        breakpoint()
 
         # this is where determination of 'reconciled' is made
         player.assert_reconcile_payments(month_list=all_months_ytd, ref_rec=most_recent_status)
-        player.write_manual_entries_from_config()
+
+
+
         player.display_most_recent_status(mr_status=most_recent_status, months_ytd=all_months_ytd)
         incomplete_month_bool, paperwork_complete_months = player.is_there_mid_month(all_months_ytd, report_list)
 
@@ -105,7 +115,8 @@ class BuildRS(MonthSheet):
                 do_i_write_bal_letters = player.make_balance_letters(first_incomplete_month=first_incomplete_month)
                 if do_i_write_bal_letters == True:
                     player.bal_letter_wrapper()
-        
+
+    
         self.main_db.close()
 
     def setup_tables(self, mode=None):
