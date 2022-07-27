@@ -1224,8 +1224,8 @@ class ProcessingLayer(StatusRS):
             
             opcash = populate.get_opcash_by_period(first_dt=first_dt, last_dt=last_dt)
 
-            # breakpoint()
 
+        breakpoint()
         # deposit_amounts = query.get  
 
         dl_tup_list = list(zip(deposits, rent, scrapes, tp_list, ntp_list, total_list))

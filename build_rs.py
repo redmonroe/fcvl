@@ -75,11 +75,11 @@ class BuildRS(MonthSheet):
 
         """may need to breakdown incomplete month bool depending on context"""
         all_months_ytd, report_list, most_recent_status = player.write_to_statusrs_wrapper()
-        player.write_manual_entries_from_config()
-        breakpoint()
+        # breakpoint()
 
         # this is where determination of 'reconciled' is made
         player.assert_reconcile_payments(month_list=all_months_ytd, ref_rec=most_recent_status)
+        player.write_manual_entries_from_config()
 
 
 
