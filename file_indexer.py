@@ -73,7 +73,7 @@ class FileIndexer(Utils):
                 
                 self.make_a_list_of_indexed(mode=self.query_mode.csv)
                 if self.indexed_list:
-                    self.get_period_from_scrape_fn()
+                    self.get_period_from_scrape_fn_and_mark_in_findexer()
                 
                 new_files_dict = self.get_report_type_from_name(records=self.index_dict)
                 new_files_dict = self.get_date_from_xls_name(records=new_files_dict)
@@ -99,7 +99,7 @@ class FileIndexer(Utils):
 
         self.make_a_list_of_indexed(mode=self.query_mode.csv)
         if self.indexed_list:
-            self.get_period_from_scrape_fn()
+            self.get_period_from_scrape_fn_and_mark_in_findexer()
 
     def xls_wrapper(self):
         self.find_by_content(style=self.style_term.rent, target_string=self.target_string.affordable, format=self.rent_format)
@@ -356,7 +356,7 @@ class FileIndexer(Utils):
         date_list = ' '.join(date_list)
         return date_list
         
-    def get_period_from_scrape_fn(self):
+    def get_period_from_scrape_fn_and_mark_in_findexer(self):
         for item, doc_id in self.indexed_list:
             scrape_file = Findexer.get(Findexer.doc_id==doc_id)
             date_str = [part.split('_') for part in item.split('/')][-1][-2]

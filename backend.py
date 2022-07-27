@@ -1243,7 +1243,7 @@ class ProcessingLayer(StatusRS):
 
         dl_tup_list = list(zip(deposits, rent, scrapes, tp_list, ntp_list, total_list, opcash_amt_list, dc_list))
 
-        header = ['month', 'deps', 'rtroll', 'scrapes', 'ten_pay', 'ntp', 'tot_pay',  'oc_amt', 'dc', 'ten_rec', 'rs_rec', 'scrape_rec']
+        header = ['month', 'deps', 'rtroll', 'scrapes', 'ten_pay', 'ntp', 'tot_pay',  'oc_amt', 'dc', 'oc_proc', 'ten_rec', 'rs_rec', 'scrape_rec']
         table = [header]
         for item, dep in zip(status_objects, dl_tup_list):
             row_list = []
