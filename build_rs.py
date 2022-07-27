@@ -46,6 +46,7 @@ class BuildRS(MonthSheet):
             self.load_initial_tenants_and_balances()
             processed_rentr_dates_and_paths = self.iterate_over_remaining_months()
             Damages.load_damages()
+            # load historical scrapes into findexer
             self.populate.transfer_opcash_to_db() # PROCESSED OPCASHES MOVED INTO DB
         else:
             if kw.get('bypass_findexer') == True:

@@ -39,56 +39,43 @@ class FileIndexer(Utils):
         self.scrape_path = Config.TEST_MM_SCRAPE
 
     def iter_build_runner(self):
-        print('iter_build_runner; a FileIndexer method')
-        # if month is :
-            # unfinalized
-            # not scrape reconciled
-            # csv with current month is in index_dict, load_scrape
-        
+        print('iter_build_runner; a FileIndexer method')        
         self.connect_to_db() 
         populate = PopulateTable()
 
         months_ytd, unf_months = self.test_for_unfinalized_months()
 
         if len(self.unfinalized_months) > 0:
-
             unproc_files, directory_contents = self.test_for_unprocessed_file()
-
-            if len(unproc_files) == 0:
-                print('there are no new files in path')
-                print('here we should look to see whether we want to make any new rent sheets')
-                return [], []
-            else:
-                print('adding new files to findexer')
-                self.index_dict = self.sort_directory_by_extension2() 
-                self.load_what_is_in_dir_as_indexed(dict1=self.index_dict_iter)
-        
-                self.make_a_list_of_indexed(mode=self.query_mode.xls)
-                if self.indexed_list:
-                    self.xls_wrapper()
-                
-                self.make_a_list_of_indexed(mode=self.query_mode.pdf)
-                if self.indexed_list:
-                    self.pdf_wrapper()
-                
-                self.make_a_list_of_indexed(mode=self.query_mode.csv)
-                if self.indexed_list:
-                    self.get_period_from_scrape_fn_and_mark_in_findexer()
-                
-                new_files_dict = self.get_report_type_from_name(records=self.index_dict)
-                new_files_dict = self.get_date_from_xls_name(records=new_files_dict)
-
-                return new_files_dict, self.unfinalized_months
         else:
             print('no unfinalized months; you are presumptively caught up!')
             print('exiting program')
             exit
 
+        if len(unproc_files) == 0:
+            print('there are no new files in path')
+            print('here we should look to see whether we want to make any new rent sheets')
+            return [], []
+        else:
+            print('adding new files to findexer')
+            self.index_dict = self.sort_directory_by_extension2() 
+            self.load_what_is_in_dir_as_indexed(dict1=self.index_dict_iter)
+    
+            self.runner_internals()        
+            
+            new_files_dict = self.get_report_type_from_name(records=self.index_dict)
+            new_files_dict = self.get_date_from_xls_name(records=new_files_dict)
+
+            return new_files_dict, self.unfinalized_months
+
     def build_index_runner(self):
         self.connect_to_db()
         self.index_dict = self.articulate_directory()
         self.load_what_is_in_dir_as_indexed(dict1=self.index_dict)
-        
+        self.runner_internals()    
+        self.load_scrape_data_historical()    
+
+    def runner_internals(self):
         self.make_a_list_of_indexed(mode=self.query_mode.xls)
         if self.indexed_list:
             self.xls_wrapper()
@@ -109,6 +96,14 @@ class FileIndexer(Utils):
         self.find_opcashes()
         self.type_opcashes()    
         self.rename_by_content_pdf()
+
+    def load_scrape_data_historical(self):
+        scrapes = [(row.path, row.period) for row in Findexer.select().where(Findexer.doc_type == 'scrape').namedtuples()]
+
+        for scrape_path, scrape_period in scrapes:
+            self.load_directed_scrape(path_to_scrape=scrape_path, target_date=scrape_period)
+        breakpoint()
+
 
     def load_directed_scrape(self, path_to_scrape=None, target_date=None):
         populate = PopulateTable() 
@@ -140,7 +135,6 @@ class FileIndexer(Utils):
         return pd.read_csv(path)
 
     def get_targeted_rows_for_scrape(self, scrape_df=None):
-
         deposit_list = []
         corr_count = 0
         for index, row in scrape_df.iterrows():
@@ -357,6 +351,7 @@ class FileIndexer(Utils):
         return date_list
         
     def get_period_from_scrape_fn_and_mark_in_findexer(self):
+        """this just provides row in findexer db & marks as processed; does not mark_scrape reconciled as True or file out hap, tenant, etc cols"""
         for item, doc_id in self.indexed_list:
             scrape_file = Findexer.get(Findexer.doc_id==doc_id)
             date_str = [part.split('_') for part in item.split('/')][-1][-2]
