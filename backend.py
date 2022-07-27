@@ -335,6 +335,11 @@ class QueryHC:
         opcash_detail = self.get_opcashdetail_by_stmt(stmt_key=opcash_sum[0][0])
         return opcash_sum, opcash_detail
 
+    def get_opcash_sum_by_period(self, first_dt=None, last_dt=None):
+        return [row.dep_sum for row in OpCash.select().
+        where(OpCash.date >= first_dt).
+        where(OpCash.date <= last_dt).namedtuples()]
+    
     def get_opcash_by_period(self, first_dt=None, last_dt=None):
         return [(row.stmt_key, row.date, row.rr, row.hap, row.dep_sum, row.corr_sum) for row in OpCash.select(OpCash.stmt_key, OpCash.date, OpCash.rr, OpCash.hap, OpCash.dep_sum, OpCash.corr_sum).
         where(OpCash.date >= first_dt).
@@ -1205,6 +1210,8 @@ class ProcessingLayer(StatusRS):
         tp_list = []
         ntp_list = []
         total_list = []
+        opcash_amt_list = []
+        dc_list = []
 
         for month in months_ytd:
             first_dt, last_dt = populate.make_first_and_last_dates(date_str=month)
@@ -1212,7 +1219,6 @@ class ProcessingLayer(StatusRS):
             ten_payments = sum([float(row[2]) for row in populate.get_payments_by_tenant_by_period(first_dt=first_dt, last_dt=last_dt)])
             tp_tup = (ten_payments, first_dt)
             tp_list.append(tp_tup)
-
 
             ntp = sum(populate.get_ntp_by_period(first_dt=first_dt, last_dt=last_dt))
             ntp_tup = (ntp, first_dt)
@@ -1223,14 +1229,21 @@ class ProcessingLayer(StatusRS):
             total_list.append((total, first_dt))
             
             opcash = populate.get_opcash_by_period(first_dt=first_dt, last_dt=last_dt)
+            if opcash:
+                oc_tup = (opcash[0][4], first_dt)
+            else:
+                oc_tup = (0, first_dt)
+            opcash_amt_list.append(oc_tup)
 
+            if opcash:
+                dc_tup = (opcash[0][5], first_dt)
+            else:
+                dc_tup = (0, first_dt)
+            dc_list.append(dc_tup)
 
-        breakpoint()
-        # deposit_amounts = query.get  
+        dl_tup_list = list(zip(deposits, rent, scrapes, tp_list, ntp_list, total_list, opcash_amt_list, dc_list))
 
-        dl_tup_list = list(zip(deposits, rent, scrapes, tp_list, ntp_list, total_list))
-        # breakpoint()
-        header = ['month', 'deps', 'rtroll', 'scrapes', 'ten_pay', 'ntp', 'tot_pay',  'oc_rec', 'ten_rec', 'rs_rec', 'scrape_rec']
+        header = ['month', 'deps', 'rtroll', 'scrapes', 'ten_pay', 'ntp', 'tot_pay',  'oc_amt', 'dc', 'ten_rec', 'rs_rec', 'scrape_rec']
         table = [header]
         for item, dep in zip(status_objects, dl_tup_list):
             row_list = []
@@ -1241,13 +1254,15 @@ class ProcessingLayer(StatusRS):
             row_list.append(str(dep[3][0]))
             row_list.append(str(dep[4][0]))
             row_list.append(str(dep[5][0]))
+            row_list.append(str(dep[6][0]))
+            row_list.append(str(dep[7][0]))
             row_list.append(str(item.opcash_processed))
             row_list.append(str(item.tenant_reconciled))
             row_list.append(str(item.rs_reconciled))
             row_list.append(str(item.scrape_reconciled))
             table.append(row_list)
         
-        print('\n'.join([''.join(['{:8}'.format(x) for x in r]) for r in table]))
+        print('\n'.join([''.join(['{:9}'.format(x) for x in r]) for r in table]))
 
     def assert_reconcile_payments(self, month_list=None, ref_rec=None):
         """takes list of months in year to date, gets tenant payments by period, non-tenant payments, and opcash information and reconciles the deposits on the opcash statement to the sum of tenant payments and non-tenant payments
