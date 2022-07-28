@@ -8,7 +8,6 @@ from peewee import *
 from annual_financials import AnnFin
 from auth_work import oauth
 from backend import PopulateTable, ProcessingLayer, QueryHC, StatusRS, db
-from balance_letter import balance_letters
 from build_rs import BuildRS
 from config import Config
 from db_utils import DBUtils
@@ -109,7 +108,8 @@ def sqlite_dump():
 @click.command()
 def balanceletters():
     click.echo('balance letters')
-    balance_letters()
+    letters = Letters()
+    letters.balance_letters()
 
 @click.command()
 def receipts():

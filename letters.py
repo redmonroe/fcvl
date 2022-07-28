@@ -74,6 +74,34 @@ class Letters(object):
                         ).execute()
         pprint(response)
 
+    def get_bal_let_parameters(self, balance_list=None):
+        from backend import ProcessingLayer
+
+        player = ProcessingLayer()
+        balance_letters = player.show_balance_letter_list_mr_reconciled()
+        name_list = []
+        unit_list = []
+        bal_due_list = []
+
+        for record in balance_letters:
+            formatted_name = [name.rstrip().lstrip().capitalize() for name in record.tenant_name.split(',')]
+            name_list.append((' ').join(formatted_name[::-1]))
+            unit_list.append(record.unit)
+            bal_due_list.append(str(record.end_bal))
+
+        formatted_date = datetime.utcnow()
+        current_date = datetime.strftime(formatted_date, '%Y-%m-%d')
+        parameters = {
+            'current_date' : current_date, 
+            'display_month': formatted_date.strftime('%B'),
+            'display_year': str(formatted_date.year),
+            'unit': unit_list, 
+            'name': name_list, 
+            'bal_due': bal_due_list, 
+            }
+
+        return parameters
+
     def work_orders(self):
         service_scripts = oauth(Config.my_scopes, 'script')
         service = oauth(Config.my_scopes, 'sheet')
@@ -81,6 +109,36 @@ class Letters(object):
         Letters.run_script(service=service_scripts, deploy_id=deploy_id, function_name='myFunction', 
         # parameters=parameters
         ) 
+
+    def bal_let_pprint_parameters(self, parameters):
+
+        print('current date', parameters['current_date'], parameters['display_year'])
+        print('display_month', parameters['display_month'])
+
+        bal_data = list(zip(parameters['unit'], parameters['name'], parameters['bal_due']))
+        print('\n')
+        for item in bal_data:
+            print(item[0], item[1], item[2])
+        print('\n')
+
+    def balance_letters(self):
+        from backend import ProcessingLayer, db
+        '''if testing, I can simulate a prod  database by breakpointing db before teardown'''
+        db.connect()
+        player = ProcessingLayer()
+        service = oauth(Config.my_scopes, 'script')
+        deploy_id = 'AKfycbyyIjoqLq-VGYEv-gVexvQXp6F0Z-yz1H7rn1X71TZC2VTHI0-HqLcJh-AwRy7KJmxA'
+        deploy_id = Config.BALANCE_LETTER_DEPLOY_ID
+        function_name = 'balanceLetter'
+        balance_list = player.show_balance_letter_list_mr_reconciled()
+        parameters = self.get_bal_let_parameters(balance_list=balance_list)
+
+        self.bal_let_pprint_parameters(parameters)
+        choice = str(input('send these results to google script & make receipts? y/n '))
+
+        if choice == 'y':
+            run_script(service=service, deploy_id=deploy_id, function_name=function_name, parameters=parameters) 
+
 
     def rent_receipts(self):
         '''if there is an issue, check deployment id'''

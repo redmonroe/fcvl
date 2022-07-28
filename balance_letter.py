@@ -7,7 +7,7 @@ from config import Config
 template = Config.BALANCE_LETTER_TEMPLATE
 output_file = Config.BALANCE_LETTER_OUTPUT
 
-def get_parameters(balance_list=None):
+def get_bal_let_parameters(balance_list=None):
 
     player = ProcessingLayer()
     balance_letters = player.show_balance_letter_list_mr_reconciled()
