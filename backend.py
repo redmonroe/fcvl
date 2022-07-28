@@ -1042,7 +1042,7 @@ class ProcessingLayer(StatusRS):
         from file_indexer import FileIndexer #circular import workaroud
         findex = FileIndexer()
         scrape_txn_list = findex.load_mm_scrape(list1=target_mid_month)
-        scrape_deposit_sum = sum([float(item['amount']) for item in all_relevant_scrape_txn_list if item['dep_type'] == 'deposit'])
+        scrape_deposit_sum = sum([float(item['amount']) for item in scrape_txn_list if item['dep_type'] == 'deposit'])
 
         return scrape_txn_list, scrape_deposit_sum
 
@@ -1075,6 +1075,7 @@ class ProcessingLayer(StatusRS):
         receipts.rent_receipts()
 
     def show_balance_letter_list_mr_reconciled(self):
+        """triggers off of most recent reconciled month"""
         query = QueryHC()
         mr_good_month = self.get_mr_good_month()
         if mr_good_month:
