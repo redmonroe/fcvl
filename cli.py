@@ -16,7 +16,7 @@ from file_indexer import FileIndexer
 from file_manager import path_to_statements, write_hap
 from manual_entry import ManualEntry
 from pdf import StructDataExtract
-from receipts import RentReceipts
+from letters import Letters
 from records import record
 from setup_month import MonthSheet
 from setup_year import YearSheet

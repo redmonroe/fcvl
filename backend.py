@@ -22,7 +22,7 @@ from recordtype import \
     recordtype  # i edit the source code here, so requirements won't work if this is ever published, after 3.10, collection.abc change
 
 from config import Config
-from receipts import RentReceipts
+from letters import Letters 
 from records import record
 from utils import Utils
 
@@ -1071,7 +1071,7 @@ class ProcessingLayer(StatusRS):
 
     def rent_receipts_wrapper(self):
         print('generating rent receipts')
-        receipts = RentReceipts()
+        receipts = Letters()
         receipts.rent_receipts()
 
     def show_balance_letter_list_mr_reconciled(self):
