@@ -1,4 +1,3 @@
-#sample project: https://github.com/gsuitedevs/python-samples/tree/master/docs/mail-merge
 from datetime import datetime
 from pprint import pprint
 
@@ -61,7 +60,6 @@ class Letters(object):
 
     @staticmethod
     def run_script(service, deploy_id, function_name, parameters=None):
-
         request = {
         'function': function_name, 
         'devMode': True, 
