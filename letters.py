@@ -90,9 +90,8 @@ class Letters(object):
             bal_due_list.append(str(record.end_bal))
 
         formatted_date = datetime.utcnow()
-        current_date = datetime.strftime(formatted_date, '%Y-%m-%d')
         parameters = {
-            'current_date' : current_date, 
+            'current_date' : datetime.strftime(datetime.utcnow(), '%Y-%m-%d'), 
             'display_month': formatted_date.strftime('%B'),
             'display_year': str(formatted_date.year),
             'unit': unit_list, 
@@ -111,7 +110,6 @@ class Letters(object):
         ) 
 
     def bal_let_pprint_parameters(self, parameters):
-
         print('current date', parameters['current_date'], parameters['display_year'])
         print('display_month', parameters['display_month'])
 
@@ -125,49 +123,37 @@ class Letters(object):
     def balance_letters(self):
         from backend import ProcessingLayer, db
         '''if testing, I can simulate a prod  database by breakpointing db before teardown'''
+        '''if there is an issue, check deployment id'''
         db.connect()
         player = ProcessingLayer()
-        service = oauth(Config.my_scopes, 'script')
-        deploy_id = 'AKfycbyyIjoqLq-VGYEv-gVexvQXp6F0Z-yz1H7rn1X71TZC2VTHI0-HqLcJh-AwRy7KJmxA'
-        deploy_id = Config.BALANCE_LETTER_DEPLOY_ID
-        function_name = 'balanceLetter'
-        balance_list = player.show_balance_letter_list_mr_reconciled()
-        parameters = self.get_bal_let_parameters(balance_list=balance_list)
-
+        parameters = self.get_bal_let_parameters(balance_list=player.show_balance_letter_list_mr_reconciled())
         self.bal_let_pprint_parameters(parameters)
-        choice = str(input('send these results to google script & make receipts? y/n '))
-
+        choice = str(input('Send these results to google script & make balance letters? y/n '))
         if choice == 'y':
-            run_script(service=service, deploy_id=deploy_id, function_name=function_name, parameters=parameters) 
+            Letters.run_script(service=oauth(Config.my_scopes, 'script'), deploy_id=Config.BALANCE_LETTER_DEPLOY_ID, function_name='balanceLetter', parameters=parameters)
+        else:
+            print('exiting program')
+            exit
 
     def rent_receipts(self):
-        '''if there is an issue, check deployment id'''
-        
-        service_scripts = oauth(Config.my_scopes, 'script')
-        service = oauth(Config.my_scopes, 'sheet')
-        deploy_id = Config.receipts_deploy_id   
-    
-        titles_dict = Utils.get_existing_sheets(service, Config.TEST_RS)
-        titles_dict = {name:id2 for name, id2 in titles_dict.items() if name != 'intake'}
-        idx_list = Utils.existing_ids(titles_dict)
-        choice = int(input('Please select a sheet to make receipts from: '))
-        sheet_choice = idx_list[choice]
-        display_month = str(input('type display month you wish to appear? '))
-
-        formatted_date = datetime.utcnow()
-        formatted_date = datetime.strftime(formatted_date, '%Y-%m-%d')
+        '''if there is an issue, check deployment id'''            
+        titles_dict = Utils.get_existing_sheets(oauth(Config.my_scopes, 'sheet'), Config.TEST_RS)
+        idx_list = Utils.existing_ids({name:id2 for name, id2 in titles_dict.items() if name != 'intake'})
+        sheet_choice = idx_list[int(input('Please select a sheet to make receipts from: '))]
         parameters = {
-        'current_date' : formatted_date, 
-        'display_month': display_month,
+        'current_date' : datetime.strftime(datetime.utcnow(), '%Y-%m-%d'), 
+        'display_month': str(input('Type display month as you wish it to appear? ')),
         'sheet_choice': sheet_choice[1][0], 
         'rent_sheet': Config.TEST_RS, 
         }
 
         pprint(parameters)
-        choice = str(input('send these results to google script & make receipts? y/n '))
-
+        choice = str(input('Send these results to google script & make receipts? y/n '))
         if choice == 'y':
-            Letters.run_script(service=service_scripts, deploy_id=deploy_id, function_name="test1", parameters=parameters) 
+            Letters.run_script(service=oauth(Config.my_scopes, 'script'), deploy_id=Config.receipts_deploy_id, function_name="test1", parameters=parameters) 
+        else:
+            print('exiting program')
+            exit
     
 
 
