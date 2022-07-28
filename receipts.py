@@ -5,7 +5,6 @@ from auth_work import oauth
 from config import Config
 from utils import Utils
 
-
 class RentReceipts(object):
 
     def get_doc_title(self, doc, service_docs): #doc is DOCS_FILE_ID
@@ -82,14 +81,11 @@ class RentReceipts(object):
         ) 
 
     def rent_receipts(self):
+        '''if there is an issue, check deployment id'''
         
         service_scripts = oauth(Config.my_scopes, 'script')
         service = oauth(Config.my_scopes, 'sheet')
-
-        
-        '''if there is an issue, check deployment id'''
-    
-        deploy_id = "AKfycby3_qnppVYUo9g7DE3dQgu2l_xd97td8smvs66gExs8AOH00CPlxT2ciXjbS4l94qD0"
+        deploy_id = "AKfycby3_qnppVYUo9g7DE3dQgu2l_xd97td8smvs66gExs8AOH00CPlxT2ciXjbS4l94qD0"    
     
         titles_dict = Utils.get_existing_sheets(service, Config.TEST_RS)
         titles_dict = {name:id2 for name, id2 in titles_dict.items() if name != 'intake'}
@@ -98,8 +94,6 @@ class RentReceipts(object):
         sheet_choice = idx_list[choice]
         display_month = str(input("type display month you wish to appear? "))
 
-        # display current date
-        # replace { display_month } in template
         formatted_date = datetime.utcnow()
         formatted_date = datetime.strftime(formatted_date, '%Y-%m-%d')
         parameters = {
@@ -110,7 +104,7 @@ class RentReceipts(object):
         }
 
         print(parameters)
-        choice = str(input("send these results to google script & make receipts? y/n "))
+        choice = str(input('send these results to google script & make receipts? y/n '))
 
         if choice == 'y':
             RentReceipts.run_script(service=service_scripts, deploy_id=deploy_id, function_name="test1", parameters=parameters) 
