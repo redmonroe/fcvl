@@ -118,7 +118,8 @@ class Letters(object):
         bal_data = list(zip(parameters['unit'], parameters['name'], parameters['bal_due']))
         print('\n')
         for item in bal_data:
-            print(item[0], item[1], item[2])
+            row = '{:<9s} {:<20} {:<9s}'.format(item[0], item[1], item[2])
+            print(row)
         print('\n')
 
     def balance_letters(self):
@@ -138,7 +139,6 @@ class Letters(object):
 
         if choice == 'y':
             run_script(service=service, deploy_id=deploy_id, function_name=function_name, parameters=parameters) 
-
 
     def rent_receipts(self):
         '''if there is an issue, check deployment id'''
