@@ -28,7 +28,7 @@ from utils import Utils
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
-db = Config.TEST_DB
+db = Config.PROD_DB
 
 class BaseModel(Model):
     class Meta:

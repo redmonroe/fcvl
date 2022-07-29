@@ -65,7 +65,6 @@ def reset_db_test():
 def load_db_prod():
     click.echo('PRODUCTION: loading all available files in path to db')
     path, full_sheet, build, service, ms = return_config()   
-    breakpoint() 
     build.build_db_from_scratch()   
 
 @click.command()
