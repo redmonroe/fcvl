@@ -19,7 +19,6 @@ class BuildRS(MonthSheet):
             self.service = oauth(Config.my_scopes, 'sheet')
         except (FileNotFoundError, NameError) as e:
             print(e, 'using testing configuration for Google Api Calls')
-            breakpoint()
             self.service = oauth(Config.my_scopes, 'sheet', mode='testing')
         self.create_tables_list1 = None
         self.target_bal_load_file = Config.beg_bal_xlsx
@@ -43,6 +42,7 @@ class BuildRS(MonthSheet):
             print(f'{self.ctx}')
             populate = self.setup_tables(mode='drop_and_create')
             self.findex.build_index_runner() # this is a findex method
+            breakpoint()
             self.load_initial_tenants_and_balances()
             processed_rentr_dates_and_paths = self.iterate_over_remaining_months()
             Damages.load_damages()

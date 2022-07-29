@@ -70,6 +70,7 @@ class FileIndexer(Utils):
 
     def build_index_runner(self):
         self.connect_to_db()
+        breakpoint()
         self.index_dict = self.articulate_directory()
         self.load_what_is_in_dir_as_indexed(dict1=self.index_dict)
         self.runner_internals()    
@@ -113,7 +114,7 @@ class FileIndexer(Utils):
 
             corr_sum = sum([item['amount'] for item in scrape_txn_list if item['dep_type'] == 'corr'])
 
-            double_check =            dep_sum + hap_sum + corr_sum + rr_sum
+            double_check = dep_sum + hap_sum + corr_sum + rr_sum
             assert check == round(double_check, 2)            
 
             target_scr_id = [row for row in Findexer.select().where(
