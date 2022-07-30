@@ -43,6 +43,15 @@ def return_config():
     ms = MonthSheet(full_sheet=sheet, path=path)
     return path, sheet, build, service, ms
 
+def set_db(build=None):
+    populate = PopulateTable()
+    create_tables_list1 = populate.return_tables_list()
+    if build.main_db.is_closed() == True:
+        build.main_db.connect()
+    build.main_db.drop_tables(models=create_tables_list1)
+    if build.main_db.get_tables() == []:
+        print('db successfully dropped')
+
 @click.group()
 def cli():
     pass
@@ -52,13 +61,21 @@ def cli():
 def reset_db_test():
     click.echo('dropping test db . . .')
     path, full_sheet, build, service, ms = return_test_config()
-    populate = PopulateTable()
-    create_tables_list1 = populate.return_tables_list()
-    if build.main_db.is_closed() == True:
-        build.main_db.connect()
-    build.main_db.drop_tables(models=create_tables_list1)
-    if build.main_db.get_tables() == []:
-        print('db successfully dropped')
+    set_db(build=build)
+
+@click.command()
+@record
+def reset_db_prod():
+    click.echo('dropping PRODUCTION db . . .')
+    path, full_sheet, build, service, ms = return_config()
+    set_db(build=build)
+
+@click.command()
+@record
+def load_db_test():
+    click.echo('loading all available files in path to db')
+    path, full_sheet, build, service, ms = return_test_config()    
+    build.build_db_from_scratch()    
 
 @click.command()
 @record
@@ -69,10 +86,10 @@ def load_db_prod():
 
 @click.command()
 @record
-def load_db_test():
-    click.echo('loading all available files in path to db')
-    path, full_sheet, build, service, ms = return_test_config()    
-    build.build_db_from_scratch()    
+def write_all_prod():
+    click.echo('PRODUCTION: write all db contents to rs . . .')
+    path, full_sheet, build, service, ms = return_config()    
+    ms.auto_control(source='cli.py', mode='clean_build')
 
 @click.command()
 @record
@@ -194,7 +211,9 @@ def dry_run():
 cli.add_command(escrow)
 cli.add_command(receipts)
 cli.add_command(reset_db_test)
+cli.add_command(reset_db_prod)
 cli.add_command(write_all_test)
+cli.add_command(write_all_prod)
 cli.add_command(load_db_test)
 cli.add_command(load_db_prod)
 cli.add_command(sqlite_dump)

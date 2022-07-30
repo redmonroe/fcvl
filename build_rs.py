@@ -42,7 +42,7 @@ class BuildRS(MonthSheet):
             print(f'{self.ctx}')
             populate = self.setup_tables(mode='drop_and_create')
             self.findex.build_index_runner() # this is a findex method
-            breakpoint()
+            # breakpoint()
             self.load_initial_tenants_and_balances()
             processed_rentr_dates_and_paths = self.iterate_over_remaining_months()
             Damages.load_damages()
@@ -64,7 +64,7 @@ class BuildRS(MonthSheet):
                 # reconcile all available
                     # if already reconciled, don't reconcile again
 
-                breakpoint()
+                # breakpoint()
             else:
                 """this branch is used to trigger iterative build of findex using new file list created here"""
                 self.ctx = 'db is not empty; iter_build; do NOT bypass findexer'

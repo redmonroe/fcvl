@@ -70,7 +70,6 @@ class FileIndexer(Utils):
 
     def build_index_runner(self):
         self.connect_to_db()
-        breakpoint()
         self.index_dict = self.articulate_directory()
         self.load_what_is_in_dir_as_indexed(dict1=self.index_dict)
         self.runner_internals()    
