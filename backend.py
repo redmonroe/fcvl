@@ -967,6 +967,9 @@ class PopulateTable(QueryHC):
 
 class ProcessingLayer(StatusRS):
 
+    def __init__(self):
+        self.populate = PopulateTable()
+
     def set_current_date(self):
         date1 = datetime.now()
         query = StatusRS.create(current_date=date1)
@@ -1207,60 +1210,20 @@ class ProcessingLayer(StatusRS):
         from file_indexer import FileIndexer # circular import work around
 
         populate  = PopulateTable()
-        # breakpoint()
         findex = FileIndexer(path=kw['path'], db=kw['db'])
-        months_ytd, unfin_month = findex.test_for_unfinalized_months()     
+
+        months_ytd, unfin_month = findex.test_for_unfinalized_months()    
 
         status_objects = populate.get_all_status_objects() 
-        deposits = populate.get_all_findexer_by_type(type1='deposits')
-        deposit_months = [month for name, month in deposits]
+    
+        deposits = self.status_table_finder_helper(months_ytd, type1='deposits')
+        rents = self.status_table_finder_helper(months_ytd, type1='rent')
+        scrapes = self.status_table_finder_helper(months_ytd, type1='scrape') 
 
-        deposits = [(True, month) if month in deposit_months else (False, month) for month in months_ytd]    
+        tp_list, ntp_list, total_list, opcash_amt_list, dc_list = self.make_mega_tup_list_for_table(months_ytd)
 
-        rent = populate.get_all_findexer_by_type(type1='rent')
-        rent_months = [month for name, month in rent]
-        rent = [(True, month) if month in rent_months else (False, month) for month in months_ytd]    
+        dl_tup_list = list(zip(deposits, rents, scrapes, tp_list, ntp_list, total_list, opcash_amt_list, dc_list)) 
         
-        scrapes = populate.get_all_findexer_by_type(type1='scrape')
-        scrape_months = [month for name, month in scrapes]
-        scrapes = [(True, month) if month in scrape_months else (False, month) for month in months_ytd]  
-
-        tp_list = []
-        ntp_list = []
-        total_list = []
-        opcash_amt_list = []
-        dc_list = []
-
-        for month in months_ytd:
-            first_dt, last_dt = populate.make_first_and_last_dates(date_str=month)
-        
-            ten_payments = sum([float(row[2]) for row in populate.get_payments_by_tenant_by_period(first_dt=first_dt, last_dt=last_dt)])
-            tp_tup = (ten_payments, first_dt)
-            tp_list.append(tp_tup)
-
-            ntp = sum(populate.get_ntp_by_period(first_dt=first_dt, last_dt=last_dt))
-            ntp_tup = (ntp, first_dt)
-            ntp_list.append(ntp_tup)
-
-            total = float(ten_payments) + float(ntp)
-
-            total_list.append((total, first_dt))
-            
-            opcash = populate.get_opcash_by_period(first_dt=first_dt, last_dt=last_dt)
-            if opcash:
-                oc_tup = (opcash[0][4], first_dt)
-            else:
-                oc_tup = (0, first_dt)
-            opcash_amt_list.append(oc_tup)
-
-            if opcash:
-                dc_tup = (opcash[0][5], first_dt)
-            else:
-                dc_tup = (0, first_dt)
-            dc_list.append(dc_tup)
-
-        dl_tup_list = list(zip(deposits, rent, scrapes, tp_list, ntp_list, total_list, opcash_amt_list, dc_list))
-
         header = ['month', 'deps', 'rtroll', 'scrapes', 'ten_pay', 'ntp', 'tot_pay',  'oc_amt', 'dc', 'oc_proc', 'ten_rec', 'rs_rec', 'scrape_rec']
         table = [header]
         for item, dep in zip(status_objects, dl_tup_list):
@@ -1281,6 +1244,48 @@ class ProcessingLayer(StatusRS):
             table.append(row_list)
         
         print('\n'.join([''.join(['{:9}'.format(x) for x in r]) for r in table]))
+
+    def status_table_finder_helper(self, months_ytd, type1=None):
+        populate  = PopulateTable()
+        output = populate.get_all_findexer_by_type(type1=type1)
+        output_months = [month for name, month in output]
+        return [(True, month) if month in output_months else (False, month) for month in months_ytd] 
+
+    def make_mega_tup_list_for_table(self, months_ytd):
+        tp_list = []
+        ntp_list = []
+        total_list = []
+        opcash_amt_list = []
+        dc_list = []
+
+        for month in months_ytd:
+            first_dt, last_dt = self.populate.make_first_and_last_dates(date_str=month)
+        
+            ten_payments = sum([float(row[2]) for row in self.populate.get_payments_by_tenant_by_period(first_dt=first_dt, last_dt=last_dt)])
+            tp_tup = (ten_payments, first_dt)
+            tp_list.append(tp_tup)
+
+            ntp = sum(self.populate.get_ntp_by_period(first_dt=first_dt, last_dt=last_dt))
+            ntp_tup = (ntp, first_dt)
+            ntp_list.append(ntp_tup)
+
+            total = float(ten_payments) + float(ntp)
+            total_list.append((total, first_dt))
+            
+            opcash = self.populate.get_opcash_by_period(first_dt=first_dt, last_dt=last_dt)
+            if opcash:
+                oc_tup = (opcash[0][4], first_dt)
+            else:
+                oc_tup = (0, first_dt)
+            opcash_amt_list.append(oc_tup)
+
+            if opcash:
+                dc_tup = (opcash[0][5], first_dt)
+            else:
+                dc_tup = (0, first_dt)
+            dc_list.append(dc_tup)
+
+        return tp_list, ntp_list, total_list, opcash_amt_list, dc_list  
 
     def assert_reconcile_payments(self, month_list=None, ref_rec=None):
         """takes list of months in year to date, gets tenant payments by period, non-tenant payments, and opcash information and reconciles the deposits on the opcash statement to the sum of tenant payments and non-tenant payments
