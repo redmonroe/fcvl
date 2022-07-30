@@ -28,7 +28,7 @@ from utils import Utils
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
-db = Config.PROD_DB
+db = Config.TEST_DB
 
 class BaseModel(Model):
     class Meta:
@@ -1193,6 +1193,7 @@ class ProcessingLayer(StatusRS):
         query = QueryHC()
         populate  = PopulateTable()
         months_ytd, unfin_month = findex.test_for_unfinalized_months()
+      
     
         status_objects = query.get_all_status_objects() # move this to backend > processingLayer func
         deposits = query.get_all_findexer_by_type(type1='deposits')

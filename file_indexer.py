@@ -367,6 +367,7 @@ class FileIndexer(Utils):
                     date_str = '-'.join(data[1].split('.')[0].split('_')[2:][::-1])
                 elif typ == 'scrape':
                     date_str = data[1].split('_')[3][0:7]
+                    breakp
                 dict1 = {typ: (date_str, data[0])}
                 records1.append(dict1)
         return records1

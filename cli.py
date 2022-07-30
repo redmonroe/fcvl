@@ -77,6 +77,7 @@ def load_db_test():
     path, full_sheet, build, service, ms = return_test_config()    
     build.build_db_from_scratch()    
 
+
 @click.command()
 @record
 def load_db_prod():
@@ -157,6 +158,17 @@ def reset_dry_run():
     target_deposit_file3.delete_instance()
     
 @click.command()
+@record
+def status_test_findexer():
+    click.echo('show status of findex db')
+    path, full_sheet, build, service, ms = return_test_config()
+    findex = FileIndexer(path=path, db=db)
+    query = QueryHC()
+    player = ProcessingLayer()
+    player.show_status_table(findex=findex)
+
+
+@click.command()
 def dry_run():
     click.echo('dry run of findexer with new files vel non')
     path = Config.TEST_RS_PATH_MAY
@@ -164,12 +176,8 @@ def dry_run():
     db = Config.TEST_DB
     scopes = Config.my_scopes
     
-    findex = FileIndexer(path=path, db=db)
-    query = QueryHC()
-    player = ProcessingLayer()
 
     click.echo('description of db')
-    player.show_status_table(findex=findex)
     
     print('\n')
     click.echo('unfinalized months')
@@ -210,6 +218,7 @@ def dry_run():
 
 cli.add_command(escrow)
 cli.add_command(receipts)
+cli.add_command(status_test_findexer)
 cli.add_command(reset_db_test)
 cli.add_command(reset_db_prod)
 cli.add_command(write_all_test)
