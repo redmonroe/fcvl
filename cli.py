@@ -11,7 +11,6 @@ from backend import PopulateTable, ProcessingLayer, QueryHC, StatusRS, db
 from build_rs import BuildRS
 from config import Config
 from db_utils import DBUtils
-from file_indexer import FileIndexer
 from file_manager import path_to_statements, write_hap
 from manual_entry import ManualEntry
 from pdf import StructDataExtract
@@ -162,11 +161,8 @@ def reset_dry_run():
 def status_test_findexer():
     click.echo('show status of findex db')
     path, full_sheet, build, service, ms = return_test_config()
-    findex = FileIndexer(path=path, db=db)
-    query = QueryHC()
     player = ProcessingLayer()
-    player.show_status_table(findex=findex)
-
+    player.show_status_table(path=path, db=db)
 
 @click.command()
 def dry_run():

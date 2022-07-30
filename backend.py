@@ -22,7 +22,7 @@ from recordtype import \
     recordtype  # i edit the source code here, so requirements won't work if this is ever published, after 3.10, collection.abc change
 
 from config import Config
-from letters import Letters 
+from letters import Letters
 from records import record
 from utils import Utils
 
@@ -1039,7 +1039,7 @@ class ProcessingLayer(StatusRS):
             return False
 
     def load_scrape_wrapper(self, target_mid_month=None):
-        from file_indexer import FileIndexer #circular import workaroud
+        from file_indexer import FileIndexer  # circular import workaroud
         findex = FileIndexer()
         scrape_txn_list = findex.load_mm_scrape(list1=target_mid_month)
         scrape_deposit_sum = sum([float(item['amount']) for item in scrape_txn_list if item['dep_type'] == 'deposit'])
@@ -1189,23 +1189,39 @@ class ProcessingLayer(StatusRS):
         mr_status.proc_file = json.dumps(dump_list)
         mr_status.save()
 
-    def show_status_table(self, findex=None):
-        query = QueryHC()
+    def show_status_table(self, **kw):
+
+        """ this exists to show the status of the FileIndexer table
+        table cols:
+            - months year to date
+            - deposit detail reports by month
+            - rentroll reports by month
+            - scrapes available by month
+            - tenant payments (from ?)
+            - non-tenant payments (from what doc?)
+            - total payments (from ??)
+            - total deposits related to payments from oc
+            - deposit corrections
+            - what do I want to show whether reconciled?
+        """
+        from file_indexer import FileIndexer # circular import work around
+
         populate  = PopulateTable()
-        months_ytd, unfin_month = findex.test_for_unfinalized_months()
-      
-    
-        status_objects = query.get_all_status_objects() # move this to backend > processingLayer func
-        deposits = query.get_all_findexer_by_type(type1='deposits')
+        # breakpoint()
+        findex = FileIndexer(path=kw['path'], db=kw['db'])
+        months_ytd, unfin_month = findex.test_for_unfinalized_months()     
+
+        status_objects = populate.get_all_status_objects() 
+        deposits = populate.get_all_findexer_by_type(type1='deposits')
         deposit_months = [month for name, month in deposits]
 
         deposits = [(True, month) if month in deposit_months else (False, month) for month in months_ytd]    
 
-        rent = query.get_all_findexer_by_type(type1='rent')
+        rent = populate.get_all_findexer_by_type(type1='rent')
         rent_months = [month for name, month in rent]
         rent = [(True, month) if month in rent_months else (False, month) for month in months_ytd]    
         
-        scrapes = query.get_all_findexer_by_type(type1='scrape')
+        scrapes = populate.get_all_findexer_by_type(type1='scrape')
         scrape_months = [month for name, month in scrapes]
         scrapes = [(True, month) if month in scrape_months else (False, month) for month in months_ytd]  
 
