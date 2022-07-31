@@ -76,7 +76,6 @@ def load_db_test():
     path, full_sheet, build, service, ms = return_test_config()    
     build.build_db_from_scratch()    
 
-
 @click.command()
 @record
 def load_db_prod():

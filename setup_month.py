@@ -164,7 +164,6 @@ class MonthSheet(YearSheet):
         hap = populate.get_scrape_detail_by_month_by_type(type1='hap', first_dt=first_dt, last_dt=last_dt)
         dep_correction_sum = populate.get_scrape_detail_by_month_by_type(type1='corr', first_dt=first_dt, last_dt=last_dt)
         dep_correction_sum = sum([float(item) for item in dep_correction_sum])
-        breakpoint()
         dep_detail = populate.get_scrape_detail_by_month_deposit(first_dt=first_dt, last_dt=last_dt)
         self.export_deposit_detail(date=date, res_rep=0, hap=hap[0], dep_sum=0, corr_sum=dep_correction_sum, dep_detail=dep_detail)
 

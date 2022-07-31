@@ -12,90 +12,18 @@ from config import Config
 from pdf import StructDataExtract
 from utils import Utils
 
-class FileIndexer(Utils):
+class Scrape:
 
-    '''move to config.json'''
-    query_mode = Utils.dotdict({'xls': ('raw', ('.xls', '.xlsx')), 'pdf': ('raw', ('.pdf', '.pdf')), 'csv': ('raw', ('.csv', '.csv'))})
-    rent_format = {'get_col': 0, 'split_col': 11, 'split_type': ' ', 'date_split': 2}
-    deposits_format = {'get_col': 9, 'split_col': 9, 'split_type': '/', 'date_split': 0}
-    style_term = Utils.dotdict({'rent': 'rent', 'deposits': 'deposits', 'opcash': 'opcash', 'hap': 'hap', 'r4r': 'rr', 'dep': 'dep', 'dep_detail': 'dep_detail', 'corrections': 'corrections'})
-    bank_acct_str = ' XXXXXXX1891'
-    excluded_file_names = ['desktop.ini', 'beginning_balance_2022.xlsx']
-    target_string = Utils.dotdict({'affordable':'Affordable Rent Roll Detail/ GPR Report', 'bank': 'BANK DEPOSIT DETAILS', 'quadel': 'QUADEL', 'r4r': 'Incoming Wire', 'oc_deposit': 'Deposit', 'corrections': 'Chargeback'  })
-    status_str = Utils.dotdict({'raw': 'raw', 'processed': 'processed'})
-
-    def __init__(self, path=None, db=None, mode=None):
-        self.path = path
-        self.db = db
-        self.mode = mode
-        self.unproc_file_for_testing = []
-        self.unfinalized_months = []
-        self.index_dict = {}
-        self.index_dict_iter = {} 
-        self.indexed_list = []
-        self.op_cash_list = []
-        self.create_findex_list = [Findexer]
-        self.pdf = StructDataExtract()
-        self.scrape_path = Config.TEST_MM_SCRAPE
-
-    def iter_build_runner(self):
-        print('iter_build_runner; a FileIndexer method')        
-        self.connect_to_db() 
-        populate = PopulateTable()
-
-        months_ytd, unf_months = self.test_for_unfinalized_months()
-
-        if len(self.unfinalized_months) > 0:
-            unproc_files, directory_contents = self.test_for_unprocessed_file()
-        else:
-            print('no unfinalized months; you are presumptively caught up!')
-            print('exiting program')
-            exit
-
-        if len(unproc_files) == 0:
-            print('there are no new files in path')
-            print('here we should look to see whether we want to make any new rent sheets')
-            return [], []
-        else:
-            print('adding new files to findexer')
-            self.index_dict = self.sort_directory_by_extension2() 
-            self.load_what_is_in_dir_as_indexed(dict1=self.index_dict_iter)
-    
-            self.runner_internals()        
-            
-            new_files_dict = self.get_report_type_from_name(records=self.index_dict)
-            new_files_dict = self.get_date_from_xls_name(records=new_files_dict)
-
-            return new_files_dict, self.unfinalized_months
-
-    def build_index_runner(self):
-        self.connect_to_db()
-        self.index_dict = self.articulate_directory()
-        self.load_what_is_in_dir_as_indexed(dict1=self.index_dict)
-        self.runner_internals()    
-        self.load_scrape_data_historical()    
-
-    def runner_internals(self):
-        self.make_a_list_of_indexed(mode=self.query_mode.xls)
-        if self.indexed_list:
-            self.xls_wrapper()
-
-        self.make_a_list_of_indexed(mode=self.query_mode.pdf)
-        if self.indexed_list:
-            self.pdf_wrapper()
-
-        self.make_a_list_of_indexed(mode=self.query_mode.csv)
-        if self.indexed_list:
-            self.get_period_from_scrape_fn_and_mark_in_findexer()
-
-    def xls_wrapper(self):
-        self.find_by_content(style=self.style_term.rent, target_string=self.target_string.affordable, format=self.rent_format)
-        self.find_by_content(style=self.style_term.deposits, target_string=self.target_string.bank, format=self.deposits_format)
-    
-    def pdf_wrapper(self):
-        self.find_opcashes()
-        self.type_opcashes()    
-        self.rename_by_content_pdf()
+    def get_period_from_scrape_fn_and_mark_in_findexer(self):
+        """this just provides row in findexer db & marks as processed; does not mark_scrape reconciled as True or file out hap, tenant, etc cols"""
+        for item, doc_id in self.indexed_list:
+            scrape_file = Findexer.get(Findexer.doc_id==doc_id)
+            date_str = [part.split('_') for part in item.split('/')][-1][-2]
+            date_str = '-'.join(date_str.split('-')[0:2])
+            scrape_file.status = self.status_str.processed
+            scrape_file.period = date_str
+            scrape_file.doc_type = 'scrape'
+            scrape_file.save()
 
     def load_scrape_data_historical(self):
         scrapes = [(row.path, row.period) for row in Findexer.select().where(Findexer.doc_type == 'scrape').namedtuples()]
@@ -113,6 +41,9 @@ class FileIndexer(Utils):
 
             corr_sum = sum([item['amount'] for item in scrape_txn_list if item['dep_type'] == 'corr'])
 
+            dep_list = [{item['date']:item['amount']} for item in scrape_txn_list if item['dep_type'] == 'deposit']
+
+            breakpoint()
             double_check = dep_sum + hap_sum + corr_sum + rr_sum
             assert check == round(double_check, 2)            
 
@@ -125,6 +56,7 @@ class FileIndexer(Utils):
             scrape_to_update.hap = hap_sum
             scrape_to_update.depsum = dep_sum
             scrape_to_update.rr = rr_sum
+            scrape_to_update.deplist = dep_list
             scrape_to_update.save()
 
     def load_directed_scrape(self, path_to_scrape=None, target_date=None):
@@ -162,7 +94,16 @@ class FileIndexer(Utils):
         for index, row in scrape_df.iterrows():
             if row['Description'] == 'DEPOSIT':
                 dict1 = {}
-                dict1 = {'date': row['Processed Date'], 'amount': row['Amount'], 'dep_type': 'deposit'}
+                date_str = row['Processed Date']
+                if '-' in [letter for letter in date_str]:
+                    date_str = Utils.helper_fix_date_str(date_str)
+                elif '/' in [letter for letter in date_str]:
+                    date_str = date_str
+                else:
+                    print('issue converting date in scrape')
+                    exit
+                
+                dict1 = {'date': date_str, 'amount': row['Amount'], 'dep_type': 'deposit'}
                 deposit_list.append(dict1)
             if 'INCOMING' in row['Description']:
                 dict1 = {}
@@ -175,16 +116,100 @@ class FileIndexer(Utils):
                 deposit_list.append(dict1)
 
             if 'CHARGEBACK' in row['Description']:
-                corr_count += 1
-                dict1 = {}
-                dict1 = {'date': row['Processed Date'], 'amount': row['Amount'], 'dep_type': 'corr'}
-                deposit_list.append(dict1)
+                if 'FEE' not in row['Description']:
+                    corr_count += 1
+                    dict1 = {}
+                    dict1 = {'date': row['Processed Date'], 'amount': row['Amount'], 'dep_type': 'corr'}
+                    deposit_list.append(dict1)
 
         if corr_count == 0:
             dict1 = {'date': row['Processed Date'], 'amount': 0, 'dep_type': 'corr'}
             deposit_list.append(dict1)
         
         return deposit_list
+
+class FileIndexer(Utils, Scrape):
+
+    '''move to config.json'''
+    query_mode = Utils.dotdict({'xls': ('raw', ('.xls', '.xlsx')), 'pdf': ('raw', ('.pdf', '.pdf')), 'csv': ('raw', ('.csv', '.csv'))})
+    rent_format = {'get_col': 0, 'split_col': 11, 'split_type': ' ', 'date_split': 2}
+    deposits_format = {'get_col': 9, 'split_col': 9, 'split_type': '/', 'date_split': 0}
+    style_term = Utils.dotdict({'rent': 'rent', 'deposits': 'deposits', 'opcash': 'opcash', 'hap': 'hap', 'r4r': 'rr', 'dep': 'dep', 'dep_detail': 'dep_detail', 'corrections': 'corrections'})
+    bank_acct_str = ' XXXXXXX1891'
+    excluded_file_names = ['desktop.ini', 'beginning_balance_2022.xlsx']
+    target_string = Utils.dotdict({'affordable':'Affordable Rent Roll Detail/ GPR Report', 'bank': 'BANK DEPOSIT DETAILS', 'quadel': 'QUADEL', 'r4r': 'Incoming Wire', 'oc_deposit': 'Deposit', 'corrections': 'Chargeback'  })
+    status_str = Utils.dotdict({'raw': 'raw', 'processed': 'processed'})
+
+    def __init__(self, path=None, db=None, mode=None):
+        self.path = path
+        self.db = db
+        self.mode = mode
+        self.unproc_file_for_testing = []
+        self.unfinalized_months = []
+        self.index_dict = {}
+        self.index_dict_iter = {} 
+        self.indexed_list = []
+        self.op_cash_list = []
+        self.create_findex_list = [Findexer]
+        self.pdf = StructDataExtract()
+        self.scrape_path = Config.TEST_MM_SCRAPE
+
+    def iter_build_runner(self):
+        print('iter_build_runner; a FileIndexer method')        
+        self.connect_to_db() 
+        months_ytd, unf_months = self.test_for_unfinalized_months()
+
+        if len(self.unfinalized_months) > 0:
+            unproc_files, directory_contents = self.test_for_unprocessed_file()
+        else:
+            print('no unfinalized months; you are presumptively caught up!')
+            print('exiting program')
+            exit
+
+        if len(unproc_files) == 0:
+            print('there are no new files in path')
+            print('here we should look to see whether we want to make any new rent sheets')
+            return [], []
+        else:
+            print('adding new files to findexer')
+            self.index_dict = self.sort_directory_by_extension2() 
+            self.load_what_is_in_dir_as_indexed(dict1=self.index_dict_iter)
+    
+            self.runner_internals()        
+            
+            new_files_dict = self.get_report_type_from_xls_name(records=self.index_dict)
+            new_files_dict = self.get_date_from_xls_name(records=new_files_dict)
+
+            return new_files_dict, self.unfinalized_months
+
+    def build_index_runner(self):
+        self.connect_to_db()
+        self.index_dict = self.articulate_directory()
+        self.load_what_is_in_dir_as_indexed(dict1=self.index_dict)
+        self.runner_internals()    
+        self.load_scrape_data_historical()    
+
+    def runner_internals(self):
+        self.make_a_list_of_indexed(mode=self.query_mode.xls)
+        if self.indexed_list:
+            self.xls_wrapper()
+
+        self.make_a_list_of_indexed(mode=self.query_mode.pdf)
+        if self.indexed_list:
+            self.pdf_wrapper()
+
+        self.make_a_list_of_indexed(mode=self.query_mode.csv)
+        if self.indexed_list:
+            self.get_period_from_scrape_fn_and_mark_in_findexer()
+
+    def xls_wrapper(self):
+        self.find_by_content(style=self.style_term.rent, target_string=self.target_string.affordable, format=self.rent_format)
+        self.find_by_content(style=self.style_term.deposits, target_string=self.target_string.bank, format=self.deposits_format)
+    
+    def pdf_wrapper(self):
+        self.find_opcashes()
+        self.type_opcashes()    
+        self.rename_by_content_pdf()
 
     def test_for_unfinalized_months(self):
         months_ytd = Utils.months_in_ytd(Config.current_year)
@@ -199,7 +224,6 @@ class FileIndexer(Utils):
         return months_ytd, self.unfinalized_months
 
     def test_for_unprocessed_file(self):
-        # are there any new files in path?
         print('searching for new files in path')
         processed_fn = [item.fn for item in Findexer().select().where(Findexer.status=='processed').namedtuples()]  
 
@@ -345,9 +369,7 @@ class FileIndexer(Utils):
                 find_change.corr_sum = corr_sum 
                 find_change.save()
 
-    def get_report_type_from_name(self, records=None):
-        """name it scrape!!"""
-
+    def get_report_type_from_xls_name(self, records=None):
         records1 = []
         for path, name in records.items():
             typ = name[1].split('_')[0]
@@ -377,17 +399,6 @@ class FileIndexer(Utils):
         date_list.reverse()
         date_list = ' '.join(date_list)
         return date_list
-        
-    def get_period_from_scrape_fn_and_mark_in_findexer(self):
-        """this just provides row in findexer db & marks as processed; does not mark_scrape reconciled as True or file out hap, tenant, etc cols"""
-        for item, doc_id in self.indexed_list:
-            scrape_file = Findexer.get(Findexer.doc_id==doc_id)
-            date_str = [part.split('_') for part in item.split('/')][-1][-2]
-            date_str = '-'.join(date_str.split('-')[0:2])
-            scrape_file.status = self.status_str.processed
-            scrape_file.period = date_str
-            scrape_file.doc_type = 'scrape'
-            scrape_file.save()
 
     def drop_findex_table(self):
         self.db.drop_tables(models=self.create_findex_list)

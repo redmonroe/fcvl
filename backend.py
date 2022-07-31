@@ -185,18 +185,8 @@ class Mentry(BaseModel):
     change_time = DateField()
     original_item = CharField(default='0')
 
-class QueryHC:
-
-    def return_tables_list(self):
-        return [Mentry, IncomeMonth, LP_EndBal, ContractRent, Subsidy, BalanceLetter, StatusRS, StatusObject, OpCash, OpCashDetail, Damages, Tenant, Unit, Payment, NTPayment, TenantRent, Findexer, ScrapeDetail, MoveIn]
-
-    def make_first_and_last_dates(self, date_str=None):
-        dt_obj = datetime.strptime(date_str, '%Y-%m')
-        dt_obj_first = dt_obj.replace(day = 1)
-        dt_obj_last = dt_obj.replace(day = calendar.monthrange(dt_obj.year, dt_obj.month)[1])
-
-        return dt_obj_first, dt_obj_last
-
+class Reconciler:
+    
     def check_db_tp_and_ntp(self, grand_total=None, first_dt=None, last_dt=None):
         '''checks if there are any payments in the database for the month'''
         '''contains its own assertion; this is an important part of the process'''
@@ -209,6 +199,18 @@ class QueryHC:
         
         assert sum(all_ntp) + sum(all_tp) == grand_total
         return all_tp, all_ntp
+
+class QueryHC(Reconciler):
+
+    def return_tables_list(self):
+        return [Mentry, IncomeMonth, LP_EndBal, ContractRent, Subsidy, BalanceLetter, StatusRS, StatusObject, OpCash, OpCashDetail, Damages, Tenant, Unit, Payment, NTPayment, TenantRent, Findexer, ScrapeDetail, MoveIn]
+
+    def make_first_and_last_dates(self, date_str=None):
+        dt_obj = datetime.strptime(date_str, '%Y-%m')
+        dt_obj_first = dt_obj.replace(day = 1)
+        dt_obj_last = dt_obj.replace(day = calendar.monthrange(dt_obj.year, dt_obj.month)[1])
+
+        return dt_obj_first, dt_obj_last
 
     def check_for_multiple_payments(self, detail_beg_bal_all=None, first_dt=None, last_dt=None):
         pay_names = [row.tenant for row in Payment().
@@ -965,6 +967,7 @@ class PopulateTable(QueryHC):
                     scrape_dep.dep_type = value
                 scrape_dep.save()    
 
+
 class ProcessingLayer(StatusRS):
 
     def __init__(self):
@@ -1224,7 +1227,7 @@ class ProcessingLayer(StatusRS):
 
         dl_tup_list = list(zip(deposits, rents, scrapes, tp_list, ntp_list, total_list, opcash_amt_list, dc_list)) 
         
-        header = ['month', 'deps', 'rtroll', 'scrapes', 'ten_pay', 'ntp', 'tot_pay',  'oc_amt', 'dc', 'oc_proc', 'ten_rec', 'rs_rec', 'scrape_rec']
+        header = ['month', 'deps', 'rtroll', 'scrapes', 'ten_pay', 'ntp', 'tot_pay',  'oc_dep', 'dc', 'oc_proc', 'ten_rec', 'rs_rec', 'scrape_rec']
         table = [header]
         for item, dep in zip(status_objects, dl_tup_list):
             row_list = []

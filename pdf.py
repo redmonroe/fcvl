@@ -227,6 +227,7 @@ class StructDataExtract:
         if style =='dep_detail':
             self.deposits_list = []
             self.deposits_list.append({stmt_date: combined_list})
+            # breakpoint()
             return self.deposits_list
         return stmt_date, sum(line_list)
 

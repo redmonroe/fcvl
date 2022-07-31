@@ -176,6 +176,12 @@ class Utils:
         f_date = datetime.strptime(raw_date, '%m %Y')
         f_date = f_date.strftime('%Y-%m')
         return f_date
+
+    @staticmethod
+    def helper_fix_date_str(date_str):    
+        f_date = datetime.strptime(date_str, '%Y-%d-%M')
+        f_date = f_date.strftime('%d/%M/%Y').lstrip("0").replace(" 0", " ")
+        return f_date
         
     def get_book_name(service, sh_id):
         response = service.spreadsheets().get(
