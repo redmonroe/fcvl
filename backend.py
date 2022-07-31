@@ -307,6 +307,10 @@ class QueryHC(Reconciler):
         rows = [(row.fn, row.period) for row in Findexer.select().where(Findexer.doc_type == type1).namedtuples()]
         return rows
 
+    def get_all_findexer_recon_status(self, type1=None):
+        rows = [(row.recon, row.period) for row in Findexer.select().where(Findexer.doc_type == type1).namedtuples()]
+        return rows
+
     def get_all_tenants_beg_bal(self, cumsum=False):
         '''returns a list of all tenants and their all time beginning balances'''
         '''does not consider active status at this point'''
@@ -1277,14 +1281,22 @@ class ProcessingLayer(StatusRS):
         status_objects = populate.get_all_status_objects() 
     
         deposits = self.status_table_finder_helper(months_ytd, type1='deposits')
+
+        dep_recon = populate.get_all_findexer_recon_status(type1='deposits')
+        # output_months = [(recon, month) for recon, month in dep_recon]
+        # dep_recons = [(recon, month) for recon, month in dep_recon if month in output_months ] 
+        # breakpoint()
+        deposit_rec = [(row.recon) for row in Findexer.select()]
         rents = self.status_table_finder_helper(months_ytd, type1='rent')
         scrapes = self.status_table_finder_helper(months_ytd, type1='scrape') 
 
         tp_list, ntp_list, total_list, opcash_amt_list, dc_list = self.make_mega_tup_list_for_table(months_ytd)
 
-        dl_tup_list = list(zip(deposits, rents, scrapes, tp_list, ntp_list, total_list, opcash_amt_list, dc_list)) 
+        dl_tup_list = list(zip(deposits, rents, scrapes, tp_list, ntp_list, total_list, opcash_amt_list, dc_list, dep_recon)) 
         
-        header = ['month', 'deps', 'rtroll', 'scrapes', 'ten_pay', 'ntp', 'tot_pay',  'oc_dep', 'dc', 'oc_proc', 'ten_rec', 'rs_rec', 'scrape_rec']
+        header = ['month', 'deps', 'rtroll', 'scrapes', 'ten_pay', 'ntp', 'tot_pay',  'oc_dep', 'dc', 'pay_rec_f?']
+
+        # ['oc_proc', 'ten_rec', 'rs_rec', 'scrape_rec']
         table = [header]
         for item, dep in zip(status_objects, dl_tup_list):
             row_list = []
@@ -1297,10 +1309,11 @@ class ProcessingLayer(StatusRS):
             row_list.append(str(dep[5][0]))
             row_list.append(str(dep[6][0]))
             row_list.append(str(dep[7][0]))
-            row_list.append(str(item.opcash_processed))
-            row_list.append(str(item.tenant_reconciled))
-            row_list.append(str(item.rs_reconciled))
-            row_list.append(str(item.scrape_reconciled))
+            row_list.append(str(dep[8][0]))
+            # row_list.append(str(item.opcash_processed))
+            # row_list.append(str(item.tenant_reconciled))
+            # row_list.append(str(item.rs_reconciled))
+            # row_list.append(str(item.scrape_reconciled))
             table.append(row_list)
         
         print('\n'.join([''.join(['{:9}'.format(x) for x in r]) for r in table]))
