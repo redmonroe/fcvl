@@ -143,6 +143,7 @@ class Findexer(BaseModel):
     file_ext = CharField(default='0')
     doc_type = CharField(default='untyped`')
     status = CharField(default='raw')
+    recon = CharField(default='no')
     indexed = CharField(default='false')
     c_date = CharField(default='0')
     period = CharField(default='0')
@@ -186,6 +187,69 @@ class Mentry(BaseModel):
     original_item = CharField(default='0')
 
 class Reconciler:
+
+    def findex_reconcile_onesite_deposits_to_scrape_or_oc(self):
+        '''NO, PART, FULL'''
+        deposits_xls = [(row.period, row.depsum) for row in Findexer.select().
+            where(Findexer.doc_type == 'deposits').namedtuples()]
+
+        scrapes = [(row.period, row.depsum) for row in Findexer.select().
+            where(Findexer.doc_type == 'scrape').namedtuples()]
+
+        opcashes = [(row.period, row.depsum) for row in Findexer.select().
+            where(Findexer.doc_type == 'opcash').namedtuples()]
+
+        scrape_match = []
+        for deposit in deposits_xls:
+            for scrape in scrapes:
+                if deposit[0] == scrape[0]:
+                    if deposit[1] == '0':
+                        print(deposit[0], 'empty')
+                        scrape_match.append((deposit[0], 'empty'))
+                    else:
+                        print(deposit[0], deposit[1])
+                        scrape_match.append((deposit[0], deposit[1]))
+
+        opcash_match = []
+        for deposit in deposits_xls:
+            for opcash in opcashes:
+                if deposit[0] == opcash[0]:
+                    if deposit[0] == '0':
+                            print(deposit[0], 'empty')
+                            opcash_match.append((deposit[0], 'empty'))
+                    else:
+                        print(deposit[0], deposit[1])
+                        opcash_match.append((deposit[0], deposit[1]))
+
+        # list empty
+        empty_dep1 = [item for item in scrape_match if item[1] == 'empty']
+        empty_dep2 = [item for item in opcash_match if item[1] == 'empty']
+        # remove empty
+        opcash_match = [item for item in opcash_match if item[1] != 'empty']
+        scrape_match = [item for item in scrape_match if item[1] != 'empty']
+                
+        match_both = list(set(scrape_match).union(set(opcash_match)))
+        scrape_only = list(set(scrape_match).difference(opcash_match))
+
+        opcash_only = list(set(opcash_match).difference(scrape_match))
+        breakpoint()
+
+        for item in match_both:
+            deposit_id = [(row.doc_id, row.period) for row in Findexer.select().
+                where(Findexer.doc_type == 'deposits').
+                where(Findexer.period == item[0]).namedtuples()][0]
+            deposit = Findexer.get(deposit_id[0])
+            deposit.recon = 'FULL'
+            deposit.save()
+        
+
+        
+        
+        # breakpoint()
+        #     if deposit[0] == scrape[0]:
+        #         print(deposit[1], scrape[1])
+        
+        
     
     def check_db_tp_and_ntp(self, grand_total=None, first_dt=None, last_dt=None):
         '''checks if there are any payments in the database for the month'''
@@ -199,6 +263,8 @@ class Reconciler:
         
         assert sum(all_ntp) + sum(all_tp) == grand_total
         return all_tp, all_ntp
+
+    
 
 class QueryHC(Reconciler):
 

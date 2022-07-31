@@ -7,7 +7,7 @@ from pprint import pprint
 import numpy as np
 import pandas as pd
 
-from backend import Findexer, PopulateTable, StatusObject
+from backend import Findexer, PopulateTable, StatusObject, Reconciler
 from config import Config
 from pdf import StructDataExtract
 from utils import Utils
@@ -126,7 +126,7 @@ class Scrape:
         
         return deposit_list
 
-class FileIndexer(Utils, Scrape):
+class FileIndexer(Utils, Scrape, Reconciler):
 
     '''move to config.json'''
     query_mode = Utils.dotdict({'xls': ('raw', ('.xls', '.xlsx')), 'pdf': ('raw', ('.pdf', '.pdf')), 'csv': ('raw', ('.csv', '.csv'))})
@@ -185,7 +185,8 @@ class FileIndexer(Utils, Scrape):
         self.index_dict = self.articulate_directory()
         self.load_what_is_in_dir_as_indexed(dict1=self.index_dict)
         self.runner_internals()    
-        self.load_scrape_data_historical()    
+        self.load_scrape_data_historical()  
+        self.findex_reconcile_onesite_deposits_to_scrape_or_oc()  
 
     def runner_internals(self):
         self.make_a_list_of_indexed(mode=self.query_mode.xls)
