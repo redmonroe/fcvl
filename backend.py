@@ -189,48 +189,31 @@ class Mentry(BaseModel):
 class Reconciler:
 
     def findex_reconcile_onesite_deposits_to_scrape_or_oc(self):
-        '''NO, PART, FULL'''
-        deposits_xls = [(row.period, row.depsum) for row in Findexer.select().
-            where(Findexer.doc_type == 'deposits').namedtuples()]
+        """this func exists to perform a relatively complicated reconciliation between deposits.xls from onesite and the scrape excel sheet and/or the monthly opcash
 
-        scrapes = [(row.period, row.depsum) for row in Findexer.select().
-            where(Findexer.doc_type == 'scrape').namedtuples()]
+        we need to determine whether it makes more sense to change scrape payment summary (should find 'amount' col) or to add back the amount if scrape & opcash amounts agree
 
-        opcashes = [(row.period, row.depsum) for row in Findexer.select().
-            where(Findexer.doc_type == 'opcash').namedtuples()]
+        """
+        deposits_xls = self.findex_reconcile_helper(typ='deposits')
+        scrapes = self.findex_reconcile_helper(typ='scrape')
+        opcashes = self.findex_reconcile_helper(typ='opcash')
 
-        scrape_match = []
-        for deposit in deposits_xls:
-            for scrape in scrapes:
-                if deposit[0] == scrape[0]:
-                    if deposit[1] == '0':
-                        print(deposit[0], 'empty')
-                        scrape_match.append((deposit[0], 'empty'))
-                    else:
-                        print(deposit[0], deposit[1])
-                        scrape_match.append((deposit[0], deposit[1]))
+        scrape_match = self.findex_iteration_helper(list1=deposits_xls, list2=scrapes, target_str='0', fill_str='empty')
+        opcash_match = self.findex_iteration_helper(list1=deposits_xls, list2=opcashes, target_str='0', fill_str='empty')
 
-        opcash_match = []
-        for deposit in deposits_xls:
-            for opcash in opcashes:
-                if deposit[0] == opcash[0]:
-                    if deposit[0] == '0':
-                            print(deposit[0], 'empty')
-                            opcash_match.append((deposit[0], 'empty'))
-                    else:
-                        print(deposit[0], deposit[1])
-                        opcash_match.append((deposit[0], deposit[1]))
-
-        # list empty
-        empty_dep1 = [item for item in scrape_match if item[1] == 'empty']
-        empty_dep2 = [item for item in opcash_match if item[1] == 'empty']
-        # remove empty
+        # find failed deposits reports from onesite; these give scrape nothing to reconcile against and should fail
+        dep_xls_problems = [item for item in scrape_match if item[1] == 'empty']
+        assert len(dep_xls_problems) == 1
+        
+        # remove failed deposits reports   
         opcash_match = [item for item in opcash_match if item[1] != 'empty']
+        assert len(opcash_match) == 5
         scrape_match = [item for item in scrape_match if item[1] != 'empty']
+        assert len(scrape_match) == 4
+        breakpoint()
                 
-        match_both = list(set(scrape_match).union(set(opcash_match)))
+        # match_both = list(set(scrape_match).union(set(opcash_match)))
         scrape_only = list(set(scrape_match).difference(opcash_match))
-
         opcash_only = list(set(opcash_match).difference(scrape_match))
         breakpoint()
 
@@ -240,16 +223,22 @@ class Reconciler:
                 where(Findexer.period == item[0]).namedtuples()][0]
             deposit = Findexer.get(deposit_id[0])
             deposit.recon = 'FULL'
-            deposit.save()
+            deposit.save()        
         
-
-        
-        
-        # breakpoint()
-        #     if deposit[0] == scrape[0]:
-        #         print(deposit[1], scrape[1])
-        
-        
+    def findex_reconcile_helper(self, typ=None):
+        return [(row.period, row.depsum) for row in Findexer.select().
+            where(Findexer.doc_type == typ).namedtuples()]
+    
+    def findex_iteration_helper(self, list1=None, list2=None, target_str=None, fill_str=None):
+        return_list = []
+        for item in list1:
+            for it in list2:
+                if item[0] == it[0]:
+                    if item[1] == target_str:
+                        return_list.append((item[0], fill_str))
+                    else:
+                        return_list.append((item[0], item[1]))
+        return return_list
     
     def check_db_tp_and_ntp(self, grand_total=None, first_dt=None, last_dt=None):
         '''checks if there are any payments in the database for the month'''
