@@ -202,27 +202,29 @@ class Reconciler:
         opcash_match = self.findex_iteration_helper(list1=deposits_xls, list2=opcashes, target_str='0', fill_str='empty')
 
         # find failed deposits reports from onesite; these give scrape nothing to reconcile against and should fail
-        dep_xls_problems = [item for item in scrape_match if item[1] == 'empty']
-        assert len(dep_xls_problems) == 1
+        dep_xls_prob = [item for item in scrape_match if item[1] == 'empty']
         
         # remove failed deposits reports   
         opcash_match = [item for item in opcash_match if item[1] != 'empty']
-        assert len(opcash_match) == 5
         scrape_match = [item for item in scrape_match if item[1] != 'empty']
-        assert len(scrape_match) == 4
-        breakpoint()
                 
-        # match_both = list(set(scrape_match).union(set(opcash_match)))
+        match_both = list(set(scrape_match).intersection(set(opcash_match)))
         scrape_only = list(set(scrape_match).difference(opcash_match))
         opcash_only = list(set(opcash_match).difference(scrape_match))
-        breakpoint()
 
-        for item in match_both:
+        self.findex_reconcile_helper_writer(list1=scrape_only, recon_str='scrape_only')
+        self.findex_reconcile_helper_writer(list1=opcash_only, recon_str='opcash_only')
+        self.findex_reconcile_helper_writer(list1=dep_xls_prob, recon_str='dep_prob')
+        self.findex_reconcile_helper_writer(list1=match_both, recon_str='FULL')
+
+
+    def findex_reconcile_helper_writer(self, list1=None, recon_str=None):
+        for item in list1:
             deposit_id = [(row.doc_id, row.period) for row in Findexer.select().
                 where(Findexer.doc_type == 'deposits').
                 where(Findexer.period == item[0]).namedtuples()][0]
             deposit = Findexer.get(deposit_id[0])
-            deposit.recon = 'FULL'
+            deposit.recon = recon_str
             deposit.save()        
         
     def findex_reconcile_helper(self, typ=None):
