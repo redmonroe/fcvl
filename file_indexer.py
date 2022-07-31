@@ -43,7 +43,6 @@ class Scrape:
 
             dep_list = [{item['date']:item['amount']} for item in scrape_txn_list if item['dep_type'] == 'deposit']
 
-            breakpoint()
             double_check = dep_sum + hap_sum + corr_sum + rr_sum
             assert check == round(double_check, 2)            
 
@@ -102,7 +101,6 @@ class Scrape:
                 else:
                     print('issue converting date in scrape')
                     exit
-                
                 dict1 = {'date': date_str, 'amount': row['Amount'], 'dep_type': 'deposit'}
                 deposit_list.append(dict1)
             if 'INCOMING' in row['Description']:
@@ -278,14 +276,25 @@ class FileIndexer(Utils, Scrape):
         for path, doc_id in self.indexed_list:
             part_list = ((Path(path).stem)).split('_')
             if style in part_list:
-                df = pd.read_excel(path)
-                df = df.iloc[:, 0].to_list()
-                if target_string in df:
+                df1 = pd.read_excel(path)
+                df2 = df1.iloc[:, 0].to_list()
+
+                if target_string in df2:
                     period = self.df_date_wrapper(path, kw=kw['format'])
                     find_change = Findexer.get(Findexer.doc_id==doc_id)
                     find_change.period = period
                     find_change.status = self.status_str.processed
                     find_change.doc_type = style
+                    find_change.save()
+                    
+                if style == self.style_term.deposits:
+                    deposits = df1.iloc[:, 13].to_list()
+                    deposits = [item for item in deposits if isinstance(item, str)]
+                    deposits =  deposits[:-1]
+                    deposits =  deposits[1:]
+                    deposits = str(sum([float(item) for item in deposits]))
+                    find_change = Findexer.get(Findexer.doc_id==doc_id)
+                    find_change.depsum = deposits    
                     find_change.save()
 
     def df_date_wrapper(self, path, **kw):
