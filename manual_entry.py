@@ -52,20 +52,26 @@ class ManualEntry:
         print('delete ui')
         payment = Payment.delete_by_id(selected_item.id)
         selected_item = selected_item.__data__
-        self.record_delete_to_db(selected_item=selected_item)
+        self.record_entry_to_manentry(obj_type='Payment', action='delete',selected_item=str(selected_item))
 
     def delete_ui_dynamic(self, obj_type=None, selected_item=None):
         print('delete ui dynamic')
         item = obj_type.delete_by_id(selected_item.id)
-        self.record_delete_to_db(selected_item=str(selected_item))
-    
+        self.record_entry_to_manentry(obj_type='Payment', action='delete',selected_item=str(selected_item))
+
+    def update_amount_dynamic(self, obj_type=None, updated_amount=None, selected_item=None):
+        print('updating row amount dynamic (from manual entry)')
+        item = obj_type.get(selected_item.id)
+        item.amount = updated_amount
+        item.save()
+        self.record_entry_to_manentry(obj_type='Payment', action='updated_amount', selected_item=str(item))        
+
     def update_ui(self, selected_item=None):
         '''this does nothing right now'''
         count = 1
         for key, value in selected_item.__dict__['__data__'].items():
             print(count, key, value)
-            count += 1              
-        breakpoint()
+            count += 1             
             
     def selection_ui(self, list1=None, header1=None, header2=None, header3=None):
         print(f'showing {header2} in {header1} for table {header3}')
@@ -129,14 +135,14 @@ class ManualEntry:
     def connect_to_db(self):
         DBUtils.pw_connect_to_db(db=self.db, tables_list=self.tables_list)
 
-    def record_delete_to_db(self, selected_item=None):
-        mentry = Mentry.create(obj_type='Payment', ch_type='delete', original_item=str(selected_item), change_time=dt.now())
+    def record_entry_to_manentry(self, obj_type=None, action=None, selected_item=None):
+        mentry = Mentry.create(obj_type=obj_type, ch_type=action, original_item=str(selected_item), change_time=dt.now())
         mentry.save()
 
     def find_persisted_changes_from_config(self):
         for item in Config.persisted_changes:
             obj_type = item['obj_type']
-            model_name= self.get_name_from_obj(obj_type=obj_type)
+            model_name = self.get_name_from_obj(obj_type=obj_type)
 
             col_name1 = item['col_name1'][0]
             col_value1 = item['col_name1'][1]
@@ -144,6 +150,15 @@ class ManualEntry:
             col_value2 = item['col_name2'][1]
             col_name3 = item['col_name3'][0]
             col_value3 = item['col_name3'][1]
+
+            try:
+                # if item['col_name4'] is not None:
+                updated_amount_name = item['col_name4'][0]
+                updated_amount = item['col_name4'][1]
+            except KeyError as e:
+                print('this manual entry from Config does not have a col4 & that may be ok!')
+            
+
             result = [rec for rec in model_name.select().
                 where(attrgetter(col_name1)(model_name) == col_value1).
                 where(attrgetter(col_name2)(model_name) == col_value2).
@@ -152,15 +167,17 @@ class ManualEntry:
             
             try:
                 result = result[0]
+                if item['action'] == 'delete':
+                    self.delete_ui_dynamic(obj_type=model_name, selected_item=result)
+                elif item['action'] == 'update_amount':
+                    print('UPDATE!! BRANCH')
+                    self.update_amount_dynamic(obj_type=model_name, updated_amount=updated_amount, selected_item=result)
             except IndexError as e:
                 print('You probably already deleted the transaction.  Check mentry db for further information.')
                 print(e)
                 print('exiting program')
                 break
-
-            if item['action'] == 'delete':
-                self.delete_ui_dynamic(obj_type=model_name, selected_item=result)
-
+            
     def get_name_from_obj(self, obj_type=None):
         model_name = getattr(sys.modules[__name__], obj_type)
         return model_name

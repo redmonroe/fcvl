@@ -74,10 +74,12 @@ class BuildRS(MonthSheet):
 
         '''this is the critical control function'''
         player.assert_reconcile_payments(month_list=all_months_ytd, ref_rec=most_recent_status)
+
+        player.write_manual_entries_from_config()
+        '''
         breakpoint()
 
 
-        player.write_manual_entries_from_config()
 
         player.display_most_recent_status(mr_status=most_recent_status, months_ytd=all_months_ytd)
         incomplete_month_bool, paperwork_complete_months = player.is_there_mid_month(all_months_ytd, report_list)
@@ -87,6 +89,7 @@ class BuildRS(MonthSheet):
         else:
             print('you have selected to bypass writing to RS.')
             print('if you would like to write to rent spreadsheet enable "write_db" flag')
+        '''
 
         """only show this if I have deposits and rent roll for the month, do not show for any month after first incomplete month, there are other cases"""
 
