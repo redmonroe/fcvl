@@ -1369,7 +1369,7 @@ class ProcessingLayer(StatusRS):
     def assert_reconcile_payments(self, month_list=None, ref_rec=None):
         """takes list of months in year to date, gets tenant payments by period, non-tenant payments, and opcash information and reconciles the deposits on the opcash statement to the sum of tenant payments and non-tenant payments
         
-        then updates existing StatusRS db and, most importantly, writes to StatusObject db whether opcash has been processed and whether tenant has reconciled: DOES NOT DEAL WITH MARKING SCRAPES AS RECONCILED"""
+        then updates existing StatusRS db and, most importantly, writes to StatusObject db whether opcash has been processed and whether tenant has reconciled: currently will reconcile a scrape against a deposit list sheets"""
         populate = PopulateTable()
         for month in month_list:
             first_dt, last_dt = populate.make_first_and_last_dates(date_str=month)
@@ -1378,6 +1378,7 @@ class ProcessingLayer(StatusRS):
             ntp = sum(populate.get_ntp_by_period(first_dt=first_dt, last_dt=last_dt))
             opcash = populate.get_opcash_by_period(first_dt=first_dt, last_dt=last_dt)
 
+            '''probably need to add the concept of "adjustments" in here'''
             sum_from_payments = ten_payments + ntp
 
             if opcash != []:
@@ -1389,22 +1390,24 @@ class ProcessingLayer(StatusRS):
                     s_object.save()
             else:
                 print('is scrape available?')
-                """if scrape is available, does it reconcile to tenant deposits"""
-                scrape_hap = hap = populate.get_scrape_detail_by_month_by_type(type1='hap', first_dt=first_dt, last_dt=last_dt)
+                """if scrape is available, does it reconcile to tenant deposits
+                
+                if scrape deposits + adjustments == tenant payments + adjust > we can mark tenant_reconciled & scrape as processed"""
 
                 scrape_corr = populate.get_scrape_detail_by_month_by_type(type1='corr', first_dt=first_dt, last_dt=last_dt)
 
                 scrape_dep = populate.get_scrape_detail_by_month_by_type(type1='deposit', first_dt=first_dt, last_dt=last_dt)
 
                 scrape_corr = sum([float(item) for item in scrape_corr])
-                
+
                 scrape_dep_detail = populate.get_scrape_detail_by_month_deposit(first_dt=first_dt, last_dt=last_dt)
-                breakpoint()
 
-
-        
-            #     mr_status = StatusRS().get(StatusRS.status_id==ref_rec.status_id)                
-            #     s_object = StatusObject.create(key=mr_status.status_id, month=month, processed=False, tenant_reconciled=False)
-            #     s_object.save()
-
-
+                if sum_from_payments == sum([float(item) for item in scrape_dep]):
+                    print(f'scrape asserted ok for {month} {Config.current_year}')
+                    mr_status = StatusRS().get(StatusRS.status_id==ref_rec.status_id)                
+                    s_object = StatusObject.create(key=mr_status.status_id, month=month, scrape_reconciled=True, tenant_reconciled=True)
+                    s_object.save()
+                    
+                else:
+                    print(f'scrape did not reconcile for {month} {Config.current_year}')
+    

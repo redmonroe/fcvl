@@ -74,6 +74,7 @@ class BuildRS(MonthSheet):
 
         '''this is the critical control function'''
         player.assert_reconcile_payments(month_list=all_months_ytd, ref_rec=most_recent_status)
+        breakpoint()
 
 
         player.write_manual_entries_from_config()

@@ -101,7 +101,8 @@ class Scrape:
                 else:
                     print('issue converting date in scrape')
                     exit
-                dict1 = {'date': date_str, 'amount': row['Amount'], 'dep_type': 'deposit'}
+                # breakpoint()
+                dict1 = {'date': row['Processed Date'], 'amount': row['Amount'], 'dep_type': 'deposit'}
                 deposit_list.append(dict1)
             if 'INCOMING' in row['Description']:
                 dict1 = {}
