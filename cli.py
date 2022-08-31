@@ -164,7 +164,6 @@ def dry_run():
     db = Config.TEST_DB
     scopes = Config.my_scopes
     
-
     click.echo('description of db')
     
     print('\n')

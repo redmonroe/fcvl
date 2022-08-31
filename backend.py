@@ -423,9 +423,10 @@ class QueryHC(Reconciler):
         return recs
 
     def get_scrape_detail_by_month_by_type(self, type1, first_dt=None, last_dt=None):
-        recs = [row.amount for row in ScrapeDetail.select().where(ScrapeDetail.scrape_dep_date >= first_dt).
+        recs = [row for row in ScrapeDetail.select().where(ScrapeDetail.scrape_dep_date >= first_dt).
         where(ScrapeDetail.scrape_dep_date <= last_dt).
         where(ScrapeDetail.dep_type==type1).namedtuples()]
+        breakpoint()
         return recs
 
     def get_status_object_by_month(self, first_dt=None, last_dt=None):
@@ -1352,14 +1353,18 @@ class ProcessingLayer(StatusRS):
 
             if opcash:
                 dc_tup = (opcash[0][5], first_dt)
+                dc_list.append(dc_tup)
             else:
                 """branch if not opcash for month to try to get corr_amount from findexer"""
                 '''should assert it with a month reading'''
+                '''
+                '''
                 scrapes = self.populate.get_scrape_detail_by_month_by_type(type1='corr', first_dt=first_dt, last_dt=last_dt)
+
                 dc_tup = (sum([float(n) for n in scrapes]), first_dt)
-       
-            dc_list.append(dc_tup)
-            
+                print('current branch')
+                dc_list.append(dc_tup)
+
 
         return tp_list, ntp_list, total_list, opcash_amt_list, dc_list  
 

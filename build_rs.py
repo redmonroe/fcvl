@@ -51,7 +51,6 @@ class BuildRS(MonthSheet):
         else:
             if kw.get('bypass_findexer') == True:
                 """this branch is used to trigger iterative build by passing in list of new added files"""
-
                 self.ctx = 'db is not empty; iter_build; bypass findexer'
                 print(f'{self.ctx}')
                 populate = self.setup_tables(mode='create_only')
@@ -93,28 +92,28 @@ class BuildRS(MonthSheet):
 
         """only show this if I have deposits and rent roll for the month, do not show for any month after first incomplete month, there are other cases"""
 
-        if incomplete_month_bool:
-            choice = input(f'\nWould you like to import mid-month report from bank for {incomplete_month_bool[0]} ? Y/n ')
-            if choice == 'Y':
-                mid_month_choice = True
-            else:
-                mid_month_choice = False
-                print(f'you chose not to attempt to write scrape for {incomplete_month_bool[0]}')
-                print(f'last complete reconciliation is {most_recent_status.current_date}')
+        '''this method of searching for incomplete months is useless if we are already automatically putting corr amounts etc into findexer; they will be always be available there if exist'''
+        # if incomplete_month_bool:
+        #     choice = input(f'\nWould you like to import mid-month report from bank for {incomplete_month_bool[0]} ? Y/n (NOTE: YOU MUST CHOOSE Y IF THIS EVENT FIRES ELSE, SCRAPE WILL NOT BE MARKED AS PROCESSED AND WRITING WILL NOT BE ENABLES')
+        #     if choice == 'Y':
+        #         mid_month_choice = True
+        #     else:
+        #         mid_month_choice = False
+        #         print(f'you chose not to attempt to write scrape for {incomplete_month_bool[0]}')
+        #         print(f'last complete reconciliation is {most_recent_status.current_date}')
 
-        first_incomplete_month = incomplete_month_bool[0]
-        if mid_month_choice:
-            did_ten_pay_reconcile = player.load_scrape_and_mark_as_processed(most_recent_status=most_recent_status, target_mid_month=first_incomplete_month)
+        # first_incomplete_month = incomplete_month_bool[0]
+        # if mid_month_choice:
+            # did_ten_pay_reconcile = player.load_scrape_and_mark_as_processed(most_recent_status=most_recent_status, target_mid_month=first_incomplete_month)
 
-            if did_ten_pay_reconcile == True:
-                do_i_write_receipts = player.make_rent_receipts(first_incomplete_month=first_incomplete_month)
-                if do_i_write_receipts == True:
-                    player.rent_receipts_wrapper()
+        #     if did_ten_pay_reconcile == True:
+        #         do_i_write_receipts = player.make_rent_receipts(first_incomplete_month=first_incomplete_month)
+        #         if do_i_write_receipts == True:
+        #             player.rent_receipts_wrapper()
 
-                do_i_write_bal_letters = player.make_balance_letters(first_incomplete_month=first_incomplete_month)
-                if do_i_write_bal_letters == True:
-                    player.bal_letter_wrapper()
-
+        #         do_i_write_bal_letters = player.make_balance_letters(first_incomplete_month=first_incomplete_month)
+        #         if do_i_write_bal_letters == True:
+        #             player.bal_letter_wrapper()
     
         self.main_db.close()
 

@@ -40,7 +40,7 @@ class MonthSheet(YearSheet):
             print(f'writing rent sheets for {month_list}. {wrange}')
         else:
             wrange = 'This list has been generated from reconciled scrapes or opcash.'
-            print('generating list of months where either scrape or opcash has reconciled to tenant.')
+            print('generating list of months where either scrape or opcash has reconciled to deposits.xls.')
             month_list = [rec.month for rec in StatusObject().select().where(       (StatusObject.tenant_reconciled==1) |
                     (StatusObject.scrape_reconciled==1)).namedtuples()]
     
