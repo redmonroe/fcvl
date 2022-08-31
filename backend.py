@@ -1356,7 +1356,7 @@ class ProcessingLayer(StatusRS):
                 """branch if not opcash for month to try to get corr_amount from findexer"""
                 '''should assert it with a month reading'''
                 scrapes = self.populate.get_scrape_detail_by_month_by_type(type1='corr', first_dt=first_dt, last_dt=last_dt)
-                dc_tup = (sum([float(n) for n in scrapes], first_dt))
+                dc_tup = (sum([float(n) for n in scrapes]), first_dt)
        
             dc_list.append(dc_tup)
             
