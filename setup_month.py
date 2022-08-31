@@ -48,7 +48,7 @@ class MonthSheet(YearSheet):
 
         if mode == 'clean_build':
             self.reset_spreadsheet()
-
+    
         title_dict = self.make_base_sheet()
         self.formatting_runner(title_dict=title_dict) 
         self.duplicate_formatted_sheets(month_list=month_list)

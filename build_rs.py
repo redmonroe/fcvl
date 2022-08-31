@@ -61,9 +61,7 @@ class BuildRS(MonthSheet):
                 all_months_ytd = player.get_all_months_ytd()
 
                 # reconcile all available
-                    # if already reconciled, don't reconcile again
-
-                # breakpoint()
+                    # if already reconciled, don't reconcile agai
             else:
                 """this branch is used to trigger iterative build of findex using new file list created here"""
                 self.ctx = 'db is not empty; iter_build; do NOT bypass findexer'
@@ -72,13 +70,12 @@ class BuildRS(MonthSheet):
                 populate = self.setup_tables(mode='create_only')
                 self.iterate_over_remaining_months_incremental(list1=self.new_files)
                 
-
-        """may need to breakdown incomplete month bool depending on context"""
         all_months_ytd, report_list, most_recent_status = player.write_to_statusrs_wrapper()
-        # breakpoint()
 
-        # this is where determination of 'reconciled' is made
+        '''this is the critical control function'''
         player.assert_reconcile_payments(month_list=all_months_ytd, ref_rec=most_recent_status)
+
+
         player.write_manual_entries_from_config()
 
         player.display_most_recent_status(mr_status=most_recent_status, months_ytd=all_months_ytd)
