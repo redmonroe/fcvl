@@ -113,6 +113,9 @@ class Scrape:
                 dict1 = {'date': row['Processed Date'], 'amount': row['Amount'], 'dep_type': 'hap'}                
                 deposit_list.append(dict1)
 
+
+            '''following branches are for finding corrections'''
+
             if 'CHARGEBACK' in row['Description']:
                 if 'FEE' not in row['Description']:
                     corr_count += 1
@@ -120,10 +123,18 @@ class Scrape:
                     dict1 = {'date': row['Processed Date'], 'amount': row['Amount'], 'dep_type': 'corr'}
                     deposit_list.append(dict1)
 
+            if 'CORRECTION' in row['Description']:
+                corr_count += 1
+                dict1 = {}
+                dict1 = {'date': row['Processed Date'], 'amount': row['Amount'], 'dep_type': 'corr'}
+                deposit_list.append(dict1)
+
         if corr_count == 0:
             dict1 = {'date': row['Processed Date'], 'amount': 0, 'dep_type': 'corr'}
             deposit_list.append(dict1)
-        
+        else:
+            print('Warning: deposit correction has been processed')
+
         return deposit_list
 
 class FileIndexer(Utils, Scrape, Reconciler):

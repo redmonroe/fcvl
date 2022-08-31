@@ -36,13 +36,13 @@ class BuildRS(MonthSheet):
         status = StatusRS()
         player = ProcessingLayer()
         if self.main_db.get_tables() == []:
-            """this is used for rebuilding db from scratch"""
+            """this branch is used for rebuilding db from scratch"""
+
             print('building db from scratch')
             self.ctx = 'db empty'
             print(f'{self.ctx}')
             populate = self.setup_tables(mode='drop_and_create')
-            self.findex.build_index_runner() # this is a findex method
-            # breakpoint()
+            self.findex.build_index_runner() 
             self.load_initial_tenants_and_balances()
             processed_rentr_dates_and_paths = self.iterate_over_remaining_months()
             Damages.load_damages()

@@ -56,42 +56,36 @@ def cli():
     pass
 
 @click.command()
-@record
 def reset_db_test():
     click.echo('dropping test db . . .')
     path, full_sheet, build, service, ms = return_test_config()
     set_db(build=build)
 
 @click.command()
-@record
 def reset_db_prod():
     click.echo('dropping PRODUCTION db . . .')
     path, full_sheet, build, service, ms = return_config()
     set_db(build=build)
 
 @click.command()
-@record
 def load_db_test():
     click.echo('loading all available files in path to db')
     path, full_sheet, build, service, ms = return_test_config()    
     build.build_db_from_scratch()    
 
 @click.command()
-@record
 def load_db_prod():
     click.echo('PRODUCTION: loading all available files in path to db')
     path, full_sheet, build, service, ms = return_config()   
     build.build_db_from_scratch()   
 
 @click.command()
-@record
 def write_all_prod():
     click.echo('PRODUCTION: write all db contents to rs . . .')
     path, full_sheet, build, service, ms = return_config()    
     ms.auto_control(source='cli.py', mode='clean_build')
 
 @click.command()
-@record
 def write_all_test():
     click.echo('write all db contents to rs . . .')
     path, full_sheet, build, service, ms = return_test_config()    
@@ -156,7 +150,6 @@ def reset_dry_run():
     target_deposit_file3.delete_instance()
     
 @click.command()
-@record
 def status_test_findexer():
     click.echo('show status of findex db')
     path, full_sheet, build, service, ms = return_test_config()
@@ -208,8 +201,6 @@ def dry_run():
             # build.build_db_from_scratch()
             build.build_db_from_scratch(bypass_findexer=True, new_files_add=new_files_add)
             player.show_status_table(findex=findex)
-
-
 
 cli.add_command(escrow)
 cli.add_command(receipts)

@@ -1283,9 +1283,7 @@ class ProcessingLayer(StatusRS):
         deposits = self.status_table_finder_helper(months_ytd, type1='deposits')
 
         dep_recon = populate.get_all_findexer_recon_status(type1='deposits')
-        # output_months = [(recon, month) for recon, month in dep_recon]
-        # dep_recons = [(recon, month) for recon, month in dep_recon if month in output_months ] 
-        # breakpoint()
+        
         deposit_rec = [(row.recon) for row in Findexer.select()]
         rents = self.status_table_finder_helper(months_ytd, type1='rent')
         scrapes = self.status_table_finder_helper(months_ytd, type1='scrape') 
@@ -1355,8 +1353,13 @@ class ProcessingLayer(StatusRS):
             if opcash:
                 dc_tup = (opcash[0][5], first_dt)
             else:
-                dc_tup = (0, first_dt)
+                """branch if not opcash for month to try to get corr_amount from findexer"""
+                '''should assert it with a month reading'''
+                scrapes = self.populate.get_scrape_detail_by_month_by_type(type1='corr', first_dt=first_dt, last_dt=last_dt)
+                dc_tup = (sum([float(n) for n in scrapes], first_dt))
+       
             dc_list.append(dc_tup)
+            
 
         return tp_list, ntp_list, total_list, opcash_amt_list, dc_list  
 
