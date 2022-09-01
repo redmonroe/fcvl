@@ -164,34 +164,66 @@ class FileIndexer(Utils, Scrape, Reconciler):
         self.pdf = StructDataExtract()
         self.scrape_path = Config.TEST_PATH
     
-    def incremental_filer(self):
-        print('iter_build_runner; a FileIndexer method')
-        self.incremental_preface()        
+    def incremental_filer(self): 
+        print('incremental_preface(), FileIndexer method from file_indexer.py')
+        print('\n')
         self.connect_to_db() 
-        months_ytd, unf_months = self.test_for_unfinalized_months()
 
-        if len(self.unfinalized_months) > 0:
-            unproc_files, directory_contents = self.test_for_unprocessed_file()
-        else:
-            print('no unfinalized months; you are presumptively caught up!')
+        print('showing unfinalized months (unfinal = no opcash +/or no reconcile with ten payments')
+        
+        """A FINALIZED MONTH ==
+            1 OPCASH processed 
+            2 DEPOSITS + ADJUSTMENTS == TENANT_PAY + NTP"""
+
+        months_ytd, unfin_month = self.test_for_unfinalized_months()
+
+        for item in unfin_month:
+            print(item)
+
+        """NEXT: is there anything to process?  ie are there new files in the path"""
+
+        print('\n')
+        unproc_files, dir_contents = self.test_for_unprocessed_file()
+
+        if unproc_files == []:
+            print('no new files to add')
             print('exiting program')
             exit
-
-        if len(unproc_files) == 0:
-            print('there are no new files in path')
-            print('here we should look to see whether we want to make any new rent sheets')
-            return [], []
         else:
-            print('adding new files to findexer')
-            self.index_dict = self.sort_directory_by_extension2() 
-            self.load_what_is_in_dir_as_indexed(dict1=self.index_dict_iter)
-    
-            self.runner_internals()        
-            
-            new_files_dict = self.get_report_type_from_xls_name(records=self.index_dict)
-            new_files_dict = self.get_date_from_xls_name(records=new_files_dict)
+            """YES, THERE ARE NEW FILES IN THE PATH"""
+            for count, item in enumerate(unproc_files, 1):
+                print(count, item)
 
-            return new_files_dict, self.unfinalized_months
+            print('\n')
+            choice1 = int(input('running findexer now would input the above file(s)?  press 1 to proceed ... '))
+
+            if choice1 == 1:
+                print('YES, I WANT TO ADD THIS FILE FINDEXER DB')
+                self.index_dict = self.sort_directory_by_extension2() 
+                self.load_what_is_in_dir_as_indexed(dict1=self.index_dict_iter)
+        
+                self.runner_internals()        
+                
+                new_files_dict = self.get_report_type_from_xls_name(records=self.index_dict)
+                new_files_dict = self.get_date_from_xls_name(records=new_files_dict)
+
+                print('added files ===>', [list(value.values())[0][1].name for value in new_files_dict[0]])
+
+                # return new_files_dict, self.unfinalized_months
+            else:
+                print('exiting program')
+                exit    
+
+
+        # if len(self.unfinalized_months) > 0:
+        #     unproc_files, directory_contents = self.test_for_unprocessed_file()
+        # else:
+
+        # if len(unproc_files) == 0:
+        #     print('there are no new files in path')
+        #     print('here we should look to see whether we want to make any new rent sheets')
+        #     return [], []
+        # else:
 
     def build_index_runner(self):
         """this function is just a list of the funcs one would run to create the index from a fresh start"""
@@ -223,40 +255,6 @@ class FileIndexer(Utils, Scrape, Reconciler):
         self.find_opcashes()
         self.type_opcashes()    
         self.rename_by_content_pdf()
-
-    def incremental_preface(self):
-        print('incrmental preferences')
-        breakpoint()
-        
-        """A FINALIZED MONTH ==
-            1 OPCASH processed 
-            2 DEPOSITS + ADJUSTMENTS == TENANT_PAY + NTP"""
-
-        months_ytd, unfin_month = findexer.test_for_unfinalized_months()
-
-        for item in unfin_month:
-            print(item)
-
-        """NEXT: is there anything to process?  ie are there new files in the path"""
-
-        print('\n')
-        unproc_files, dir_contents = findexer.test_for_unprocessed_file()
-
-        if unproc_files == []:
-            print('no new files to add')
-        else:
-            for count, item in enumerate(unproc_files, 1):
-                print(count, item)
-
-            print('\n')
-            choice1 = int(input('running findexer now would input the above file(s)?  press 1 to proceed ...'))
-
-            if choice1 == 1:
-                new_files_add = findexer.incremental_filer()
-                print('added files ===>', [list(value.values())[0][1].name for value in new_files_add[0]])
-            else:
-                print('exiting program')
-                exit
 
     def test_for_unfinalized_months(self):
         months_ytd = Utils.months_in_ytd(Config.current_year)

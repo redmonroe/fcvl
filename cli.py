@@ -64,12 +64,7 @@ def cli():
 @click.command()
 def incr_load_test():
     click.echo('checking state of findexer to prepare for incremental file loading')
-
-    """what is the state of FINDEXER?"""
     path, full_sheet, build, service, ms = return_test_config()
-    print('\n')
-
-    click.echo('showing unfinalized months (unfinal = no opcash +/or no reconcile with ten payments')
     findexer = FileIndexer(path=path, db=build.main_db)
     findexer.incremental_filer()
 
