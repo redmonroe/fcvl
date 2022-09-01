@@ -162,8 +162,8 @@ class FileIndexer(Utils, Scrape, Reconciler):
         self.op_cash_list = []
         self.create_findex_list = [Findexer]
         self.pdf = StructDataExtract()
-        self.scrape_path = Config.TEST_MM_SCRAPE
-
+        self.scrape_path = Config.TEST_PATH
+    
     def iter_build_runner(self):
         print('iter_build_runner; a FileIndexer method')        
         self.connect_to_db() 
@@ -193,6 +193,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
             return new_files_dict, self.unfinalized_months
 
     def build_index_runner(self):
+        """this function is just a list of the funcs one would run to create the index from a fresh start"""
         self.connect_to_db()
         self.index_dict = self.articulate_directory()
         self.load_what_is_in_dir_as_indexed(dict1=self.index_dict)
@@ -411,7 +412,6 @@ class FileIndexer(Utils, Scrape, Reconciler):
                     date_str = '-'.join(data[1].split('.')[0].split('_')[2:][::-1])
                 elif typ == 'scrape':
                     date_str = data[1].split('_')[3][0:7]
-                    breakp
                 dict1 = {typ: (date_str, data[0])}
                 records1.append(dict1)
         return records1

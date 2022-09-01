@@ -25,7 +25,7 @@ cli.add_command(consume_and_backup_invoices)
 '''
 
 def return_test_config():
-    path = Config.TEST_RS_PATH_MAY
+    path = Config.TEST_PATH
     full_sheet = Config.TEST_RS
     build = BuildRS(path=path, full_sheet=full_sheet, main_db=Config.TEST_DB)
     service = oauth(Config.my_scopes, 'sheet', mode='testing')
@@ -54,6 +54,10 @@ def set_db(build=None):
 @click.group()
 def cli():
     pass
+
+@click.group()
+def incr_file_load():
+    click.echo('checking state of findexer to prepare for incremental file loading')
 
 @click.command()
 def reset_db_test():
@@ -137,17 +141,17 @@ def recvactuals():
     annfin = AnnFin(db=Config.TEST_DB)
     annfin.start_here()
 
-@click.command()
-def reset_dry_run():
-    click.echo('reset dry run by deleting 07 deposit, 07 rent, 07 scrape')
-    from backend import Findexer
-    findex = FileIndexer(path=Config.TEST_RS_PATH_MAY, db=Config.TEST_DB)
-    target_deposit_file1 = Findexer.get(Findexer.fn == 'deposits_07_2022.xls')
-    target_deposit_file2 = Findexer.get(Findexer.fn == 'rent_roll_07_2022.xls')
-    target_deposit_file3 = Findexer.get(Findexer.fn == 'CHECKING_1891_Transactions_2022-07-01_2022-07-26.csv')
-    target_deposit_file1.delete_instance()
-    target_deposit_file2.delete_instance()
-    target_deposit_file3.delete_instance()
+# @click.command()
+# def reset_dry_run():
+#     click.echo('reset dry run by deleting 07 deposit, 07 rent, 07 scrape')
+#     from backend import Findexer
+#     findex = FileIndexer(path=Config.TEST_PATH, db=Config.TEST_DB)
+#     target_deposit_file1 = Findexer.get(Findexer.fn == 'deposits_07_2022.xls')
+#     target_deposit_file2 = Findexer.get(Findexer.fn == 'rent_roll_07_2022.xls')
+#     target_deposit_file3 = Findexer.get(Findexer.fn == 'CHECKING_1891_Transactions_2022-07-01_2022-07-26.csv')
+#     target_deposit_file1.delete_instance()
+#     target_deposit_file2.delete_instance()
+#     target_deposit_file3.delete_instance()
     
 @click.command()
 def status_test_findexer():
@@ -156,50 +160,50 @@ def status_test_findexer():
     player = ProcessingLayer()
     player.show_status_table(path=path, db=db)
 
-@click.command()
-def dry_run():
-    click.echo('dry run of findexer with new files vel non')
-    path = Config.TEST_RS_PATH_MAY
-    full_sheet = Config.TEST_RS
-    db = Config.TEST_DB
-    scopes = Config.my_scopes
+# @click.command()
+# def dry_run():
+#     click.echo('dry run of findexer with new files vel non')
+#     path = Config.TEST_PATH
+#     full_sheet = Config.TEST_RS
+#     db = Config.TEST_DB
+#     scopes = Config.my_scopes
     
-    click.echo('description of db')
+#     click.echo('description of db')
     
-    print('\n')
-    click.echo('unfinalized months')
-    months_ytd, unfin_month = findex.test_for_unfinalized_months()
-    for item in unfin_month:
-        print(item)
+#     print('\n')
+#     click.echo('unfinalized months')
+#     months_ytd, unfin_month = findex.test_for_unfinalized_months()
+#     for item in unfin_month:
+#         print(item)
 
-    print('\n')
-    unproc_files, dir_contents = findex.test_for_unprocessed_file()
+#     print('\n')
+#     unproc_files, dir_contents = findex.test_for_unprocessed_file()
     
-    if unproc_files == []:
-        print('no new files to add')
-    else:
-        for count, item in enumerate(unproc_files, 1):
-            print(count, item)
+#     if unproc_files == []:
+#         print('no new files to add')
+#     else:
+#         for count, item in enumerate(unproc_files, 1):
+#             print(count, item)
 
-        choice1 = int(input('running findexer now would input the above file(s)?  press 1 to proceed ...'))
+#         choice1 = int(input('running findexer now would input the above file(s)?  press 1 to proceed ...'))
 
-        if choice1 == 1:
-            new_files_add = findex.iter_build_runner()
-            print('added files ===>', [list(value.values())[0][1].name for value in new_files_add[0]])
-        else:
-            print('exiting program')
-            exit
+#         if choice1 == 1:
+#             new_files_add = findex.iter_build_runner()
+#             print('added files ===>', [list(value.values())[0][1].name for value in new_files_add[0]])
+#         else:
+#             print('exiting program')
+#             exit
 
-        choice2 = int(input('would you like to reconcile and build db for rent sheets?  press 1 to proceed ...'))
+#         choice2 = int(input('would you like to reconcile and build db for rent sheets?  press 1 to proceed ...'))
 
-        if choice2 == 1:
-            build = BuildRS(path=path, full_sheet=full_sheet, main_db=db)
-            service = oauth(scopes, 'sheet', mode='testing')
-            ms = MonthSheet(full_sheet=full_sheet, path=path, mode='testing', test_service=service)
-            print('building db')
-            # build.build_db_from_scratch()
-            build.build_db_from_scratch(bypass_findexer=True, new_files_add=new_files_add)
-            player.show_status_table(findex=findex)
+#         if choice2 == 1:
+#             build = BuildRS(path=path, full_sheet=full_sheet, main_db=db)
+#             service = oauth(scopes, 'sheet', mode='testing')
+#             ms = MonthSheet(full_sheet=full_sheet, path=path, mode='testing', test_service=service)
+#             print('building db')
+#             # build.build_db_from_scratch()
+#             build.build_db_from_scratch(bypass_findexer=True, new_files_add=new_files_add)
+#             player.show_status_table(findex=findex)
 
 cli.add_command(escrow)
 cli.add_command(receipts)
@@ -214,8 +218,8 @@ cli.add_command(sqlite_dump)
 cli.add_command(balanceletters)
 cli.add_command(workorders)
 cli.add_command(recvactuals)
-cli.add_command(dry_run)
-cli.add_command(reset_dry_run)
+# cli.add_command(dry_run)
+# cli.add_command(reset_dry_run)
 cli.add_command(manentry)
 
 if __name__ == '__main__':

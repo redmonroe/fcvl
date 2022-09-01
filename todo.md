@@ -1,5 +1,16 @@
 ## top level
 
+- core functionality:
+
+  - incremental_update of findexer (this is the first step)
+
+  - accounting functions
+    - update & display rent sheets for peg and myself
+    -
+  - operations functions:
+    - rent receipts
+    - balance letters
+
 - requirements:
 
   - what format do I want to use for documentation?
@@ -8,7 +19,7 @@
   - is key_id in StatusObject doing anything?
 
   - operations:
-    - segregate scrape_loading functionality
+
   - testing:
     - need to write tests for statusrs and balance letters (this is not an auto-flow now; triggered from cli )
   - incremental processing of files (comes from statusRS)

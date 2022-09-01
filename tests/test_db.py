@@ -36,7 +36,7 @@ from utils import Utils
 
 # from rs
 full_sheet = Config.TEST_RS
-path = Config.TEST_RS_PATH_MAY 
+path = Config.TEST_PATH 
 target_bal_load_file = Config.beg_bal_xlsx
 service = oauth(Config.my_scopes, 'sheet', mode='testing')
 calls = GoogleApiCalls()
