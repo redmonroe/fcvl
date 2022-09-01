@@ -12,6 +12,7 @@ from build_rs import BuildRS
 from config import Config
 from db_utils import DBUtils
 from file_manager import path_to_statements, write_hap
+from file_indexer import FileIndexer
 from manual_entry import ManualEntry
 from pdf import StructDataExtract
 from letters import Letters
@@ -43,10 +44,15 @@ def return_config():
     return path, sheet, build, service, ms
 
 def set_db(build=None):
+    """this should not DROP tables"""
     populate = PopulateTable()
     create_tables_list1 = populate.return_tables_list()
     if build.main_db.is_closed() == True:
         build.main_db.connect()
+
+def reset_db(build=None):
+    populate = PopulateTable()
+    create_tables_list1 = populate.return_tables_list()
     build.main_db.drop_tables(models=create_tables_list1)
     if build.main_db.get_tables() == []:
         print('db successfully dropped')
@@ -55,21 +61,29 @@ def set_db(build=None):
 def cli():
     pass
 
-@click.group()
-def incr_file_load():
+@click.command()
+def incr_load_test():
     click.echo('checking state of findexer to prepare for incremental file loading')
+
+    """what is the state of FINDEXER?"""
+    path, full_sheet, build, service, ms = return_test_config()
+    print('\n')
+
+    click.echo('showing unfinalized months (unfinal = no opcash +/or no reconcile with ten payments')
+    findexer = FileIndexer(path=path, db=build.main_db)
+    findexer.incremental_filer()
 
 @click.command()
 def reset_db_test():
     click.echo('dropping test db . . .')
     path, full_sheet, build, service, ms = return_test_config()
-    set_db(build=build)
+    reset_db(build=build)
 
 @click.command()
 def reset_db_prod():
     click.echo('dropping PRODUCTION db . . .')
     path, full_sheet, build, service, ms = return_config()
-    set_db(build=build)
+    reset_db(build=build)
 
 @click.command()
 def load_db_test():
@@ -154,7 +168,7 @@ def recvactuals():
 #     target_deposit_file3.delete_instance()
     
 @click.command()
-def status_test_findexer():
+def status_findexer_test():
     click.echo('show status of findex db')
     path, full_sheet, build, service, ms = return_test_config()
     player = ProcessingLayer()
@@ -207,7 +221,7 @@ def status_test_findexer():
 
 cli.add_command(escrow)
 cli.add_command(receipts)
-cli.add_command(status_test_findexer)
+cli.add_command(status_findexer_test)
 cli.add_command(reset_db_test)
 cli.add_command(reset_db_prod)
 cli.add_command(write_all_test)
@@ -218,6 +232,7 @@ cli.add_command(sqlite_dump)
 cli.add_command(balanceletters)
 cli.add_command(workorders)
 cli.add_command(recvactuals)
+cli.add_command(incr_load_test)
 # cli.add_command(dry_run)
 # cli.add_command(reset_dry_run)
 cli.add_command(manentry)

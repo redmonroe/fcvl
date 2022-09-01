@@ -66,7 +66,7 @@ class BuildRS(MonthSheet):
                 """this branch is used to trigger iterative build of findex using new file list created here"""
                 self.ctx = 'db is not empty; iter_build; do NOT bypass findexer'
                 print(f'{self.ctx}')
-                self.new_files, self.unfinalized_months = self.findex.iter_build_runner()
+                self.new_files, self.unfinalized_months = self.findex.incremental_filer()
                 populate = self.setup_tables(mode='create_only')
                 self.iterate_over_remaining_months_incremental(list1=self.new_files)
                 

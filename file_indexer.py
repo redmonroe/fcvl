@@ -164,8 +164,9 @@ class FileIndexer(Utils, Scrape, Reconciler):
         self.pdf = StructDataExtract()
         self.scrape_path = Config.TEST_PATH
     
-    def iter_build_runner(self):
-        print('iter_build_runner; a FileIndexer method')        
+    def incremental_filer(self):
+        print('iter_build_runner; a FileIndexer method')
+        self.incremental_preface()        
         self.connect_to_db() 
         months_ytd, unf_months = self.test_for_unfinalized_months()
 
@@ -223,6 +224,40 @@ class FileIndexer(Utils, Scrape, Reconciler):
         self.type_opcashes()    
         self.rename_by_content_pdf()
 
+    def incremental_preface(self):
+        print('incrmental preferences')
+        breakpoint()
+        
+        """A FINALIZED MONTH ==
+            1 OPCASH processed 
+            2 DEPOSITS + ADJUSTMENTS == TENANT_PAY + NTP"""
+
+        months_ytd, unfin_month = findexer.test_for_unfinalized_months()
+
+        for item in unfin_month:
+            print(item)
+
+        """NEXT: is there anything to process?  ie are there new files in the path"""
+
+        print('\n')
+        unproc_files, dir_contents = findexer.test_for_unprocessed_file()
+
+        if unproc_files == []:
+            print('no new files to add')
+        else:
+            for count, item in enumerate(unproc_files, 1):
+                print(count, item)
+
+            print('\n')
+            choice1 = int(input('running findexer now would input the above file(s)?  press 1 to proceed ...'))
+
+            if choice1 == 1:
+                new_files_add = findexer.incremental_filer()
+                print('added files ===>', [list(value.values())[0][1].name for value in new_files_add[0]])
+            else:
+                print('exiting program')
+                exit
+
     def test_for_unfinalized_months(self):
         months_ytd = Utils.months_in_ytd(Config.current_year)
     
@@ -236,7 +271,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
         return months_ytd, self.unfinalized_months
 
     def test_for_unprocessed_file(self):
-        print('searching for new files in path')
+        print('searching for new files in path:')
         processed_fn = [item.fn for item in Findexer().select().where(Findexer.status=='processed').namedtuples()]  
 
         directory_contents = self.articulate_directory2()    
