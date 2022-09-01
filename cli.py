@@ -6,7 +6,7 @@ import pytest
 from peewee import *
 
 from annual_financials import AnnFin
-from auth_work import oauth
+ 
 from backend import PopulateTable, ProcessingLayer, QueryHC, StatusRS, db
 from build_rs import BuildRS
 from config import Config

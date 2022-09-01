@@ -9,19 +9,26 @@ sys.path.append(parent)
 from pathlib import Path, PosixPath
 
 from auth_work import oauth
+from backend import PopulateTable, Findexer
 from build_rs import BuildRS
 from config import Config
 from file_indexer import FileIndexer
 from setup_month import MonthSheet
 
+
 """what is different about these tests?"""
 """testing a db in motion, so we cannot simply rely on resetting"""
 
 class TestFileIndexerIncr:
-    
+
     @pytest.fixture
-    def return_test_config(self):
-        path = Config.TEST_PATH
+    def populate(self):
+        populate = PopulateTable()
+        return populate
+
+    @pytest.fixture
+    def return_test_config_init(self):
+        path = Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/iter_build_first')
         full_sheet = Config.TEST_RS
         build = BuildRS(path=path, full_sheet=full_sheet, main_db=Config.TEST_DB)
         service = oauth(Config.my_scopes, 'sheet', mode='testing')
@@ -31,30 +38,48 @@ class TestFileIndexerIncr:
         return path, full_sheet, build, service, ms, findexer
 
     @pytest.fixture
-    def init_path(self):
-        init_path = Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/iter_build_first')
-        yield init_path
+    def return_test_config_incr1(self):
+        path = Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/iter_build_second')
+        full_sheet = Config.TEST_RS
+        build = BuildRS(path=path, full_sheet=full_sheet, main_db=Config.TEST_DB)
+        service = oauth(Config.my_scopes, 'sheet', mode='testing')
+        ms = MonthSheet(full_sheet=full_sheet, path=path, mode='testing', test_service=service)
+        findexer = FileIndexer(path=path, db=build.main_db)
 
-    @pytest.fixture
-    def incr_path1(self):
-        incr_path1 = Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/iter_build_second') 
-        yield incr_path1
+        return path, full_sheet, build, service, ms, findexer
 
-    def test_db_reset(self, return_test_config):
-        findexer = return_test_config[-1]
-        findexer.drop_findex_table()
-        findexer.close_findex_table()
-        assert Config.TEST_DB.is_closed() == True
+    def test_db_reset(self, return_test_config_init):
+        path, full_sheet, build, service, ms, findexer = return_test_config_init
+        populate = PopulateTable()
+        create_tables_list1 = populate.return_tables_list()
+        build.main_db.drop_tables(models=create_tables_list1)
+        assert build.main_db.get_tables() == []
 
-    def test_paths(self, init_path, incr_path1):
-        assert init_path == PosixPath('/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/iter_build_first')
-        assert incr_path1 == PosixPath('/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/iter_build_second')
+    def test_load_init_db_state(self, return_test_config_init):
+        path, full_sheet, build, service, ms, findexer = return_test_config_init
+        build.build_db_from_scratch()        
 
-    def test_load_init_db_state(self, init_path):
-        pass
+    def test_init_state(self, populate, return_test_config_init):
+        """
+        doesn't need to be high engineering here: just
+        compare the number of files to number of entries
+        """
+        d_rows = populate.get_all_findexer_by_type(type1='deposits')
+        assert len(d_rows) == 3
 
-    def test_close(self, return_test_config):
-        findexer = return_test_config[-1]
-        findexer.drop_findex_table()
-        findexer.close_findex_table()
+        o_rows = populate.get_all_findexer_by_type(type1='opcash')
+        assert len(o_rows) == 3
+
+        r_rows = populate.get_all_findexer_by_type(type1='rent')
+        assert len(r_rows) == 3
+        
+        path, full_sheet, build, service, ms, findexer = return_test_config_init
+        files = [fn for fn in path.iterdir()]
+        assert len(files) == 11 # 9 files + beg balances + desktop.ini
+
+    def test_close(self, return_test_config_init):
+        path, full_sheet, build, service, ms, findexer = return_test_config_init
+        populate = PopulateTable()
+        create_tables_list1 = populate.return_tables_list()
+        build.main_db.drop_tables(models=create_tables_list1)
         assert Config.TEST_DB.is_closed() == True

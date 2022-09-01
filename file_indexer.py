@@ -213,18 +213,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
                 # return new_files_dict, self.unfinalized_months
             else:
                 print('exiting program')
-                exit    
-
-
-        # if len(self.unfinalized_months) > 0:
-        #     unproc_files, directory_contents = self.test_for_unprocessed_file()
-        # else:
-
-        # if len(unproc_files) == 0:
-        #     print('there are no new files in path')
-        #     print('here we should look to see whether we want to make any new rent sheets')
-        #     return [], []
-        # else:
+                exit   
 
     def build_index_runner(self):
         """this function is just a list of the funcs one would run to create the index from a fresh start"""
