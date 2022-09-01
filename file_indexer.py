@@ -206,8 +206,9 @@ class FileIndexer(Utils, Scrape, Reconciler):
                 
                 new_files_dict = self.get_report_type_from_xls_name(records=self.index_dict)
                 new_files_dict = self.get_date_from_xls_name(records=new_files_dict)
+                breakpoint()
 
-                print('added files ===>', [list(value.values())[0][1].name for value in new_files_dict[0]])
+                # print('added files ===>', [list(value.values())[0][1].name for value in new_files_dict[0]])
 
                 # return new_files_dict, self.unfinalized_months
             else:
