@@ -77,6 +77,9 @@ class TestFileIndexerIncr:
         files = [fn for fn in path.iterdir()]
         assert len(files) == 11 # 9 files + beg balances + desktop.ini
 
+    def test_incr_state(self):
+        """WE NEED TO BE TESTING UNFINALIZED MONTHS AND HOW SYSTEM REACTS"""
+
     def test_close(self, return_test_config_init):
         path, full_sheet, build, service, ms, findexer = return_test_config_init
         populate = PopulateTable()
