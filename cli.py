@@ -1,199 +1,139 @@
-from google_api_calls_abstract import simple_batch_update#cli.py
-import click
-from fcvfin import reconciliation_runtime as rr, month_setup as ms, annual_formatting as af
-from receipts import RentReceipts
-from pg_utils import pg_dump_one
-from file_manager import path_to_statements, write_hap
-from pdf import merchants_pdf_extract, nbofi_pdf_extract_hap, qb_extract_p_and_l, qb_extract_security_deposit, qb_extract_deposit_detail
-import click
-from auth_work import oauth
-from config import my_scopes, Config
-from google_api_calls_abstract import broad_get
-from liltilities import Liltilities, get_existing_sheets
+import os
+import time
 
+import click
+import pytest
+from peewee import *
+
+from annual_financials import AnnFin
+ 
+from backend import PopulateTable, ProcessingLayer, QueryHC, StatusRS, db
+from build_rs import BuildRS
+from config import Config
+from db_utils import DBUtils
+from file_manager import path_to_statements, write_hap
+from file_indexer import FileIndexer
+from manual_entry import ManualEntry
+from pdf import StructDataExtract
+from letters import Letters
+from records import record
+from setup_month import MonthSheet
+from setup_year import YearSheet
+
+'''
+cli.add_command(nbofi)
+cli.add_command(consume_and_backup_invoices)
+'''
+
+def return_test_config():
+    path = Config.TEST_PATH
+    full_sheet = Config.TEST_RS
+    build = BuildRS(path=path, full_sheet=full_sheet, main_db=Config.TEST_DB)
+    service = oauth(Config.my_scopes, 'sheet', mode='testing')
+    ms = MonthSheet(full_sheet=full_sheet, path=path, mode='testing', test_service=service)
+
+    return path, full_sheet, build, service, ms
+
+def return_config():
+    path = Config.PROD_PATH
+    sheet = Config.PROD_RS
+    db = Config.PROD_DB
+    build = BuildRS(path=path, full_sheet=sheet, main_db=db)
+    service = oauth(Config.my_scopes, 'sheet')
+    ms = MonthSheet(full_sheet=sheet, path=path)
+    return path, sheet, build, service, ms
+
+def set_db(build=None):
+    """this should not DROP tables"""
+    populate = PopulateTable()
+    create_tables_list1 = populate.return_tables_list()
+    if build.main_db.is_closed() == True:
+        build.main_db.connect()
+
+def reset_db(build=None):
+    populate = PopulateTable()
+    create_tables_list1 = populate.return_tables_list()
+    build.main_db.drop_tables(models=create_tables_list1)
+    if build.main_db.get_tables() == []:
+        print('db successfully dropped')
 
 @click.group()
 def cli():
     pass
 
+@click.command()
+def incr_load_test():
+    click.echo('checking state of findexer to prepare for incremental file loading')
+    path, full_sheet, build, service, ms = return_test_config()
+    findexer = FileIndexer(path=path, db=build.main_db)
+    findexer.incremental_filer()
 
 @click.command()
-def merchants():
-    merchants_pdf_extract()
-    click.echo('!!!1see data/output for output files #todo!!!')
-
+def reset_db_test():
+    click.echo('dropping test db . . .')
+    path, full_sheet, build, service, ms = return_test_config()
+    reset_db(build=build)
 
 @click.command()
-def nbofi():
-    click.echo('extracting data to prepare periodic income reports')
+def reset_db_prod():
+    click.echo('dropping PRODUCTION db . . .')
+    path, full_sheet, build, service, ms = return_config()
+    reset_db(build=build)
 
-    # this needs to be moved to own file, but do it with some forethought for chrissakes!
+@click.command()
+def load_db_test():
+    click.echo('loading all available files in path to db')
+    path, full_sheet, build, service, ms = return_test_config()    
+    build.build_db_from_scratch()    
 
-    # do I want to do something with "TOTal" part of p and l?  I have it busted out into its own dict
-    # do I want to do something with "mtd" part of p and L?  I have it also busted out into its own dict
+@click.command()
+def load_db_prod():
+    click.echo('PRODUCTION: loading all available files in path to db')
+    path, full_sheet, build, service, ms = return_config()   
+    build.build_db_from_scratch()   
+
+@click.command()
+def write_all_prod():
+    click.echo('PRODUCTION: write all db contents to rs . . .')
+    path, full_sheet, build, service, ms = return_config()    
+    ms.auto_control(source='cli.py', mode='clean_build')
+
+@click.command()
+def write_all_test():
+    click.echo('write all db contents to rs . . .')
+    path, full_sheet, build, service, ms = return_test_config()    
+    ms.auto_control(source='cli.py', mode='clean_build')
     
-    def pick_bank_statements(choice=None, list_of_statements=None):
-
-        for item in bank_statements_ytd:
-            item2 = item.split('.')
-            item2 = item2[0] 
-            item2 = item2.split(' ')
-            join_item = ' '.join(item2[2:4])
-            if choice == join_item:
-                stmt_list.append(item) 
-                # print(item)
-        return stmt_list
-
-    def extraction_wrapper_for_transaction_detail(choice, func=None, path=None, keyword=None):
-
-        path, files = path_to_statements(path=path, keyword=keyword)    
-        #date_dict_groupby_m = qb_extract_security_deposit(files[0], path=path)
-        date_dict_groupby_m = func(files[0], path=path)
-        result = {amount for (dateq, amount) in date_dict_groupby_m.items() if dateq == choice}
-        is_empty_set = (len(result) == 0)
-        if is_empty_set:
-            data = [0]
-            return data
-        else:
-            data = [min(result)]
-            return data
-
-    LAUNDRY_RANGE_FROM_RS = '!N71:N71'
-    RR_RANGE_FROM_RS = '!D80:D80'
-    SEC_DEP_RANGE_FROM_RS = '!N73:N73'
-    CURRENT_YEAR_RS = Config.RS_2022
-    month_match_dict = {
-        'jan': 1, 
-        'feb': 2, 
-        'mar': 3, 
-        'apr': 4, 
-        'may': 5, 
-        'june': 6, 
-        'july': 7, 
-        'aug': 8, 
-        'sep': 9, 
-        'oct': 10, 
-        'nov': 11, 
-        'dec': 12, 
-        }
-
-    # choice = str(input('enter target month (mm/yyyy): '))
-    service = oauth(my_scopes, 'sheet')
-    sheet_id = Config.rec_act_2021
-    worksheet_name = Config.TEST_REC_ACT
-    hap_range = Config.current_year_hap
-    laundry_range = Config.current_year_laundry
-    sec_dep_range = Config.current_year_sec_dep
-    rr_range = Config.current_year_rr
-
-    dim = 'COLUMNS'
-
-    choice = '01 2022' #need to reup December qbo, right now still showing 1-29 of december
-    print('you picked:', choice)
-    year_choice = choice.split(' ')
-    month_choice = year_choice[0]
-    year_choice = year_choice[1]
-    # pick reports here
-    if year_choice == '2022':
-        bank_stmts = Config.path_qbo_test_reports
-        p_and_l = Config.path_qbo_test_reports
-        path_security_deposit = Config.path_qbo_test_reports
+    # sample_month_list = ['2022-01']
+    # sample_month_list = ['2022-01', '2022-02']
+    # ms.auto_control(month_list=sample_month_list)
     
-    three_letter_month = [str(month_str) for month_str, month_int in month_match_dict.items() if int(month_choice) == month_int]
-
-    titles_dict = get_existing_sheets(service, CURRENT_YEAR_RS)
-    target_sheet = {sheet_name for (sheet_name, sheet_id) in titles_dict.items() if three_letter_month[0] in sheet_name}
-    target_sheet = min(target_sheet)
-
-    sh_col = Liltilities.get_letter_by_choice(int(month_choice), 0)
-    hap_wrange = f'{worksheet_name}!{sh_col}{hap_range}:{sh_col}{hap_range}'
-    laundry_wrange =f'{worksheet_name}!{sh_col}{laundry_range}:{sh_col}{laundry_range}' 
-    sec_dep_wrange =f'{worksheet_name}!{sh_col}{sec_dep_range}:{sh_col}{sec_dep_range}' 
-    rr_wrange = f'{worksheet_name}!{sh_col}{rr_range}:{sh_col}{rr_range}' 
-
-    stmt_list = []
-    target_bank_stmt_path, bank_statements_ytd = path_to_statements(path=bank_stmts, keyword='op cash')
-    target_report = pick_bank_statements(choice=choice, list_of_statements=bank_statements_ytd)
-    dateq, hap_stmt = nbofi_pdf_extract_hap(target_report[0], path=target_bank_stmt_path)
-    
-    target_pl_path, profit_and_loss_ytd = path_to_statements(path=p_and_l, keyword='Profit')
-    hap_date_dict = qb_extract_p_and_l(profit_and_loss_ytd[0], keyword='5121', path=target_pl_path)
-    for dateh, amount in hap_date_dict.items():
-        if dateh == choice:
-            hap_qbo = amount
-
-    if hap_stmt == hap_qbo:
-        data = [hap_stmt]
-        simple_batch_update(service, sheet_id, hap_wrange, data, dim)
-    else:
-        print('hap does not balance between rs and qbo.')
-        print('hap from bank', hap_stmt, '|', type(hap_stmt), 'rr from qb=', hap_qbo, '|', type(hap_qbo))
-        simple_batch_update(service, sheet_id, hap_wrange, [100000000], dim)  
-
-    # get laundry_income_rs
-    laundry_income_rs = broad_get(service, CURRENT_YEAR_RS, target_sheet + LAUNDRY_RANGE_FROM_RS)
-    laundry_income_rs = float(laundry_income_rs[0][0])
-
-    laundry_date_dict = qb_extract_p_and_l(profit_and_loss_ytd[0], keyword='5910', path=target_pl_path)
-    for dateq, amount in laundry_date_dict.items():
-        if dateq == choice:
-            laundry_income_qbo = float(amount)
-
-    if laundry_income_rs == laundry_income_qbo:
-        simple_batch_update(service, sheet_id, laundry_wrange, [laundry_income_rs], dim)
-    else:
-        print('laundry does not balance between rs and qb')
-        print('laundr rs=', laundry_income_rs, '|', type(laundry_income_rs, 'laundry qb=', laundry_income_qbo, '|', type(laundry_income_qbo)))
-
-     # sec dep
-    sec_dep_qb = extraction_wrapper_for_transaction_detail(choice, func=qb_extract_security_deposit, path=path_security_deposit, keyword='Security')
-    sec_dep_rs = broad_get(service, CURRENT_YEAR_RS, target_sheet + SEC_DEP_RANGE_FROM_RS)
-
-    if float(sec_dep_rs[0][0]) == float(sec_dep_qb[0]):
-        simple_batch_update(service, sheet_id, sec_dep_wrange, sec_dep_qb, dim)
-    else:
-        print('sec_dp does not balance between rs and qb.  Have I adjusted on rs.')
-        print('sd rs=', sec_dep_rs, '|', type(sec_dep_rs), 'sd qb=', sec_dep_qb, '|', type(sec_dep_qb))
-    '''
-    ## rr from qbo
-    rr_qbo = extraction_wrapper_for_transaction_detail(choice, func=qb_extract_security_deposit, path=Config.rr_2021, keyword='rr')
-    ## rr from rent_sheets (see above)
-    rr_rs = broad_get(service, CURRENT_YEAR_RS, target_sheet + RR_RANGE_FROM_RS)
-    rr_rs = float(rr_rs[0][0])
-    if rr_rs == rr_qbo:
-        simple_batch_update(service, sheet_id, rr_wrange, rr_rs, dim)
-    else:
-        print('rr does not balance between rs and qbo.')
-        print('rr from rs=', rr_rs, '|', type(rr_rs), 'rr from qb=', rr_qbo, '|', type(rr_qbo))
-        print('WRITING PLUG PENDING JANUARY STATEMENTS AND ABILITY TO WORK ON LIVE DATA')
-        simple_batch_update(service, sheet_id, rr_wrange, [100000000], dim)
-    # deposit detail from qbo: need a group by swing here
-    data = extraction_wrapper_for_transaction_detail(choice, func=qb_extract_deposit_detail, path=Config.deposit_detail_2021, keyword='deposit')
-    print(data)
-    '''
-    print('joe')
+@click.command()
+def manentry():
+    click.echo('delete or modify rows of the database')
+    manentry = ManualEntry(db=db)
+    manentry.main()
 
 @click.command()
-def runtime():
-    click.echo('Running reconciliation runtime')
-    rr()
+def sqlite_dump():
+    click.echo('backup db')
+    click.echo('Dumping current tables to sqlite folder on GDrive.')
+    DBUtils.dump_sqlite(path_to_existing_db=Config.sqlite_test_db_path, path_to_backup=Config.sqlite_dump_path)
 
 @click.command()
-def setup():
-    click.echo('Setup the sheet for the month')
-    ms()
+def balanceletters():
+    click.echo('balance letters')
+    letters = Letters()
+    letters.balance_letters()
 
 @click.command()
-def setupyear():
-    click.echo('Setup the sheet for the year & a lot of sheet utilities')
-    af()
+def receipts():
+    click.echo('receipts')
+    player = ProcessingLayer()
+    player.rent_receipts_wrapper()
 
 @click.command()
-def pgdump():
-    click.echo('Dumping current tables to pg_backup folder.')
-    pg_dump_one()
-
-@click.command()
+<<<<<<< HEAD
 def rent_receipts():
     click.echo('Generate rent receipts')
     RentReceipts.rent_receipts()
@@ -219,3 +159,107 @@ cli.add_command(workorders_todo)
 
 if __name__ == '__main__':
     cli()
+=======
+def workorders():
+    click.echo('work orders')
+    work_orders = RentReceipts()
+    work_orders.work_orders()
+
+@click.command()
+def escrow():
+    """ For now we output each dataframe into fcvl/escrow"""
+    click.echo('take apart escrow report')
+    StructDataExtract.escrow_wrapper(output_path=Config.TEST_FCVL_BASE)
+    
+@click.command()
+def recvactuals():
+    click.echo('receivable actuals')
+    annfin = AnnFin(db=Config.TEST_DB)
+    annfin.start_here()
+
+# @click.command()
+# def reset_dry_run():
+#     click.echo('reset dry run by deleting 07 deposit, 07 rent, 07 scrape')
+#     from backend import Findexer
+#     findex = FileIndexer(path=Config.TEST_PATH, db=Config.TEST_DB)
+#     target_deposit_file1 = Findexer.get(Findexer.fn == 'deposits_07_2022.xls')
+#     target_deposit_file2 = Findexer.get(Findexer.fn == 'rent_roll_07_2022.xls')
+#     target_deposit_file3 = Findexer.get(Findexer.fn == 'CHECKING_1891_Transactions_2022-07-01_2022-07-26.csv')
+#     target_deposit_file1.delete_instance()
+#     target_deposit_file2.delete_instance()
+#     target_deposit_file3.delete_instance()
+    
+@click.command()
+def status_findexer_test():
+    click.echo('show status of findex db')
+    path, full_sheet, build, service, ms = return_test_config()
+    player = ProcessingLayer()
+    player.show_status_table(path=path, db=db)
+
+# @click.command()
+# def dry_run():
+#     click.echo('dry run of findexer with new files vel non')
+#     path = Config.TEST_PATH
+#     full_sheet = Config.TEST_RS
+#     db = Config.TEST_DB
+#     scopes = Config.my_scopes
+    
+#     click.echo('description of db')
+    
+#     print('\n')
+#     click.echo('unfinalized months')
+#     months_ytd, unfin_month = findex.test_for_unfinalized_months()
+#     for item in unfin_month:
+#         print(item)
+
+#     print('\n')
+#     unproc_files, dir_contents = findex.test_for_unprocessed_file()
+    
+#     if unproc_files == []:
+#         print('no new files to add')
+#     else:
+#         for count, item in enumerate(unproc_files, 1):
+#             print(count, item)
+
+#         choice1 = int(input('running findexer now would input the above file(s)?  press 1 to proceed ...'))
+
+#         if choice1 == 1:
+#             new_files_add = findex.iter_build_runner()
+#             print('added files ===>', [list(value.values())[0][1].name for value in new_files_add[0]])
+#         else:
+#             print('exiting program')
+#             exit
+
+#         choice2 = int(input('would you like to reconcile and build db for rent sheets?  press 1 to proceed ...'))
+
+#         if choice2 == 1:
+#             build = BuildRS(path=path, full_sheet=full_sheet, main_db=db)
+#             service = oauth(scopes, 'sheet', mode='testing')
+#             ms = MonthSheet(full_sheet=full_sheet, path=path, mode='testing', test_service=service)
+#             print('building db')
+#             # build.build_db_from_scratch()
+#             build.build_db_from_scratch(bypass_findexer=True, new_files_add=new_files_add)
+#             player.show_status_table(findex=findex)
+
+cli.add_command(escrow)
+cli.add_command(receipts)
+cli.add_command(status_findexer_test)
+cli.add_command(reset_db_test)
+cli.add_command(reset_db_prod)
+cli.add_command(write_all_test)
+cli.add_command(write_all_prod)
+cli.add_command(load_db_test)
+cli.add_command(load_db_prod)
+cli.add_command(sqlite_dump)
+cli.add_command(balanceletters)
+cli.add_command(workorders)
+cli.add_command(recvactuals)
+cli.add_command(incr_load_test)
+# cli.add_command(dry_run)
+# cli.add_command(reset_dry_run)
+cli.add_command(manentry)
+
+if __name__ == '__main__':
+    cli()
+
+>>>>>>> fcvl_rebuild

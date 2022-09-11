@@ -12,6 +12,14 @@ from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+import time
+#Configure and launch driver for selenium data pull from Fidelity
+# driver = webdriver.Chrome()
+driver = Service("/home/joe/chromedriver/stable/chromedriver")
+vars = {}
+driver.get('https://vistula.onesite.realpage.com/')
 
 def test_untitled(self):
     self.driver.get("https://vistula.onesite.realpage.com/")
