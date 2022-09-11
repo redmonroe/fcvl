@@ -57,7 +57,9 @@ class TestFileIndexerIncr:
 
     def test_load_init_db_state(self, return_test_config_init):
         path, full_sheet, build, service, ms, findexer = return_test_config_init
-        build.build_db_from_scratch()        
+        build.incremental_load()  
+        """focus on statusobject: why are so many months being procesed and marked as reconciled"""      
+        breakpoint()
 
     def test_init_state(self, populate, return_test_config_init):
         """
@@ -77,6 +79,22 @@ class TestFileIndexerIncr:
         files = [fn for fn in path.iterdir()]
         assert len(files) == 11 # 9 files + beg balances + desktop.ini
 
+    def test_process_files_step_one(self):
+        """what do we want to do here??"""
+        """this is where we would be triggering events
+            - payments, ntp, etc
+            - reconciliations
+            - updating any 
+        
+        """
+        pass
+
+
+    def test_load_incr_state(self, return_test_config_incr1):
+        path, full_sheet, build, service, ms, findexer = return_test_config_incr1
+
+        assert path == Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/iter_build_second')
+
     def test_incr_state(self):
         """WE NEED TO BE TESTING UNFINALIZED MONTHS AND HOW SYSTEM REACTS"""
 
@@ -85,4 +103,4 @@ class TestFileIndexerIncr:
         populate = PopulateTable()
         create_tables_list1 = populate.return_tables_list()
         build.main_db.drop_tables(models=create_tables_list1)
-        assert Config.TEST_DB.is_closed() == True
+        # assert Config.TEST_DB.is_closed() == True

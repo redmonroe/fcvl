@@ -31,6 +31,16 @@ class BuildRS(MonthSheet):
 
     def __repr__(self):
         return f'BuildRS object path: {self.path} write sheet: {self.full_sheet} service:{self.service}'
+
+    def incremental_load(self):
+        status = StatusRS()
+        player = ProcessingLayer()
+        if self.main_db.get_tables() == []:
+            """this branch is used for triggering a fresh incremental load of findexer & triggering events off of the end-state of the findexer and statusobject tables"""
+            print('fresh incremental load of findexer table')
+            populate = self.setup_tables()
+            self.findex.build_index_runner() 
+            breakpoint()
     
     def build_db_from_scratch(self, **kw):
         status = StatusRS()
