@@ -2,7 +2,7 @@
 
 - core functionality:
 
-  - incremental_update of findexer (this is the first step)
+  - incremental_update of findexer:
 
   - accounting functions
     - update & display rent sheets for peg and myself

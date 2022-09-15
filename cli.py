@@ -133,33 +133,6 @@ def receipts():
     player.rent_receipts_wrapper()
 
 @click.command()
-<<<<<<< HEAD
-def rent_receipts():
-    click.echo('Generate rent receipts')
-    RentReceipts.rent_receipts()
-
-@click.command()
-def workorders_todo():
-    click.echo('you have most of this just tie it into fcvfin.py or something')
-
-@click.command()
-def placeholder():
-    click.echo('put whatever you need to here')
-
-
-cli.add_command(runtime)
-cli.add_command(rent_receipts)
-cli.add_command(setup)
-cli.add_command(setupyear)
-cli.add_command(pgdump)
-cli.add_command(merchants)
-cli.add_command(nbofi)
-cli.add_command(placeholder)
-cli.add_command(workorders_todo)
-
-if __name__ == '__main__':
-    cli()
-=======
 def workorders():
     click.echo('work orders')
     work_orders = RentReceipts()
@@ -262,4 +235,3 @@ cli.add_command(manentry)
 if __name__ == '__main__':
     cli()
 
->>>>>>> fcvl_rebuild
