@@ -6,16 +6,17 @@ import pytest
 from peewee import *
 
 from annual_financials import AnnFin
- 
+from auth_work import oauth
 from backend import PopulateTable, ProcessingLayer, QueryHC, StatusRS, db
 from build_rs import BuildRS
 from config import Config
 from db_utils import DBUtils
-from file_manager import path_to_statements, write_hap
 from file_indexer import FileIndexer
+from file_manager import path_to_statements, write_hap
+from iter_rs import IterRS
+from letters import Letters
 from manual_entry import ManualEntry
 from pdf import StructDataExtract
-from letters import Letters
 from records import record
 from setup_month import MonthSheet
 from setup_year import YearSheet
@@ -33,6 +34,15 @@ def return_test_config():
     ms = MonthSheet(full_sheet=full_sheet, path=path, mode='testing', test_service=service)
 
     return path, full_sheet, build, service, ms
+
+def return_test_config_iter():
+    path = Config.TEST_PATH
+    full_sheet = Config.TEST_RS
+    iterb = IterRS(path=path, full_sheet=full_sheet, main_db=Config.TEST_DB)
+    service = oauth(Config.my_scopes, 'sheet', mode='testing')
+    ms = MonthSheet(full_sheet=full_sheet, path=path, mode='testing', test_service=service)
+
+    return path, full_sheet, iterb, service, ms
 
 def return_config():
     path = Config.PROD_PATH
@@ -60,6 +70,18 @@ def reset_db(build=None):
 @click.group()
 def cli():
     pass
+
+@click.command()
+def incremental_build():
+    click.echo('incremental build from cli')
+    from iter_rs import IterRS
+    path, full_sheet, iterb, service, ms = return_test_config_iter()
+    if iterb.main_db.get_tables() == []:
+        print('build')
+        iterb.incremental_load()
+    else:
+        print('reset')
+        reset_db(build=iterb)
 
 @click.command()
 def incr_load_test():
@@ -228,6 +250,7 @@ cli.add_command(balanceletters)
 cli.add_command(workorders)
 cli.add_command(recvactuals)
 cli.add_command(incr_load_test)
+cli.add_command(incremental_build)
 # cli.add_command(dry_run)
 # cli.add_command(reset_dry_run)
 cli.add_command(manentry)

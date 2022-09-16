@@ -10,7 +10,7 @@ from pathlib import Path, PosixPath
 
 from auth_work import oauth
 from backend import PopulateTable, Findexer
-from build_rs import BuildRS
+from iter_rs import IterRS
 from config import Config
 from file_indexer import FileIndexer
 from setup_month import MonthSheet
@@ -30,7 +30,8 @@ class TestFileIndexerIncr:
     def return_test_config_init(self):
         path = Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/iter_build_first')
         full_sheet = Config.TEST_RS
-        build = BuildRS(path=path, full_sheet=full_sheet, main_db=Config.TEST_DB)
+        build = IterRS(path=path, full_sheet=full_sheet, main_db=Config.TEST_DB)
+        breakpoint()
         service = oauth(Config.my_scopes, 'sheet', mode='testing')
         ms = MonthSheet(full_sheet=full_sheet, path=path, mode='testing', test_service=service)
         findexer = FileIndexer(path=path, db=build.main_db)
@@ -41,7 +42,7 @@ class TestFileIndexerIncr:
     def return_test_config_incr1(self):
         path = Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/iter_build_second')
         full_sheet = Config.TEST_RS
-        build = BuildRS(path=path, full_sheet=full_sheet, main_db=Config.TEST_DB)
+        build = IterRS(path=path, full_sheet=full_sheet, main_db=Config.TEST_DB)
         service = oauth(Config.my_scopes, 'sheet', mode='testing')
         ms = MonthSheet(full_sheet=full_sheet, path=path, mode='testing', test_service=service)
         findexer = FileIndexer(path=path, db=build.main_db)
@@ -59,7 +60,6 @@ class TestFileIndexerIncr:
         path, full_sheet, build, service, ms, findexer = return_test_config_init
         build.incremental_load()  
         """focus on statusobject: why are so many months being procesed and marked as reconciled"""      
-        breakpoint()
 
     def test_init_state(self, populate, return_test_config_init):
         """
