@@ -34,7 +34,7 @@ class BuildRS(MonthSheet):
     
     def build_db_from_scratch(self, **kw):
         status = StatusRS()
-        player = ProcessingLayer()
+        player = ProcessingLayer(service=self.service, full_sheet=self.full_sheet, ms=self.ms)
         print('building db from scratch')
         self.ctx = 'db empty'
         print(f'{self.ctx}')
@@ -50,8 +50,17 @@ class BuildRS(MonthSheet):
         """this is the critical control function"""
         player.reconcile_and_inscribe_state(month_list=all_months_ytd, ref_rec=most_recent_status)
 
-        # player.write_manual_entries_from_config()
+        player.write_manual_entries_from_config()
 
+        player.display_most_recent_status(mr_status=most_recent_status, months_ytd=all_months_ytd)
+
+        writeable_months = player.final_check_writeable_months(month_list=all_months_ytd)
+
+        if kw.get('write') == True:
+            player.find_complete_pw_months_and_iter_write( writeable_months=writeable_months)
+        else:
+            print('you have selected to bypass writing to RS.')
+            print('if you would like to write to rent spreadsheet enable "write" flag')
 
         '''
 
@@ -79,14 +88,7 @@ class BuildRS(MonthSheet):
                 self.iterate_over_remaining_months_incremental(list1=self.new_files)
                 
 
-        player.display_most_recent_status(mr_status=most_recent_status, months_ytd=all_months_ytd)
-        incomplete_month_bool, paperwork_complete_months = player.is_there_mid_month(all_months_ytd, report_list)
 
-        if kw.get('write_db') == True:
-            player.find_complete_pw_months_and_iter_write(paperwork_complete_months=paperwork_complete_months)
-        else:
-            print('you have selected to bypass writing to RS.')
-            print('if you would like to write to rent spreadsheet enable "write_db" flag')
         '''
 
         """only show this if I have deposits and rent roll for the month, do not show for any month after first incomplete month, there are other cases"""

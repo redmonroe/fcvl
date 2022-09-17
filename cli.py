@@ -89,7 +89,7 @@ def incremental_build(incr):
     if incr == False:
         path, full_sheet, build, service, ms = return_test_config_incr1()
         if build.main_db.get_tables() == []:
-            build.build_db_from_scratch()
+            build.build_db_from_scratch(write=True)
         else:
             print('reset (from scratch)')
             reset_db(build=build)

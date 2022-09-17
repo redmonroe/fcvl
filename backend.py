@@ -1031,8 +1031,11 @@ class PopulateTable(QueryHC):
 
 class ProcessingLayer(StatusRS):
 
-    def __init__(self):
+    def __init__(self, service=None, full_sheet=None, ms=None):
         self.populate = PopulateTable()
+        self.service = service
+        self.full_sheet = full_sheet 
+        self.month_sheet_object = ms 
 
     def set_current_date(self):
         date1 = datetime.now()
@@ -1067,17 +1070,41 @@ class ProcessingLayer(StatusRS):
         print('months ytd ' + Config.current_year + ': ' + '  '.join(m for m in months_ytd))
         print('\n')
 
-    def find_complete_pw_months_and_iter_write(self, paperwork_complete_months=None):
+    def find_complete_pw_months_and_iter_write(self,writeable_months=None):
         '''passing results of get_existing_sheets would reduce calls'''
-        existing_sheets_dict = Utils.get_existing_sheets(service, full_sheet) 
+
+        """if sheet already exists for a month, that month will not be included in list to write)"""
+
+        existing_sheets_dict = Utils.get_existing_sheets(self.service, self.full_sheet) 
         existing_sheets = [sheet for sheet in [*existing_sheets_dict.keys()] if sheet != 'intake']
 
-        paperwork_complete_months_with_no_rs = list(set(paperwork_complete_months) - set(existing_sheets))
+        paperwork_complete_months_with_no_rs = list(set(writeable_months) - set(existing_sheets))
         pw_complete_ms = sorted(paperwork_complete_months_with_no_rs)
-        ms.auto_control(source='StatusRS.show()', mode='iter_build', month_list=pw_complete_ms)
+        self.month_sheet_object.auto_control(source='StatusRS.show()', mode='iter_build', month_list=pw_complete_ms)
 
+        self.mark_rs_reconciled_status_object(month_list=pw_complete_ms)
+
+    def final_check_writeable_months(self, month_list=None):
+        writeable_months = []
+        for month in month_list:
+            status_object = [item for item in StatusObject().select().where(StatusObject.month==month)][0]
+
+            if status_object.opcash_processed == True and status_object.tenant_reconciled == True and status_object.rs_reconciled == False:
+                writeable_months.append(status_object.month)
+            elif status_object.scrape_reconciled == True and status_object.tenant_reconciled == True and status_object.rs_reconciled == False:
+                writeable_months.append(status_object.month)
+
+        return writeable_months
+
+    def mark_rs_reconciled_status_object(self, month_list=None):
+        for month in month_list:
+            status_object = [item for item in StatusObject().select().where(StatusObject.month==month)][0]
+            status_object.rs_reconciled = 1
+            status_object.save()
+
+
+    '''
     def load_scrape_and_mark_as_processed(self, most_recent_status=None, target_mid_month=None):
-        '''this function can be broken up even more'''
         print('load midmonth scrape from bank website')
         populate = PopulateTable()
 
@@ -1091,7 +1118,6 @@ class ProcessingLayer(StatusRS):
         most_recent_status.current_date.replace(day = 1)
         last_dt = target_mm_date.replace(day = calendar.monthrange(target_mm_date.year, target_mm_date.month)[1])
 
-        '''if this function asserts ok, then we can write balance letters & rent receipts for current month'''
 
         all_tp, all_ntp = populate.check_db_tp_and_ntp(grand_total=scrape_deposit_sum, first_dt=first_dt, last_dt=last_dt)    
 
@@ -1104,6 +1130,7 @@ class ProcessingLayer(StatusRS):
         else:
             return False
 
+
     def load_scrape_wrapper(self, target_mid_month=None):
         from file_indexer import FileIndexer  # circular import workaroud
         findex = FileIndexer()
@@ -1111,6 +1138,7 @@ class ProcessingLayer(StatusRS):
         scrape_deposit_sum = sum([float(item['amount']) for item in scrape_txn_list if item['dep_type'] == 'deposit'])
 
         return scrape_txn_list, scrape_deposit_sum
+    '''
 
     def make_rent_receipts(self, first_incomplete_month=None):
         choice1 = input(f'\nWould you like to make rent receipts for period between {first_incomplete_month} ? Y/n ')
@@ -1177,31 +1205,6 @@ class ProcessingLayer(StatusRS):
 
         return mr_good_month
 
-    def is_there_mid_month(self, months_ytd, report_list):
-        mid_month_list = []
-        final_list = []
-        for month, item in zip(months_ytd, report_list):
-            look_dict = {fn: (tup[0], tup[1], tup[2]) for fn, tup in item.items() if month == tup[0]}
-            ready_to_write_final_dt = self.is_ready_to_write_final(month=month, dict1=look_dict)
-            final_list.append(ready_to_write_final_dt)
-            if [*ready_to_write_final_dt.values()][0] == False:
-                self.is_there_mid_month_print(month, look_dict, ready_to_write_final_dt)            
-                mid_month_list.append(ready_to_write_final_dt)
-            else:
-                self.is_there_mid_month_print(month, look_dict, ready_to_write_final_dt)            
-                mid_month_list = []
-
-        final_list = [[*date.keys()][0] for date in final_list if [*date.values()][0] == True]
-        return mid_month_list, final_list
-
-    def is_there_mid_month_print(self, month, look_dict, rtwdt):
-        if [*rtwdt.values()][0] == True:
-            print(f'For period {month} these files have been processed: ')
-            print(*list(look_dict.keys()), sep=', ')
-            print(f'Ready to Write? {[*rtwdt.values()][0]}')
-        else:
-            print(f'For period {month} NO files have been processed.')
-
     def generate_balance_letter_list_mr_reconciled(self):
         query = QueryHC()
 
@@ -1222,24 +1225,6 @@ class ProcessingLayer(StatusRS):
         else:
             return [], None
 
-    def is_ready_to_write_final(self, month=None, dict1=None):
-        count = 0
-        ready_to_process = False
-        for fn, tup in dict1.items():
-            if tup[2] == 'deposits' and tup[0] == month:
-                count += 1
-            if tup[2] == 'rent' and tup[0] == month:
-                count += 1
-            if tup[2] == 'opcash' and tup[0] == month:
-                count += 1
-
-        if count == 3:
-            ready_to_process = True
-            send_to_write = {month: ready_to_process}
-        else:
-            send_to_write = {month: ready_to_process}
-
-        return send_to_write
 
     def write_processed_to_status_rs_db(self, ref_rec=None, report_list=None):
         """Function takes iter of processed files and writes them as json to statusRS db; as far as I can tell this does not do anything important at this time"""
@@ -1367,8 +1352,7 @@ class ProcessingLayer(StatusRS):
         return tp_list, ntp_list, total_list, opcash_amt_list, dc_list  
 
     def reconcile_and_inscribe_state(self, month_list=None, ref_rec=None):
-        """takes list of months in year to date, gets tenant payments by period, non-tenant payments, and opcash information and reconciles the deposits on the opcash statement to the sum of tenant payments and non-tenant payments
-        
+        """takes list of months in year to date, gets tenant payments by period, non-tenant payments, and opcash information and reconciles the deposits on the opcash statement to the sum of tenant payments and non-tenant payments     
         then updates existing StatusRS db and, most importantly, writes to StatusObject db whether opcash has been processed and whether tenant has reconciled: currently will reconcile a scrape against a deposit list sheets"""
         populate = PopulateTable()
         for month in month_list:
