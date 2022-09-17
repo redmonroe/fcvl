@@ -72,16 +72,27 @@ def cli():
     pass
 
 @click.command()
-def incremental_build():
-    click.echo('incremental build from cli')
+@click.option('--incr', default=False, help='run fresh or run incremental build')
+def incremental_build(incr):
+    click.echo('build from cli')
     from iter_rs import IterRS
-    path, full_sheet, iterb, service, ms = return_test_config_iter()
-    if iterb.main_db.get_tables() == []:
-        print('build')
-        iterb.incremental_load()
+
+    if incr == False:
+        path, full_sheet, build, service, ms = return_test_config()
+        if build.main_db.get_tables() == []:
+            print('build from scratch')
+            build.build_db_from_scratch()
+        else:
+            print('reset (from scratch)')
+            reset_db(build=build)
     else:
-        print('reset')
-        reset_db(build=iterb)
+        path, full_sheet, iterb, service, ms = return_test_config_iter()
+        if iterb.main_db.get_tables() == []:
+            print('build from incr')
+            iterb.incremental_load()
+        else:
+            print('reset (from incr)')
+            reset_db(build=iterb)
 
 @click.command()
 def incr_load_test():

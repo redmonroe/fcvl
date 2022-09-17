@@ -35,19 +35,20 @@ class BuildRS(MonthSheet):
     def build_db_from_scratch(self, **kw):
         status = StatusRS()
         player = ProcessingLayer()
-        if self.main_db.get_tables() == []:
-            """this branch is used for rebuilding db from scratch"""
+        print('building db from scratch')
+        self.ctx = 'db empty'
+        print(f'{self.ctx}')
+        populate = self.setup_tables(mode='drop_and_create')
+        self.findex.build_index_runner() 
+        self.load_initial_tenants_and_balances()
+        processed_rentr_dates_and_paths = self.iterate_over_remaining_months()
+        Damages.load_damages()
+        self.populate.transfer_opcash_to_db() # PROCESSED OPCASHES MOVED INTO DB
 
-            print('building db from scratch')
-            self.ctx = 'db empty'
-            print(f'{self.ctx}')
-            populate = self.setup_tables(mode='drop_and_create')
-            self.findex.build_index_runner() 
-            self.load_initial_tenants_and_balances()
-            processed_rentr_dates_and_paths = self.iterate_over_remaining_months()
-            Damages.load_damages()
-            # load historical scrapes into findexer
-            self.populate.transfer_opcash_to_db() # PROCESSED OPCASHES MOVED INTO DB
+
+        '''
+
+        
         else:
             if kw.get('bypass_findexer') == True:
                 """this branch is used to trigger iterative build by passing in list of new added files"""
@@ -72,12 +73,12 @@ class BuildRS(MonthSheet):
                 
         all_months_ytd, report_list, most_recent_status = player.write_to_statusrs_wrapper()
 
-        '''this is the critical control function'''
+        """this is the critical control function"""
         player.assert_reconcile_payments(month_list=all_months_ytd, ref_rec=most_recent_status)
 
         player.write_manual_entries_from_config()
         '''
-        breakpoint()
+        '''
 
 
 

@@ -1,5 +1,5 @@
 from auth_work import oauth
-from backend import PopulateTable, ProcessingLayer, StatusRS
+from backend import PopulateTable, ProcessingLayer, StatusRS, Damages
 from build_rs import BuildRS
 from config import Config
 from file_indexer import FileIndexer
@@ -26,17 +26,29 @@ class IterRS(BuildRS):
 
     def incremental_load(self):
 
-        # loading beginning balance then stop
-
         status = StatusRS()
         player = ProcessingLayer()
-        
+
         populate = self.setup_tables(mode='drop_and_create')
+
+        """this function updates findexer table & scrape detail"""
         self.findex.build_index_runner() 
-        breakpoint()
+
+        """this function updates findexer tables
+            - contractrent: 01 only
+            - subsidy: 01 only
+            - tenant: 01 only
+            - tenantrent: 01 only
+            - unit: as of 1/31
+        """
         self.load_initial_tenants_and_balances()
+
+        """ this function sets the initial state of database"""
         processed_rentr_dates_and_paths = self.iterate_over_remaining_months()
         Damages.load_damages()
-        # load historical scrapes into findexer
+
+       
+        new_files, unfinalized_months = self.findex.incremental_filer()
+        breakpoint()
         self.populate.transfer_opcash_to_db() # PROCESSED OPCASHES MOVED INTO DB
      

@@ -184,7 +184,11 @@ class FileIndexer(Utils, Scrape, Reconciler):
 
         print('\n')
         unproc_files, dir_contents = self.test_for_unprocessed_file()
+        breakpoint()
+        return unproc_files, unfin_month 
 
+
+        '''
         if unproc_files == []:
             print('no new files to add')
             print('exiting program')
@@ -214,6 +218,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
             else:
                 print('exiting program')
                 exit   
+        '''
 
     def build_index_runner(self):
         """this function is just a list of the funcs one would run to create the index from a fresh start"""
