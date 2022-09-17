@@ -1,5 +1,6 @@
 import os
 import time
+from pathlib import Path
 
 import click
 import pytest
@@ -25,6 +26,14 @@ from setup_year import YearSheet
 cli.add_command(nbofi)
 cli.add_command(consume_and_backup_invoices)
 '''
+def return_test_config_incr1():
+    path = Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/iter_build_first')
+    full_sheet = Config.TEST_RS
+    build = IterRS(path=path, full_sheet=full_sheet, main_db=Config.TEST_DB)
+    service = oauth(Config.my_scopes, 'sheet', mode='testing')
+    ms = MonthSheet(full_sheet=full_sheet, path=path, mode='testing', test_service=service)
+
+    return path, full_sheet, build, service, ms
 
 def return_test_config():
     path = Config.TEST_PATH
@@ -78,9 +87,8 @@ def incremental_build(incr):
     from iter_rs import IterRS
 
     if incr == False:
-        path, full_sheet, build, service, ms = return_test_config()
+        path, full_sheet, build, service, ms = return_test_config_incr1()
         if build.main_db.get_tables() == []:
-            print('build from scratch')
             build.build_db_from_scratch()
         else:
             print('reset (from scratch)')
@@ -93,13 +101,6 @@ def incremental_build(incr):
         else:
             print('reset (from incr)')
             reset_db(build=iterb)
-
-@click.command()
-def incr_load_test():
-    click.echo('checking state of findexer to prepare for incremental file loading')
-    path, full_sheet, build, service, ms = return_test_config()
-    findexer = FileIndexer(path=path, db=build.main_db)
-    findexer.incremental_filer()
 
 @click.command()
 def reset_db_test():
@@ -260,10 +261,7 @@ cli.add_command(sqlite_dump)
 cli.add_command(balanceletters)
 cli.add_command(workorders)
 cli.add_command(recvactuals)
-cli.add_command(incr_load_test)
 cli.add_command(incremental_build)
-# cli.add_command(dry_run)
-# cli.add_command(reset_dry_run)
 cli.add_command(manentry)
 
 if __name__ == '__main__':

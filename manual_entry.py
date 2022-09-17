@@ -158,7 +158,6 @@ class ManualEntry:
             except KeyError as e:
                 print('this manual entry from Config does not have a col4 & that may be ok!')
             
-
             result = [rec for rec in model_name.select().
                 where(attrgetter(col_name1)(model_name) == col_value1).
                 where(attrgetter(col_name2)(model_name) == col_value2).

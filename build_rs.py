@@ -45,6 +45,13 @@ class BuildRS(MonthSheet):
         Damages.load_damages()
         self.populate.transfer_opcash_to_db() # PROCESSED OPCASHES MOVED INTO DB
 
+        all_months_ytd, report_list, most_recent_status = player.write_to_statusrs_wrapper()
+
+        """this is the critical control function"""
+        player.reconcile_and_inscribe_state(month_list=all_months_ytd, ref_rec=most_recent_status)
+
+        # player.write_manual_entries_from_config()
+
 
         '''
 
@@ -71,16 +78,6 @@ class BuildRS(MonthSheet):
                 populate = self.setup_tables(mode='create_only')
                 self.iterate_over_remaining_months_incremental(list1=self.new_files)
                 
-        all_months_ytd, report_list, most_recent_status = player.write_to_statusrs_wrapper()
-
-        """this is the critical control function"""
-        player.assert_reconcile_payments(month_list=all_months_ytd, ref_rec=most_recent_status)
-
-        player.write_manual_entries_from_config()
-        '''
-        '''
-
-
 
         player.display_most_recent_status(mr_status=most_recent_status, months_ytd=all_months_ytd)
         incomplete_month_bool, paperwork_complete_months = player.is_there_mid_month(all_months_ytd, report_list)

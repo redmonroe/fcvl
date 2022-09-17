@@ -1366,7 +1366,7 @@ class ProcessingLayer(StatusRS):
 
         return tp_list, ntp_list, total_list, opcash_amt_list, dc_list  
 
-    def assert_reconcile_payments(self, month_list=None, ref_rec=None):
+    def reconcile_and_inscribe_state(self, month_list=None, ref_rec=None):
         """takes list of months in year to date, gets tenant payments by period, non-tenant payments, and opcash information and reconciles the deposits on the opcash statement to the sum of tenant payments and non-tenant payments
         
         then updates existing StatusRS db and, most importantly, writes to StatusObject db whether opcash has been processed and whether tenant has reconciled: currently will reconcile a scrape against a deposit list sheets"""
@@ -1402,12 +1402,16 @@ class ProcessingLayer(StatusRS):
 
                 scrape_dep_detail = populate.get_scrape_detail_by_month_deposit(first_dt=first_dt, last_dt=last_dt)
 
-                if sum_from_payments == sum([float(item) for item in scrape_dep]):
+                if sum_from_payments == sum([float(item) for item in scrape_dep]) and sum_from_payments != 0:
                     print(f'scrape asserted ok for {month} {Config.current_year}')
                     mr_status = StatusRS().get(StatusRS.status_id==ref_rec.status_id)                
                     s_object = StatusObject.create(key=mr_status.status_id, month=month, scrape_reconciled=True, tenant_reconciled=True)
                     s_object.save()
-                    
+                elif sum_from_payments == sum([float(item) for item in scrape_dep]) and sum_from_payments == 0:
+                    print(f'(scrape branch) {month} {Config.current_year} is at 0 and not ready to reconcile')
+                    mr_status = StatusRS().get(StatusRS.status_id==ref_rec.status_id)                
+                    s_object = StatusObject.create(key=mr_status.status_id, month=month, scrape_reconciled=False)
+                    s_object.save()
                 else:
                     print(f'scrape did not reconcile for {month} {Config.current_year}')
     
