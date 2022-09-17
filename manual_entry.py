@@ -141,6 +141,7 @@ class ManualEntry:
 
     def find_persisted_changes_from_config(self):
         for item in Config.persisted_changes:
+            print(item)
             obj_type = item['obj_type']
             model_name = self.get_name_from_obj(obj_type=obj_type)
 

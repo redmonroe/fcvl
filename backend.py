@@ -1064,11 +1064,10 @@ class ProcessingLayer(StatusRS):
 
         return all_months_ytd, report_list, most_recent_status
 
-    def display_most_recent_status(self, mr_status=None, months_ytd=None, ):
-        print(f'\n\n*****************************AUTORS: welcome!********************')
+    def display_most_recent_status(self, mr_status=None, months_ytd=None):
+        print(f'\n\n***************************** welcome!********************')
         print(f'current date: {mr_status.current_date} | current month: {months_ytd[-1]}\n')
         print('months ytd ' + Config.current_year + ': ' + '  '.join(m for m in months_ytd))
-        print('\n')
 
     def find_complete_pw_months_and_iter_write(self,writeable_months=None):
         '''passing results of get_existing_sheets would reduce calls'''
@@ -1078,11 +1077,15 @@ class ProcessingLayer(StatusRS):
         existing_sheets_dict = Utils.get_existing_sheets(self.service, self.full_sheet) 
         existing_sheets = [sheet for sheet in [*existing_sheets_dict.keys()] if sheet != 'intake']
 
-        paperwork_complete_months_with_no_rs = list(set(writeable_months) - set(existing_sheets))
-        pw_complete_ms = sorted(paperwork_complete_months_with_no_rs)
-        self.month_sheet_object.auto_control(source='StatusRS.show()', mode='iter_build', month_list=pw_complete_ms)
+        pw_complete_ms = sorted(list(set(writeable_months) - set(existing_sheets)))
 
-        self.mark_rs_reconciled_status_object(month_list=pw_complete_ms)
+        if pw_complete_ms != []:
+            self.month_sheet_object.auto_control(source='StatusRS.show()', mode='iter_build', month_list=pw_complete_ms)
+
+            self.mark_rs_reconciled_status_object(month_list=pw_complete_ms)
+        else:
+            print('all paperwork complete months have been written')
+            exit
 
     def final_check_writeable_months(self, month_list=None):
         writeable_months = []
