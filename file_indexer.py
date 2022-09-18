@@ -184,11 +184,8 @@ class FileIndexer(Utils, Scrape, Reconciler):
 
         print('\n')
         unproc_files, dir_contents = self.test_for_unprocessed_file()
-        breakpoint()
-        return unproc_files, unfin_month 
+        # breakpoint()
 
-
-        '''
         if unproc_files == []:
             print('no new files to add')
             print('exiting program')
@@ -210,15 +207,12 @@ class FileIndexer(Utils, Scrape, Reconciler):
                 
                 new_files_dict = self.get_report_type_from_xls_name(records=self.index_dict)
                 new_files_dict = self.get_date_from_xls_name(records=new_files_dict)
-                breakpoint()
-
                 # print('added files ===>', [list(value.values())[0][1].name for value in new_files_dict[0]])
-
-                # return new_files_dict, self.unfinalized_months
+ 
+                return new_files_dict, self.unfinalized_months
             else:
-                print('exiting program')
+                print('exiting program from incremental_filer()')
                 exit   
-        '''
 
     def build_index_runner(self):
         """this function is just a list of the funcs one would run to create the index from a fresh start"""

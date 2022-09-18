@@ -1084,7 +1084,9 @@ class ProcessingLayer(StatusRS):
 
             self.mark_rs_reconciled_status_object(month_list=pw_complete_ms)
         else:
-            print('all paperwork complete months have been written')
+            print(f'all paperwork complete months have been written, current sheets:')
+            print(', '.join(existing_sheets))
+            print('\n')
             exit
 
     def final_check_writeable_months(self, month_list=None):

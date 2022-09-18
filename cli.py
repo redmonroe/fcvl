@@ -35,6 +35,15 @@ def return_test_config_incr1():
 
     return path, full_sheet, build, service, ms
 
+def return_test_config_incr2():
+    path = Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/iter_build_second')
+    full_sheet = Config.TEST_RS
+    build = IterRS(path=path, full_sheet=full_sheet, main_db=Config.TEST_DB)
+    service = oauth(Config.my_scopes, 'sheet', mode='testing')
+    ms = MonthSheet(full_sheet=full_sheet, path=path, mode='testing', test_service=service)
+
+    return path, full_sheet, build, service, ms
+
 def return_test_config():
     path = Config.TEST_PATH
     full_sheet = Config.TEST_RS
@@ -81,26 +90,34 @@ def cli():
     pass
 
 @click.command()
-@click.option('--incr', default=False, help='run fresh or run incremental build')
+@click.option('--incr', default=1, help='run fresh or run incremental build')
 def incremental_build(incr):
     click.echo('build from cli')
     from iter_rs import IterRS
 
-    if incr == False:
+    if incr == 1:
+        print('do nothing')
+    elif incr == 2:
         path, full_sheet, build, service, ms = return_test_config_incr1()
         if build.main_db.get_tables() == []:
             build.build_db_from_scratch(write=True)
         else:
             print('reset (from scratch)')
             reset_db(build=build)
-    else:
-        path, full_sheet, iterb, service, ms = return_test_config_iter()
+    elif incr == 3:
+        path, full_sheet, build, service, ms = return_test_config_incr1()
+        path, full_sheet, iterb, service, ms = return_test_config_incr2()
         if iterb.main_db.get_tables() == []:
+            print('setting up initial state for "testing"')
+            build.build_db_from_scratch(write=True)
             print('build from incr')
             iterb.incremental_load()
         else:
             print('reset (from incr)')
             reset_db(build=iterb)
+    else:
+        print('exiting program')
+        exit
 
 @click.command()
 def reset_db_test():

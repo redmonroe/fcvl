@@ -141,7 +141,6 @@ class ManualEntry:
 
     def find_persisted_changes_from_config(self):
         for item in Config.persisted_changes:
-            print(item)
             obj_type = item['obj_type']
             model_name = self.get_name_from_obj(obj_type=obj_type)
 
@@ -173,10 +172,8 @@ class ManualEntry:
                     print('UPDATE!! BRANCH')
                     self.update_amount_dynamic(obj_type=model_name, updated_amount=updated_amount, selected_item=result)
             except IndexError as e:
-                print('You probably already deleted the transaction.  Check mentry db for further information.')
+                print('You probably already deleted the transaction OR transaction "has not happened" yet in program time.  Check mentry db for further information.')
                 print(e)
-                print('exiting program')
-                break
             
     def get_name_from_obj(self, obj_type=None):
         model_name = getattr(sys.modules[__name__], obj_type)

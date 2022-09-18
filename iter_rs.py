@@ -25,30 +25,22 @@ class IterRS(BuildRS):
         self.findex = FileIndexer(path=self.path, db=self.main_db)
 
     def incremental_load(self):
+        print('attempting incremental load')
 
         status = StatusRS()
         player = ProcessingLayer()
 
-        populate = self.setup_tables(mode='drop_and_create')
+        populate = self.setup_tables(mode='create_only')
+        new_files, unfinalized_months = self.findex.incremental_filer()
+        breakpoint()
 
-        """this function updates findexer table & scrape detail"""
-        self.findex.build_index_runner() 
-
-        """this function updates findexer tables
-            - contractrent: 01 only
-            - subsidy: 01 only
-            - tenant: 01 only
-            - tenantrent: 01 only
-            - unit: as of 1/31
-        """
-        self.load_initial_tenants_and_balances()
+        # self.load_initial_tenants_and_balances()
 
         """ this function sets the initial state of database"""
-        processed_rentr_dates_and_paths = self.iterate_over_remaining_months()
-        Damages.load_damages()
+        # processed_rentr_dates_and_paths = self.iterate_over_remaining_months()
+        # Damages.load_damages()
 
        
-        new_files, unfinalized_months = self.findex.incremental_filer()
         breakpoint()
         self.populate.transfer_opcash_to_db() # PROCESSED OPCASHES MOVED INTO DB
      
