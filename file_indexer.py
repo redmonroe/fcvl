@@ -196,7 +196,8 @@ class FileIndexer(Utils, Scrape, Reconciler):
                 print(count, item)
 
             print('\n')
-            choice1 = int(input('running findexer now would input the above file(s)?  press 1 to proceed ... '))
+            # choice1 = int(input('running findexer now would input the above file(s)?  press 1 to proceed ... '))
+            choice1 = 1
 
             if choice1 == 1:
                 print('YES, I WANT TO ADD THIS FILE FINDEXER DB')
