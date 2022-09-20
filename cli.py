@@ -115,6 +115,12 @@ def incremental_build(incr):
         else:
             print('reset (from incr)')
             reset_db(build=iterb)
+    elif incr == 4:
+        """just incremental, don't drop full db"""
+        """how do I simulate the rebuild of rs_reconcile column"""
+        path, full_sheet, iterb, service, ms = return_test_config_incr2()
+        iterb.incremental_load()
+        # breakpoint()
     else:
         print('exiting program')
         exit

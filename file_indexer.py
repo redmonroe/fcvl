@@ -169,13 +169,13 @@ class FileIndexer(Utils, Scrape, Reconciler):
         print('\n')
         self.connect_to_db() 
 
-        print('showing unfinalized months (unfinal = no opcash +/or no reconcile with ten payments')
+        print('showing unfinalized months: either no opcash, no tenant, or no rent_sheet write')
         
         """A FINALIZED MONTH ==
             1 OPCASH processed 
             2 DEPOSITS + ADJUSTMENTS == TENANT_PAY + NTP"""
 
-        months_ytd, unfin_month = self.test_for_unfinalized_months()
+        months_ytd, unfin_month, final_not_written = self.test_for_unfinalized_months()
 
         for item in unfin_month:
             print(item)
@@ -184,20 +184,18 @@ class FileIndexer(Utils, Scrape, Reconciler):
 
         print('\n')
         unproc_files, dir_contents = self.test_for_unprocessed_file()
-        # breakpoint()
 
         if unproc_files == []:
             print('no new files to add')
-            print('exiting program')
-            exit
+            return [], unfin_month, final_not_written
         else:
             """YES, THERE ARE NEW FILES IN THE PATH"""
             for count, item in enumerate(unproc_files, 1):
                 print(count, item)
 
             print('\n')
-            # choice1 = int(input('running findexer now would input the above file(s)?  press 1 to proceed ... '))
-            choice1 = 1
+            choice1 = int(input('running findexer now would input the above file(s)?  press 1 to proceed ... '))
+            # choice1 = 1
 
             if choice1 == 1:
                 print('YES, I WANT TO ADD THIS FILE FINDEXER DB')
@@ -207,7 +205,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
                 new_files = self.get_report_type_from_xls_name(records=self.index_dict)
                 new_files = self.get_date_from_file_name(records=new_files) 
                 self.findex_reconcile_onesite_deposits_to_scrape_or_oc()  
-                return new_files, self.unfinalized_months
+                return new_files, self.unfinalized_months, final_not_written
             else:
                 print('exiting program from incremental_filer()')
                 exit   
@@ -247,13 +245,21 @@ class FileIndexer(Utils, Scrape, Reconciler):
         months_ytd = Utils.months_in_ytd(Config.current_year)
     
         # get fully finalized months
-        finalized_months = [rec.month for rec in StatusObject().select().where((StatusObject.tenant_reconciled==1) &
-                    (StatusObject.opcash_processed==1)).namedtuples()]
+        finalized_months = [rec.month for rec in StatusObject().select().where(
+                (StatusObject.tenant_reconciled==1) &
+                ((StatusObject.opcash_processed==1) | 
+                (StatusObject.scrape_reconciled==1)) &
+                (StatusObject.rs_reconciled==1)).namedtuples()]
 
-        # are there any unfinalized months?
-        self.unfinalized_months = list(set(months_ytd) - set(finalized_months))
+        final_not_written = [rec.month for rec in StatusObject().select().where(
+                (StatusObject.tenant_reconciled==1) &
+                ((StatusObject.opcash_processed==1) | 
+                (StatusObject.scrape_reconciled==1)) &
+                (StatusObject.rs_reconciled!=1)).namedtuples()]
 
-        return months_ytd, self.unfinalized_months
+        self.unfinalized_months = sorted(list(set(months_ytd) - set(finalized_months)))
+
+        return months_ytd, self.unfinalized_months, final_not_written
 
     def test_for_unprocessed_file(self):
         print('searching for new files in path:')

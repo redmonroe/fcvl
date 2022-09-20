@@ -1,5 +1,5 @@
 from auth_work import oauth
-from backend import PopulateTable, ProcessingLayer, StatusRS, Damages
+from backend import PopulateTable, ProcessingLayer, StatusRS, Damages, StatusObject
 from build_rs import BuildRS
 from config import Config
 from file_indexer import FileIndexer
@@ -26,30 +26,38 @@ class IterRS(BuildRS):
 
     def incremental_load(self):
         print('attempting incremental load')
-        # breakpoint()
 
         status = StatusRS()
-        player = ProcessingLayer()
+        player = ProcessingLayer(service=self.service, full_sheet=self.full_sheet, ms=self.ms)
 
         populate = self.setup_tables(mode='create_only')
-        new_files, unfinalized_months = self.findex.incremental_filer()
-        self.iterate_over_remaining_months_incremental(list1=new_files)
+        new_files, unfinalized_months, final_not_written = self.findex.incremental_filer()
 
-        Damages.load_damages()
+        if final_not_written != []:
+            print('writing remaining months to rs & marking to statusobject table')
+            player.find_complete_pw_months_and_iter_write( writeable_months=final_not_written)
 
-        self.populate.transfer_opcash_to_db()
+        """we need both new files and unfinalized months to do anything"""
+        if new_files != [] and unfinalized_months != []:   
+            self.iterate_over_remaining_months_incremental(list1=new_files)
+            Damages.load_damages()
 
-        all_months_ytd, report_list, most_recent_status = player.write_to_statusrs_wrapper()
+            self.populate.transfer_opcash_to_db()
 
-        """this is the critical control function"""
-        player.reconcile_and_inscribe_state(month_list=all_months_ytd, ref_rec=most_recent_status, from_iter=1)
+            all_months_ytd, report_list, most_recent_status = player.write_to_statusrs_wrapper()
 
-        player.write_manual_entries_from_config()
+            """this is the critical control function"""
+            player.reconcile_and_inscribe_state(month_list=all_months_ytd, ref_rec=most_recent_status, from_iter=1)
 
-        player.display_most_recent_status(mr_status=most_recent_status, months_ytd=all_months_ytd)
+            player.write_manual_entries_from_config()
 
-        writeable_months = player.final_check_writeable_months(month_list=all_months_ytd)
+            player.display_most_recent_status(mr_status=most_recent_status, months_ytd=all_months_ytd)
 
-        """need to incrementally add opcash if new
-        RIGHT NOW THE OPCASH IS NOT ADDED TO OPCASH TABLE"""
-        breakpoint()
+            writeable_months = player.final_check_writeable_months(month_list=all_months_ytd)
+            breakpoint()
+
+            """need to incrementally add opcash if new
+            RIGHT NOW THE OPCASH IS NOT ADDED TO OPCASH TABLE""" 
+        else:
+            print('there are no new files, but some months are still unfinalized')
+            print('exiting program')
