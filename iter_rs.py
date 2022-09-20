@@ -42,7 +42,7 @@ class IterRS(BuildRS):
         all_months_ytd, report_list, most_recent_status = player.write_to_statusrs_wrapper()
 
         """this is the critical control function"""
-        player.reconcile_and_inscribe_state(month_list=all_months_ytd, ref_rec=most_recent_status)
+        player.reconcile_and_inscribe_state(month_list=all_months_ytd, ref_rec=most_recent_status, from_iter=1)
 
         player.write_manual_entries_from_config()
 
@@ -50,8 +50,6 @@ class IterRS(BuildRS):
 
         writeable_months = player.final_check_writeable_months(month_list=all_months_ytd)
 
-
         """need to incrementally add opcash if new
         RIGHT NOW THE OPCASH IS NOT ADDED TO OPCASH TABLE"""
         breakpoint()
-        # breakpoint()

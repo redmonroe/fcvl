@@ -166,8 +166,9 @@ class StatusRS(BaseModel):
     proc_file = CharField(default='0') 
 
 class StatusObject(BaseModel):
+    id = AutoField()
     key = ForeignKeyField(StatusRS, backref='zzzzzz')
-    month = CharField(default='0')
+    month = CharField(default='0', unique=True)
     opcash_processed = BooleanField(default=False)
     tenant_reconciled = BooleanField(default=False)
     scrape_reconciled = BooleanField(default=False)
@@ -1362,7 +1363,7 @@ class ProcessingLayer(StatusRS):
 
         return tp_list, ntp_list, total_list, opcash_amt_list, dc_list  
 
-    def reconcile_and_inscribe_state(self, month_list=None, ref_rec=None):
+    def reconcile_and_inscribe_state(self, month_list=None, ref_rec=None, from_iter=None):
         """takes list of months in year to date, gets tenant payments by period, non-tenant payments, and opcash information and reconciles the deposits on the opcash statement to the sum of tenant payments and non-tenant payments     
         then updates existing StatusRS db and, most importantly, writes to StatusObject db whether opcash has been processed and whether tenant has reconciled: currently will reconcile a scrape against a deposit list sheets"""
         populate = PopulateTable()
@@ -1379,13 +1380,21 @@ class ProcessingLayer(StatusRS):
 
             if opcash != []:
                 opcash_deposits = float(opcash[0][4])
-                if month == '2022-04':
-                    breakpoint()
 
                 if opcash_deposits == sum_from_payments:
-                    mr_status = StatusRS().get(StatusRS.status_id==ref_rec.status_id)                
-                    s_object = StatusObject.create(key=mr_status.status_id, month=month, opcash_processed=True, tenant_reconciled=True)
-                    s_object.save()
+                    """critical reconciliation logic for statusObject"""
+                    mr_status = StatusRS().get(StatusRS.status_id==ref_rec.status_id)  
+
+                    try:
+                        s_object = StatusObject.create(key=mr_status.status_id, month=month, opcash_processed=True, tenant_reconciled=True)                    
+                        s_object.save()
+                    except IntegrityError as e:
+                        s_object_id = [row for row in StatusObject.select().where(StatusObject.month==month).namedtuples()][0]
+                        s_object = StatusObject.get(id=s_object_id.id)
+                        s_object.opcash_processed = True
+                        s_object.tenant_reconciled = True
+                        s_object.save()                     
+                        print(e, 'opcash: this month has already been created in statusobject table')
             else:
                 print('is scrape available?')
                 """if scrape is available, does it reconcile to tenant deposits
@@ -1402,14 +1411,29 @@ class ProcessingLayer(StatusRS):
 
                 if sum_from_payments == sum([float(item) for item in scrape_dep]) and sum_from_payments != 0:
                     print(f'scrape asserted ok for {month} {Config.current_year}')
-                    mr_status = StatusRS().get(StatusRS.status_id==ref_rec.status_id)                
-                    s_object = StatusObject.create(key=mr_status.status_id, month=month, scrape_reconciled=True, tenant_reconciled=True)
-                    s_object.save()
+                    mr_status = StatusRS().get(StatusRS.status_id==ref_rec.status_id) 
+                    try:               
+                        s_object = StatusObject.create(key=mr_status.status_id, month=month, scrape_reconciled=True, tenant_reconciled=True)
+                        s_object.save()
+                    except IntegrityError as e:
+                        s_object_id = [row for row in StatusObject.select().where(StatusObject.month==month).namedtuples()][0]
+                        s_object = StatusObject.get(id=s_object_id.id)
+                        s_object.scrape_reconciled = True
+                        s_object.tenant_reconciled = True
+                        s_object.save()    
+                        print(e, 'scrape: this month has already been created in statusobject table')
                 elif sum_from_payments == sum([float(item) for item in scrape_dep]) and sum_from_payments == 0:
                     print(f'(scrape branch) {month} {Config.current_year} is at 0 and not ready to reconcile')
                     mr_status = StatusRS().get(StatusRS.status_id==ref_rec.status_id)                
-                    s_object = StatusObject.create(key=mr_status.status_id, month=month, scrape_reconciled=False)
-                    s_object.save()
+                    try:               
+                        s_object = StatusObject.create(key=mr_status.status_id, month=month, scrape_reconciled=False)
+                        s_object.save()
+                    except IntegrityError as e:
+                        s_object_id = [row for row in StatusObject.select().where(StatusObject.month==month).namedtuples()][0]
+                        s_object = StatusObject.get(id=s_object_id.id)
+                        s_object.scrape_reconciled = False
+                        s_object.save()    
+                        print(e, 'scrape: this month has already been created in statusobject table')
                 else:
                     print(f'scrape did not reconcile for {month} {Config.current_year}')
     
