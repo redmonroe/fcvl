@@ -62,37 +62,6 @@ class BuildRS(MonthSheet):
             print('you have selected to bypass writing to RS.')
             print('if you would like to write to rent spreadsheet enable "write" flag')
 
-        '''
-
-        
-        else:
-            if kw.get('bypass_findexer') == True:
-                """this branch is used to trigger iterative build by passing in list of new added files"""
-                self.ctx = 'db is not empty; iter_build; bypass findexer'
-                print(f'{self.ctx}')
-                populate = self.setup_tables(mode='create_only')
-                self.iterate_over_remaining_months_incremental(list1=kw.get('new_files_add')[0])
-                player = ProcessingLayer()
-                player.set_current_date()
-                most_recent_status = player.get_most_recent_status()
-                all_months_ytd = player.get_all_months_ytd()
-
-                # reconcile all available
-                    # if already reconciled, don't reconcile agai
-            else:
-                """this branch is used to trigger iterative build of findex using new file list created here"""
-                self.ctx = 'db is not empty; iter_build; do NOT bypass findexer'
-                print(f'{self.ctx}')
-                self.new_files, self.unfinalized_months = self.findex.incremental_filer()
-                populate = self.setup_tables(mode='create_only')
-                self.iterate_over_remaining_months_incremental(list1=self.new_files)
-                
-
-
-        '''
-
-        """only show this if I have deposits and rent roll for the month, do not show for any month after first incomplete month, there are other cases"""
-
         '''this method of searching for incomplete months is useless if we are already automatically putting corr amounts etc into findexer; they will be always be available there if exist'''
         # if incomplete_month_bool:
         #     choice = input(f'\nWould you like to import mid-month report from bank for {incomplete_month_bool[0]} ? Y/n (NOTE: YOU MUST CHOOSE Y IF THIS EVENT FIRES ELSE, SCRAPE WILL NOT BE MARKED AS PROCESSED AND WRITING WILL NOT BE ENABLES')

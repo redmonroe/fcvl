@@ -27,6 +27,17 @@ class IterRS(BuildRS):
     def incremental_load(self):
         print('attempting incremental load')
 
+        """
+        NEXT UP: 
+            - WHAT IF SCRAPE IS BEFORE OPCASH
+            - WHAT IF DEPOSITS ONLY?
+            - WHAT IF RR ONLY?
+            - WHAT IF OPCASH ONLY?
+            - DAMAGES, MANUAL ENTRY (but I think this is working ok?)
+        
+        
+        """
+
         status = StatusRS()
         player = ProcessingLayer(service=self.service, full_sheet=self.full_sheet, ms=self.ms)
 
