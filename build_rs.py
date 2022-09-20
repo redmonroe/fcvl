@@ -133,6 +133,7 @@ class BuildRS(MonthSheet):
     def iterate_over_remaining_months_incremental(self, list1=None):
         """rent has to go first; otherwise if you have a move-in during the month there is no reference for the fk for a payment"""
         populate = PopulateTable()
+    
         for item in list1:
             for typ, data in item.items():
                 first_dt, last_dt = populate.make_first_and_last_dates(date_str=data[0])
@@ -144,6 +145,17 @@ class BuildRS(MonthSheet):
                 first_dt, last_dt = populate.make_first_and_last_dates(date_str=data[0])
                 if typ == 'deposits':
                     grand_total, ntp, tenant_payment_df = populate.payment_load_full(filename=data[1])
+
+        '''
+        for item in list1:
+            for typ, data in item.items():
+                first_dt, last_dt = populate.make_first_and_last_dates(date_str=data[0])
+                if typ == 'op':
+                    print('process op_cash')
+                    # breakpoint(c
+                    # )
+                    # grand_total, ntp, tenant_payment_df = populate.payment_load_full(filename=data[1])
+        '''
 
         findex = FileIndexer()
         for item in list1:

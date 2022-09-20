@@ -154,7 +154,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
         self.path = path
         self.db = db
         self.mode = mode
-        self.unproc_file_for_testing = []
+        self.unproc_files1 = []
         self.unfinalized_months = []
         self.index_dict = {}
         self.index_dict_iter = {} 
@@ -201,16 +201,13 @@ class FileIndexer(Utils, Scrape, Reconciler):
 
             if choice1 == 1:
                 print('YES, I WANT TO ADD THIS FILE FINDEXER DB')
-                self.index_dict = self.sort_directory_by_extension2() 
-                self.load_what_is_in_dir_as_indexed(dict1=self.index_dict_iter)
-        
-                self.runner_internals()        
-                
-                new_files_dict = self.get_report_type_from_xls_name(records=self.index_dict)
-                new_files_dict = self.get_date_from_xls_name(records=new_files_dict)
-                # print('added files ===>', [list(value.values())[0][1].name for value in new_files_dict[0]])
- 
-                return new_files_dict, self.unfinalized_months
+                self.index_dict = self.sort_directory_by_extension2()
+                self.load_what_is_in_dir_as_indexed(dict1=self.index_dict_iter)        
+                self.runner_internals()                        
+                new_files = self.get_report_type_from_xls_name(records=self.index_dict)
+                new_files = self.get_date_from_file_name(records=new_files) 
+                self.findex_reconcile_onesite_deposits_to_scrape_or_oc()  
+                return new_files, self.unfinalized_months
             else:
                 print('exiting program from incremental_filer()')
                 exit   
@@ -266,9 +263,9 @@ class FileIndexer(Utils, Scrape, Reconciler):
 
         unproc_files = list(set(directory_contents) - set(processed_fn))
 
-        self.unproc_file_for_testing = unproc_files  
+        self.unproc_files1 = unproc_files  
         
-        return self.unproc_file_for_testing, directory_contents
+        return self.unproc_files1, directory_contents
 
     def connect_to_db(self, mode=None):
         if self.db.is_closed():
@@ -290,8 +287,9 @@ class FileIndexer(Utils, Scrape, Reconciler):
         return self.index_dict
 
     def sort_directory_by_extension2(self):
+        """this can successfully handle unproc files only"""
         index_dict = {}
-        for fn in self.unproc_file_for_testing:
+        for fn in self.unproc_files1:
             index_dict[Path.joinpath(self.path, fn)] = (Path(fn).suffix, fn)
         
         self.index_dict_iter = index_dict # for testing, do not just erase this
@@ -425,7 +423,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
             records1.append(dict1)
         return records1
 
-    def get_date_from_xls_name(self, records=None):
+    def get_date_from_file_name(self, records=None):
         records1 = []
         for item in records:
             for typ, data in item.items():
@@ -435,6 +433,10 @@ class FileIndexer(Utils, Scrape, Reconciler):
                     date_str = '-'.join(data[1].split('.')[0].split('_')[2:][::-1])
                 elif typ == 'scrape':
                     date_str = data[1].split('_')[3][0:7]
+                elif typ == 'op':
+                    date_str = '-'.join(data[1].split('.')[0].split('_')[2:][::-1])
+                    date_object = datetime.strptime(date_str, '%m-%Y')
+                    date_str = date_object.strftime('%Y-%m')
                 dict1 = {typ: (date_str, data[0])}
                 records1.append(dict1)
         return records1

@@ -26,15 +26,18 @@ class IterRS(BuildRS):
 
     def incremental_load(self):
         print('attempting incremental load')
+        # breakpoint()
 
         status = StatusRS()
         player = ProcessingLayer()
 
         populate = self.setup_tables(mode='create_only')
         new_files, unfinalized_months = self.findex.incremental_filer()
-        # breakpoint()
         self.iterate_over_remaining_months_incremental(list1=new_files)
+
         Damages.load_damages()
+
+        self.populate.transfer_opcash_to_db()
 
         all_months_ytd, report_list, most_recent_status = player.write_to_statusrs_wrapper()
 
@@ -51,5 +54,4 @@ class IterRS(BuildRS):
         """need to incrementally add opcash if new
         RIGHT NOW THE OPCASH IS NOT ADDED TO OPCASH TABLE"""
         breakpoint()
-        # self.populate.transfer_opcash_to_db()
         # breakpoint()

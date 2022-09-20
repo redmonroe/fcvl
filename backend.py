@@ -999,14 +999,20 @@ class PopulateTable(QueryHC):
             unit.save()
 
     def transfer_opcash_to_db(self):
+        """this function is repsonsible for moving information unpacked into findexer table into OpCash and OpCashDetail tables"""
         file_list = [(item.fn, item.period, item.path, item.hap, item.rr, item.depsum, item.deplist, item.corr_sum) for item in Findexer().select().
             where(Findexer.doc_type == 'opcash').
             where(Findexer.status == 'processed').
             namedtuples()]
 
         for item in file_list:
-            oc = OpCash.create(stmt_key=item[0], date=datetime.strptime(item[1], '%Y-%m'), rr=item[4], hap=item[3], dep_sum=item[5], corr_sum=item[7])
-            oc.save()
+            try: 
+                with db.atomic():
+                    oc = OpCash.create(stmt_key=item[0], date=datetime.strptime(item[1], '%Y-%m'), rr=item[4], hap=item[3], dep_sum=item[5], corr_sum=item[7])
+                    oc.save()
+            except IntegrityError as e:
+                print('already created this record')
+                print(e)
 
             for lst in json.loads(item[6])[0]:
                 ocd = OpCashDetail.create(stmt_key=item[0], date1=datetime.strptime(lst[0], '%m/%d/%Y'), amount=lst[1])
@@ -1367,11 +1373,14 @@ class ProcessingLayer(StatusRS):
             ntp = sum(populate.get_ntp_by_period(first_dt=first_dt, last_dt=last_dt))
             opcash = populate.get_opcash_by_period(first_dt=first_dt, last_dt=last_dt)
 
+
             '''probably need to add the concept of "adjustments" in here'''
             sum_from_payments = ten_payments + ntp
 
             if opcash != []:
                 opcash_deposits = float(opcash[0][4])
+                if month == '2022-04':
+                    breakpoint()
 
                 if opcash_deposits == sum_from_payments:
                     mr_status = StatusRS().get(StatusRS.status_id==ref_rec.status_id)                
