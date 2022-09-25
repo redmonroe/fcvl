@@ -48,7 +48,7 @@ class IterRS(BuildRS):
             print('writing remaining months to rs & marking to statusobject table')
             player.find_complete_pw_months_and_iter_write( writeable_months=final_not_written)
 
-        """we need both new files and unfinalized months to do anything"""
+        """we need both new files and SOME unfinalized months to do anything"""
         if new_files != [] and unfinalized_months != []:   
             self.iterate_over_remaining_months_incremental(list1=new_files)
             Damages.load_damages()
@@ -65,7 +65,6 @@ class IterRS(BuildRS):
             player.display_most_recent_status(mr_status=most_recent_status, months_ytd=all_months_ytd)
 
             writeable_months = player.final_check_writeable_months(month_list=all_months_ytd)
-            breakpoint()
 
             """need to incrementally add opcash if new
             RIGHT NOW THE OPCASH IS NOT ADDED TO OPCASH TABLE""" 
