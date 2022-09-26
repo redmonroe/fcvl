@@ -133,6 +133,9 @@ class Letters(object):
             print('exiting program')
             exit
 
+    def rent_receipts_plus_balance(self):
+        print('rent receipts plus balance table')
+
     def rent_receipts(self):
         '''if there is an issue, check deployment id'''            
         titles_dict = Utils.get_existing_sheets(oauth(Config.my_scopes, 'sheet'), Config.TEST_RS)

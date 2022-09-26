@@ -1181,6 +1181,11 @@ class ProcessingLayer(StatusRS):
         print('generating rent receipts')
         receipts = Letters()
         receipts.rent_receipts()
+        
+    def rent_receipts_wrapper_version2(self):
+        print('generating rent receipts')
+        receipts = Letters()
+        receipts.rent_receipts_plus_balance()
 
     def show_balance_letter_list_mr_reconciled(self):
         """triggers off of most recent reconciled month"""
