@@ -157,17 +157,14 @@ class Letters(object):
     def rent_receipts_plus_balance(self):
         from backend import QueryHC
         print('rent receipts plus balance table')
-
-        prev = 6
-        today = datetime.today()
-        first_date_of_months, last_date_of_months = self.get_prev_daterange_by_month(2022, 4, prev)
-        breakpoint()
-        for i in range(prev):
-            print(since, till)
-
-        # get last 4 months window
         query = QueryHC()
 
+        lookback_months = 4
+        today = datetime.today()
+        breakpoint()
+        first_date_of_months, last_date_of_months = self.get_prev_daterange_by_month(2022, 4, lookback_months)
+
+        # set target date
 
         # get beginning balance for all current tenants
         # get total payments by tenant by period
