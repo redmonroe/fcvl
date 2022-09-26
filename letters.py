@@ -133,8 +133,67 @@ class Letters(object):
             print('exiting program')
             exit
 
+    def get_prev_daterange_by_month(self, year, month, prev):
+        import calendar
+        from datetime import date
+        if year is None:
+            today = datetime.date.today()
+            year = today.year
+        if month is None:
+            today = datetime.date.today()
+            month = today.month
+        since = []
+        till = []
+        for i in range(prev):
+            if month == 0:
+                year -= 1
+                month = 12
+            _, num_days = calendar.monthrange(year, month)
+            since.append(datetime.strptime(str(date(year, month, 1)), "%Y-%m-%d"))
+            till.append(datetime.strptime(str(date(year, month, num_days)), "%Y-%m-%d"))
+            month -= 1
+        return since, till
+
     def rent_receipts_plus_balance(self):
+        from backend import QueryHC
         print('rent receipts plus balance table')
+
+        prev = 6
+        today = datetime.today()
+        first_date_of_months, last_date_of_months = self.get_prev_daterange_by_month(2022, 4, prev)
+        breakpoint()
+        for i in range(prev):
+            print(since, till)
+
+        # get last 4 months window
+        query = QueryHC()
+
+
+        # get beginning balance for all current tenants
+        # get total payments by tenant by period
+        # get total charges by tenant by period
+
+
+
+        '''
+        titles_dict = Utils.get_existing_sheets(oauth(Config.my_scopes, 'sheet'), Config.TEST_RS)
+        idx_list = Utils.existing_ids({name:id2 for name, id2 in titles_dict.items() if name != 'intake'})
+        sheet_choice = idx_list[int(input('Please select a sheet to make receipts from: '))]
+        parameters = {
+        'current_date' : datetime.strftime(datetime.utcnow(), '%Y-%m-%d'), 
+        'display_month': str(input('Type display month as you wish it to appear? ')),
+        'sheet_choice': sheet_choice[1][0], 
+        'rent_sheet': Config.TEST_RS, 
+        }
+
+        pprint(parameters)
+        choice = str(input('Send these results to google script & make receipts? y/n '))
+        if choice == 'y':
+            Letters.run_script(service=oauth(Config.my_scopes, 'script'), deploy_id=Config.receipts_table_test_deploy_id, function_name="test1", parameters=parameters) 
+        else:
+            print('exiting program')
+            exit
+        '''
 
     def rent_receipts(self):
         '''if there is an issue, check deployment id'''            
