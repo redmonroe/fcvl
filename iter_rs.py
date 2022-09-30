@@ -65,7 +65,9 @@ class IterRS(BuildRS):
             player.display_most_recent_status(mr_status=most_recent_status, months_ytd=all_months_ytd)
 
             writeable_months = player.final_check_writeable_months(month_list=all_months_ytd)
-
+            
+            player.find_complete_pw_months_and_iter_write( writeable_months=writeable_months)
+    
             """need to incrementally add opcash if new
             RIGHT NOW THE OPCASH IS NOT ADDED TO OPCASH TABLE""" 
         else:

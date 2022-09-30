@@ -159,11 +159,39 @@ class Letters(object):
         print('rent receipts plus balance table')
         query = QueryHC()
 
-        lookback_months = 4
-        today = datetime.today()
-        breakpoint()
-        first_date_of_months, last_date_of_months = self.get_prev_daterange_by_month(2022, 4, lookback_months)
+        target_date = '2022-07'
+        first_dt, last_dt = query.make_first_and_last_dates(date_str=target_date)
 
+        rent_roll = query.get_rent_roll_by_month_at_first_of_month(first_dt=first_dt, last_dt=last_dts)
+
+        '''consider dataframe for merging'''
+
+        breakpoint()
+
+
+
+
+
+
+        lookback_months = 6
+        today = datetime.today()
+        first_date_of_months, last_date_of_months = self.get_prev_daterange_by_month(2022, 7, lookback_months)
+        dates = list(zip(first_date_of_months, last_date_of_months))
+
+        
+        earliest_date_in_range = first_date_of_months[-1]
+        last_date_in_range = last_date_of_months[0]
+
+        '''should do some sort of group by operation, get last date of most recent months & first date of earliest month: should get all payments'''
+
+        total_payments = query.get_payments_by_tenant_by_period(first_dt=earliest_date_in_range, last_dt=last_date_in_range, cumsum=True)
+
+        all_payments = query.        get_payments_by_tenant_by_period(first_dt=earliest_date_in_range, last_dt=last_date_in_range)
+
+        for count, tup in enumerate(all_payments, 1):
+            print(count, tup[0])
+
+        breakpoint()
         # set target date
 
         # get beginning balance for all current tenants
