@@ -6,16 +6,16 @@ import pytest
 from peewee import *
 
 from annual_financials import AnnFin
- 
+from auth_work import oauth
 from backend import PopulateTable, ProcessingLayer, QueryHC, StatusRS, db
 from build_rs import BuildRS
 from config import Config
 from db_utils import DBUtils
-from file_manager import path_to_statements, write_hap
 from file_indexer import FileIndexer
+from file_manager import path_to_statements, write_hap
+from letters import Letters
 from manual_entry import ManualEntry
 from pdf import StructDataExtract
-from letters import Letters
 from records import record
 from setup_month import MonthSheet
 from setup_year import YearSheet
@@ -83,7 +83,7 @@ def reset_db_prod():
 @click.command()
 def load_db_test():
     click.echo('loading all available files in path to db')
-    path, full_sheet, build, service, ms = return_test_config()    
+    path, full_sheet, build, service, ms = return_test_config() 
     build.build_db_from_scratch()    
 
 @click.command()
@@ -133,33 +133,6 @@ def receipts():
     player.rent_receipts_wrapper()
 
 @click.command()
-<<<<<<< HEAD
-def rent_receipts():
-    click.echo('Generate rent receipts')
-    RentReceipts.rent_receipts()
-
-@click.command()
-def workorders_todo():
-    click.echo('you have most of this just tie it into fcvfin.py or something')
-
-@click.command()
-def placeholder():
-    click.echo('put whatever you need to here')
-
-
-cli.add_command(runtime)
-cli.add_command(rent_receipts)
-cli.add_command(setup)
-cli.add_command(setupyear)
-cli.add_command(pgdump)
-cli.add_command(merchants)
-cli.add_command(nbofi)
-cli.add_command(placeholder)
-cli.add_command(workorders_todo)
-
-if __name__ == '__main__':
-    cli()
-=======
 def workorders():
     click.echo('work orders')
     work_orders = RentReceipts()
@@ -262,4 +235,3 @@ cli.add_command(manentry)
 if __name__ == '__main__':
     cli()
 
->>>>>>> fcvl_rebuild

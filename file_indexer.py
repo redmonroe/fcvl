@@ -199,10 +199,10 @@ class FileIndexer(Utils, Scrape, Reconciler):
 
             if choice1 == 1:
                 print('YES, I WANT TO ADD THIS FILE FINDEXER DB')
-                self.index_dict = self.sort_directory_by_extension2() 
-                self.load_what_is_in_dir_as_indexed(dict1=self.index_dict_iter)
+                self.index_dict = self.sort_directory_by_extension2()
+                self.load_what_is_in_dir_as_indexed(dict1=self.index_dict_iter)        
         
-                self.runner_internals()        
+                self.runner_internals()                        
                 
                 new_files_dict = self.get_report_type_from_xls_name(records=self.index_dict)
                 new_files_dict = self.get_date_from_xls_name(records=new_files_dict)
@@ -338,7 +338,12 @@ class FileIndexer(Utils, Scrape, Reconciler):
         split_col = kw['kw']['split_col']
         df_date = pd.read_excel(path)
         df_date = df_date.iloc[:, kw['kw']['get_col']].to_list()
-        df_date = df_date[split_col].split(kw['kw']['split_type'])
+        try:
+            df_date = df_date[split_col].split(kw['kw']['split_type'])
+        except AttributeError as e:
+            print(e)
+            print(f'issue is with {path}')
+            print(f'relevant kwargs {kw}')
         period = df_date[kw['kw']['date_split']]
         period = period.rstrip()
         period = period.lstrip()        
@@ -435,6 +440,10 @@ class FileIndexer(Utils, Scrape, Reconciler):
                     date_str = '-'.join(data[1].split('.')[0].split('_')[2:][::-1])
                 elif typ == 'scrape':
                     date_str = data[1].split('_')[3][0:7]
+                elif typ == 'op':
+                    date_str = '-'.join(data[1].split('.')[0].split('_')[2:][::-1])
+                    date_object = datetime.strptime(date_str, '%m-%Y')
+                    date_str = date_object.strftime('%Y-%m')
                 dict1 = {typ: (date_str, data[0])}
                 records1.append(dict1)
         return records1
