@@ -1101,13 +1101,16 @@ class ProcessingLayer(StatusRS):
     def final_check_writeable_months(self, month_list=None):
         writeable_months = []
         for month in month_list:
-            status_object = [item for item in StatusObject().select().where(StatusObject.month==month)][0]
+            try:
+                status_object = [item for item in StatusObject().select().where(StatusObject.month==month)][0]
+            except IndexError as e:
+                print(e, month)
+                breakpoint()
 
             if status_object.opcash_processed == True and status_object.tenant_reconciled == True and status_object.rs_reconciled == False:
                 writeable_months.append(status_object.month)
             elif status_object.scrape_reconciled == True and status_object.tenant_reconciled == True and status_object.rs_reconciled == False:
                 writeable_months.append(status_object.month)
-
         return writeable_months
 
     def mark_rs_reconciled_status_object(self, month_list=None):

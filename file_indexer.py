@@ -342,7 +342,12 @@ class FileIndexer(Utils, Scrape, Reconciler):
         split_col = kw['kw']['split_col']
         df_date = pd.read_excel(path)
         df_date = df_date.iloc[:, kw['kw']['get_col']].to_list()
-        df_date = df_date[split_col].split(kw['kw']['split_type'])
+        try:
+            df_date = df_date[split_col].split(kw['kw']['split_type'])
+        except AttributeError as e:
+            print(e)
+            print(f'issue is with {path}')
+            print(f'relevant kwargs {kw}')
         period = df_date[kw['kw']['date_split']]
         period = period.rstrip()
         period = period.lstrip()        

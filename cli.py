@@ -100,6 +100,8 @@ def incremental_build(incr):
     elif incr == 2:
         path, full_sheet, build, service, ms = return_test_config_incr1()
         if build.main_db.get_tables() == []:
+            print(f'path: {path}')
+            print(f'sheet_url: {full_sheet}')
             build.build_db_from_scratch(write=True)
         else:
             print('reset (from scratch)')
@@ -109,6 +111,8 @@ def incremental_build(incr):
         path, full_sheet, iterb, service, ms = return_test_config_incr2()
         if iterb.main_db.get_tables() == []:
             print('setting up initial state for "testing"')
+            print(f'path: {path}')
+            print(f'sheet_url: {full_sheet}')
             build.build_db_from_scratch(write=True)
             print('build from incr')
             iterb.incremental_load()
@@ -119,8 +123,22 @@ def incremental_build(incr):
         """just incremental, don't drop full db"""
         """how do I simulate the rebuild of rs_reconcile column"""
         path, full_sheet, iterb, service, ms = return_test_config_incr2()
+        print(f'sheet_url: {full_sheet}')
+        print(f'path: {path}')
+        breakpoint()
         iterb.incremental_load()
-        # breakpoint()
+    elif incr == 5:
+        """run build from scratch from /iter_build_second"""
+        path, full_sheet, iterb, service, ms = return_test_config_incr2()
+        if iterb.main_db.get_tables() == []:
+            print(f'path: {path}')
+            print(f'sheet_url: {full_sheet}')
+            iterb.build_db_from_scratch(write=True)
+            print('build from incr')
+            iterb.incremental_load()
+        else:
+            print('reset (from incr)')
+            reset_db(build=iterb)
     else:
         print('exiting program')
         exit
@@ -239,4 +257,3 @@ cli.add_command(manentry)
 
 if __name__ == '__main__':
     cli()
-
