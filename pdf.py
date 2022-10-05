@@ -169,18 +169,12 @@ class StructDataExtract:
         return target_line, index
 
     def get_stmt_date(self, indexed_lines, path=None):
-        # if path == '/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/canonical_testing_sources/op_cash_2022_09.pdf':
-        #     breakpoint()
+
         date_line = [line for count, line in indexed_lines if 'Date' and 'FALL CREEK VILLAGE I' in line]
-        # date_line = [line for count, line in indexed_lines if 'Dates' not in line]
         date_line = date_line[0]
-        print(date_line)
         date_line = date_line.split(' ')
         date_line = [line for line in date_line if '/' in line]
-        try:
-            date1 = date_line.pop()
-        except IndexError as e:
-            breakpoint()
+        date1 = date_line.pop()
         date2 = dt.strptime(date1, "%m/%d/%y")
         stmt_date = date2.strftime("%m %Y")
 
@@ -219,11 +213,6 @@ class StructDataExtract:
         line = [line for count, line in line]
         deposit_lines = [line.split(' ') for line in line]
         deposit_lines = [line for line in deposit_lines if 'Correction' not in line]
-        # if path == '/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/canonical_testing_sources/op_cash_2022_08.pdf':
-        #     for line in deposit_lines:
-        #         if 'Correction' in line:
-        #             print(line)
-        #     breakpoint()
         for hap_line in deposit_lines:
             stmt_date = self.get_stmt_date(index)
             stmt_year = stmt_date[-4:]

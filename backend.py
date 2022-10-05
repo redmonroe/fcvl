@@ -775,8 +775,8 @@ class PopulateTable(QueryHC):
 
         computed_mis, computed_mos = self.find_rent_roll_changes_by_comparison(start_set=set(period_start_tenant_names), end_set=set(period_end_tenant_names))
     
-        cleaned_mos = self.merge_move_outs(explicit_move_outs=explicit_move_outs, computed_mos=computed_mos)
-        self.insert_move_ins(move_ins=computed_mis)
+        cleaned_mos = self.merge_move_outs(explicit_move_outs=explicit_move_outs, computed_mos=computed_mos, date=date)
+        self.insert_move_ins(move_ins=computed_mis, date=date, filename=filename)
 
         if cleaned_mos != []:
             self.deactivate_move_outs(date, move_outs=cleaned_mos)
@@ -808,7 +808,10 @@ class PopulateTable(QueryHC):
         '''Units: now we should check whether end of period '''
         return cleaned_nt_list, total_tenant_charges, cleaned_mos
 
-    def merge_move_outs(self, explicit_move_outs=None, computed_mos=None):
+    def merge_move_outs(self, explicit_move_outs=None, computed_mos=None, date=None):    
+
+        if computed_mos != []: # remove unit column from computed_mos
+            computed_mos = [(item[0], item[2]) for item in computed_mos]
         explicit_move_outs = [(row[0], row[1]) for row in explicit_move_outs if row[0] != 'vacant']
         cleaned_mos = []
         if explicit_move_outs != []:
@@ -972,7 +975,7 @@ class PopulateTable(QueryHC):
 
         return move_ins, move_outs
 
-    def insert_move_ins(self, move_ins=None):
+    def insert_move_ins(self, move_ins=None, date=None, filename=None):
         for name, unit, move_in_date in move_ins:
             nt = Tenant.create(tenant_name=name, active='true', move_in_date=move_in_date, unit=unit)
             mi = MoveIn.create(mi_date=move_in_date, name=name)
@@ -987,16 +990,36 @@ class PopulateTable(QueryHC):
 
     def deactivate_move_outs(self, date, move_outs=None):
         first_dt, last_dt = self.make_first_and_last_dates(date_str=date)
-        for name, date in move_outs:
-            tenant = Tenant.get(Tenant.tenant_name == name)
-            tenant.active = False
-            tenant.move_out_date = date
-            tenant.save()
+        if len(move_outs) <= 1:
+            for name, date in move_outs:
+                print('move outs:',  name, date)
+                tenant = Tenant.get(Tenant.tenant_name == name)
+                tenant.active = False
+                tenant.move_out_date = date
+                tenant.save()
 
-            unit = Unit.get(Unit.tenant==name)
-            unit.status = 'vacant'
-            unit.tenant = 'vacant'
-            unit.save()
+                unit = Unit.get(Unit.tenant==name)
+                unit.status = 'vacant'
+                unit.tenant = 'vacant'
+                unit.save()
+        else:
+            for item in move_outs:
+                try:
+                    name = item[0]
+                    date = item[1]
+                    print('move outs:',  name, date)
+                    tenant = Tenant.get(Tenant.tenant_name == name)
+                    tenant.active = False
+                    tenant.move_out_date = date
+                    tenant.save()
+
+                    unit = Unit.get(Unit.tenant==name)
+                    unit.status = 'vacant'
+                    unit.tenant = 'vacant'
+                    unit.save()
+                except ValueError as e:
+                    breakpoint()
+
 
     def transfer_opcash_to_db(self):
         file_list = [(item.fn, item.period, item.path, item.hap, item.rr, item.depsum, item.deplist, item.corr_sum) for item in Findexer().select().
