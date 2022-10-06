@@ -765,6 +765,7 @@ class PopulateTable(QueryHC):
         fill_item = '0'
         df = pd.read_excel(filename, header=16)
         df = df.fillna(fill_item)
+      
         nt_list, explicit_move_outs = self.nt_from_df(df=df, date=date, fill_item=fill_item)
 
         total_tenant_charges = float(((nt_list.pop(-1)).rent).replace(',', ''))
@@ -811,7 +812,7 @@ class PopulateTable(QueryHC):
     def merge_move_outs(self, explicit_move_outs=None, computed_mos=None, date=None):    
 
         if computed_mos != []: # remove unit column from computed_mos
-            computed_mos = [(item[0], item[2]) for item in computed_mos]
+            computed_mos1 = [(item[0], item[2]) for item in computed_mos]
         explicit_move_outs = [(row[0], row[1]) for row in explicit_move_outs if row[0] != 'vacant']
         cleaned_mos = []
         if explicit_move_outs != []:
@@ -932,9 +933,15 @@ class PopulateTable(QueryHC):
         explicit_move_outs = []
         nt_list = []
         for index, rec in df.iterrows():
-            if rec['Move out'] != fill_item:
-                explicit_move_outs.append((rec['Name'].lower(), datetime.strptime(rec['Move out'], '%m/%d/%Y')))
+            try:
+                if rec['Move out'] != fill_item:
+                    explicit_move_outs.append((rec['Name'].lower(), datetime.strptime(rec['Move out'], '%m/%d/%Y')))
+            except TypeError as e:
+                print('adjusting move-out date for manual adjustment to move out on rent roll')
+                explicit_move_outs.append((rec['Name'].lower(), rec['Move out'].to_pydatetime()))
+
             row = Row(rec['Name'].lower(), rec['Unit'], rec['Actual Rent Charge'], rec['Move out'] , datetime.strptime(date, '%Y-%m'), rec['Move in'], rec['Actual Subsidy Charge'], rec['Lease Rent'])
+
             nt_list.append(row)
   
         return nt_list, explicit_move_outs
