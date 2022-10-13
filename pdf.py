@@ -294,7 +294,7 @@ class StructDataExtract:
             sum_corrections = 0
             
         total_corrections = sum_corrections + sum_chargebacks
-        print('Extracting corrections & chargebacks:', date, 'total:', total_corrections)
+        print('Extracting corrections & chargebacks from opcash:', date, 'total:', total_corrections)
         
         return stmt_date, total_corrections
     
