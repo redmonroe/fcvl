@@ -259,12 +259,15 @@ class StructDataExtract:
 
         return stmt_date, sum(line_list)
     
-    def nbofi_pdf_extract_corrections(self, path, style=None, target_str=None):
-        target_str = 'Chargeback'
+    def nbofi_pdf_extract_corrections(self, path, style=None, target_str=None, date=None):
+        print('nbofi extract corr:', date)
         file1 = self.open_pdf_and_output_txt(path, txtfile='temp_output.txt')
         index = [(count, line) for count, line in enumerate(file1)]
+
         stmt_date = self.get_stmt_date(index)
         line = [line for count, line in index if target_str in line]
+        line2 = [line for count, line in index if 'Correction' in line]
+        line = line + line2
         if line == []:
             return stmt_date, 0
         lines = [line.split(' ') for line in line]
@@ -272,7 +275,9 @@ class StructDataExtract:
         lines = [line.rstrip() for line in lines if line != '']
         lines = [line for line in lines if line.endswith('-')]
         sum_corrections = sum([float(line.replace('-', '')) for line in lines])
-        
+        if date == '08 2022':
+            print(line)
+            breakpoint()
         return stmt_date, sum_corrections 
     
  

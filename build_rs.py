@@ -40,7 +40,6 @@ class BuildRS(MonthSheet):
             print('fresh incremental load of findexer table')
             populate = self.setup_tables()
             self.findex.build_index_runner() 
-            breakpoint()
     
     def build_db_from_scratch(self, **kw):
         status = StatusRS()
@@ -199,6 +198,7 @@ class BuildRS(MonthSheet):
         return processed_rentr_dates_and_paths
 
     def load_initial_tenants_and_balances(self):
+        print('loading initial tenant balances')
          # load tenants as 01-01-2022
         populate = PopulateTable()
         records = [(item.fn, item.period, item.path) for item in Findexer().select().

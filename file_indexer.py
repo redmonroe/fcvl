@@ -368,15 +368,16 @@ class FileIndexer(Utils, Scrape, Reconciler):
     def rename_by_content_pdf(self):
         for op_cash_stmt_path in self.op_cash_list:
             hap_iter_one_month, stmt_date = self.extract_deposits_by_type(op_cash_stmt_path, style=self.style_term.hap, target_str=self.target_string.quadel)
+            date = stmt_date
             rr_iter_one_month, stmt_date1 = self.extract_deposits_by_type(op_cash_stmt_path, style=self.style_term.r4r, target_str=self.target_string.r4r)
             dep_iter_one_month, stmt_date2 = self.extract_deposits_by_type(op_cash_stmt_path, style=self.style_term.dep, target_str=self.target_string.oc_deposit)
             deposit_and_date_iter_one_month = self.extract_deposits_by_type(op_cash_stmt_path, style=self.style_term.dep_detail, target_str=self.target_string.oc_deposit)
-            corrections_sum = self.extract_deposits_by_type(op_cash_stmt_path, style=self.style_term.corrections, target_str=self.target_string.corrections)
+            corrections_sum = self.extract_deposits_by_type(op_cash_stmt_path, style=self.style_term.corrections, target_str=self.target_string.corrections, date=date)
             assert stmt_date == stmt_date1
 
             self.write_deplist_to_db(hap_iter_one_month, rr_iter_one_month, dep_iter_one_month, deposit_and_date_iter_one_month, corrections_sum, stmt_date)
 
-    def extract_deposits_by_type(self, path, style=None, target_str=None):
+    def extract_deposits_by_type(self, path, style=None, target_str=None, date=None):
         return_list = []
         kdict = {}
         if style == self.style_term.r4r:
@@ -389,7 +390,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
             depdet_list = self.pdf.nbofi_pdf_extract_deposit(path, style=style, target_str=target_str)
             return depdet_list
         elif style == self.style_term.corrections:
-            date, amount = self.pdf.nbofi_pdf_extract_corrections(path, style=style, target_str=target_str)
+            date, amount = self.pdf.nbofi_pdf_extract_corrections(path, style=style, target_str=target_str, date=date)
 
         kdict[str(date)] = [amount, path, style]
         return_list.append(kdict)            

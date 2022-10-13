@@ -152,6 +152,7 @@ class MonthSheet(YearSheet):
             self.write_list_to_col(func=gc.update, start_row=73, list1=dates_list, col_letter='C', date=date)
 
     def write_deposit_detail_from_opcash(self, date):
+        print(f'writing dd from opcash {date}')
         populate = PopulateTable()
         first_dt, last_dt = populate.make_first_and_last_dates(date_str=date)
         rec = populate.get_opcash_by_period(first_dt=first_dt, last_dt=last_dt)
@@ -159,6 +160,7 @@ class MonthSheet(YearSheet):
         self.export_deposit_detail(date=date, res_rep=rec[0][2], hap=rec[0][3], dep_sum=rec[0][4], corr_sum=rec[0][5], dep_detail=dep_detail)
 
     def write_deposit_detail_from_scrape(self, date):
+        print(f'writing dd from scrape {date}')
         populate = PopulateTable()
         first_dt, last_dt = populate.make_first_and_last_dates(date_str=date)
         hap = populate.get_scrape_detail_by_month_by_type(type1='hap', first_dt=first_dt, last_dt=last_dt)
@@ -172,7 +174,8 @@ class MonthSheet(YearSheet):
         date = kw['date']
         gc.update_int(self.service, self.full_sheet, [kw['hap']], f'{date}' + f'{self.wrange_hap_partial}', value_input_option='USER_ENTERED')
         gc.update_int(self.service, self.full_sheet, [kw['res_rep']], f'{date}' + f'{self.wrange_rr_partial}', value_input_option='USER_ENTERED')   
-        gc.update_int(self.service, self.full_sheet, [kw['corr_sum']], f'{date}' + f'{self.wrange_corr_partial}', value_input_option='USER_ENTERED')   
+        gc.update_int(self.service, self.full_sheet, [kw['corr_sum']], f'{date}' + f'{self.wrange_corr_partial}', value_input_option='USER_ENTERED')  
+        print(date, 'deposit corrections:', kw['corr_sum'] ) 
         dep_detail_amounts = [item.amount for item in kw['dep_detail']]
         self.write_list_to_col(func=gc.update_int, start_row=82, list1=dep_detail_amounts, col_letter='D', date=date)
 

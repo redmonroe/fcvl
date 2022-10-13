@@ -70,7 +70,7 @@ def incr_load_test():
 
 @click.command()
 def reset_db_test():
-    click.echo('dropping test db . . .')
+    click.echo('TEST: dropping test db . . .')
     path, full_sheet, build, service, ms = return_test_config()
     reset_db(build=build)
 
@@ -82,7 +82,7 @@ def reset_db_prod():
 
 @click.command()
 def load_db_test():
-    click.echo('loading all available files in path to db')
+    click.echo('TEST: loading all available files in path to db')
     path, full_sheet, build, service, ms = return_test_config() 
     build.build_db_from_scratch()    
 
@@ -100,11 +100,10 @@ def write_all_prod():
 
 @click.command()
 def write_all_test():
-    click.echo('write all db contents to rs . . .')
+    click.echo('TEST: write all db contents to rs . . .')
     path, full_sheet, build, service, ms = return_test_config()    
     ms.auto_control(source='cli.py', mode='clean_build')
     
-    # sample_month_list = ['2022-01']
     # sample_month_list = ['2022-01', '2022-02']
     # ms.auto_control(month_list=sample_month_list)
     
