@@ -158,7 +158,6 @@ class ManualEntry:
             except KeyError as e:
                 print('this manual entry from Config does not have a col4 & that may be ok!')
             
-
             result = [rec for rec in model_name.select().
                 where(attrgetter(col_name1)(model_name) == col_value1).
                 where(attrgetter(col_name2)(model_name) == col_value2).
@@ -173,10 +172,8 @@ class ManualEntry:
                     print('UPDATE!! BRANCH')
                     self.update_amount_dynamic(obj_type=model_name, updated_amount=updated_amount, selected_item=result)
             except IndexError as e:
-                print('You probably already deleted the transaction.  Check mentry db for further information.')
+                print('You probably already deleted the transaction OR transaction "has not happened" yet in program time.  Check mentry db for further information.')
                 print(e)
-                print('exiting program')
-                break
             
     def get_name_from_obj(self, obj_type=None):
         model_name = getattr(sys.modules[__name__], obj_type)

@@ -154,7 +154,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
         self.path = path
         self.db = db
         self.mode = mode
-        self.unproc_file_for_testing = []
+        self.unproc_files1 = []
         self.unfinalized_months = []
         self.index_dict = {}
         self.index_dict_iter = {} 
@@ -169,13 +169,13 @@ class FileIndexer(Utils, Scrape, Reconciler):
         print('\n')
         self.connect_to_db() 
 
-        print('showing unfinalized months (unfinal = no opcash +/or no reconcile with ten payments')
+        print('showing unfinalized months: either no opcash, no tenant, or no rent_sheet write')
         
         """A FINALIZED MONTH ==
             1 OPCASH processed 
             2 DEPOSITS + ADJUSTMENTS == TENANT_PAY + NTP"""
 
-        months_ytd, unfin_month = self.test_for_unfinalized_months()
+        months_ytd, unfin_month, final_not_written = self.test_for_unfinalized_months()
 
         for item in unfin_month:
             print(item)
@@ -187,8 +187,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
 
         if unproc_files == []:
             print('no new files to add')
-            print('exiting program')
-            exit
+            return [], unfin_month, final_not_written
         else:
             """YES, THERE ARE NEW FILES IN THE PATH"""
             for count, item in enumerate(unproc_files, 1):
@@ -196,23 +195,19 @@ class FileIndexer(Utils, Scrape, Reconciler):
 
             print('\n')
             choice1 = int(input('running findexer now would input the above file(s)?  press 1 to proceed ... '))
+            # choice1 = 1
 
             if choice1 == 1:
                 print('YES, I WANT TO ADD THIS FILE FINDEXER DB')
                 self.index_dict = self.sort_directory_by_extension2()
                 self.load_what_is_in_dir_as_indexed(dict1=self.index_dict_iter)        
-        
                 self.runner_internals()                        
-                
-                new_files_dict = self.get_report_type_from_xls_name(records=self.index_dict)
-                new_files_dict = self.get_date_from_xls_name(records=new_files_dict)
-                breakpoint()
-
-                # print('added files ===>', [list(value.values())[0][1].name for value in new_files_dict[0]])
-
-                # return new_files_dict, self.unfinalized_months
+                new_files = self.get_report_type_from_xls_name(records=self.index_dict)
+                new_files = self.get_date_from_file_name(records=new_files) 
+                self.findex_reconcile_onesite_deposits_to_scrape_or_oc()  
+                return new_files, self.unfinalized_months, final_not_written
             else:
-                print('exiting program')
+                print('exiting program from incremental_filer()')
                 exit   
 
     def build_index_runner(self):
@@ -250,13 +245,21 @@ class FileIndexer(Utils, Scrape, Reconciler):
         months_ytd = Utils.months_in_ytd(Config.current_year)
     
         # get fully finalized months
-        finalized_months = [rec.month for rec in StatusObject().select().where((StatusObject.tenant_reconciled==1) &
-                    (StatusObject.opcash_processed==1)).namedtuples()]
+        finalized_months = [rec.month for rec in StatusObject().select().where(
+                (StatusObject.tenant_reconciled==1) &
+                ((StatusObject.opcash_processed==1) | 
+                (StatusObject.scrape_reconciled==1)) &
+                (StatusObject.rs_reconciled==1)).namedtuples()]
 
-        # are there any unfinalized months?
-        self.unfinalized_months = list(set(months_ytd) - set(finalized_months))
+        final_not_written = [rec.month for rec in StatusObject().select().where(
+                (StatusObject.tenant_reconciled==1) &
+                ((StatusObject.opcash_processed==1) | 
+                (StatusObject.scrape_reconciled==1)) &
+                (StatusObject.rs_reconciled!=1)).namedtuples()]
 
-        return months_ytd, self.unfinalized_months
+        self.unfinalized_months = sorted(list(set(months_ytd) - set(finalized_months)))
+
+        return months_ytd, self.unfinalized_months, final_not_written
 
     def test_for_unprocessed_file(self):
         print('searching for new files in path:')
@@ -266,9 +269,9 @@ class FileIndexer(Utils, Scrape, Reconciler):
 
         unproc_files = list(set(directory_contents) - set(processed_fn))
 
-        self.unproc_file_for_testing = unproc_files  
+        self.unproc_files1 = unproc_files  
         
-        return self.unproc_file_for_testing, directory_contents
+        return self.unproc_files1, directory_contents
 
     def connect_to_db(self, mode=None):
         if self.db.is_closed():
@@ -290,8 +293,9 @@ class FileIndexer(Utils, Scrape, Reconciler):
         return self.index_dict
 
     def sort_directory_by_extension2(self):
+        """this can successfully handle unproc files only"""
         index_dict = {}
-        for fn in self.unproc_file_for_testing:
+        for fn in self.unproc_files1:
             index_dict[Path.joinpath(self.path, fn)] = (Path(fn).suffix, fn)
         
         self.index_dict_iter = index_dict # for testing, do not just erase this
@@ -431,7 +435,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
             records1.append(dict1)
         return records1
 
-    def get_date_from_xls_name(self, records=None):
+    def get_date_from_file_name(self, records=None):
         records1 = []
         for item in records:
             for typ, data in item.items():

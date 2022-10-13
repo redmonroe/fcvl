@@ -40,67 +40,37 @@ class BuildRS(MonthSheet):
             print('fresh incremental load of findexer table')
             populate = self.setup_tables()
             self.findex.build_index_runner() 
+            breakpoint()
     
     def build_db_from_scratch(self, **kw):
         status = StatusRS()
-        player = ProcessingLayer()
-        if self.main_db.get_tables() == []:
-            """this branch is used for rebuilding db from scratch"""
+        player = ProcessingLayer(service=self.service, full_sheet=self.full_sheet, ms=self.ms)
+        print('building db from scratch')
+        self.ctx = 'db empty'
+        print(f'{self.ctx}')
+        populate = self.setup_tables(mode='drop_and_create')
+        self.findex.build_index_runner() 
+        self.load_initial_tenants_and_balances()
+        processed_rentr_dates_and_paths = self.iterate_over_remaining_months()
+        Damages.load_damages()
+        self.populate.transfer_opcash_to_db() # PROCESSED OPCASHES MOVED INTO DB
 
-            print('building db from scratch')
-            self.ctx = 'db empty'
-            print(f'{self.ctx}')
-            populate = self.setup_tables(mode='drop_and_create')
-            self.findex.build_index_runner() 
-            self.load_initial_tenants_and_balances()
-            processed_rentr_dates_and_paths = self.iterate_over_remaining_months()
-            Damages.load_damages()
-            # load historical scrapes into findexer
-            self.populate.transfer_opcash_to_db() # PROCESSED OPCASHES MOVED INTO DB
-        else:
-            if kw.get('bypass_findexer') == True:
-                """this branch is used to trigger iterative build by passing in list of new added files"""
-                self.ctx = 'db is not empty; iter_build; bypass findexer'
-                print(f'{self.ctx}')
-                populate = self.setup_tables(mode='create_only')
-                self.iterate_over_remaining_months_incremental(list1=kw.get('new_files_add')[0])
-                player = ProcessingLayer()
-                player.set_current_date()
-                most_recent_status = player.get_most_recent_status()
-                all_months_ytd = player.get_all_months_ytd()
-
-                # reconcile all available
-                    # if already reconciled, don't reconcile agai
-            else:
-                """this branch is used to trigger iterative build of findex using new file list created here"""
-                self.ctx = 'db is not empty; iter_build; do NOT bypass findexer'
-                print(f'{self.ctx}')
-                self.new_files, self.unfinalized_months = self.findex.incremental_filer()
-                populate = self.setup_tables(mode='create_only')
-                self.iterate_over_remaining_months_incremental(list1=self.new_files)
-                
         all_months_ytd, report_list, most_recent_status = player.write_to_statusrs_wrapper()
 
-        '''this is the critical control function'''
-        player.assert_reconcile_payments(month_list=all_months_ytd, ref_rec=most_recent_status)
+        """this is the critical control function"""
+        player.reconcile_and_inscribe_state(month_list=all_months_ytd, ref_rec=most_recent_status)
 
         player.write_manual_entries_from_config()
-        '''
-        breakpoint()
-
-
 
         player.display_most_recent_status(mr_status=most_recent_status, months_ytd=all_months_ytd)
-        incomplete_month_bool, paperwork_complete_months = player.is_there_mid_month(all_months_ytd, report_list)
 
-        if kw.get('write_db') == True:
-            player.find_complete_pw_months_and_iter_write(paperwork_complete_months=paperwork_complete_months)
+        writeable_months = player.final_check_writeable_months(month_list=all_months_ytd)
+
+        if kw.get('write') == True:
+            player.find_complete_pw_months_and_iter_write( writeable_months=writeable_months)
         else:
             print('you have selected to bypass writing to RS.')
-            print('if you would like to write to rent spreadsheet enable "write_db" flag')
-        '''
-
-        """only show this if I have deposits and rent roll for the month, do not show for any month after first incomplete month, there are other cases"""
+            print('if you would like to write to rent spreadsheet enable "write" flag')
 
         '''this method of searching for incomplete months is useless if we are already automatically putting corr amounts etc into findexer; they will be always be available there if exist'''
         # if incomplete_month_bool:
@@ -142,6 +112,7 @@ class BuildRS(MonthSheet):
     def iterate_over_remaining_months_incremental(self, list1=None):
         """rent has to go first; otherwise if you have a move-in during the month there is no reference for the fk for a payment"""
         populate = PopulateTable()
+    
         for item in list1:
             for typ, data in item.items():
                 first_dt, last_dt = populate.make_first_and_last_dates(date_str=data[0])
@@ -153,6 +124,17 @@ class BuildRS(MonthSheet):
                 first_dt, last_dt = populate.make_first_and_last_dates(date_str=data[0])
                 if typ == 'deposits':
                     grand_total, ntp, tenant_payment_df = populate.payment_load_full(filename=data[1])
+
+        '''
+        for item in list1:
+            for typ, data in item.items():
+                first_dt, last_dt = populate.make_first_and_last_dates(date_str=data[0])
+                if typ == 'op':
+                    print('process op_cash')
+                    # breakpoint(c
+                    # )
+                    # grand_total, ntp, tenant_payment_df = populate.payment_load_full(filename=data[1])
+        '''
 
         findex = FileIndexer()
         for item in list1:

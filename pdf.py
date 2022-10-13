@@ -181,13 +181,23 @@ class StructDataExtract:
 
         return stmt_date
 
-    def get_cleaned_target_line(self, target_line, no_pop=None):
+    def get_cleaned_target_line(self, target_line, path=None, no_pop=None):
         hap_line = [line for line in target_line if type(line) == str]
         hap_line = [line for line in hap_line if line.isalnum() == False]
         hap_line = [line for line in hap_line if '.' in line]
         hap_line = [line.strip() for line in hap_line]
+        hap_line = [line.replace('-', '') for line in hap_line]
         hap_line = [line.replace(',', '')  for line in hap_line]
-        target = [float(line)  for line in hap_line]
+        for count, line in enumerate(hap_line, 1):
+            print(count, line)
+        # breakpoint()
+        try:
+            target = [float(line)  for line in hap_line]
+        except ValueError as e:
+            print(e)
+            print(f'path: {path}')
+            target = 0
+            breakpoint()
         if no_pop:
             target = target.pop()
 
@@ -217,10 +227,9 @@ class StructDataExtract:
         for hap_line in deposit_lines:
             stmt_date = self.get_stmt_date(index)
             stmt_year = stmt_date[-4:]
-            target = self.get_cleaned_target_line(hap_line)
+            target = self.get_cleaned_target_line(hap_line, path=path)
             target_date = self.get_date_from_line(hap_line)
             target_date = target_date + '/' + stmt_year
-
             date_list.append(target_date)
             line_list.append(target[0])
 
@@ -230,7 +239,6 @@ class StructDataExtract:
         if style =='dep_detail':
             self.deposits_list = []
             self.deposits_list.append({stmt_date: combined_list})
-            # breakpoint()
             return self.deposits_list
         return stmt_date, sum(line_list)
 
