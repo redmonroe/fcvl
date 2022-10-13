@@ -4,6 +4,7 @@ import math
 import os
 from collections import defaultdict
 from datetime import datetime as dt
+from pprint import pprint
 
 import pandas as pd
 import pdftotext
@@ -258,26 +259,43 @@ class StructDataExtract:
             line_list.append(target[0])
 
         return stmt_date, sum(line_list)
-    
-    def nbofi_pdf_extract_corrections(self, path, style=None, target_str=None, date=None):
-        print('nbofi extract corr:', date)
-        file1 = self.open_pdf_and_output_txt(path, txtfile='temp_output.txt')
-        index = [(count, line) for count, line in enumerate(file1)]
 
-        stmt_date = self.get_stmt_date(index)
-        line = [line for count, line in index if target_str in line]
-        line2 = [line for count, line in index if 'Correction' in line]
-        line = line + line2
-        if line == []:
-            return stmt_date, 0
-        lines = [line.split(' ') for line in line]
-        lines = [line for line in lines if 'Fee' not in line][0]
+    def corrections_helper(self, list1=None, target_str1=None, stmt_date=None):
+
+        lines = [line.split(' ') for line in list1]
+        lines = [line for line in lines if target_str1 not in line][0]
         lines = [line.rstrip() for line in lines if line != '']
         lines = [line for line in lines if line.endswith('-')]
-        sum_corrections = sum([float(line.replace('-', '')) for line in lines])
-        if date == '08 2022':
-            print(line)
-            breakpoint()
-        return stmt_date, sum_corrections 
+        sum_corr = sum([float(line.replace('-', '')) for line in lines])
+        return sum_corr
+
+    def corrections_helper2(self, list1=None):
+        lines = [line.split(' ') for line in list1]
+        lines = [' '.join(line).split() for line in lines]
+        lines = sum(lines, [])
+        lines = [line for line in lines if line.endswith('-')]
+        return sum([float(line.replace('-', '')) for line in lines])
+    
+    def nbofi_pdf_extract_corrections(self, path, style=None, target_str=None, target_str2=None, date=None):
+        file1 = self.open_pdf_and_output_txt(path, txtfile='temp_output.txt')
+        index = [(count, line) for count, line in enumerate(file1)]
+        stmt_date = self.get_stmt_date(index)
+        corrections = [line for count, line in index if target_str in line]
+        chargebacks = [line for count, line in index if target_str2 in line]
+
+        if chargebacks != []:
+            sum_chargebacks = self.corrections_helper(list1=chargebacks, target_str1='Fee', stmt_date=stmt_date)
+        else: 
+            sum_chargebacks = 0
+
+        if corrections != []:
+            sum_corrections = self.corrections_helper2(list1=corrections)
+        else:
+            sum_corrections = 0
+            
+        total_corrections = sum_corrections + sum_chargebacks
+        print('Extracting corrections & chargebacks:', date, 'total:', total_corrections)
+        
+        return stmt_date, total_corrections
     
  

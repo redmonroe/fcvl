@@ -144,10 +144,10 @@ class FileIndexer(Utils, Scrape, Reconciler):
     query_mode = Utils.dotdict({'xls': ('raw', ('.xls', '.xlsx')), 'pdf': ('raw', ('.pdf', '.pdf')), 'csv': ('raw', ('.csv', '.csv'))})
     rent_format = {'get_col': 0, 'split_col': 11, 'split_type': ' ', 'date_split': 2}
     deposits_format = {'get_col': 9, 'split_col': 9, 'split_type': '/', 'date_split': 0}
-    style_term = Utils.dotdict({'rent': 'rent', 'deposits': 'deposits', 'opcash': 'opcash', 'hap': 'hap', 'r4r': 'rr', 'dep': 'dep', 'dep_detail': 'dep_detail', 'corrections': 'corrections'})
+    style_term = Utils.dotdict({'rent': 'rent', 'deposits': 'deposits', 'opcash': 'opcash', 'hap': 'hap', 'r4r': 'rr', 'dep': 'dep', 'dep_detail': 'dep_detail', 'corrections': 'corrections', 'chargebacks': 'chargeback'})
     bank_acct_str = ' XXXXXXX1891'
     excluded_file_names = ['desktop.ini', 'beginning_balance_2022.xlsx']
-    target_string = Utils.dotdict({'affordable':'Affordable Rent Roll Detail/ GPR Report', 'bank': 'BANK DEPOSIT DETAILS', 'quadel': 'QUADEL', 'r4r': 'Incoming Wire', 'oc_deposit': 'Deposit', 'corrections': 'Chargeback'  })
+    target_string = Utils.dotdict({'affordable':'Affordable Rent Roll Detail/ GPR Report', 'bank': 'BANK DEPOSIT DETAILS', 'quadel': 'QUADEL', 'r4r': 'Incoming Wire', 'oc_deposit': 'Deposit', 'corrections': 'Correction', 'chargebacks': 'Chargeback'})
     status_str = Utils.dotdict({'raw': 'raw', 'processed': 'processed'})
 
     def __init__(self, path=None, db=None, mode=None):
@@ -372,12 +372,12 @@ class FileIndexer(Utils, Scrape, Reconciler):
             rr_iter_one_month, stmt_date1 = self.extract_deposits_by_type(op_cash_stmt_path, style=self.style_term.r4r, target_str=self.target_string.r4r)
             dep_iter_one_month, stmt_date2 = self.extract_deposits_by_type(op_cash_stmt_path, style=self.style_term.dep, target_str=self.target_string.oc_deposit)
             deposit_and_date_iter_one_month = self.extract_deposits_by_type(op_cash_stmt_path, style=self.style_term.dep_detail, target_str=self.target_string.oc_deposit)
-            corrections_sum = self.extract_deposits_by_type(op_cash_stmt_path, style=self.style_term.corrections, target_str=self.target_string.corrections, date=date)
+            corrections_sum = self.extract_deposits_by_type(op_cash_stmt_path, style=self.style_term.corrections, target_str=self.target_string.corrections, target_str2=self.target_string.chargebacks, date=date)
             assert stmt_date == stmt_date1
 
             self.write_deplist_to_db(hap_iter_one_month, rr_iter_one_month, dep_iter_one_month, deposit_and_date_iter_one_month, corrections_sum, stmt_date)
 
-    def extract_deposits_by_type(self, path, style=None, target_str=None, date=None):
+    def extract_deposits_by_type(self, path, style=None, target_str=None, target_str2=None, date=None):
         return_list = []
         kdict = {}
         if style == self.style_term.r4r:
@@ -390,7 +390,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
             depdet_list = self.pdf.nbofi_pdf_extract_deposit(path, style=style, target_str=target_str)
             return depdet_list
         elif style == self.style_term.corrections:
-            date, amount = self.pdf.nbofi_pdf_extract_corrections(path, style=style, target_str=target_str, date=date)
+            date, amount = self.pdf.nbofi_pdf_extract_corrections(path, style=style, target_str=target_str, target_str2=target_str2, date=date)
 
         kdict[str(date)] = [amount, path, style]
         return_list.append(kdict)            
