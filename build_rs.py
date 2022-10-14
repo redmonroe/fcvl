@@ -12,12 +12,12 @@ from setup_month import MonthSheet
 class BuildRS(MonthSheet):
     def __init__(self, sleep=None, full_sheet=None, path=None, mode=None, test_service=None):
 
-        self.main_db = db # connects backend.db to Configuration
+        self.main_db = db # connects backend.db to Config
         if mode == 'testing':
             db_path = Config.TEST_DB.database
             self.main_db.init(db_path)
         else:
-            self.main_db = Config.PROD_DB.database
+            db_path = Config.PROD_DB.database
             self.main_db.init(db_path)
 
         self.full_sheet = full_sheet

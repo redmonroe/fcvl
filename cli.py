@@ -62,11 +62,10 @@ def return_test_config_iter():
 
     return path, full_sheet, iterb, service, ms
 
-def return_config():
+def return_prod_config():
     path = Config.PROD_PATH
     sheet = Config.PROD_RS
-    db = Config.PROD_DB
-    build = BuildRS(path=path, full_sheet=sheet, main_db=db)
+    build = BuildRS(path=path, full_sheet=sheet)
     service = oauth(Config.my_scopes, 'sheet')
     ms = MonthSheet(full_sheet=sheet, path=path)
     return path, sheet, build, service, ms
@@ -81,7 +80,6 @@ def set_db(build=None):
 def reset_db(build=None):
     populate = PopulateTable()
     create_tables_list1 = populate.return_tables_list()
-    # breakpoint()
     build.main_db.drop_tables(models=create_tables_list1)
     if build.main_db.get_tables() == []:
         print('db successfully dropped')
@@ -153,7 +151,7 @@ def reset_db_test():
 @click.command()
 def reset_db_prod():
     click.echo('dropping PRODUCTION db . . .')
-    path, full_sheet, build, service, ms = return_config()
+    path, full_sheet, build, service, ms = return_prod_config()
     reset_db(build=build)
 
 @click.command()
@@ -165,13 +163,13 @@ def load_db_test():
 @click.command()
 def load_db_prod():
     click.echo('PRODUCTION: loading all available files in path to db')
-    path, full_sheet, build, service, ms = return_config()   
+    path, full_sheet, build, service, ms = return_prod_config()   
     build.build_db_from_scratch()   
 
 @click.command()
 def write_all_prod():
     click.echo('PRODUCTION: write all db contents to rs . . .')
-    path, full_sheet, build, service, ms = return_config()    
+    path, full_sheet, build, service, ms = return_prod_config()    
     ms.auto_control(source='cli.py', mode='clean_build')
 
 @click.command()
