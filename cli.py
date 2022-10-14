@@ -39,14 +39,14 @@ class Figuration:
             self.path = Config.TEST_PATH
 
         if full_sheet:
-            self.full_sheet = Config.TEST_RS
-        else:
             self.full_sheet = full_sheet
+        else:
+            self.full_sheet = Config.TEST_RS
 
         if self.mode == 'testing':
             self.build = IterRS(path=self.path, full_sheet=self.full_sheet, mode=self.mode)
             self.service = oauth(Config.my_scopes, 'sheet', mode=self.mode)
-            self.ms = MonthSheet(full_sheet=full_sheet, path=path, mode=self.mode, test_service=self.service)
+            self.ms = MonthSheet(full_sheet=self.full_sheet, path=self.path, mode=self.mode, test_service=self.service)
         if self.mode == 'production':
             self.path = Config.PROD_PATH
             self.full_sheet = Config.PROD_RS
@@ -105,9 +105,9 @@ def incremental_build(incr):
     if incr == 1:
         print('do nothing')
     elif incr == 2:
-        figure = Figuration()
-        path, full_sheet, build, service, ms = figure.return_configuration(path=Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/fcvl_test/jan_2022_only'))
-        # path, full_sheet, build, service, ms = return_test_config_incr1()
+        '''this is JAN 2020 ONLY, opcash'''
+        figure = Figuration(path=Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/fcvl_test/jan_2022_only'))
+        path, full_sheet, build, service, ms = figure.return_configuration()
         breakpoint()
         if build.main_db.get_tables() == []:
             print(f'path: {path}')
@@ -117,6 +117,7 @@ def incremental_build(incr):
             print('reset (from scratch)')
             reset_db(build=build)
     elif incr == 3:
+        '''first iterative increment: feb only, opcash'''
         path, full_sheet, build, service, ms = return_test_config_incr1()
         path, full_sheet, iterb, service, ms = return_test_config_incr2()
         if iterb.main_db.get_tables() == []:
