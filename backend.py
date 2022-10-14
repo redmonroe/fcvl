@@ -27,8 +27,9 @@ from records import record
 from utils import Utils
 
 basedir = os.path.abspath(os.path.dirname(__file__))
+db = SqliteDatabase(None)
 
-db = Config.TEST_DB
+# db = Config.TEST_DB
 
 class BaseModel(Model):
     class Meta:
@@ -220,7 +221,6 @@ class Reconciler:
         self.findex_reconcile_helper_writer(list1=dep_xls_prob, recon_str='dep_prob')
         self.findex_reconcile_helper_writer(list1=match_both, recon_str='FULL')
 
-
     def findex_reconcile_helper_writer(self, list1=None, recon_str=None):
         for item in list1:
             deposit_id = [(row.doc_id, row.period) for row in Findexer.select().
@@ -257,8 +257,6 @@ class Reconciler:
         
         assert sum(all_ntp) + sum(all_tp) == grand_total
         return all_tp, all_ntp
-
-    
 
 class QueryHC(Reconciler):
 

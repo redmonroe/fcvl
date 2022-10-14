@@ -12,7 +12,7 @@ from setup_month import MonthSheet
 class BuildRS(MonthSheet):
     def __init__(self, sleep=None, full_sheet=None, path=None, mode=None, main_db=None, test_service=None):
 
-        self.main_db = main_db
+        self.main_db = db
         self.full_sheet = full_sheet
         self.path = path
         try:
@@ -40,9 +40,10 @@ class BuildRS(MonthSheet):
             print('fresh incremental load of findexer table')
             populate = self.setup_tables()
             self.findex.build_index_runner() 
-            breakpoint()
     
     def build_db_from_scratch(self, **kw):
+        
+        breakpoint()
         status = StatusRS()
         player = ProcessingLayer(service=self.service, full_sheet=self.full_sheet, ms=self.ms)
         print('building db from scratch')
@@ -101,10 +102,15 @@ class BuildRS(MonthSheet):
         populate = PopulateTable()
         self.create_tables_list1 = populate.return_tables_list()
         if self.main_db.is_closed() == True:
+            db_path = Config.PROD_DB.database
+            self.main_db.init(db_path)
             self.main_db.connect()
         if mode == 'create_only':
             self.main_db.create_tables(self.create_tables_list1)
         elif mode == 'drop_and_create':
+            db_path = Config.PROD_DB.database
+            self.main_db.init(db_path)
+            # breakpoint()
             self.main_db.drop_tables(models=self.create_tables_list1)
             self.main_db.create_tables(self.create_tables_list1)
         return populate

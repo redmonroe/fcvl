@@ -72,4 +72,4 @@ class IterRS(BuildRS):
             RIGHT NOW THE OPCASH IS NOT ADDED TO OPCASH TABLE""" 
         else:
             print('there are no new files, but some months are still unfinalized')
-            print('exiting program')
+            print('exiting iter_build')
