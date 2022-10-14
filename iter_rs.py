@@ -1,5 +1,5 @@
 from auth_work import oauth
-from backend import PopulateTable, ProcessingLayer, StatusRS, Damages, StatusObject
+from backend import PopulateTable, ProcessingLayer, StatusRS, Damages, StatusObject, db
 from build_rs import BuildRS
 from config import Config
 from file_indexer import FileIndexer
@@ -8,9 +8,16 @@ from setup_month import MonthSheet
 
 class IterRS(BuildRS):
 
-    def __init__(self, main_db=None, full_sheet=None, path=None, mode=None, test_service=None):
+    def __init__(self, full_sheet=None, path=None, mode=None, test_service=None):
 
-        self.main_db = main_db
+        self.main_db = db # connects backend.db to Config
+        if mode == 'testing':
+            db_path = Config.TEST_DB.database
+            self.main_db.init(db_path)
+        else:
+            db_path = Config.PROD_DB.database
+            self.main_db.init(db_path)
+
         self.full_sheet = full_sheet
         self.path = path
         try:

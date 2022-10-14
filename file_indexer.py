@@ -279,7 +279,6 @@ class FileIndexer(Utils, Scrape, Reconciler):
         if mode == 'autodrop':
             self.db.drop_tables(models=self.create_findex_list)
         self.db.create_tables(models=self.create_findex_list)
-        breakpoint()
 
     def articulate_directory2(self):
         dir_cont = [item.name for item in self.path.iterdir() if item.name not in self.excluded_file_names] 

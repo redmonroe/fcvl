@@ -27,18 +27,18 @@ cli.add_command(nbofi)
 cli.add_command(consume_and_backup_invoices)
 '''
 def return_test_config_incr1():
-    path = Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/iter_build_first')
+    path = Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/fcvl_test/iter_build_first')
     full_sheet = Config.TEST_RS
-    build = IterRS(path=path, full_sheet=full_sheet, main_db=Config.TEST_DB)
+    build = IterRS(path=path, full_sheet=full_sheet, mode='testing')
     service = oauth(Config.my_scopes, 'sheet', mode='testing')
     ms = MonthSheet(full_sheet=full_sheet, path=path, mode='testing', test_service=service)
 
     return path, full_sheet, build, service, ms
 
 def return_test_config_incr2():
-    path = Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/iter_build_second')
+    path = Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/fcvl_test/iter_build_second')
     full_sheet = Config.TEST_RS
-    build = IterRS(path=path, full_sheet=full_sheet, main_db=Config.TEST_DB)
+    build = IterRS(path=path, full_sheet=full_sheet, mode='testing')
     service = oauth(Config.my_scopes, 'sheet', mode='testing')
     ms = MonthSheet(full_sheet=full_sheet, path=path, mode='testing', test_service=service)
 
@@ -91,7 +91,7 @@ def cli():
 @click.command()
 @click.option('--incr', default=1, help='run fresh or run incremental build')
 def incremental_build(incr):
-    click.echo('build from cli')
+    click.echo('iter_build from cli')
     from iter_rs import IterRS
 
     if incr == 1:
