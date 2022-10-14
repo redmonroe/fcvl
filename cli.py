@@ -26,49 +26,57 @@ from setup_year import YearSheet
 cli.add_command(nbofi)
 cli.add_command(consume_and_backup_invoices)
 '''
+
+class Figuration:
+
+    def __init__(self, mode='testing', path=None, full_sheet=None):
+        '''default to iterative, testing config, sheet, path'''
+        self.mode = mode
+
+        if path:
+            self.path = path
+        else:
+            self.path = Config.TEST_PATH
+
+        if full_sheet:
+            self.full_sheet = Config.TEST_RS
+        else:
+            self.full_sheet = full_sheet
+
+        if self.mode == 'testing':
+            self.build = IterRS(path=self.path, full_sheet=self.full_sheet, mode=self.mode)
+            self.service = oauth(Config.my_scopes, 'sheet', mode=self.mode)
+            self.ms = MonthSheet(full_sheet=full_sheet, path=path, mode=self.mode, test_service=self.service)
+        if self.mode == 'production':
+            self.path = Config.PROD_PATH
+            self.full_sheet = Config.PROD_RS
+            self.build = BuildRS(path=self.path, full_sheet=self.full_sheet)
+            self.service = oauth(Config.my_scopes, 'sheet')
+            self.ms = MonthSheet(full_sheet=self.full_sheet, path=self.path)
+
+    def return_configuration(self):
+        return self.path, self.full_sheet, self.build, self.service, self.ms
+
 def return_test_config_incr1():
     path = Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/fcvl_test/iter_build_first')
-    full_sheet = Config.TEST_RS
-    build = IterRS(path=path, full_sheet=full_sheet, mode='testing')
-    service = oauth(Config.my_scopes, 'sheet', mode='testing')
-    ms = MonthSheet(full_sheet=full_sheet, path=path, mode='testing', test_service=service)
-
-    return path, full_sheet, build, service, ms
-
-def return_test_config_incr2():
     path = Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/fcvl_test/iter_build_second')
-    full_sheet = Config.TEST_RS
-    build = IterRS(path=path, full_sheet=full_sheet, mode='testing')
-    service = oauth(Config.my_scopes, 'sheet', mode='testing')
-    ms = MonthSheet(full_sheet=full_sheet, path=path, mode='testing', test_service=service)
 
-    return path, full_sheet, build, service, ms
+# def return_test_config_iter():
+#     path = Config.TEST_PATH
+#     full_sheet = Config.TEST_RS
+#     iterb = IterRS(path=path, full_sheet=full_sheet, main_db=Config.TEST_DB)
+#     service = oauth(Config.my_scopes, 'sheet', mode='testing')
+#     ms = MonthSheet(full_sheet=full_sheet, path=path, mode='testing', test_service=service)
 
-def return_test_config():
-    path = Config.TEST_PATH
-    full_sheet = Config.TEST_RS
-    build = BuildRS(path=path, full_sheet=full_sheet, mode='testing')
-    service = oauth(Config.my_scopes, 'sheet', mode='testing')
-    ms = MonthSheet(full_sheet=full_sheet, path=path, mode='testing', test_service=service)
+#     return path, full_sheet, iterb, service, ms
 
-    return path, full_sheet, build, service, ms
-
-def return_test_config_iter():
-    path = Config.TEST_PATH
-    full_sheet = Config.TEST_RS
-    iterb = IterRS(path=path, full_sheet=full_sheet, main_db=Config.TEST_DB)
-    service = oauth(Config.my_scopes, 'sheet', mode='testing')
-    ms = MonthSheet(full_sheet=full_sheet, path=path, mode='testing', test_service=service)
-
-    return path, full_sheet, iterb, service, ms
-
-def return_prod_config():
-    path = Config.PROD_PATH
-    sheet = Config.PROD_RS
-    build = BuildRS(path=path, full_sheet=sheet)
-    service = oauth(Config.my_scopes, 'sheet')
-    ms = MonthSheet(full_sheet=sheet, path=path)
-    return path, sheet, build, service, ms
+# def return_prod_config():
+#     path = Config.PROD_PATH
+#     sheet = Config.PROD_RS
+#     build = BuildRS(path=path, full_sheet=sheet)
+#     service = oauth(Config.my_scopes, 'sheet')
+#     ms = MonthSheet(full_sheet=sheet, path=path)
+#     return path, sheet, build, service, ms
 
 def set_db(build=None):
     """this should not DROP tables"""
@@ -97,7 +105,10 @@ def incremental_build(incr):
     if incr == 1:
         print('do nothing')
     elif incr == 2:
-        path, full_sheet, build, service, ms = return_test_config_incr1()
+        figure = Figuration()
+        path, full_sheet, build, service, ms = figure.return_configuration(path=Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/fcvl_test/jan_2022_only'))
+        # path, full_sheet, build, service, ms = return_test_config_incr1()
+        breakpoint()
         if build.main_db.get_tables() == []:
             print(f'path: {path}')
             print(f'sheet_url: {full_sheet}')
@@ -145,37 +156,43 @@ def incremental_build(incr):
 @click.command()
 def reset_db_test():
     click.echo('TEST: dropping test db . . .')
-    path, full_sheet, build, service, ms = return_test_config()
+    figure = Figuration()
+    path, full_sheet, build, service, ms = figure.return_configuration()
     reset_db(build=build)
 
 @click.command()
 def reset_db_prod():
     click.echo('dropping PRODUCTION db . . .')
-    path, full_sheet, build, service, ms = return_prod_config()
+    figure = Figuration(mode='production')
+    path, full_sheet, build, service, ms = figure.return_configuration()
     reset_db(build=build)
 
 @click.command()
 def load_db_test():
     click.echo('TEST: loading all available files in path to db')
-    path, full_sheet, build, service, ms = return_test_config() 
+    figure = Figuration()
+    path, full_sheet, build, service, ms = figure.return_configuration()
     build.build_db_from_scratch()    
 
 @click.command()
 def load_db_prod():
     click.echo('PRODUCTION: loading all available files in path to db')
-    path, full_sheet, build, service, ms = return_prod_config()   
+    figure = Figuration(mode='production')
+    path, full_sheet, build, service, ms = figure.return_configuration() 
     build.build_db_from_scratch()   
 
 @click.command()
 def write_all_prod():
     click.echo('PRODUCTION: write all db contents to rs . . .')
-    path, full_sheet, build, service, ms = return_prod_config()    
+    figure = Figuration(mode='production')
+    path, full_sheet, build, service, ms = figure.return_configuration() 
     ms.auto_control(source='cli.py', mode='clean_build')
 
 @click.command()
 def write_all_test():
     click.echo('TEST: write all db contents to rs . . .')
-    path, full_sheet, build, service, ms = return_test_config()    
+    figure = Figuration()
+    path, full_sheet, build, service, ms = figure.return_configuration() 
     ms.auto_control(source='cli.py', mode='clean_build')
     
     # sample_month_list = ['2022-01', '2022-02']
