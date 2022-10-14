@@ -47,7 +47,7 @@ def return_test_config_incr2():
 def return_test_config():
     path = Config.TEST_PATH
     full_sheet = Config.TEST_RS
-    build = BuildRS(path=path, full_sheet=full_sheet, main_db=Config.TEST_DB)
+    build = BuildRS(path=path, full_sheet=full_sheet, mode='testing')
     service = oauth(Config.my_scopes, 'sheet', mode='testing')
     ms = MonthSheet(full_sheet=full_sheet, path=path, mode='testing', test_service=service)
 
@@ -81,6 +81,7 @@ def set_db(build=None):
 def reset_db(build=None):
     populate = PopulateTable()
     create_tables_list1 = populate.return_tables_list()
+    # breakpoint()
     build.main_db.drop_tables(models=create_tables_list1)
     if build.main_db.get_tables() == []:
         print('db successfully dropped')
@@ -159,7 +160,6 @@ def reset_db_prod():
 def load_db_test():
     click.echo('TEST: loading all available files in path to db')
     path, full_sheet, build, service, ms = return_test_config() 
-    breakpoint()
     build.build_db_from_scratch()    
 
 @click.command()
