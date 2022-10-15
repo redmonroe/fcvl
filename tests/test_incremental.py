@@ -9,7 +9,7 @@ sys.path.append(parent)
 from pathlib import Path, PosixPath
 
 from auth_work import oauth
-from backend import PopulateTable, Findexer
+from backend import PopulateTable, Findexer, StatusObject, StatusRS
 from iter_rs import IterRS
 from config import Config
 from file_indexer import FileIndexer
@@ -67,12 +67,13 @@ class TestFileIndexerIncr:
     def test_load_init_db_state(self, return_base_config):
         path, full_sheet, build, service, ms, findexer = return_base_config
         build.incremental_load()  
-        """focus on statusobject: why are so many months being procesed and marked as reconciled"""      
     
-    def test_after_jan_state(self, populate, return_base_config):
+    def test_after_jan_load(self, populate, return_base_config):
         """
         doesn't need to be high engineering here: just
         compare the number of files to number of entries
+        
+        ******focus on statusobject  
         """
         d_rows = populate.get_all_findexer_by_type(type1='deposits')
         assert len(d_rows) == 1
@@ -86,6 +87,30 @@ class TestFileIndexerIncr:
         path, full_sheet, build, service, ms, findexer = return_base_config
         files = [fn for fn in path.iterdir()]
         assert len(files) == 5 # 3 files + beg balances + desktop.ini
+
+        """test for statusobject state"""
+        jan_so_state = [row for row in StatusObject.select().
+            where(
+                (StatusObject.opcash_processed==1) &
+                (StatusObject.tenant_reconciled==1)
+            ).
+            namedtuples()]
+
+        assert jan_so_state[0].month == '2022-01'
+        assert jan_so_state[0].scrape_reconciled == False 
+
+        remainder_so_state = [row for row in StatusObject.select().
+            where(
+                (StatusObject.opcash_processed==0) &
+                (StatusObject.tenant_reconciled==0) &
+                (StatusObject.scrape_reconciled==0)
+                )
+            .
+            namedtuples()]
+
+        assert len(remainder_so_state) > 8
+
+    def after_jan_write(self):
         breakpoint()
 
     '''
