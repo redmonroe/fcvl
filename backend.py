@@ -17,6 +17,7 @@ import pytest
 from dateutil.relativedelta import relativedelta
 from numpy import nan
 from peewee import *
+from peewee import IntegrityError as PIE
 from peewee import JOIN, fn
 from recordtype import \
     recordtype  # i edit the source code here, so requirements won't work if this is ever published, after 3.10, collection.abc change
@@ -985,17 +986,50 @@ class PopulateTable(QueryHC):
         return move_ins, move_outs
 
     def insert_move_ins(self, move_ins=None, date=None, filename=None):
+        print('move in list', date, move_ins, filename)
         for name, unit, move_in_date in move_ins:
-            nt = Tenant.create(tenant_name=name, active='true', move_in_date=move_in_date, unit=unit)
-            mi = MoveIn.create(mi_date=move_in_date, name=name)
-            unit = Unit.get(unit_name=unit)
-            unit.status = 'occupied'
-            unit.last_occupied = move_in_date
-            unit.tenant = name
+            print('move-ins:', name, unit, move_in_date)
+            try:
+                with db.atomic():
+                    nt = Tenant.create(tenant_name=name, active='true', move_in_date=move_in_date, unit=unit)
+            except PIE as e:
+                print(e, 'new Tenant already entered into table', name)
+                return Tenant.get(Tenant.tenant_name==name)
+                
+            try:
+                with db.atomic():
+                    mi = MoveIn.create(mi_date=move_in_date, name=name)
+            except PIE as e:
+                print(e, 'Move IN already entered into MI table', name)
+                return MoveIn.get(MoveIn.name==name)
 
-            nt.save()
-            mi.save()
-            unit.save()
+            try:
+                with db.atomic():
+                    unt = Unit.get(unit_name=unit)
+            except PIE as e:
+                print(e, 'UNIT already modified in Unit table', name)
+                return Unit.get(unit_name==unit)
+
+            unt.status = 'occupied'
+            unt.last_occupied = move_in_date
+            unt.tenant = name
+            print(f'Move-In: updating Unit, MoveIn, and Tenant tables for {unt.tenant} for {unt.last_occupied}')
+            
+
+            try:
+                nt.save()
+            except PIE as e:
+                print(e, 'issue with new tenant creation', unt.tenant)
+            
+            try:
+                mi.save()
+            except PIE as e:
+                print(e, 'issue with move in creation', unt.tenant)
+            
+            try:
+                unt.save()
+            except PIE as e:
+                print(e, 'issue with unit creation', unt.tenant)
 
     def deactivate_move_outs(self, date, move_outs=None):
         first_dt, last_dt = self.make_first_and_last_dates(date_str=date)

@@ -30,7 +30,7 @@ class TestFileIndexerIncr:
     @pytest.fixture
     def return_base_config(self):
         """why? this loads db using BuildRS and writes to sheet"""
-        figure = Figuration(method='build', path=Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/fcvl_test/jan_2022_only'))
+        figure = Figuration(method='build', path=Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/fcvl_test/thru_march_2022'))
         path, full_sheet, build, service, ms = figure.return_configuration()
         findexer = FileIndexer(path=path, db=build.main_db.database)
         yield path, full_sheet, build, service, ms, findexer
@@ -66,17 +66,17 @@ class TestFileIndexerIncr:
         ******focus on statusobject  
         """
         d_rows = populate.get_all_findexer_by_type(type1='deposits')
-        assert len(d_rows) == 1
+        assert len(d_rows) == 3
 
         o_rows = populate.get_all_findexer_by_type(type1='opcash')
-        assert len(o_rows) == 1
+        assert len(o_rows) == 3
 
         r_rows = populate.get_all_findexer_by_type(type1='rent')
-        assert len(r_rows) == 1
+        assert len(r_rows) == 3
         
         path, full_sheet, build, service, ms, findexer = return_base_config
         files = [fn for fn in path.iterdir()]
-        assert len(files) == 5 # 3 files + beg balances + desktop.ini
+        assert len(files) == 11 # 3 files + beg balances + desktop.ini
 
         """test for statusobject state"""
         jan_so_state = [row for row in StatusObject.select().
@@ -99,14 +99,14 @@ class TestFileIndexerIncr:
             .
             namedtuples()]
 
-        assert len(remainder_so_state) > 8
+        assert len(remainder_so_state) > 6
 
     def test_after_jan_write(self):
         """do I want to do any checking of actual sheet with calls??"""
     
     def test_jan_through_june_load_and_write(self, return_iter_config):
         path, full_sheet, iterb, service, ms, findexer = return_iter_config
-        breakpoint()
+        # breakpoint()
         iterb.incremental_load()
         
 
