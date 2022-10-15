@@ -108,7 +108,6 @@ def incremental_build(incr):
         '''this is JAN 2020 ONLY, opcash'''
         figure = Figuration(path=Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/fcvl_test/jan_2022_only'))
         path, full_sheet, build, service, ms = figure.return_configuration()
-        breakpoint()
         if build.main_db.get_tables() == []:
             print(f'path: {path}')
             print(f'sheet_url: {full_sheet}')

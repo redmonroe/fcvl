@@ -14,6 +14,7 @@ from iter_rs import IterRS
 from config import Config
 from file_indexer import FileIndexer
 from setup_month import MonthSheet
+from cli import Figuration
 
 
 """what is different about these tests?"""
@@ -27,58 +28,67 @@ class TestFileIndexerIncr:
         return populate
 
     @pytest.fixture
-    def return_test_config_init(self):
-        path = Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/iter_build_first')
-        full_sheet = Config.TEST_RS
-        build = IterRS(path=path, full_sheet=full_sheet, main_db=Config.TEST_DB)
-        breakpoint()
-        service = oauth(Config.my_scopes, 'sheet', mode='testing')
-        ms = MonthSheet(full_sheet=full_sheet, path=path, mode='testing', test_service=service)
-        findexer = FileIndexer(path=path, db=build.main_db)
+    def return_base_config(self):
+        figure = Figuration(path=Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/fcvl_test/jan_2022_only'))
+        path, full_sheet, build, service, ms = figure.return_configuration()
+        findexer = FileIndexer(path=path, db=build.main_db.database)
+        yield path, full_sheet, build, service, ms, findexer
 
-        return path, full_sheet, build, service, ms, findexer
+    # @pytest.fixture
+    # def return_test_config_init(self):
+    #     path = Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/iter_build_first')
+    #     full_sheet = Config.TEST_RS
+    #     build = IterRS(path=path, full_sheet=full_sheet, main_db=Config.TEST_DB)
+    #     breakpoint()
+    #     service = oauth(Config.my_scopes, 'sheet', mode='testing')
+    #     ms = MonthSheet(full_sheet=full_sheet, path=path, mode='testing', test_service=service)
+    #     findexer = FileIndexer(path=path, db=build.main_db)
 
-    @pytest.fixture
-    def return_test_config_incr1(self):
-        path = Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/iter_build_second')
-        full_sheet = Config.TEST_RS
-        build = IterRS(path=path, full_sheet=full_sheet, main_db=Config.TEST_DB)
-        service = oauth(Config.my_scopes, 'sheet', mode='testing')
-        ms = MonthSheet(full_sheet=full_sheet, path=path, mode='testing', test_service=service)
-        findexer = FileIndexer(path=path, db=build.main_db)
+    #     return path, full_sheet, build, service, ms, findexer
 
-        return path, full_sheet, build, service, ms, findexer
+    # @pytest.fixture
+    # def return_test_config_incr1(self):
+    #     path = Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/iter_build_second')
+    #     full_sheet = Config.TEST_RS
+    #     build = IterRS(path=path, full_sheet=full_sheet, main_db=Config.TEST_DB)
+    #     service = oauth(Config.my_scopes, 'sheet', mode='testing')
+    #     ms = MonthSheet(full_sheet=full_sheet, path=path, mode='testing', test_service=service)
+    #     findexer = FileIndexer(path=path, db=build.main_db)
 
-    def test_db_reset(self, return_test_config_init):
-        path, full_sheet, build, service, ms, findexer = return_test_config_init
-        populate = PopulateTable()
-        create_tables_list1 = populate.return_tables_list()
-        build.main_db.drop_tables(models=create_tables_list1)
-        assert build.main_db.get_tables() == []
+    #     return path, full_sheet, build, service, ms, findexer
 
-    def test_load_init_db_state(self, return_test_config_init):
-        path, full_sheet, build, service, ms, findexer = return_test_config_init
+    # def test_db_reset(self, return_test_config_init):
+    #     path, full_sheet, build, service, ms, findexer = return_test_config_init
+    #     populate = PopulateTable()
+    #     create_tables_list1 = populate.return_tables_list()
+    #     build.main_db.drop_tables(models=create_tables_list1)
+    #     assert build.main_db.get_tables() == []
+
+    def test_load_init_db_state(self, return_base_config):
+        path, full_sheet, build, service, ms, findexer = return_base_config
         build.incremental_load()  
         """focus on statusobject: why are so many months being procesed and marked as reconciled"""      
-
-    def test_init_state(self, populate, return_test_config_init):
+    
+    def test_after_jan_state(self, populate, return_base_config):
         """
         doesn't need to be high engineering here: just
         compare the number of files to number of entries
         """
         d_rows = populate.get_all_findexer_by_type(type1='deposits')
-        assert len(d_rows) == 3
+        assert len(d_rows) == 1
 
         o_rows = populate.get_all_findexer_by_type(type1='opcash')
-        assert len(o_rows) == 3
+        assert len(o_rows) == 1
 
         r_rows = populate.get_all_findexer_by_type(type1='rent')
-        assert len(r_rows) == 3
+        assert len(r_rows) == 1
         
-        path, full_sheet, build, service, ms, findexer = return_test_config_init
+        path, full_sheet, build, service, ms, findexer = return_base_config
         files = [fn for fn in path.iterdir()]
-        assert len(files) == 11 # 9 files + beg balances + desktop.ini
+        assert len(files) == 5 # 3 files + beg balances + desktop.ini
+        breakpoint()
 
+    '''
     def test_process_files_step_one(self):
         """what do we want to do here??"""
         """this is where we would be triggering events
@@ -104,3 +114,5 @@ class TestFileIndexerIncr:
         create_tables_list1 = populate.return_tables_list()
         build.main_db.drop_tables(models=create_tables_list1)
         # assert Config.TEST_DB.is_closed() == True
+
+    '''
