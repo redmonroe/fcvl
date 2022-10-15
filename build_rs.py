@@ -10,7 +10,7 @@ from records import record
 from setup_month import MonthSheet
 
 class BuildRS(MonthSheet):
-    def __init__(self, sleep=None, full_sheet=None, path=None, mode=None, test_service=None):
+    def __init__(self, sleep=None, full_sheet=None, path=None, mode=None, test_service=None, pytest=None):
 
         self.main_db = db # connects backend.db to Config
         if mode == 'testing':
@@ -22,6 +22,7 @@ class BuildRS(MonthSheet):
 
         self.full_sheet = full_sheet
         self.path = path
+        self.pytest = False
         try:
             self.service = oauth(Config.my_scopes, 'sheet')
         except (FileNotFoundError, NameError) as e:
@@ -37,7 +38,7 @@ class BuildRS(MonthSheet):
         self.ctx = None
 
     def __repr__(self):
-        return f'BuildRS object path: {self.path} write sheet: {self.full_sheet} service:{self.service}'
+        return f'{self.__class__.__name__} object path: {self.path} write sheet: {self.full_sheet} service:{self.service}'
     
     def build_db_from_scratch(self, **kw):
         status = StatusRS()

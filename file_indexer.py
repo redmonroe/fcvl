@@ -164,7 +164,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
         self.pdf = StructDataExtract()
         self.scrape_path = Config.TEST_PATH
     
-    def incremental_filer(self): 
+    def incremental_filer(self, pytest=False): 
         print('incremental_preface(), FileIndexer method from file_indexer.py')
         print('\n')
         self.connect_to_db() 
@@ -194,8 +194,12 @@ class FileIndexer(Utils, Scrape, Reconciler):
                 print(count, item)
 
             print('\n')
-            choice1 = int(input('running findexer now would input the above file(s)?  press 1 to proceed ... '))
-            # choice1 = 1
+    
+            if pytest == False:
+                choice1 = int(input('running findexer now would input the above file(s)?  press 1 to proceed ... '))
+            else:   
+                choice1 = 1
+                
 
             if choice1 == 1:
                 print('YES, I WANT TO ADD THIS FILE FINDEXER DB')

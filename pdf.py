@@ -188,9 +188,6 @@ class StructDataExtract:
         hap_line = [line.strip() for line in hap_line]
         hap_line = [line.replace('-', '') for line in hap_line]
         hap_line = [line.replace(',', '')  for line in hap_line]
-        for count, line in enumerate(hap_line, 1):
-            print(count, line)
-        # breakpoint()
         try:
             target = [float(line)  for line in hap_line]
         except ValueError as e:

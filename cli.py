@@ -29,7 +29,7 @@ cli.add_command(consume_and_backup_invoices)
 
 class Figuration:
 
-    def __init__(self, mode='testing', path=None, full_sheet=None):
+    def __init__(self, mode='testing', method='iter', path=None, full_sheet=None, pytest=None):
         '''default to iterative, testing config, sheet, path'''
         self.mode = mode
 
@@ -43,14 +43,26 @@ class Figuration:
         else:
             self.full_sheet = Config.TEST_RS
 
+        if pytest:
+            self.pytest = pytest
+        else:
+            self.pytest = False
+
+        self.method = method
+
+        if self.method == 'iter':
+            self.method = IterRS
+        else:
+            self.method = BuildRS
+
         if self.mode == 'testing':
-            self.build = IterRS(path=self.path, full_sheet=self.full_sheet, mode=self.mode)
+            self.build = self.method(path=self.path, full_sheet=self.full_sheet, mode=self.mode, pytest=self.pytest)
             self.service = oauth(Config.my_scopes, 'sheet', mode=self.mode)
             self.ms = MonthSheet(full_sheet=self.full_sheet, path=self.path, mode=self.mode, test_service=self.service)
         if self.mode == 'production':
             self.path = Config.PROD_PATH
             self.full_sheet = Config.PROD_RS
-            self.build = BuildRS(path=self.path, full_sheet=self.full_sheet)
+            self.build = self.method(path=self.path, full_sheet=self.full_sheet)
             self.service = oauth(Config.my_scopes, 'sheet')
             self.ms = MonthSheet(full_sheet=self.full_sheet, path=self.path)
 

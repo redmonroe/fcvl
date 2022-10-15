@@ -29,44 +29,34 @@ class TestFileIndexerIncr:
 
     @pytest.fixture
     def return_base_config(self):
-        figure = Figuration(path=Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/fcvl_test/jan_2022_only'))
+        """why? this loads db using BuildRS and writes to sheet"""
+        figure = Figuration(method='build', path=Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/fcvl_test/jan_2022_only'))
         path, full_sheet, build, service, ms = figure.return_configuration()
         findexer = FileIndexer(path=path, db=build.main_db.database)
         yield path, full_sheet, build, service, ms, findexer
 
-    # @pytest.fixture
-    # def return_test_config_init(self):
-    #     path = Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/iter_build_first')
-    #     full_sheet = Config.TEST_RS
-    #     build = IterRS(path=path, full_sheet=full_sheet, main_db=Config.TEST_DB)
-    #     breakpoint()
-    #     service = oauth(Config.my_scopes, 'sheet', mode='testing')
-    #     ms = MonthSheet(full_sheet=full_sheet, path=path, mode='testing', test_service=service)
-    #     findexer = FileIndexer(path=path, db=build.main_db)
+    @pytest.fixture
+    def return_iter_config(self):
+        """why? this loads db using BuildRS and writes to sheet"""
+        figure = Figuration(path=Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/fcvl_test/thru_end_june_2022'), pytest=True)
+        path, full_sheet, build, service, ms = figure.return_configuration()
+        findexer = FileIndexer(path=path, db=build.main_db.database)
+        yield path, full_sheet, build, service, ms, findexer
 
-    #     return path, full_sheet, build, service, ms, findexer
+    def test_db_reset(self, populate, return_base_config):
+        path, full_sheet, build, service, ms, findexer = return_base_config
+        create_tables_list1 = populate.return_tables_list()
+        build.main_db.drop_tables(models=create_tables_list1)
+        assert build.main_db.get_tables() == []
 
-    # @pytest.fixture
-    # def return_test_config_incr1(self):
-    #     path = Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/iter_build_second')
-    #     full_sheet = Config.TEST_RS
-    #     build = IterRS(path=path, full_sheet=full_sheet, main_db=Config.TEST_DB)
-    #     service = oauth(Config.my_scopes, 'sheet', mode='testing')
-    #     ms = MonthSheet(full_sheet=full_sheet, path=path, mode='testing', test_service=service)
-    #     findexer = FileIndexer(path=path, db=build.main_db)
-
-    #     return path, full_sheet, build, service, ms, findexer
-
-    # def test_db_reset(self, return_test_config_init):
-    #     path, full_sheet, build, service, ms, findexer = return_test_config_init
-    #     populate = PopulateTable()
-    #     create_tables_list1 = populate.return_tables_list()
-    #     build.main_db.drop_tables(models=create_tables_list1)
-    #     assert build.main_db.get_tables() == []
+    def test_rs_reset(self, return_base_config):
+        path, full_sheet, build, service, ms, findexer = return_base_config
+        """test for ANY sheets before reset"""
+        ms.reset_spreadsheet()
 
     def test_load_init_db_state(self, return_base_config):
-        path, full_sheet, build, service, ms, findexer = return_base_config
-        build.incremental_load()  
+        path, full_sheet, build, service, ms, findexer = return_base_config # uses BuildRS not IterRS
+        build.build_db_from_scratch(write=True)  # this should write to rs
     
     def test_after_jan_load(self, populate, return_base_config):
         """
@@ -92,7 +82,8 @@ class TestFileIndexerIncr:
         jan_so_state = [row for row in StatusObject.select().
             where(
                 (StatusObject.opcash_processed==1) &
-                (StatusObject.tenant_reconciled==1)
+                (StatusObject.tenant_reconciled==1) &
+                (StatusObject.rs_reconciled==1)
             ).
             namedtuples()]
 
@@ -110,8 +101,14 @@ class TestFileIndexerIncr:
 
         assert len(remainder_so_state) > 8
 
-    def after_jan_write(self):
+    def test_after_jan_write(self):
+        """do I want to do any checking of actual sheet with calls??"""
+    
+    def test_jan_through_june_load_and_write(self, return_iter_config):
+        path, full_sheet, iterb, service, ms, findexer = return_iter_config
         breakpoint()
+        iterb.incremental_load()
+        
 
     '''
     def test_process_files_step_one(self):

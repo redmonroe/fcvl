@@ -8,7 +8,7 @@ from setup_month import MonthSheet
 
 class IterRS(BuildRS):
 
-    def __init__(self, full_sheet=None, path=None, mode=None, test_service=None):
+    def __init__(self, full_sheet=None, path=None, mode=None, test_service=None, pytest=None):
 
         self.main_db = db # connects backend.db to Config
         if mode == 'testing':
@@ -30,9 +30,13 @@ class IterRS(BuildRS):
         self.populate = PopulateTable()
         self.ms = MonthSheet(full_sheet=self.full_sheet, path=self.path)
         self.findex = FileIndexer(path=self.path, db=self.main_db)
+        self.pytest = pytest
+
+    def __repr__(self):
+        return f'{self.__class__.__name__} object path: {self.path} write sheet: {self.full_sheet} service:{self.service}'
 
     def incremental_load(self):
-        print('attempting incremental load')
+        print('...attempting incremental load')
 
         """
         NEXT UP: 
@@ -49,7 +53,7 @@ class IterRS(BuildRS):
         player = ProcessingLayer(service=self.service, full_sheet=self.full_sheet, ms=self.ms)
 
         populate = self.setup_tables(mode='create_only')
-        new_files, unfinalized_months, final_not_written = self.findex.incremental_filer()
+        new_files, unfinalized_months, final_not_written = self.findex.incremental_filer(pytest=self.pytest)
 
         if final_not_written != []:
             print('writing remaining months to rs & marking to statusobject table')
