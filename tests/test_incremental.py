@@ -43,6 +43,14 @@ class TestFileIndexerIncr:
         findexer = FileIndexer(path=path, db=build.main_db.database)
         yield path, full_sheet, build, service, ms, findexer
 
+    @pytest.fixture
+    def return_iter_config2(self):
+        """why? this loads db using BuildRS and writes to sheet"""
+        figure = Figuration(path=Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/fcvl_test/thru_mid_oct_2022'), pytest=True)
+        path, full_sheet, build, service, ms = figure.return_configuration()
+        findexer = FileIndexer(path=path, db=build.main_db.database)
+        yield path, full_sheet, build, service, ms, findexer
+
     def test_db_reset(self, populate, return_base_config):
         path, full_sheet, build, service, ms, findexer = return_base_config
         create_tables_list1 = populate.return_tables_list()
@@ -104,9 +112,12 @@ class TestFileIndexerIncr:
     def test_after_jan_write(self):
         """do I want to do any checking of actual sheet with calls??"""
     
-    def test_jan_through_june_load_and_write(self, return_iter_config):
+    def test_jan_through_june_iter_load_and_write(self, return_iter_config):
         path, full_sheet, iterb, service, ms, findexer = return_iter_config
-        # breakpoint()
+        iterb.incremental_load()
+
+    def test_jan_through_101822_iter_load_and_write(self, return_iter_config2):
+        path, full_sheet, iterb, service, ms, findexer = return_iter_config2
         iterb.incremental_load()
         
 
