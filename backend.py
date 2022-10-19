@@ -953,7 +953,11 @@ class PopulateTable(QueryHC):
         return [row for row in nt_list if row.name != keyword]
     
     def grand_total(self, df):
-        return sum(df['amount'].astype(float).tolist())
+        amounts = df['amount'].tolist()
+        amounts = [str(amount).replace(',', '') for amount in amounts]
+        amounts = sum([float(amount) for amount in amounts])
+
+        return amounts 
 
     def return_and_remove_ntp(self, df, col=None, remove_str=None, drop_col=None):
         ntp_item = df.loc[df[col] == remove_str]

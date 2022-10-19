@@ -337,6 +337,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
                     deposits = [item for item in deposits if isinstance(item, str)]
                     deposits =  deposits[:-1]
                     deposits =  deposits[1:]
+                    deposits = [deposit.replace(',', '') for deposit in deposits]
                     deposits = str(sum([float(item) for item in deposits]))
                     find_change = Findexer.get(Findexer.doc_id==doc_id)
                     find_change.depsum = deposits    
