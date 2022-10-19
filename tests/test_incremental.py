@@ -51,6 +51,14 @@ class TestFileIndexerIncr:
         findexer = FileIndexer(path=path, db=build.main_db.database)
         yield path, full_sheet, build, service, ms, findexer
 
+    @pytest.fixture
+    def return_no_scrape_config(self):
+        """why? this loads db using BuildRS and writes to sheet"""
+        figure = Figuration(path=Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/fcvl_test/no_scrape_thru_sept'), pytest=True)
+        path, full_sheet, build, service, ms = figure.return_configuration()
+        findexer = FileIndexer(path=path, db=build.main_db.database)
+        yield path, full_sheet, build, service, ms, findexer
+
     def test_db_reset(self, populate, return_base_config):
         path, full_sheet, build, service, ms, findexer = return_base_config
         create_tables_list1 = populate.return_tables_list()
@@ -120,6 +128,37 @@ class TestFileIndexerIncr:
         path, full_sheet, iterb, service, ms, findexer = return_iter_config2
         iterb.incremental_load()
         
+    """
+    DO TEST STUFF HERE
+    
+    
+    
+    
+    
+    
+    
+    """
+    def test_db_reset(self, populate, return_base_config):
+        path, full_sheet, build, service, ms, findexer = return_base_config
+        create_tables_list1 = populate.return_tables_list()
+        build.main_db.drop_tables(models=create_tables_list1)
+        assert build.main_db.get_tables() == []
+
+    def test_rs_reset(self, return_base_config):
+        path, full_sheet, build, service, ms, findexer = return_base_config
+        """test for ANY sheets before reset"""
+        ms.reset_spreadsheet()
+
+    def test_load_init_db_state(self, return_base_config):
+        path, full_sheet, build, service, ms, findexer = return_base_config # uses BuildRS not IterRS
+        build.build_db_from_scratch(write=True)  # this should write to rs
+
+    def test_no_scrape_load_and_write(self, return_no_scrape_config):
+        print('no scrape load and write')
+        path, full_sheet, iterb, service, ms, findexer = return_no_scrape_config
+        iterb.incremental_load()
+    
+    """NO SCRAPE TESTING BELOW"""
 
     '''
     def test_process_files_step_one(self):
