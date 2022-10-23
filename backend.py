@@ -18,6 +18,7 @@ from dateutil.relativedelta import relativedelta
 from numpy import nan
 from peewee import *
 from peewee import IntegrityError as PIE
+from peewee import DoesNotExist as DNE
 from peewee import JOIN, fn
 from recordtype import \
     recordtype  # i edit the source code here, so requirements won't work if this is ever published, after 3.10, collection.abc change
@@ -304,7 +305,6 @@ class QueryHC(Reconciler):
 
     def get_all_status_objects(self):
         return [row for row in StatusObject.select().namedtuples()]
-
 
     def get_all_findexer_by_type(self, type1=None):
         rows = [(row.fn, row.period) for row in Findexer.select().where(Findexer.doc_type == type1).namedtuples()]
@@ -1059,14 +1059,16 @@ class PopulateTable(QueryHC):
                     tenant.active = False
                     tenant.move_out_date = date
                     tenant.save()
+                except (ValueError, IndexError, DNE) as e:
+                    breakpoint()
 
+                try:
                     unit = Unit.get(Unit.tenant==name)
                     unit.status = 'vacant'
                     unit.tenant = 'vacant'
                     unit.save()
-                except ValueError as e:
-                    breakpoint()
-
+                except (ValueError, IndexError, DNE) as e:
+                    print(f'error deactivating unit for {name}')
 
     def transfer_opcash_to_db(self):
         """this function is repsonsible for moving information unpacked into findexer table into OpCash and OpCashDetail tables"""

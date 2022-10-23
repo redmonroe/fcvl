@@ -22,59 +22,44 @@ from cli import Figuration
 
 class TestFileIndexerIncr:
 
+    base_path = '/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/fcvl_test/thru_march_2022'
+    iter1_path = '/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/fcvl_test/thru_end_june_2022'
+    iter2_path = '/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/fcvl_test/thru_mid_oct_2022'
+
     @pytest.fixture
     def populate(self):
         populate = PopulateTable()
         return populate
 
-    @pytest.fixture
-    def return_base_config(self):
-        """why? this loads db using BuildRS and writes to sheet"""
-        figure = Figuration(method='build', path=Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/fcvl_test/thru_march_2022'))
+    def return_generic_config(self, configured_path=None):
+        figure = Figuration(method='build', path=Path(configured_path), pytest=True)
         path, full_sheet, build, service, ms = figure.return_configuration()
         findexer = FileIndexer(path=path, db=build.main_db.database)
-        yield path, full_sheet, build, service, ms, findexer
+        return path, full_sheet, build, service, ms, findexer
 
-    @pytest.fixture
-    def return_iter_config(self):
-        """why? this loads db using BuildRS and writes to sheet"""
-        figure = Figuration(path=Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/fcvl_test/thru_end_june_2022'), pytest=True)
-        path, full_sheet, build, service, ms = figure.return_configuration()
-        findexer = FileIndexer(path=path, db=build.main_db.database)
-        yield path, full_sheet, build, service, ms, findexer
-
-    @pytest.fixture
-    def return_iter_config2(self):
-        """why? this loads db using BuildRS and writes to sheet"""
-        figure = Figuration(path=Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/fcvl_test/thru_mid_oct_2022'), pytest=True)
-        path, full_sheet, build, service, ms = figure.return_configuration()
-        findexer = FileIndexer(path=path, db=build.main_db.database)
-        yield path, full_sheet, build, service, ms, findexer
-
-    @pytest.fixture
-    def return_no_scrape_config(self):
-        """why? this loads db using BuildRS and writes to sheet"""
-        figure = Figuration(path=Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/fcvl_test/no_scrape_thru_sept'), pytest=True)
-        path, full_sheet, build, service, ms = figure.return_configuration()
-        findexer = FileIndexer(path=path, db=build.main_db.database)
-        yield path, full_sheet, build, service, ms, findexer
-
-    def test_db_reset(self, populate, return_base_config):
-        path, full_sheet, build, service, ms, findexer = return_base_config
+    def test_db_reset1(self, populate):
+        path, full_sheet, build, service, ms, findexer = self.return_generic_config(configured_path=self.base_path)  
         create_tables_list1 = populate.return_tables_list()
         build.main_db.drop_tables(models=create_tables_list1)
         assert build.main_db.get_tables() == []
 
-    def test_rs_reset(self, return_base_config):
-        path, full_sheet, build, service, ms, findexer = return_base_config
+    def test_rs_reset1(self):
+        path, full_sheet, build, service, ms, findexer = self.return_generic_config(configured_path=self.base_path)  
         """test for ANY sheets before reset"""
         ms.reset_spreadsheet()
 
-    def test_load_init_db_state(self, return_base_config):
-        path, full_sheet, build, service, ms, findexer = return_base_config # uses BuildRS not IterRS
+    def test_load_init_db_state1(self, return_generic_config):
+        path, full_sheet, build, service, ms, findexer = self.return_generic_config(configured_path=self.base_path)   # uses BuildRS not IterRS
         build.build_db_from_scratch(write=True)  # this should write to rs
+        breakpoint()
+
+    '''
+    # def test_where_are_we(self):
+    #     print('test_where_are_we() !!!')
+    #     breakpoint()
     
-    def test_after_jan_load(self, populate, return_base_config):
+    def test_after_jan_load(self, populate, return_generic_config):
+        print('test_after_jan_load() hiiii')
         """
         doesn't need to be high engineering here: just
         compare the number of files to number of entries
@@ -90,7 +75,7 @@ class TestFileIndexerIncr:
         r_rows = populate.get_all_findexer_by_type(type1='rent')
         assert len(r_rows) == 3
         
-        path, full_sheet, build, service, ms, findexer = return_base_config
+        path, full_sheet, build, service, ms, findexer = return_base_config(path=base_config_path)
         files = [fn for fn in path.iterdir()]
         assert len(files) == 11 # 3 files + beg balances + desktop.ini
 
@@ -116,18 +101,19 @@ class TestFileIndexerIncr:
             namedtuples()]
 
         assert len(remainder_so_state) > 6
-
-    def test_after_jan_write(self):
-        """do I want to do any checking of actual sheet with calls??"""
+        breakpoint()
     
     def test_jan_through_june_iter_load_and_write(self, return_iter_config):
+        print('3, 4, 5 already exist, should just write 4, 5, 6')
         path, full_sheet, iterb, service, ms, findexer = return_iter_config
         iterb.incremental_load()
 
     def test_jan_through_101822_iter_load_and_write(self, return_iter_config2):
+        print('should be doing 7, 8, 9, and 10')
         path, full_sheet, iterb, service, ms, findexer = return_iter_config2
         iterb.incremental_load()
         
+    '''
     """
     DO TEST STUFF HERE
     
@@ -138,27 +124,41 @@ class TestFileIndexerIncr:
     
     
     """
-    def test_db_reset(self, populate, return_base_config):
+    '''
+    def test_db_reset2(self, populate, return_base_config):
         path, full_sheet, build, service, ms, findexer = return_base_config
         create_tables_list1 = populate.return_tables_list()
         build.main_db.drop_tables(models=create_tables_list1)
         assert build.main_db.get_tables() == []
 
-    def test_rs_reset(self, return_base_config):
+    def test_rs_reset2(self, return_base_config):
         path, full_sheet, build, service, ms, findexer = return_base_config
-        """test for ANY sheets before reset"""
         ms.reset_spreadsheet()
-
-    def test_load_init_db_state(self, return_base_config):
+    def test_load_init_db_state2(self, return_base_config):
+        print('SETUP ROUND 2 BUILDING DB FROM SCRATCH(write=True')
         path, full_sheet, build, service, ms, findexer = return_base_config # uses BuildRS not IterRS
         build.build_db_from_scratch(write=True)  # this should write to rs
+    '''
 
-    def test_no_scrape_load_and_write(self, return_no_scrape_config):
-        print('no scrape load and write')
-        path, full_sheet, iterb, service, ms, findexer = return_no_scrape_config
-        iterb.incremental_load()
+    # def test_no_scrape_load_and_write(self, return_no_scrape_config):
+    #     print('no scrape load and write')
+    #     path, full_sheet, iterb, service, ms, findexer = return_no_scrape_config
+    #     iterb.incremental_load()
     
     """NO SCRAPE TESTING BELOW"""
+    '''
+    def test_db_reset3(self, populate, return_base_config):
+        path, full_sheet, build, service, ms, findexer = return_base_config
+        create_tables_list1 = populate.return_tables_list()
+        build.main_db.drop_tables(models=create_tables_list1)
+        assert build.main_db.get_tables() == []
+
+    def test_rs_reset3(self, return_base_config):
+        path, full_sheet, build, service, ms, findexer = return_base_config
+        ms.reset_spreadsheet()
+    '''
+
+
 
     '''
     def test_process_files_step_one(self):

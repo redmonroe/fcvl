@@ -141,8 +141,11 @@ class BuildRS(MonthSheet):
                 if typ == 'scrape':
                     scrape_txn_list = findex.load_directed_scrape(path_to_scrape=data[1], target_date=data[0])
                     scrape_deposit_sum = sum([float(item['amount']) for item in scrape_txn_list if item['dep_type'] == 'deposit'])
-
+                    # try:
                     assert scrape_deposit_sum == grand_total
+                    # except AssertionError as e:
+                        # print(e)
+                        # breakpoint()
                     target_status_object = [item for item in StatusObject().select().where(StatusObject.month==data[0])][0]
                     target_status_object.scrape_reconciled = True
                     target_status_object.save() 

@@ -8,7 +8,7 @@ from peewee import *
 
 from annual_financials import AnnFin
 from auth_work import oauth
-from backend import PopulateTable, ProcessingLayer, QueryHC, StatusRS, db
+from backend import PopulateTable, ProcessingLayer, QueryHC, StatusRS, db, Unit
 from build_rs import BuildRS
 from config import Config
 from db_utils import DBUtils
@@ -223,6 +223,12 @@ def sqlite_dump():
     DBUtils.dump_sqlite(path_to_existing_db=Config.sqlite_test_db_path, path_to_backup=Config.sqlite_dump_path)
 
 @click.command()
+def addresses():
+    click.echo('generating addresses')
+    units = [(row.unit_name, row.tenant, row.last_occupied) for row in Unit.select().namedtuples()]
+    breakpoint()
+
+@click.command()
 def balanceletters():
     click.echo('balance letters')
     letters = Letters()
@@ -276,6 +282,7 @@ cli.add_command(write_all_prod)
 cli.add_command(load_db_test)
 cli.add_command(load_db_prod)
 cli.add_command(sqlite_dump)
+cli.add_command(addresses)
 cli.add_command(balanceletters)
 cli.add_command(workorders)
 cli.add_command(recvactuals)
