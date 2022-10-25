@@ -26,18 +26,27 @@ class Letters():
 
     def get_addresses(self):
         from backend import QueryHC, Unit
-        # self.setup_tables(mode='create_only')
-        # units = [(row.unit_name, row.tenant, row.last_occupied) for row in Unit.select().namedtuples()]
-        # if units == None:
-            # breakpoint()
+        from pprint import pprint
+        self.setup_tables(mode='create_only')
+        units = [(row.unit_name, row.tenant, row.last_occupied) for row in Unit.select().namedtuples()]
 
-        for unit in Config.units:
-            if unit.split('-')[0] == 'CD':
-                address = Config.ADDRESS_CD
-                print(address)
-            elif unit.split('-')[0] == 'PT':
-                address = Config.ADDRESS_PT
-                print(address)
+        if units == []:
+            print('Units table is empty')
+            exit
+        else:
+
+            # fix names
+            # try except error if Units table is empty
+
+            pprint([unit for unit in units])
+            breakpoint()
+            for unit in Config.units:
+                if unit.split('-')[0] == 'CD':
+                    address = Config.ADDRESS_CD
+                    print(address)
+                elif unit.split('-')[0] == 'PT':
+                    address = Config.ADDRESS_PT
+                    print(address)
 
     def get_doc_title(self, doc, service_docs): #doc is DOCS_FILE_ID
         document = service_docs.documents().get(documentId=doc).execute()
