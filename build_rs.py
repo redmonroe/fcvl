@@ -67,7 +67,7 @@ class BuildRS(MonthSheet):
         if kw.get('write') == True:
             player.find_complete_pw_months_and_iter_write( writeable_months=writeable_months)
         else:
-            print('you have selected to bypass writing to RS.')
+            print('you have selected to bypass writing to RS(self.write=False if coming from tests).')
             print('if you would like to write to rent spreadsheet enable "write" flag')
 
         '''this method of searching for incomplete months is useless if we are already automatically putting corr amounts etc into findexer; they will be always be available there if exist'''
