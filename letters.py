@@ -24,6 +24,16 @@ class Letters():
             self.main_db.create_tables(self.create_tables_list1)
         return populate
 
+    def fix_name(self, unit, address_boilerplate=None):
+        unit_no = unit[0]
+        name = unit[1].split(',')
+        name = [n.rstrip().lstrip().capitalize() for n in name]
+        name = (' ').join(name[::-1])
+        address = address_boilerplate
+        address.insert(1, unit_no)
+        address.insert(0, name)
+        return address
+    
     def get_addresses(self):
         from backend import QueryHC, Unit
         from pprint import pprint
@@ -38,15 +48,15 @@ class Letters():
             # fix names
             # try except error if Units table is empty
 
-            pprint([unit for unit in units])
+            # pprint([unit for unit in units])
+            addresses = []
+            for unit in units:
+                if unit[0].split('-')[0] == 'CD':
+                    addresses.append(self.fix_name(unit, address_boilerplate=Config.ADDRESS_CD))
+                elif unit[0].split('-')[0] == 'PT':
+                    addresses.append(self.fix_name(unit, address_boilerplate=Config.ADDRESS_PT))
+        
             breakpoint()
-            for unit in Config.units:
-                if unit.split('-')[0] == 'CD':
-                    address = Config.ADDRESS_CD
-                    print(address)
-                elif unit.split('-')[0] == 'PT':
-                    address = Config.ADDRESS_PT
-                    print(address)
 
     def get_doc_title(self, doc, service_docs): #doc is DOCS_FILE_ID
         document = service_docs.documents().get(documentId=doc).execute()
