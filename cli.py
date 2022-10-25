@@ -73,23 +73,6 @@ def return_test_config_incr1():
     path = Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/fcvl_test/iter_build_first')
     path = Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/fcvl_test/iter_build_second')
 
-# def return_test_config_iter():
-#     path = Config.TEST_PATH
-#     full_sheet = Config.TEST_RS
-#     iterb = IterRS(path=path, full_sheet=full_sheet, main_db=Config.TEST_DB)
-#     service = oauth(Config.my_scopes, 'sheet', mode='testing')
-#     ms = MonthSheet(full_sheet=full_sheet, path=path, mode='testing', test_service=service)
-
-#     return path, full_sheet, iterb, service, ms
-
-# def return_prod_config():
-#     path = Config.PROD_PATH
-#     sheet = Config.PROD_RS
-#     build = BuildRS(path=path, full_sheet=sheet)
-#     service = oauth(Config.my_scopes, 'sheet')
-#     ms = MonthSheet(full_sheet=sheet, path=path)
-#     return path, sheet, build, service, ms
-
 def set_db(build=None):
     """this should not DROP tables"""
     populate = PopulateTable()
@@ -225,8 +208,10 @@ def sqlite_dump():
 @click.command()
 def addresses():
     click.echo('generating addresses')
-    units = [(row.unit_name, row.tenant, row.last_occupied) for row in Unit.select().namedtuples()]
-    breakpoint()
+    figure = Figuration()
+    path, full_sheet, build, service, ms = figure.return_configuration()
+    letters = Letters(db=build.main_db)
+    letters.get_addresses()
 
 @click.command()
 def balanceletters():

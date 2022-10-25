@@ -6,7 +6,38 @@ from config import Config
 from utils import Utils
 
 
-class Letters(object):
+class Letters():
+
+    def __init__(self, db):
+        self.main_db = db
+
+    def setup_tables(self, mode=None):
+        from backend import PopulateTable
+        populate = PopulateTable()
+        self.create_tables_list1 = populate.return_tables_list()
+        if self.main_db.is_closed() == True:
+            self.main_db.connect()
+        if mode == 'create_only':
+            self.main_db.create_tables(self.create_tables_list1)
+        elif mode == 'drop_and_create':
+            self.main_db.drop_tables(models=self.create_tables_list1)
+            self.main_db.create_tables(self.create_tables_list1)
+        return populate
+
+    def get_addresses(self):
+        from backend import QueryHC, Unit
+        # self.setup_tables(mode='create_only')
+        # units = [(row.unit_name, row.tenant, row.last_occupied) for row in Unit.select().namedtuples()]
+        # if units == None:
+            # breakpoint()
+
+        for unit in Config.units:
+            if unit.split('-')[0] == 'CD':
+                address = Config.ADDRESS_CD
+                print(address)
+            elif unit.split('-')[0] == 'PT':
+                address = Config.ADDRESS_PT
+                print(address)
 
     def get_doc_title(self, doc, service_docs): #doc is DOCS_FILE_ID
         document = service_docs.documents().get(documentId=doc).execute()

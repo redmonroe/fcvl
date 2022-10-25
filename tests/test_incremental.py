@@ -44,7 +44,6 @@ class TestFileIndexerIncr:
             namedtuples()]
         return jan_state
         
-
     def return_generic_config(self, type1=None, configured_path=None):
         if type1 == 'iter':
             figure = Figuration(path=Path(configured_path), pytest=True)
