@@ -1,4 +1,5 @@
 from datetime import datetime
+from pathlib import Path
 from pprint import pprint
 
 from docx import Document
@@ -10,7 +11,7 @@ from utils import Utils
 
 class Letters():
 
-    def __init__(self, db):
+    def __init__(self, db=None):
         self.main_db = db
 
     def setup_tables(self, mode=None):
@@ -295,8 +296,19 @@ class Letters():
     
 class DocxWriter(Letters):
 
+    default_save_path = Config.TEST_DOCX_BASE
+    default_save_name = 'demo.docx'
+
     def sample_func(self):
         print('hi from docx')
+        document = Document()
+
+        document.add_heading('Document Title', 0)
+
+        save_path = self.default_save_path / Path(self.default_save_name)
+        # breakpoint()
+
+        document.save(save_path)
 
 
 
