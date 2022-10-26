@@ -3,6 +3,9 @@ from pathlib import Path
 from pprint import pprint
 
 from docx import Document
+from docx.oxml.ns import qn
+from docx.oxml.shared import OxmlElement
+from docx.shared import Inches
 
 from auth_work import oauth
 from config import Config
@@ -290,23 +293,64 @@ class DocxWriter(Letters):
 
     def __init__(self, db=None):
         self.main_db = db
+        self.header_indent = 4
+
+    def insertHR(self, paragraph):
+        p = paragraph._p  # p is the <w:p> XML element
+        pPr = p.get_or_add_pPr()
+        pBdr = OxmlElement('w:pBdr')
+        pPr.insert_element_before(pBdr,
+            'w:shd', 'w:tabs', 'w:suppressAutoHyphens', 'w:kinsoku', 'w:wordWrap',
+            'w:overflowPunct', 'w:topLinePunct', 'w:autoSpaceDE', 'w:autoSpaceDN',
+            'w:bidi', 'w:adjustRightInd', 'w:snapToGrid', 'w:spacing', 'w:ind',
+            'w:contextualSpacing', 'w:mirrorIndents', 'w:suppressOverlap', 'w:jc',
+            'w:textDirection', 'w:textAlignment', 'w:textboxTightWrap',
+            'w:outlineLvl', 'w:divId', 'w:cnfStyle', 'w:rPr', 'w:sectPr',
+            'w:pPrChange'
+        )
+        bottom = OxmlElement('w:bottom')
+        bottom.set(qn('w:val'), 'single')
+        bottom.set(qn('w:sz'), '6')
+        bottom.set(qn('w:space'), '1')
+        bottom.set(qn('w:color'), 'auto')
+        pBdr.append(bottom)
+
+    def insert_header(self, document=None):
+        paragraph = document.add_paragraph('Fall Creek Village I', style='No Spacing')
+        paragraph.paragraph_format.left_indent = Inches(self.header_indent)
+        paragraph = document.add_paragraph('3515 N. Pennsylvania St.', style='No Spacing')
+        paragraph.paragraph_format.left_indent = Inches(self.header_indent)
+        paragraph = document.add_paragraph('Indianapolis, IN 46205', style='No Spacing')
+        paragraph.paragraph_format.left_indent = Inches(self.header_indent)
+        paragraph = document.add_paragraph('(317) 925-5558', style='No Spacing')
+        paragraph.paragraph_format.left_indent = Inches(self.header_indent)
+        paragraph = document.add_paragraph('TTY: 711 or (800) 743-3333', style='No Spacing')
+        paragraph.paragraph_format.left_indent = Inches(self.header_indent)
+        self.insertHR(paragraph)
 
     def sample_func(self):
         print('hi from docx')
         print(self.main_db)
+
         document = Document()
 
-        document.add_heading('Document Title', 0)
-
-        breakpoint()
         self.setup_tables(mode='create_only')
-        self.get_addresses()
+        addresses = self.get_addresses()
+        for address in addresses:
+            self.insert_header(document)
+            paragraph = document.add_paragraph(address, style='No Spacing')
+            document.add_page_break()
 
         save_path = self.default_save_path / Path(self.default_save_name)
         # breakpoint()
 
-        document.save(save_path)
+        try:
+            document.save(save_path)
+        except PermissionError as e:
+            print('attempting to close doc')
+            document.close()
 
+        breakpoint()
 
 
 
