@@ -9,6 +9,7 @@ from docx.shared import Inches
 
 from auth_work import oauth
 from config import Config
+from google_api_calls_abstract import GoogleApiCalls
 from utils import Utils
 
 
@@ -34,6 +35,11 @@ class Letters():
         name = unit[1].split(',')
         name = [n.rstrip().lstrip().capitalize() for n in name]
         return [(' ').join(name[::-1]), address_bp[0], unit[0], address_bp[1], address_bp[2]]
+
+    def fix_name2(self, name):
+        name = name.split(',')
+        name = [n.rstrip().lstrip().capitalize() for n in name]
+        return (' ').join(name[::-1])
    
     def get_addresses(self):
         from pprint import pprint
@@ -265,9 +271,7 @@ class Letters():
             print('exiting program')
             exit
         '''
-
-    def rent_receipts(self):
-        '''if there is an issue, check deployment id'''            
+    def rent_receipts_configuration(self):
         titles_dict = Utils.get_existing_sheets(oauth(Config.my_scopes, 'sheet'), Config.TEST_RS)
         idx_list = Utils.existing_ids({name:id2 for name, id2 in titles_dict.items() if name != 'intake'})
         sheet_choice = idx_list[int(input('Please select a sheet to make receipts from: '))]
@@ -277,6 +281,13 @@ class Letters():
         'sheet_choice': sheet_choice[1][0], 
         'rent_sheet': Config.TEST_RS, 
         }
+
+        return parameters
+    
+    def rent_receipts(self):
+        '''if there is an issue, check deployment id'''  
+
+        parameters = self.rent_receipts_configuration()          
 
         pprint(parameters)
         choice = str(input('Send these results to google script & make receipts? y/n '))
@@ -291,9 +302,16 @@ class DocxWriter(Letters):
     default_save_path = Config.TEST_DOCX_BASE
     default_save_name = 'demo.docx'
 
-    def __init__(self, db=None):
+    def __init__(self, db=None, service=None, ms=None):
         self.main_db = db
+        self.service = service
+        self.ms = ms
         self.header_indent = 4
+
+    def load_from_sheet(self, *args, **kwargs):
+        gc = GoogleApiCalls()
+        range1 = args[0] + '!b2:k68'
+        return gc.broad_get(service=self.service, spreadsheet_id=args[1], range=range1 )
 
     def insertHR(self, paragraph):
         p = paragraph._p  # p is the <w:p> XML element
@@ -329,16 +347,30 @@ class DocxWriter(Letters):
         paragraph = document.add_paragraph('                                                                                                                                               ')
         self.insertHR(paragraph)
 
-    def sample_func(self):
-        print('hi from docx')
-        print(self.main_db)
+    def first_attempt_docx_rent_receipts_from_rent_sheet(self):
+        print('docx rent rent receipts directly from rent sheets')
 
-        document = Document()
 
+        ### NEED TO LOAD & MATCH NAMES FROM SHEET INTO parameters
+        parameters = self.rent_receipts_configuration()
+        # parameters = {'current_date': '2022-10-26', 'display_month': 'Sept_x', 'sheet_choice': '2022-09', 'rent_sheet': '1Z_Qoz-4ehalutipyH2Vj5k-y2b78U69Bc7uXoBKK47Q'}
+        rs_data = self.load_from_sheet(parameters['sheet_choice'], parameters['rent_sheet'])
+
+        rs_name_pay = [(self.fix_name2(row[0]), row[9]) for row in rs_data]
+        
         self.setup_tables(mode='create_only')
         addresses = self.get_addresses()
-        for address in addresses:
+        document = Document()
+        r_recs = []
+        for name, pay in rs_name_pay:
+            for address in addresses:
+                if name == address[0]:
+                    r_recs.append([address[0], address[1], address[2], address[3], address[4], pay])
+    
+        for address in r_recs:
             self.insert_header(document)
+            paragraph = document.add_paragraph('Date: ' + parameters['current_date'], style='No Spacing')
+            paragraph = document.add_paragraph(' ', style='No Spacing')
             paragraph = document.add_paragraph(address[0], style='No Spacing')
             paragraph = document.add_paragraph(address[1], style='No Spacing')
             paragraph = document.add_paragraph(address[2], style='No Spacing')
@@ -348,17 +380,18 @@ class DocxWriter(Letters):
             paragraph = document.add_paragraph(f'Dear {address[0]},', style='No Spacing')
             paragraph = document.add_paragraph(' ', style='No Spacing')
             paragraph = document.add_paragraph(' ', style='No Spacing')
-            paragraph = document.add_paragraph('Thank you for your rent payment for { display_month } 2022', style='No Spacing')
-            paragraph = document.add_paragraph('Our records show that you paid: $ {pay} ', style='No Spacing')
+            paragraph = document.add_paragraph('Thank you for your rent payment for:' + parameters['display_month'] + Config.current_year + '.', style='No Spacing')
+            paragraph = document.add_paragraph('Our records show that you paid: $' +  address[5] + '.', style='No Spacing')
 
             paragraph = document.add_paragraph(' ', style='No Spacing')
             paragraph = document.add_paragraph(' ', style='No Spacing')
-            paragraph = document.add_paragraph('generated: { current_date } ', style='No Spacing')
+            paragraph = document.add_paragraph(' ', style='No Spacing')
+            paragraph = document.add_paragraph(' ', style='No Spacing')
+            paragraph = document.add_paragraph('generated: ' +  parameters['current_date'], style='No Spacing')
 
             document.add_page_break()
 
         save_path = self.default_save_path / Path(self.default_save_name)
-        # breakpoint()
 
         try:
             document.save(save_path)

@@ -211,8 +211,8 @@ def docx_letters():
     from letters import DocxWriter
     figure = Figuration()
     path, full_sheet, build, service, ms = figure.return_configuration()
-    docx = DocxWriter(db=build.main_db)
-    docx.sample_func()
+    docx = DocxWriter(db=build.main_db, service=service, ms=ms)
+    docx.first_attempt_docx_rent_receipts_from_rent_sheet()
 
 @click.command()
 def addresses():
