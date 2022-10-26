@@ -206,6 +206,13 @@ def sqlite_dump():
     DBUtils.dump_sqlite(path_to_existing_db=Config.sqlite_test_db_path, path_to_backup=Config.sqlite_dump_path)
 
 @click.command()
+def docx_letters():
+    click.echo('SAMMPLE DOCX TESTING')
+    from letters import DocxWriter
+    docx = DocxWriter()
+    docx.sample_func()
+
+@click.command()
 def addresses():
     click.echo('generating addresses')
     figure = Figuration()
@@ -255,6 +262,7 @@ def status_findexer_test():
     path, full_sheet, build, service, ms = return_test_config()
     player = ProcessingLayer()
     player.show_status_table(path=path, db=db)
+
 
 cli.add_command(escrow)
 cli.add_command(receipts)

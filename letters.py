@@ -1,6 +1,8 @@
 from datetime import datetime
 from pprint import pprint
 
+from docx import Document
+
 from auth_work import oauth
 from config import Config
 from utils import Utils
@@ -35,8 +37,9 @@ class Letters():
         return address
     
     def get_addresses(self):
-        from backend import QueryHC, Unit
         from pprint import pprint
+
+        from backend import QueryHC, Unit
         self.setup_tables(mode='create_only')
         units = [(row.unit_name, row.tenant, row.last_occupied) for row in Unit.select().namedtuples()]
 
@@ -290,5 +293,10 @@ class Letters():
             print('exiting program')
             exit
     
+class DocxWriter(Letters):
+
+    def sample_func(self):
+        print('hi from docx')
+
 
 
