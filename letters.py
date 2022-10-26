@@ -326,6 +326,7 @@ class DocxWriter(Letters):
         paragraph.paragraph_format.left_indent = Inches(self.header_indent)
         paragraph = document.add_paragraph('TTY: 711 or (800) 743-3333', style='No Spacing')
         paragraph.paragraph_format.left_indent = Inches(self.header_indent)
+        paragraph = document.add_paragraph('                                                                                                                                               ')
         self.insertHR(paragraph)
 
     def sample_func(self):
@@ -338,7 +339,22 @@ class DocxWriter(Letters):
         addresses = self.get_addresses()
         for address in addresses:
             self.insert_header(document)
-            paragraph = document.add_paragraph(address, style='No Spacing')
+            paragraph = document.add_paragraph(address[0], style='No Spacing')
+            paragraph = document.add_paragraph(address[1], style='No Spacing')
+            paragraph = document.add_paragraph(address[2], style='No Spacing')
+            city_and_state = address[3] + ' ' + address[4]
+            paragraph = document.add_paragraph(city_and_state, style='No Spacing')
+            paragraph = document.add_paragraph(' ', style='No Spacing')
+            paragraph = document.add_paragraph(f'Dear {address[0]},', style='No Spacing')
+            paragraph = document.add_paragraph(' ', style='No Spacing')
+            paragraph = document.add_paragraph(' ', style='No Spacing')
+            paragraph = document.add_paragraph('Thank you for your rent payment for { display_month } 2022', style='No Spacing')
+            paragraph = document.add_paragraph('Our records show that you paid: $ {pay} ', style='No Spacing')
+
+            paragraph = document.add_paragraph(' ', style='No Spacing')
+            paragraph = document.add_paragraph(' ', style='No Spacing')
+            paragraph = document.add_paragraph('generated: { current_date } ', style='No Spacing')
+
             document.add_page_break()
 
         save_path = self.default_save_path / Path(self.default_save_name)

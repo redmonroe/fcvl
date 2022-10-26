@@ -53,6 +53,8 @@ class BuildRS(MonthSheet):
         Damages.load_damages()
         self.populate.transfer_opcash_to_db() # PROCESSED OPCASHES MOVED INTO DB
 
+        '''BUILD ADDRESSES HERE; MOVE IT OUT OF LETTERS'''
+
         all_months_ytd, report_list, most_recent_status = player.write_to_statusrs_wrapper()
 
         """this is the critical control function"""
@@ -69,29 +71,6 @@ class BuildRS(MonthSheet):
         else:
             print('you have selected to bypass writing to RS(self.write=False if coming from tests).')
             print('if you would like to write to rent spreadsheet enable "write" flag')
-
-        '''this method of searching for incomplete months is useless if we are already automatically putting corr amounts etc into findexer; they will be always be available there if exist'''
-        # if incomplete_month_bool:
-        #     choice = input(f'\nWould you like to import mid-month report from bank for {incomplete_month_bool[0]} ? Y/n (NOTE: YOU MUST CHOOSE Y IF THIS EVENT FIRES ELSE, SCRAPE WILL NOT BE MARKED AS PROCESSED AND WRITING WILL NOT BE ENABLES')
-        #     if choice == 'Y':
-        #         mid_month_choice = True
-        #     else:
-        #         mid_month_choice = False
-        #         print(f'you chose not to attempt to write scrape for {incomplete_month_bool[0]}')
-        #         print(f'last complete reconciliation is {most_recent_status.current_date}')
-
-        # first_incomplete_month = incomplete_month_bool[0]
-        # if mid_month_choice:
-            # did_ten_pay_reconcile = player.load_scrape_and_mark_as_processed(most_recent_status=most_recent_status, target_mid_month=first_incomplete_month)
-
-        #     if did_ten_pay_reconcile == True:
-        #         do_i_write_receipts = player.make_rent_receipts(first_incomplete_month=first_incomplete_month)
-        #         if do_i_write_receipts == True:
-        #             player.rent_receipts_wrapper()
-
-        #         do_i_write_bal_letters = player.make_balance_letters(first_incomplete_month=first_incomplete_month)
-        #         if do_i_write_bal_letters == True:
-        #             player.bal_letter_wrapper()
     
         self.main_db.close()
 
