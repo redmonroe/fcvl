@@ -27,16 +27,11 @@ class Letters():
             self.main_db.create_tables(self.create_tables_list1)
         return populate
 
-    def fix_name(self, unit, address_boilerplate=None):
-        unit_no = unit[0]
+    def fix_name(self, unit, address_bp):
         name = unit[1].split(',')
         name = [n.rstrip().lstrip().capitalize() for n in name]
-        name = (' ').join(name[::-1])
-        address = address_boilerplate
-        address.insert(1, unit_no)
-        address.insert(0, name)
-        return address
-    
+        return [(' ').join(name[::-1]), address_bp[0], unit[0], address_bp[1], address_bp[2]]
+   
     def get_addresses(self):
         from pprint import pprint
 
@@ -48,20 +43,14 @@ class Letters():
             print('Units table is empty')
             exit
         else:
-
-            # fix names
-            # try except error if Units table is empty
-
-            # pprint([unit for unit in units])
             addresses = []
             for unit in units:
                 if unit[0].split('-')[0] == 'CD':
-                    addresses.append(self.fix_name(unit, address_boilerplate=Config.ADDRESS_CD))
+                    addresses.append(self.fix_name(unit, address_bp=Config.ADDRESS_CD))
                 elif unit[0].split('-')[0] == 'PT':
-                    addresses.append(self.fix_name(unit, address_boilerplate=Config.ADDRESS_PT))
+                    addresses.append(self.fix_name(unit, address_bp=Config.ADDRESS_PT))
+        return addresses
         
-            breakpoint()
-
     def get_doc_title(self, doc, service_docs): #doc is DOCS_FILE_ID
         document = service_docs.documents().get(documentId=doc).execute()
 
@@ -299,11 +288,19 @@ class DocxWriter(Letters):
     default_save_path = Config.TEST_DOCX_BASE
     default_save_name = 'demo.docx'
 
+    def __init__(self, db=None):
+        self.main_db = db
+
     def sample_func(self):
         print('hi from docx')
+        print(self.main_db)
         document = Document()
 
         document.add_heading('Document Title', 0)
+
+        breakpoint()
+        self.setup_tables(mode='create_only')
+        self.get_addresses()
 
         save_path = self.default_save_path / Path(self.default_save_name)
         # breakpoint()
@@ -312,3 +309,5 @@ class DocxWriter(Letters):
 
 
 
+
+        breakpoint()

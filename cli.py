@@ -209,7 +209,9 @@ def sqlite_dump():
 def docx_letters():
     click.echo('SAMMPLE DOCX TESTING')
     from letters import DocxWriter
-    docx = DocxWriter()
+    figure = Figuration()
+    path, full_sheet, build, service, ms = figure.return_configuration()
+    docx = DocxWriter(db=build.main_db)
     docx.sample_func()
 
 @click.command()
