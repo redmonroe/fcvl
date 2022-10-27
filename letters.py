@@ -300,18 +300,15 @@ class Letters():
 class DocxWriter(Letters):
 
     default_save_path = Config.TEST_DOCX_BASE
-    default_save_name = 'demo.docx'
 
-    def __init__(self, db=None, service=None, ms=None):
+    def __init__(self, db=None, service=None):
         self.main_db = db
         self.service = service
-        self.ms = ms
         self.header_indent = 4
 
     def load_from_sheet(self, *args, **kwargs):
         gc = GoogleApiCalls()
-        range1 = args[0] + '!b2:k68'
-        return gc.broad_get(service=self.service, spreadsheet_id=args[1], range=range1 )
+        return gc.broad_get(service=self.service, spreadsheet_id=args[1], range=args[0] + '!b2:k68')
 
     def insertHR(self, paragraph):
         p = paragraph._p  # p is the <w:p> XML element
@@ -347,26 +344,7 @@ class DocxWriter(Letters):
         paragraph = document.add_paragraph('                                                                                                                                               ')
         self.insertHR(paragraph)
 
-    def first_attempt_docx_rent_receipts_from_rent_sheet(self):
-        print('docx rent rent receipts directly from rent sheets')
-
-
-        ### NEED TO LOAD & MATCH NAMES FROM SHEET INTO parameters
-        parameters = self.rent_receipts_configuration()
-        # parameters = {'current_date': '2022-10-26', 'display_month': 'Sept_x', 'sheet_choice': '2022-09', 'rent_sheet': '1Z_Qoz-4ehalutipyH2Vj5k-y2b78U69Bc7uXoBKK47Q'}
-        rs_data = self.load_from_sheet(parameters['sheet_choice'], parameters['rent_sheet'])
-
-        rs_name_pay = [(self.fix_name2(row[0]), row[9]) for row in rs_data]
-        
-        self.setup_tables(mode='create_only')
-        addresses = self.get_addresses()
-        document = Document()
-        r_recs = []
-        for name, pay in rs_name_pay:
-            for address in addresses:
-                if name == address[0]:
-                    r_recs.append([address[0], address[1], address[2], address[3], address[4], pay])
-    
+    def format_docx_rent_receipt(self, document=None, parameters=None, r_recs=None):
         for address in r_recs:
             self.insert_header(document)
             paragraph = document.add_paragraph('Date: ' + parameters['current_date'], style='No Spacing')
@@ -380,8 +358,9 @@ class DocxWriter(Letters):
             paragraph = document.add_paragraph(f'Dear {address[0]},', style='No Spacing')
             paragraph = document.add_paragraph(' ', style='No Spacing')
             paragraph = document.add_paragraph(' ', style='No Spacing')
-            paragraph = document.add_paragraph('Thank you for your rent payment for:' + parameters['display_month'] + Config.current_year + '.', style='No Spacing')
-            paragraph = document.add_paragraph('Our records show that you paid: $' +  address[5] + '.', style='No Spacing')
+            paragraph = document.add_paragraph('Thank you for your rent payment for ' + parameters['display_month'] + ' ' + Config.current_year + '.', style='No Spacing')
+            paragraph = document.add_paragraph(' ', style='No Spacing')
+            paragraph = document.add_paragraph('Our records show that you paid: $ ' +  address[5] + '.', style='No Spacing')
 
             paragraph = document.add_paragraph(' ', style='No Spacing')
             paragraph = document.add_paragraph(' ', style='No Spacing')
@@ -390,17 +369,29 @@ class DocxWriter(Letters):
             paragraph = document.add_paragraph('generated: ' +  parameters['current_date'], style='No Spacing')
 
             document.add_page_break()
+        return document
 
-        save_path = self.default_save_path / Path(self.default_save_name)
+    def docx_rent_receipts_from_rent_sheet(self):
+        print('docx rent rent receipts directly from rent sheets')
+        parameters = self.rent_receipts_configuration()
 
-        try:
-            document.save(save_path)
-        except PermissionError as e:
-            print('attempting to close doc')
-            document.close()
+        rs_name_pay = [(self.fix_name2(row[0]), row[9]) for row in self.load_from_sheet(parameters['sheet_choice'], parameters['rent_sheet'])]
+        
+        self.setup_tables(mode='create_only')
+        document = Document()
+        r_recs = []
+        for name, pay in rs_name_pay:
+            for address in self.get_addresses():
+                if name == address[0]:
+                    r_recs.append([address[0], address[1], address[2], address[3], address[4], pay])
+    
+        document = self.format_docx_rent_receipt(document=document, parameters=parameters, r_recs=r_recs)
 
-        breakpoint()
+        save_name = 'rent_receipts_' + parameters['current_date'] + '_' + parameters['sheet_choice'] + '.docx'
+        save_path = self.default_save_path / Path(save_name)
+
+        document.save(save_path)
+   
 
 
 
-        breakpoint()

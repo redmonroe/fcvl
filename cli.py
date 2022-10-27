@@ -8,14 +8,14 @@ from peewee import *
 
 from annual_financials import AnnFin
 from auth_work import oauth
-from backend import PopulateTable, ProcessingLayer, QueryHC, StatusRS, db, Unit
+from backend import PopulateTable, ProcessingLayer, QueryHC, StatusRS, Unit, db
 from build_rs import BuildRS
 from config import Config
 from db_utils import DBUtils
 from file_indexer import FileIndexer
 from file_manager import path_to_statements, write_hap
 from iter_rs import IterRS
-from letters import Letters
+from letters import DocxWriter, Letters
 from manual_entry import ManualEntry
 from pdf import StructDataExtract
 from records import record
@@ -207,12 +207,11 @@ def sqlite_dump():
 
 @click.command()
 def docx_letters():
-    click.echo('SAMMPLE DOCX TESTING')
-    from letters import DocxWriter
+    click.echo('writing rent receipts to docx in fcvl_output_test')
     figure = Figuration()
     path, full_sheet, build, service, ms = figure.return_configuration()
-    docx = DocxWriter(db=build.main_db, service=service, ms=ms)
-    docx.first_attempt_docx_rent_receipts_from_rent_sheet()
+    docx = DocxWriter(db=build.main_db, service=service)
+    docx.docx_rent_receipts_from_rent_sheet()
 
 @click.command()
 def addresses():
