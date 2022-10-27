@@ -270,12 +270,20 @@ def status_findexer_test():
 @click.option('--write', default='False', help='do you want to write to rs or not?')
 def test_full(write):
     click.echo('run full test suite')
+
+    """run and do not teardown testing sheet"""   
+
     if write == 'False':
         click.echo('run full test suite WITHOUT WRITE')
         no_write = pytest.main(['-s', '--write', 'False', 'tests',])
     elif write == 'True':
         click.echo('run full test suite WITH WRITE')
         write_rs = pytest.main(['-s', '--write', 'True', 'tests',])
+
+@click.command()
+def test_rent_receipts():
+    click.echo('run docx rent receipt writing')
+    no_write = pytest.main(['-s', 'tests/test_rent_receipts.py',])
 
 
 cli.add_command(escrow)
@@ -298,6 +306,7 @@ cli.add_command(incremental_build)
 cli.add_command(manentry)
 """TESTING COMMANDS"""
 cli.add_command(test_full)
+cli.add_command(test_rent_receipts)
 
 if __name__ == '__main__':
     cli()

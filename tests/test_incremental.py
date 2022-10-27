@@ -19,7 +19,6 @@ from cli import Figuration
 
 """what is different about these tests?"""
 """testing a db in motion, so we cannot simply rely on resetting"""
-"""set write to rs with 'write' option"""
 
 class TestFileIndexerIncr:
 

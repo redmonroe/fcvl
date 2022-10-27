@@ -271,9 +271,13 @@ class Letters():
             print('exiting program')
             exit
         '''
-    def rent_receipts_configuration(self):
+    def check_rs_status(self):
         titles_dict = Utils.get_existing_sheets(oauth(Config.my_scopes, 'sheet'), Config.TEST_RS)
         idx_list = Utils.existing_ids({name:id2 for name, id2 in titles_dict.items() if name != 'intake'})
+        return idx_list
+
+    def rent_receipts_configuration(self):
+        idx_list = self.check_rs_status()
         sheet_choice = idx_list[int(input('Please select a sheet to make receipts from: '))]
         parameters = {
         'current_date' : datetime.strftime(datetime.utcnow(), '%Y-%m-%d'), 
@@ -281,7 +285,6 @@ class Letters():
         'sheet_choice': sheet_choice[1][0], 
         'rent_sheet': Config.TEST_RS, 
         }
-
         return parameters
     
     def rent_receipts(self):
@@ -300,11 +303,12 @@ class Letters():
 class DocxWriter(Letters):
 
     default_save_path = Config.TEST_DOCX_BASE
+    testing_save_path = Config.PYTEST_DOCX_BASE
 
     def __init__(self, db=None, service=None):
         self.main_db = db
-        self.service = service
         self.header_indent = 4
+        self.service = service
 
     def load_from_sheet(self, *args, **kwargs):
         gc = GoogleApiCalls()
@@ -371,9 +375,13 @@ class DocxWriter(Letters):
             document.add_page_break()
         return document
 
-    def docx_rent_receipts_from_rent_sheet(self):
+    def docx_rent_receipts_from_rent_sheet(self, mode=None):
         print('docx rent rent receipts directly from rent sheets')
-        parameters = self.rent_receipts_configuration()
+
+        if mode == 'testing':
+            parameters = {'current_date': '2022-10-27', 'display_month': 'March', 'sheet_choice': '2022-03', 'rent_sheet': '1Z_Qoz-4ehalutipyH2Vj5k-y2b78U69Bc7uXoBKK47Q'}
+        else:
+            parameters = self.rent_receipts_configuration()
 
         rs_name_pay = [(self.fix_name2(row[0]), row[9]) for row in self.load_from_sheet(parameters['sheet_choice'], parameters['rent_sheet'])]
         
@@ -388,7 +396,11 @@ class DocxWriter(Letters):
         document = self.format_docx_rent_receipt(document=document, parameters=parameters, r_recs=r_recs)
 
         save_name = 'rent_receipts_' + parameters['current_date'] + '_' + parameters['sheet_choice'] + '.docx'
-        save_path = self.default_save_path / Path(save_name)
+
+        if mode == 'testing':
+            save_path = self.testing_save_path / Path(save_name)
+        else:
+            save_path = self.default_save_path / Path(save_name)
 
         document.save(save_path)
    
