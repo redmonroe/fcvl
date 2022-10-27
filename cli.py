@@ -265,6 +265,19 @@ def status_findexer_test():
     player.show_status_table(path=path, db=db)
 
 
+"""TESTING COMMANDS"""
+@click.command()
+@click.option('--write', default='False', help='do you want to write to rs or not?')
+def test_full(write):
+    click.echo('run full test suite')
+    if write == 'False':
+        click.echo('run full test suite WITHOUT WRITE')
+        no_write = pytest.main(['-s', '--write', 'False', 'tests',])
+    elif write == 'True':
+        click.echo('run full test suite WITH WRITE')
+        write_rs = pytest.main(['-s', '--write', 'True', 'tests',])
+
+
 cli.add_command(escrow)
 cli.add_command(receipts)
 cli.add_command(receipts_sixm)
@@ -283,6 +296,8 @@ cli.add_command(workorders)
 cli.add_command(recvactuals)
 cli.add_command(incremental_build)
 cli.add_command(manentry)
+"""TESTING COMMANDS"""
+cli.add_command(test_full)
 
 if __name__ == '__main__':
     cli()

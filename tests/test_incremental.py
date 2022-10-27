@@ -27,7 +27,15 @@ class TestFileIndexerIncr:
     iter1_path = '/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/fcvl_test/thru_end_june_2022'
     iter2_path = '/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/fcvl_test/thru_mid_oct_2022'
     no_scrape_path = '/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/fcvl_test/no_scrape_thru_sept'
-    write = True
+
+    @pytest.fixture
+    def set_write_mode(self, write):
+        if write == 'False':
+            yield False
+        elif write == 'True':
+            yield True
+        else:            
+            breakpoint()
 
     @pytest.fixture
     def populate(self):
@@ -64,11 +72,11 @@ class TestFileIndexerIncr:
         """test for ANY sheets before reset"""
         ms.reset_spreadsheet()
 
-    def test_load_init_db_state1(self):
+    def test_load_init_db_state1(self, set_write_mode):
         path, full_sheet, build, service, ms, findexer = self.return_generic_config(configured_path=self.base_path)   # uses BuildRS not IterRS
-        build.build_db_from_scratch(write=self.write)  # this should write to rs
+        build.build_db_from_scratch(write=set_write_mode)  # this should write to rs
 
-    def test_after_jan_load(self, populate):
+    def test_after_jan_load(self, populate, set_write_mode):
         print('test_after_jan_load() hiiii')
         """
         doesn't need to be high engineering here: just
@@ -90,7 +98,7 @@ class TestFileIndexerIncr:
         assert len(files) == 11 # 3 files + beg balances + desktop.ini
 
         """test for statusobject state"""
-        if self.write == True:
+        if set_write_mode == True:
             jan_so_state = self.query_for_tst1(rs_reconciled=1)
         else:
             jan_so_state = self.query_for_tst1(rs_reconciled=0)
@@ -108,15 +116,15 @@ class TestFileIndexerIncr:
 
         assert len(remainder_so_state) > 6
     
-    def test_jan_through_june_iter_load_and_write(self):
+    def test_jan_through_june_iter_load_and_write(self, set_write_mode):
         print('3, 4, 5 already exist, should just write 4, 5, 6')
         path, full_sheet, iterb, service, ms, findexer = self.return_generic_config(type1='iter', configured_path=self.iter1_path)
-        iterb.incremental_load(write=self.write)
+        iterb.incremental_load(write=set_write_mode)
 
-    def test_jan_through_101822_iter_load_and_write(self):
+    def test_jan_through_101822_iter_load_and_write(self, set_write_mode):
         print('should be doing 7, 8, 9, and 10')
         path, full_sheet, iterb, service, ms, findexer = self.return_generic_config(type1='iter', configured_path=self.iter2_path)
-        iterb.incremental_load(write=self.write)
+        iterb.incremental_load(write=set_write_mode)
         
     """
     DO TEST STUFF HERE    
@@ -132,10 +140,10 @@ class TestFileIndexerIncr:
         path, full_sheet, iterb, service, ms, findexer = self.return_generic_config(type1='iter', configured_path=self.iter2_path)
         ms.reset_spreadsheet()
 
-    def test_load_init_db_state2(self):
+    def test_load_init_db_state2(self, set_write_mode):
         print('SETUP ROUND 2 BUILDING DB FROM SCRATCH(write=True')
         path, full_sheet, build, service, ms, findexer = self.return_generic_config(configured_path=self.base_path)   
-        build.build_db_from_scratch(write=self.write)  # this should write to rs
+        build.build_db_from_scratch(write=set_write_mode)  # this should write to rs
 
     def test_no_scrape_load_and_write(self):
         print('ROUND 2: no scrape load and write')
