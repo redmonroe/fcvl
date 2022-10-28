@@ -16,7 +16,6 @@ from letters import DocxWriter
 
 class TestDocxRentReceipts:
 
-    no_scrape_path = '/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/fcvl_test/no_scrape_thru_sept'
     base_path = '/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/fcvl_test/thru_march_2022'
 
     @pytest.fixture

@@ -215,11 +215,14 @@ def docx_letters():
 
 @click.command()
 def addresses():
+    """generates spreadsheet for mailmerge"""
+    """this only works on test db right now"""
     click.echo('generating addresses')
     figure = Figuration()
     path, full_sheet, build, service, ms = figure.return_configuration()
     letters = Letters(db=build.main_db)
-    letters.get_addresses()
+    addresses = letters.get_addresses()
+    breakpoint()
 
 @click.command()
 def balanceletters():
@@ -285,6 +288,11 @@ def test_rent_receipts():
     click.echo('run docx rent receipt writing')
     no_write = pytest.main(['-s', 'tests/test_rent_receipts.py',])
 
+@click.command()
+def test_addresses():
+    click.echo('run testing for addressing package')
+    no_write = pytest.main(['-s', 'tests/test_addresses.py',])
+
 
 cli.add_command(escrow)
 cli.add_command(receipts)
@@ -307,6 +315,7 @@ cli.add_command(manentry)
 """TESTING COMMANDS"""
 cli.add_command(test_full)
 cli.add_command(test_rent_receipts)
+cli.add_command(test_addresses)
 
 if __name__ == '__main__':
     cli()

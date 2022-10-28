@@ -42,9 +42,7 @@ class Letters():
         return (' ').join(name[::-1])
    
     def get_addresses(self):
-        from pprint import pprint
-
-        from backend import QueryHC, Unit
+        from backend import Unit # import error work around
         self.setup_tables(mode='create_only')
         units = [(row.unit_name, row.tenant, row.last_occupied) for row in Unit.select().namedtuples()]
 
