@@ -313,10 +313,12 @@ class AddressWriter(Letters):
         print(self.testing_save_path)
 
     def export_to_excel(self, address_list=None):
-        self.df = pd.DataFrame(address_list)
+        self.df = pd.DataFrame(address_list, 
+                                columns=['name', 'street', 'unit', 'city', 'zip'], 
+                                )
+        # self.df.reset_index(drop=True, inplace=True)
+        self.df.set_index('name', inplace=True)
         self.df.to_excel(self.testing_save_path / Path('testing.xlsx'))
-
-        # breakpoint()
     
 class DocxWriter(Letters):
 
