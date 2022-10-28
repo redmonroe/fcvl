@@ -304,6 +304,7 @@ class DocxWriter(Letters):
 
     default_save_path = Config.TEST_DOCX_BASE
     testing_save_path = Config.PYTEST_DOCX_BASE
+    testing_save_name = 'testing.docx'
 
     def __init__(self, db=None, service=None):
         self.main_db = db
@@ -388,21 +389,26 @@ class DocxWriter(Letters):
         self.setup_tables(mode='create_only')
         document = Document()
         r_recs = []
+        sum_for_test = []
         for name, pay in rs_name_pay:
             for address in self.get_addresses():
                 if name == address[0]:
                     r_recs.append([address[0], address[1], address[2], address[3], address[4], pay])
+                    sum_for_test.append(pay)
     
         document = self.format_docx_rent_receipt(document=document, parameters=parameters, r_recs=r_recs)
 
-        save_name = 'rent_receipts_' + parameters['current_date'] + '_' + parameters['sheet_choice'] + '.docx'
-
         if mode == 'testing':
-            save_path = self.testing_save_path / Path(save_name)
+            document.core_properties.title = 'docx_rent_receipts'
+            save_path = self.testing_save_path / Path(self.testing_save_name)
         else:
+            save_name = 'rent_receipts_' + parameters['current_date'] + '_' + parameters['sheet_choice'] + '.docx'
             save_path = self.default_save_path / Path(save_name)
 
         document.save(save_path)
+
+        return document, save_path, sum_for_test
+
    
 
 
