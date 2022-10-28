@@ -29,12 +29,15 @@ class TestAddresses:
 
     def test_write_address_excel(self):
         path, full_sheet, build, service, ms, findexer = self.return_generic_config(configured_path=self.base_path)  
-        
+
 
     def test_get_rs_status(self):
         path, full_sheet, build, service, ms, findexer = self.return_generic_config(configured_path=self.base_path)  
         # writer = DocxWriter(db=build.main_db, service=service)
         # sheet_idx = writer.check_rs_status()
+
+        """TESTS WOULD BE FROM PERSPECTIVE OF MARCH END"""
+
 
         if sheet_idx == []:
             build.build_db_from_scratch(write=True)

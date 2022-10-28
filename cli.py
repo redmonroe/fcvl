@@ -15,7 +15,7 @@ from db_utils import DBUtils
 from file_indexer import FileIndexer
 from file_manager import path_to_statements, write_hap
 from iter_rs import IterRS
-from letters import DocxWriter, Letters
+from letters import AddressWriter, DocxWriter, Letters
 from manual_entry import ManualEntry
 from pdf import StructDataExtract
 from records import record
@@ -220,10 +220,10 @@ def addresses():
     click.echo('generating addresses')
     figure = Figuration()
     path, full_sheet, build, service, ms = figure.return_configuration()
-    letters = Letters(db=build.main_db)
+    letters = AddressWriter(db=build.main_db)    
     addresses = letters.get_addresses()
-    breakpoint()
-
+    letters.export_to_excel(address_list=addresses)
+    
 @click.command()
 def balanceletters():
     click.echo('balance letters')

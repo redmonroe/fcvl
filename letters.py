@@ -2,6 +2,7 @@ from datetime import datetime
 from pathlib import Path
 from pprint import pprint
 
+import pandas as pd
 from docx import Document
 from docx.oxml.ns import qn
 from docx.oxml.shared import OxmlElement
@@ -42,7 +43,7 @@ class Letters():
         return (' ').join(name[::-1])
    
     def get_addresses(self):
-        from backend import Unit # import error work around
+        from backend import Unit  # import error work around
         self.setup_tables(mode='create_only')
         units = [(row.unit_name, row.tenant, row.last_occupied) for row in Unit.select().namedtuples()]
 
@@ -297,6 +298,25 @@ class Letters():
         else:
             print('exiting program')
             exit
+
+class AddressWriter(Letters):
+
+    testing_save_path = Config.ADDRESS_TESTING_SAVE_PATH
+
+    def __init__(self, db=None, service=None):
+        self.main_db = db
+        self.header_indent = 4
+        self.service = service
+        self.df = None
+
+    def show_path(self):
+        print(self.testing_save_path)
+
+    def export_to_excel(self, address_list=None):
+        self.df = pd.DataFrame(address_list)
+        self.df.to_excel(self.testing_save_path / Path('testing.xlsx'))
+
+        # breakpoint()
     
 class DocxWriter(Letters):
 
