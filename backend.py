@@ -1173,7 +1173,9 @@ class ProcessingLayer(StatusRS):
             try:
                 status_object = [item for item in StatusObject().select().where(StatusObject.month==month)][0]
             except IndexError as e:
-                print(e, month)
+                import inspect
+                print(f'ERROR DETECTED in {inspect.currentframe().f_code.co_name} for {month}')
+                print('IT IS VERY LIKELY THAT A STATUSOBJECT HAS FAILED TO RECONCILE')
                 breakpoint()
 
             if status_object.opcash_processed == True and status_object.tenant_reconciled == True and status_object.rs_reconciled == False:
@@ -1452,6 +1454,9 @@ class ProcessingLayer(StatusRS):
             ten_payments = sum([float(row[2]) for row in populate.get_payments_by_tenant_by_period(first_dt=first_dt, last_dt=last_dt)])
             ntp = sum(populate.get_ntp_by_period(first_dt=first_dt, last_dt=last_dt))
             opcash = populate.get_opcash_by_period(first_dt=first_dt, last_dt=last_dt)
+            if month == '2022-09':
+                tp_test = [row for row in populate.get_payments_by_tenant_by_period(first_dt=first_dt, last_dt=last_dt)]
+                breakpoint()
 
 
             '''probably need to add the concept of "adjustments" in here'''
@@ -1475,7 +1480,7 @@ class ProcessingLayer(StatusRS):
                         s_object.save()                     
                         print(e, 'opcash: this month has already been created in statusobject table')
             else:
-                print('is scrape available?')
+                print(f'is scrape available for {month}?')
                 """if scrape is available, does it reconcile to tenant deposits
                 
                 if scrape deposits + adjustments == tenant payments + adjust > we can mark tenant_reconciled & scrape as processed"""

@@ -35,7 +35,8 @@ class Letters():
     def fix_name(self, unit, address_bp):
         name = unit[1].split(',')
         name = [n.rstrip().lstrip().capitalize() for n in name]
-        return [(' ').join(name[::-1]), address_bp[0], unit[0], address_bp[1], address_bp[2]]
+        unit_wo_prefix = unit[0].split('-')[1]
+        return [(' ').join(name[::-1]), address_bp[0], f'Unit #{unit_wo_prefix}', address_bp[1], address_bp[2]]
 
     def fix_name2(self, name):
         name = name.split(',')
