@@ -7,85 +7,22 @@ import pytest
 from peewee import *
 
 from annual_financials import AnnFin
-from auth_work import oauth
-from backend import PopulateTable, ProcessingLayer, QueryHC, StatusRS, Unit, db
-from build_rs import BuildRS
+from backend import ProcessingLayer, db
 from config import Config
 from db_utils import DBUtils
-from file_indexer import FileIndexer
 from file_manager import path_to_statements, write_hap
-from iter_rs import IterRS
 from letters import AddressWriter, DocxWriter, Letters
 from manual_entry import ManualEntry
 from pdf import StructDataExtract
-from records import record
-from setup_month import MonthSheet
-from setup_year import YearSheet
-
+from figuration import Figuration
 '''
 cli.add_command(nbofi)
 cli.add_command(consume_and_backup_invoices)
 '''
 
-class Figuration:
-
-    def __init__(self, mode='testing', method='iter', path=None, full_sheet=None, pytest=None):
-        '''default to iterative, testing config, sheet, path'''
-        self.mode = mode
-
-        if path:
-            self.path = path
-        else:
-            self.path = Config.TEST_PATH
-
-        if full_sheet:
-            self.full_sheet = full_sheet
-        else:
-            self.full_sheet = Config.TEST_RS
-
-        if pytest:
-            self.pytest = pytest
-        else:
-            self.pytest = False
-
-        self.method = method
-
-        if self.method == 'iter':
-            self.method = IterRS
-        else:
-            self.method = BuildRS
-
-        if self.mode == 'testing':
-            self.build = self.method(path=self.path, full_sheet=self.full_sheet, mode=self.mode, pytest=self.pytest)
-            self.service = oauth(Config.my_scopes, 'sheet', mode=self.mode)
-            self.ms = MonthSheet(full_sheet=self.full_sheet, path=self.path, mode=self.mode, test_service=self.service)
-        if self.mode == 'production':
-            self.path = Config.PROD_PATH
-            self.full_sheet = Config.PROD_RS
-            self.build = self.method(path=self.path, full_sheet=self.full_sheet)
-            self.service = oauth(Config.my_scopes, 'sheet')
-            self.ms = MonthSheet(full_sheet=self.full_sheet, path=self.path)
-
-    def return_configuration(self):
-        return self.path, self.full_sheet, self.build, self.service, self.ms
-
 def return_test_config_incr1():
     path = Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/fcvl_test/iter_build_first')
     path = Path('/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/fcvl_test/iter_build_second')
-
-def set_db(build=None):
-    """this should not DROP tables"""
-    populate = PopulateTable()
-    create_tables_list1 = populate.return_tables_list()
-    if build.main_db.is_closed() == True:
-        build.main_db.connect()
-
-def reset_db(build=None):
-    populate = PopulateTable()
-    create_tables_list1 = populate.return_tables_list()
-    build.main_db.drop_tables(models=create_tables_list1)
-    if build.main_db.get_tables() == []:
-        print('db successfully dropped')
 
 @click.group()
 def cli():
@@ -153,14 +90,14 @@ def reset_db_test():
     click.echo('TEST: dropping test db . . .')
     figure = Figuration()
     path, full_sheet, build, service, ms = figure.return_configuration()
-    reset_db(build=build)
+    figure.reset_db()
 
 @click.command()
 def reset_db_prod():
     click.echo('dropping PRODUCTION db . . .')
     figure = Figuration(mode='production')
     path, full_sheet, build, service, ms = figure.return_configuration()
-    reset_db(build=build)
+    figure.reset_db()
 
 @click.command()
 def load_db_test():
@@ -232,13 +169,13 @@ def balanceletters():
 
 @click.command()
 def receipts():
-    click.echo('receipts')
+    click.echo('receipts via google apps, cloud-based')
     player = ProcessingLayer()
     player.rent_receipts_wrapper()
 
 @click.command()
 def receipts_sixm():
-    click.echo('receipts with 6 month balance')
+    click.echo('receipts with 6 month balance; this is an attempt to make a google app; currently unfinished')
     player = ProcessingLayer()
     player.rent_receipts_wrapper_version2()
 
@@ -284,6 +221,23 @@ def test_full(write):
         write_rs = pytest.main(['-s', '--write', 'True', 'tests',])
 
 @click.command()
+@click.option('--write', default='False', help='do you want to write to rs or not?')
+def test_canonical(write):
+    click.echo('run test suite on fcvl/canonical_docs')
+
+    """goal2:
+        1 - do build mode for jan only
+        2 - do iter mode for remaining months
+    """
+
+    if write == 'False':
+        click.echo('run canonical docs test suite WITHOUT WRITE')
+        no_write = pytest.main(['-s', '--write', 'False', 'tests/test_main_canonical.py',])
+    elif write == 'True':
+        click.echo('run canonical docs test suite WITH WRITE')
+        write_rs = pytest.main(['-s', '--write', 'True', 'tests/test_main_canonical.py',])
+
+@click.command()
 def test_rent_receipts():
     click.echo('run docx rent receipt writing')
     no_write = pytest.main(['-s', 'tests/test_rent_receipts.py',])
@@ -314,6 +268,7 @@ cli.add_command(incremental_build)
 cli.add_command(manentry)
 """TESTING COMMANDS"""
 cli.add_command(test_full)
+cli.add_command(test_canonical)
 cli.add_command(test_rent_receipts)
 cli.add_command(test_addresses)
 

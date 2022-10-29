@@ -14,7 +14,7 @@ from iter_rs import IterRS
 from config import Config
 from file_indexer import FileIndexer
 from setup_month import MonthSheet
-from cli import Figuration
+from figuration import Figuration
 
 
 """what is different about these tests?"""

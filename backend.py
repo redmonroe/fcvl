@@ -1176,7 +1176,7 @@ class ProcessingLayer(StatusRS):
                 import inspect
                 print(f'ERROR DETECTED in {inspect.currentframe().f_code.co_name} for {month}')
                 print('IT IS VERY LIKELY THAT A STATUSOBJECT HAS FAILED TO RECONCILE')
-                breakpoint()
+                # breakpoint()
 
             if status_object.opcash_processed == True and status_object.tenant_reconciled == True and status_object.rs_reconciled == False:
                 writeable_months.append(status_object.month)
@@ -1454,9 +1454,9 @@ class ProcessingLayer(StatusRS):
             ten_payments = sum([float(row[2]) for row in populate.get_payments_by_tenant_by_period(first_dt=first_dt, last_dt=last_dt)])
             ntp = sum(populate.get_ntp_by_period(first_dt=first_dt, last_dt=last_dt))
             opcash = populate.get_opcash_by_period(first_dt=first_dt, last_dt=last_dt)
-            if month == '2022-09':
-                tp_test = [row for row in populate.get_payments_by_tenant_by_period(first_dt=first_dt, last_dt=last_dt)]
-                breakpoint()
+            # if month == '2022-09':
+            #     tp_test = [row for row in populate.get_payments_by_tenant_by_period(first_dt=first_dt, last_dt=last_dt)]
+            #     breakpoint()
 
 
             '''probably need to add the concept of "adjustments" in here'''

@@ -8,7 +8,7 @@ parent = os.path.dirname(current)
 sys.path.append(parent)
 from pathlib import Path, PosixPath
 
-from cli import Figuration
+from figuration import Figuration
 from config import Config
 from file_indexer import FileIndexer
 

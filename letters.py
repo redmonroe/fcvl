@@ -317,7 +317,6 @@ class AddressWriter(Letters):
         self.df = pd.DataFrame(address_list, 
                                 columns=['name', 'street', 'unit', 'city', 'zip'], 
                                 )
-        # self.df.reset_index(drop=True, inplace=True)
         self.df.set_index('name', inplace=True)
         self.df.to_excel(self.testing_save_path / Path('testing.xlsx'))
     
