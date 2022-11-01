@@ -1097,11 +1097,9 @@ class ProcessingLayer(StatusRS):
         for month in month_list:
             try:
                 status_object = [item for item in StatusObject().select().where(StatusObject.month==month)][0]
+                print(f'\n{month} is ready to write to rent sheets')
             except IndexError as e:
-                import inspect
-                print(f'ERROR DETECTED in {inspect.currentframe().f_code.co_name} for {month}')
-                print('IT IS VERY LIKELY THAT A STATUSOBJECT HAS FAILED TO RECONCILE')
-                # breakpoint()
+                print(f'{month} is not ready to write to rent sheets\n')
 
             if status_object.opcash_processed == True and status_object.tenant_reconciled == True and status_object.rs_reconciled == False:
                 writeable_months.append(status_object.month)
@@ -1206,8 +1204,8 @@ class ProcessingLayer(StatusRS):
             return []
 
     def get_mr_good_month(self):
-        query = QueryHC()
         '''get most recent finalized month'''
+        query = QueryHC()
         try:
             mr_good_month = [rec.month for rec in StatusObject().select(StatusObject.month).
             where(
@@ -1220,7 +1218,6 @@ class ProcessingLayer(StatusRS):
             print('bypassing error on mr_good_month', e)
             mr_good_month = False
             return mr_good_month
-
         return mr_good_month
 
     def generate_balance_letter_list_mr_reconciled(self):
@@ -1242,7 +1239,6 @@ class ProcessingLayer(StatusRS):
             return bal_letter_list, mr_good_month
         else:
             return [], None
-
 
     def write_processed_to_status_rs_db(self, ref_rec=None, report_list=None):
         """Function takes iter of processed files and writes them as json to statusRS db; as far as I can tell this does not do anything important at this time"""
