@@ -1,4 +1,3 @@
-from backend import Findexer
 
 class Reconciler:
 
@@ -32,6 +31,7 @@ class Reconciler:
         self.findex_reconcile_helper_writer(list1=match_both, recon_str='FULL')
 
     def findex_reconcile_helper_writer(self, list1=None, recon_str=None):
+        from backend import Findexer
         for item in list1:
             deposit_id = [(row.doc_id, row.period) for row in Findexer.select().
                 where(Findexer.doc_type == 'deposits').
@@ -41,6 +41,7 @@ class Reconciler:
             deposit.save()        
         
     def findex_reconcile_helper(self, typ=None):
+        from backend import Findexer
         return [(row.period, row.depsum) for row in Findexer.select().
             where(Findexer.doc_type == typ).namedtuples()]
     
