@@ -26,6 +26,8 @@ class Scrape:
             scrape_file.save()
 
     def load_scrape_data_historical(self):
+        """this function gets scrape files and period via type=='scrape in Findexer table and updates row for various items(deposit sum, hap sum, replacement res. sum, corrections and chargebacks sum et al) and makes sure deposits assert before proceeding"""
+        
         scrapes = [(row.path, row.period) for row in Findexer.select().where(Findexer.doc_type == 'scrape').namedtuples()]
 
         for scrape_path, scrape_period in scrapes:
