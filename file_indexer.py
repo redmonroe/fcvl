@@ -7,10 +7,12 @@ from pprint import pprint
 import numpy as np
 import pandas as pd
 
-from backend import Findexer, PopulateTable, StatusObject, Reconciler
+from backend import Findexer, PopulateTable, Reconciler, StatusObject
 from config import Config
 from pdf import StructDataExtract
+from reconciler import Reconciler
 from utils import Utils
+
 
 class Scrape:
 
@@ -27,13 +29,11 @@ class Scrape:
 
     def load_scrape_data_historical(self):
         """this function gets scrape files and period via type=='scrape in Findexer table and updates row for various items(deposit sum, hap sum, replacement res. sum, corrections and chargebacks sum et al) and makes sure deposits assert before proceeding"""
-        
+
         scrapes = [(row.path, row.period) for row in Findexer.select().where(Findexer.doc_type == 'scrape').namedtuples()]
 
         for scrape_path, scrape_period in scrapes:
             scrape_txn_list = self.load_directed_scrape(path_to_scrape=scrape_path, target_date=scrape_period)
-
-            check = float(sum([Utils.decimalconv(str(item['amount'])) for item in scrape_txn_list]))
 
             dep_sum = sum([item['amount'] for item in scrape_txn_list if item['dep_type'] == 'deposit'])
 
@@ -45,8 +45,10 @@ class Scrape:
 
             dep_list = [{item['date']:item['amount']} for item in scrape_txn_list if item['dep_type'] == 'deposit']
 
-            double_check = dep_sum + hap_sum + corr_sum + rr_sum
-            assert check == round(double_check, 2)            
+            check = float(sum([Utils.decimalconv(str(item['amount'])) for item in scrape_txn_list]))
+            sum_of_parts = dep_sum + hap_sum + corr_sum + rr_sum
+
+            Reconciler.findexer_assert_scrape_catches_all_target_txns(period=scrape_period, sum_of_parts=sum_of_parts, check=check)         
 
             target_scr_id = [row for row in Findexer.select().where(
                 (Findexer.period == scrape_period) &
@@ -103,7 +105,6 @@ class Scrape:
                 else:
                     print('issue converting date in scrape')
                     exit
-                # breakpoint()
                 dict1 = {'date': row['Processed Date'], 'amount': row['Amount'], 'dep_type': 'deposit'}
                 deposit_list.append(dict1)
             if 'INCOMING' in row['Description']:
@@ -167,7 +168,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
         self.scrape_path = Config.TEST_PATH
     
     def incremental_filer(self, pytest=False): 
-        print('incremental_preface(), FileIndexer method from file_indexer.py')
+        print('incremental_filer(), FileIndexer method from file_indexer.py')
         print('\n')
         self.connect_to_db() 
 
@@ -202,7 +203,6 @@ class FileIndexer(Utils, Scrape, Reconciler):
             else:   
                 choice1 = 1
                 
-
             if choice1 == 1:
                 print('YES, I WANT TO ADD THIS FILE FINDEXER DB')
                 self.index_dict = self.sort_directory_by_extension2()
@@ -354,7 +354,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
         except AttributeError as e:
             print(e)
             print(f'issue is with {path}')
-            print(f'relevant kwargs {kw}')
+            print(f'relevant kwargs: {kw}')
         period = df_date[kw['kw']['date_split']]
         period = period.rstrip()
         period = period.lstrip()        
@@ -384,7 +384,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
             dep_iter_one_month, stmt_date2 = self.extract_deposits_by_type(op_cash_stmt_path, style=self.style_term.dep, target_str=self.target_string.oc_deposit)
             deposit_and_date_iter_one_month = self.extract_deposits_by_type(op_cash_stmt_path, style=self.style_term.dep_detail, target_str=self.target_string.oc_deposit)
             corrections_sum = self.extract_deposits_by_type(op_cash_stmt_path, style=self.style_term.corrections, target_str=self.target_string.corrections, target_str2=self.target_string.chargebacks, date=date)
-            assert stmt_date == stmt_date1
+            Reconciler.findexer_assert_stmt_dates_match(stmt1_date=stmt_date, stmt2_date=stmt_date1)
 
             self.write_deplist_to_db(hap_iter_one_month, rr_iter_one_month, dep_iter_one_month, deposit_and_date_iter_one_month, corrections_sum, stmt_date)
 
