@@ -1383,10 +1383,13 @@ class ProcessingLayer(StatusRS):
             '''probably need to add the concept of "adjustments" in here'''
             sum_from_payments = ten_payments + ntp
 
-            if opcash != []:
+            if sum_from_payments == 0:
+                print(f'no tenant deposit report available for {month}')
+            elif sum_from_payments != 0 and opcash != []:
+                print(f'opcash available for {month}')
                 opcash_deposits = float(opcash[0][4])
 
-                if Reconciler.backend_processing_layer_assert_opcash_deposits_tenant_deposits(opcash_deposits=opcash_deposits, sum_from_payments_report=sum_from_payments, period=month):
+                if Reconciler.backend_processing_layer_assert_bank_deposits_tenant_deposits(bank_deposits=opcash_deposits, sum_from_payments_report=sum_from_payments, period=month, genus='opcash'):
                     """critical reconciliation logic for statusObject"""
                     mr_status = StatusRS().get(StatusRS.status_id==ref_rec.status_id)  
 
@@ -1401,10 +1404,9 @@ class ProcessingLayer(StatusRS):
                         s_object.save()                     
                         print(e, 'opcash: this month has already been created in statusobject table')
             else:
-                print(f'is scrape available for {month}?')
-                """if scrape is available, does it reconcile to tenant deposits
+                print(f'no op cash statement available for {month}.')
                 
-                if scrape deposits + adjustments == tenant payments + adjust > we can mark tenant_reconciled & scrape as processed"""
+                """if scrape deposits + adjustments == tenant payments + adjust > we can mark tenant_reconciled & scrape as processed"""
 
                 scrape_corr = populate.get_scrape_detail_by_month_by_type(type1='corr', first_dt=first_dt, last_dt=last_dt)
 
@@ -1414,7 +1416,9 @@ class ProcessingLayer(StatusRS):
 
                 scrape_dep_detail = populate.get_scrape_detail_by_month_deposit(first_dt=first_dt, last_dt=last_dt)
 
-                if sum_from_payments == sum([float(item) for item in scrape_dep]) and sum_from_payments != 0:
+                scrape_deposits = sum([float(item) for item in scrape_dep])
+
+                if Reconciler.backend_processing_layer_assert_bank_deposits_tenant_deposits(bank_deposits=scrape_deposits, sum_from_payments_report=sum_from_payments, period=month, genus='scrape') and sum_from_payments != 0:
                     print(f'scrape asserted ok for {month} {Config.current_year}')
                     mr_status = StatusRS().get(StatusRS.status_id==ref_rec.status_id) 
                     try:               
@@ -1427,18 +1431,4 @@ class ProcessingLayer(StatusRS):
                         s_object.tenant_reconciled = True
                         s_object.save()    
                         print(e, 'scrape: this month has already been created in statusobject table')
-                elif sum_from_payments == sum([float(item) for item in scrape_dep]) and sum_from_payments == 0:
-                    print(f'(scrape branch) {month} {Config.current_year} is at 0 and not ready to reconcile')
-                    mr_status = StatusRS().get(StatusRS.status_id==ref_rec.status_id)                
-                    try:               
-                        s_object = StatusObject.create(key=mr_status.status_id, month=month, scrape_reconciled=False)
-                        s_object.save()
-                    except IntegrityError as e:
-                        s_object_id = [row for row in StatusObject.select().where(StatusObject.month==month).namedtuples()][0]
-                        s_object = StatusObject.get(id=s_object_id.id)
-                        s_object.scrape_reconciled = False
-                        s_object.save()    
-                        print(e, 'scrape: this month has already been created in statusobject table')
-                else:
-                    print(f'scrape did not reconcile for {month} {Config.current_year}')
     

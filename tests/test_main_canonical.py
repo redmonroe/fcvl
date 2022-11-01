@@ -88,8 +88,7 @@ class TestMainCanonical:
         
         indexed_files = query.get_all_by_rows_by_argument(model1=Findexer)
         assert len(indexed_files) == 3
-        breakpoint()
-        # pass
+        # breakpoint()
         
     """CLEAN UP AFTER JAN OP ONLY BUILD"""
 
@@ -124,7 +123,6 @@ class TestMainCanonical:
         print('\n START SCRAPE and OP BUILD\n')
         path, full_sheet, build, service, ms, findexer = self.return_scrape_config(configured_path=self.base_path3)   # uses BuildRS not IterRS
         build.build_db_from_scratch(write=set_write_mode)  # this should write to rs
-        breakpoint()
 
     def test_x(self):
         pass
