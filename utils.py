@@ -2,7 +2,7 @@
 import os.path
 from calendar import monthrange
 from datetime import datetime
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP, Decimal
 from pathlib import Path
 
 import pandas as pd
@@ -271,6 +271,12 @@ class Utils:
         output = letters[choice]
 
         return output
+
+
+    @staticmethod
+    def decimalconv(num_as_str, places=Decimal('0.01'), round1=ROUND_HALF_UP):
+        num_as_quantized_decimal = Decimal(num_as_str).quantize(places, round1)
+        return num_as_quantized_decimal
 
     def string_to_decimal(input):
 

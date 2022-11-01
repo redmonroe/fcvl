@@ -14,11 +14,15 @@ from iter_rs import IterRS
 from config import Config
 from file_indexer import FileIndexer
 from setup_month import MonthSheet
-from cli import Figuration
+from figuration import Figuration
 
 class TestMainCanonical:
 
-    base_path = '/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/canonical_docs'
+    base_path = '/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/fcvl_test/jan_only_2022_OP_ONLY'
+
+    base_path2 = '/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/fcvl_test/jan_only_2022_SCRAPE_ONLY'
+
+    base_path3 = '/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/fcvl_test/jan_only_2022_SCRAPE_AND_OP'
 
     @pytest.fixture
     def set_write_mode(self, write):
@@ -34,7 +38,16 @@ class TestMainCanonical:
         populate = PopulateTable()
         return populate
 
-    def return_generic_config(self, type1=None, configured_path=None):
+    def return_op_config(self, type1=None, configured_path=None):
+        if type1 == 'iter':
+            figure = Figuration(path=Path(configured_path), pytest=True)
+        else: 
+            figure = Figuration(method='build', path=Path(configured_path), pytest=True)
+        path, full_sheet, build, service, ms = figure.return_configuration()
+        findexer = FileIndexer(path=path, db=build.main_db.database)
+        return path, full_sheet, build, service, ms, findexer
+
+    def return_scrape_config(self, type1=None, configured_path=None):
         if type1 == 'iter':
             figure = Figuration(path=Path(configured_path), pytest=True)
         else: 
@@ -44,15 +57,54 @@ class TestMainCanonical:
         return path, full_sheet, build, service, ms, findexer
 
     def test_db_reset1(self, populate):
-        path, full_sheet, build, service, ms, findexer = self.return_generic_config(configured_path=self.base_path)  
+        path, full_sheet, build, service, ms, findexer = self.return_op_config(configured_path=self.base_path)  
         create_tables_list1 = populate.return_tables_list()
         build.main_db.drop_tables(models=create_tables_list1)
         assert build.main_db.get_tables() == []
 
     def test_rs_reset1(self):
-        path, full_sheet, build, service, ms, findexer = self.return_generic_config(configured_path=self.base_path)  
+        path, full_sheet, build, service, ms, findexer = self.return_op_config(configured_path=self.base_path)  
         ms.reset_spreadsheet()
 
-    def test_load_init_db_state1(self, set_write_mode):
-        path, full_sheet, build, service, ms, findexer = self.return_generic_config(configured_path=self.base_path)   # uses BuildRS not IterRS
+    def test_load_init_db_state1_VIA_BUILD(self, set_write_mode):
+        print('\n START OP ONLY JAN BUILD\n')
+        path, full_sheet, build, service, ms, findexer = self.return_op_config(configured_path=self.base_path)   # uses BuildRS not IterRS
         build.build_db_from_scratch(write=set_write_mode)  # this should write to rs
+        
+    """CLEAN UP AFTER JAN OP ONLY BUILD"""
+
+    def test_db_reset1(self, populate):
+        path, full_sheet, build, service, ms, findexer = self.return_op_config(configured_path=self.base_path1)  
+        create_tables_list1 = populate.return_tables_list()
+        build.main_db.drop_tables(models=create_tables_list1)
+        assert build.main_db.get_tables() == []
+
+    def test_rs_reset1(self):
+        path, full_sheet, build, service, ms, findexer = self.return_op_config(configured_path=self.base_path1)  
+        ms.reset_spreadsheet()
+
+    def test_load_init_db_state1_VIA_SCRAPE(self, set_write_mode):
+        print('\n START SCRAPE ONLY JAN BUILD\n')
+        path, full_sheet, build, service, ms, findexer = self.return_scrape_config(configured_path=self.base_path)   # uses BuildRS not IterRS
+        build.build_db_from_scratch(write=set_write_mode)  # this should write to rs
+
+    """CLEAN UP AFTER JAN SCRAPE ONLY BUILD"""
+    
+    def test_db_reset1(self, populate):
+        path, full_sheet, build, service, ms, findexer = self.return_scrape_config(configured_path=self.base_path2)  
+        create_tables_list1 = populate.return_tables_list()
+        build.main_db.drop_tables(models=create_tables_list1)
+        assert build.main_db.get_tables() == []
+
+    def test_rs_reset1(self):
+        path, full_sheet, build, service, ms, findexer = self.return_scrape_config(configured_path=self.base_path2)  
+        ms.reset_spreadsheet()
+    
+    def test_load_init_db_state1_VIA_SCRAPE_AND_OP(self, set_write_mode):
+        print('\n START SCRAPE and OP BUILD\n')
+        path, full_sheet, build, service, ms, findexer = self.return_scrape_config(configured_path=self.base_path3)   # uses BuildRS not IterRS
+        build.build_db_from_scratch(write=set_write_mode)  # this should write to rs
+        breakpoint()
+        
+    def test_x(self):
+        pass

@@ -8,8 +8,8 @@ parent = os.path.dirname(current)
 sys.path.append(parent)
 from pathlib import Path, PosixPath
 
-from figuration import Figuration
 from config import Config
+from figuration import Figuration
 from file_indexer import FileIndexer
 from letters import DocxWriter
 

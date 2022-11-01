@@ -31,7 +31,7 @@ class Scrape:
         for scrape_path, scrape_period in scrapes:
             scrape_txn_list = self.load_directed_scrape(path_to_scrape=scrape_path, target_date=scrape_period)
 
-            check = sum([item['amount'] for item in scrape_txn_list])
+            check = float(sum([Utils.decimalconv(str(item['amount'])) for item in scrape_txn_list]))
 
             dep_sum = sum([item['amount'] for item in scrape_txn_list if item['dep_type'] == 'deposit'])
 

@@ -12,7 +12,6 @@ from figuration import Figuration
 from config import Config
 from file_indexer import FileIndexer
 
-
 class TestAddresses:
 
     base_path = '/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/fcvl_test/thru_march_2022'
