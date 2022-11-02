@@ -1,3 +1,5 @@
+from utils import Utils
+
 
 class Reconciler:
 
@@ -25,7 +27,7 @@ class Reconciler:
     @staticmethod
     def findexer_assert_scrape_catches_all_target_txns(period=None, sum_of_parts=None, check=None):
         try:
-            assert sum_of_parts ==  round(check, 2)
+            assert float(Utils.decimalconv(str(sum_of_parts))) ==  round(check, 2)
             print(f'\nReconciling scrape sums for {period}, confirming {sum_of_parts} equals {check}.\n')
         except AssertionError as e:
             print(f'\nAssertionError found in reconciling scrape in file_indexer.py for {period}')

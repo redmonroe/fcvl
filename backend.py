@@ -32,8 +32,6 @@ from reconciler import Reconciler
 basedir = os.path.abspath(os.path.dirname(__file__))
 db = SqliteDatabase(None)
 
-# db = Config.TEST_DB
-
 class BaseModel(Model):
     class Meta:
         database = db
