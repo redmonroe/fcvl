@@ -1378,7 +1378,7 @@ class ProcessingLayer(StatusRS):
             sum_from_payments = ten_payments + ntp
 
             if sum_from_payments == 0:
-                print(f'no tenant deposit report available for {month}')
+                print(f'no tenant deposit report available for {month}\n')
             elif sum_from_payments != 0 and opcash != []:
                 print(f'opcash available for {month}')
                 opcash_deposits = float(opcash[0][4])

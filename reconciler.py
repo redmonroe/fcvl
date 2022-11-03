@@ -11,8 +11,8 @@ class Reconciler:
             print(f'{bank_deposits} == {sum_from_payments_report}.\n')
             return True
         except AssertionError as e:
-            print(f'\nAssertionError in backend processing_layer {genus} deposits do not match payments report for period {month}.')
-            print(f'{genus}:{bank_deposit} does not equal payment report:{sum_from_payments_report}.\n')
+            print(f'\nAssertionError in backend processing_layer {genus} deposits do not match payments report for period {period}.')
+            print(f'{genus}:{bank_deposits} does not equal payment report:{sum_from_payments_report}.\n')
             raise    
 
     @staticmethod

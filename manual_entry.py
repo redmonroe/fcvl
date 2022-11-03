@@ -2,11 +2,9 @@ import sys
 from datetime import datetime as dt
 from operator import attrgetter
 
-from backend import Mentry, Payment, PopulateTable, db
+from backend import Mentry, Payment, PopulateTable, db, Subsidy, TenantRent
 from config import Config
 from db_utils import DBUtils
-
-# this works for payments; col name issues prevent the query from working properly for other types; I can address this
 
 class ManualEntry:
 
@@ -32,7 +30,6 @@ class ManualEntry:
         rows = self.what_rows_payments(target=selection2, obj=selection1)
 
         selection = self.selection_ui(list1=rows, header1=year, header2='rows', header3=selection1._meta.__dict__['name'])
-        breakpoint()
 
         selected_item = self.find_by_id(selection=selection)
 
@@ -45,26 +42,32 @@ class ManualEntry:
             modified_item = self.delete_ui(selected_item=selected_item)
 
     def apply_persisted_changes(self):
+        print('\napplying persistent changes')
         self.connect_to_db()
         self.find_persisted_changes_from_config()
 
-    def delete_ui(self, selected_item=None):
+    def delete_ui(self, selected_item=None, obj_str=None):
         print('delete ui')
         payment = Payment.delete_by_id(selected_item.id)
         selected_item = selected_item.__data__
         self.record_entry_to_manentry(obj_type='Payment', action='delete',selected_item=str(selected_item))
 
-    def delete_ui_dynamic(self, obj_type=None, selected_item=None):
-        print('delete ui dynamic')
+    def delete_ui_dynamic(self, obj_type=None, obj_str=None, selected_item=None):
         item = obj_type.delete_by_id(selected_item.id)
-        self.record_entry_to_manentry(obj_type='Payment', action='delete',selected_item=str(selected_item))
+        self.record_entry_to_manentry(obj_type=obj_str, action='delete',selected_item=str(selected_item))
+        print('ok')
 
-    def update_amount_dynamic(self, obj_type=None, updated_amount=None, selected_item=None):
-        print('updating row amount dynamic (from manual entry)')
+    def update_amount_dynamic(self, obj_type=None, obj_str=None, updated_amount=None, selected_item=None):
         item = obj_type.get(selected_item.id)
-        item.amount = updated_amount
+        if obj_str == 'Subsidy':
+            item.sub_amount = updated_amount
+        elif obj_str == 'TenantRent':
+            item.rent_amount = updated_amount
+        else:
+            item.amount = updated_amount
         item.save()
-        self.record_entry_to_manentry(obj_type='Payment', action='updated_amount', selected_item=str(item))        
+        self.record_entry_to_manentry(obj_type=obj_str, action='updated_amount', selected_item=str(item))        
+        print('ok')
 
     def update_ui(self, selected_item=None):
         '''this does nothing right now'''
@@ -141,8 +144,13 @@ class ManualEntry:
 
     def find_persisted_changes_from_config(self):
         for item in Config.persisted_changes:
-            obj_type = item['obj_type']
-            model_name = self.get_name_from_obj(obj_type=obj_type)
+            try:
+                print(f"\n{item['action']} {item['obj_type']} for {item['col_name1'][1]} for ${item['col_name2'][1]} on {item['col_name3'][1]} to ${item['col_name4'][1]}.")
+            except KeyError as e:
+                print(f"\n{item['action']} {item['obj_type']} for {item['col_name1'][1]} for ${item['col_name2'][1]} on {item['col_name3'][1]}.")
+
+            obj_str = item['obj_type']
+            model_name = self.get_name_from_obj(obj_type=obj_str)
 
             col_name1 = item['col_name1'][0]
             col_value1 = item['col_name1'][1]
@@ -152,11 +160,10 @@ class ManualEntry:
             col_value3 = item['col_name3'][1]
 
             try:
-                # if item['col_name4'] is not None:
                 updated_amount_name = item['col_name4'][0]
                 updated_amount = item['col_name4'][1]
             except KeyError as e:
-                print('this manual entry from Config does not have a col4 & that may be ok!')
+                pass
             
             result = [rec for rec in model_name.select().
                 where(attrgetter(col_name1)(model_name) == col_value1).
@@ -167,10 +174,9 @@ class ManualEntry:
             try:
                 result = result[0]
                 if item['action'] == 'delete':
-                    self.delete_ui_dynamic(obj_type=model_name, selected_item=result)
+                    self.delete_ui_dynamic(obj_type=model_name, obj_str=obj_str, selected_item=result)
                 elif item['action'] == 'update_amount':
-                    print('UPDATE!! BRANCH')
-                    self.update_amount_dynamic(obj_type=model_name, updated_amount=updated_amount, selected_item=result)
+                    self.update_amount_dynamic(obj_type=model_name, obj_str=obj_str, updated_amount=updated_amount, selected_item=result)
             except IndexError as e:
                 print('You probably already deleted the transaction OR transaction "has not happened" yet in program time.  Check mentry db for further information.')
                 print(e)
