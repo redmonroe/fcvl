@@ -105,7 +105,7 @@ class Payment(BaseModel):
 
 class Subsidy(BaseModel):
     tenant = ForeignKeyField(Tenant, backref='subsidies')
-    amount = CharField()
+    sub_amount = CharField()
     date_posted = DateField()
 
 class LP_EndBal(BaseModel):
@@ -482,7 +482,7 @@ class QueryHC(Reconciler):
     def sum_lifetime_subsidy(self, dt_obj_last=None):
         return list(set([(rec.tenant_name, rec.total_payments) for rec in Tenant.select(
         Tenant.tenant_name, 
-        fn.SUM(Subsidy.amount).over(partition_by=[Tenant.tenant_name]).alias('total_payments')).
+        fn.SUM(Subsidy.sub_amount).over(partition_by=[Tenant.tenant_name]).alias('total_payments')).
         where(Subsidy.date_posted <= dt_obj_last).
         join(Subsidy).namedtuples()]))
 
@@ -520,7 +520,7 @@ class QueryHC(Reconciler):
     def subsidy_this_period(self, first_dt=None, last_dt=None):
         return list(set([(rec.tenant_name, rec.total_payments) for rec in Tenant.select(
         Tenant.tenant_name, 
-        fn.SUM(Subsidy.amount).over(partition_by=[Tenant.tenant_name]).alias('total_payments')).
+        fn.SUM(Subsidy.sub_amount).over(partition_by=[Tenant.tenant_name]).alias('total_payments')).
         where(Subsidy.date_posted >= first_dt).
         where(Subsidy.date_posted <= last_dt).
         join(Subsidy).namedtuples()]))
@@ -659,7 +659,7 @@ class PopulateTable(QueryHC):
 
         rent_insert_many = [{'t_name': row.name, 'unit': row.unit, 'rent_amount': row.rent.replace(',',''), 'rent_date': row.date} for row in nt_list if row.name != 'vacant']  
 
-        subs_insert_many = [{'tenant': row.name, 'amount': row.subsidy.replace(',', ''), 'date_posted': row.date} for row in nt_list if row.name != 'vacant']
+        subs_insert_many = [{'tenant': row.name, 'sub_amount': row.subsidy.replace(',', ''), 'date_posted': row.date} for row in nt_list if row.name != 'vacant']
 
         krent_insert_many = [{'tenant': row.name, 'sub_amount': row.contract.replace(',', ''), 'date_posted': row.date} for row in nt_list if row.name != 'vacant']
 
@@ -723,7 +723,7 @@ class PopulateTable(QueryHC):
                 unit.last_occupied = '0'
             unit.save()
 
-        subs_insert_many = [{'tenant': row.name, 'amount': row.subsidy.replace(',',''), 'date_posted': row.date} for row in cleaned_nt_list if row.name != 'vacant']
+        subs_insert_many = [{'tenant': row.name, 'sub_amount': row.subsidy.replace(',',''), 'date_posted': row.date} for row in cleaned_nt_list if row.name != 'vacant']
         krent_insert_many = [{'tenant': row.name, 'sub_amount': row.contract.replace(',',''), 'date_posted': row.date} for row in cleaned_nt_list if row.name != 'vacant']
 
         query = TenantRent.insert_many(insert_many_rent)
