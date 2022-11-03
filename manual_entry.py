@@ -57,14 +57,9 @@ class ManualEntry:
         self.record_entry_to_manentry(obj_type=obj_str, action='delete',selected_item=str(selected_item))
         print('ok')
 
-    def update_amount_dynamic(self, obj_type=None, obj_str=None, updated_amount=None, selected_item=None):
+    def update_amount_dynamic(self,target_attribute=None, obj_type=None, obj_str=None, updated_amount=None, selected_item=None):
         item = obj_type.get(selected_item.id)
-        if obj_str == 'Subsidy':
-            item.sub_amount = updated_amount
-        elif obj_str == 'TenantRent':
-            item.rent_amount = updated_amount
-        else:
-            item.amount = updated_amount
+        item.__setattr__(target_attribute, updated_amount)
         item.save()
         self.record_entry_to_manentry(obj_type=obj_str, action='updated_amount', selected_item=str(item))        
         print('ok')
@@ -176,7 +171,7 @@ class ManualEntry:
                 if item['action'] == 'delete':
                     self.delete_ui_dynamic(obj_type=model_name, obj_str=obj_str, selected_item=result)
                 elif item['action'] == 'update_amount':
-                    self.update_amount_dynamic(obj_type=model_name, obj_str=obj_str, updated_amount=updated_amount, selected_item=result)
+                    self.update_amount_dynamic(target_attribute=col_name2, obj_type=model_name, obj_str=obj_str, updated_amount=updated_amount, selected_item=result)
             except IndexError as e:
                 print('You probably already deleted the transaction OR transaction "has not happened" yet in program time.  Check mentry db for further information.')
                 print(e)

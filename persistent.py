@@ -10,9 +10,18 @@ class Persistent:
         {'obj_type': 'Payment', 'action': 'delete', 'col_name1': ('tenant_id', 'newcomb, benny'), 'col_name2': ('amount', '400.00'), 'col_name3': ('date_posted', '2022-09-26')},
 
         ## should be able to erase Alicia Brown (following 2) as new sheet will have picked up IR
-        {'obj_type': 'Subsidy', 'action': 'update_amount', 'col_name1': ('tenant_id', 'brown, alicia'), 'col_name2': ('sub_amount', '-370.00'), 'col_name3': ('date_posted', '2022-10-01'), 'col_name4': ('new_amount', '224.00')},
+        {'obj_type': 'Subsidy', 'action': 'update_amount', 'col_name1': ('tenant_id', 'brown, alicia'), 'col_name2': ('amount', '224.00'), 'col_name3': ('date_posted', '2022-07-01'), 'col_name4': ('new_amount', '521.00')},
+
+        {'obj_type': 'TenantRent', 'action': 'update_amount', 'col_name1': ('t_name_id', 'brown, alicia'), 'col_name2': ('rent_amount', '546.00'), 'col_name3': ('rent_date', '2022-07-01'), 'col_name4': ('new_amount', '249.00')},
+
+        {'obj_type': 'Subsidy', 'action': 'update_amount', 'col_name1': ('tenant_id', 'brown, alicia'), 'col_name2': ('amount', '1115.00'), 'col_name3': ('date_posted', '2022-09-01'), 'col_name4': ('new_amount', '224.00')},
+
+        {'obj_type': 'TenantRent', 'action': 'update_amount', 'col_name1': ('t_name_id', 'brown, alicia'), 'col_name2': ('rent_amount', '-345.00'), 'col_name3': ('rent_date', '2022-09-01'), 'col_name4': ('new_amount', '546.00')},
+
+        {'obj_type': 'Subsidy', 'action': 'update_amount', 'col_name1': ('tenant_id', 'brown, alicia'), 'col_name2': ('amount', '-370.00'), 'col_name3': ('date_posted', '2022-10-01'), 'col_name4': ('new_amount', '224.00')},
 
         {'obj_type': 'TenantRent', 'action': 'update_amount', 'col_name1': ('t_name_id', 'brown, alicia'), 'col_name2': ('rent_amount', '1140.00'), 'col_name3': ('rent_date', '2022-10-01'), 'col_name4': ('new_amount', '546.00')},
+
         
         ]
 
