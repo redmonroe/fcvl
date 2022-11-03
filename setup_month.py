@@ -7,15 +7,15 @@ from numpy import nan
 from peewee import JOIN, fn
 
 from auth_work import oauth
-from backend import (Damages, Findexer, NTPayment, OpCash, OpCashDetail, Payment, PopulateTable, QueryHC, StatusObject, StatusRS,
+from backend import (Damages, Findexer, NTPayment, OpCash, OpCashDetail,
+                     Payment, PopulateTable, QueryHC, StatusObject, StatusRS,
                      Tenant, TenantRent, Unit, db)
 from config import Config
-
 from db_utils import DBUtils
 from google_api_calls_abstract import GoogleApiCalls
+from reconciler import Reconciler
 from setup_year import YearSheet
 from utils import Utils
-
 
 class MonthSheet(YearSheet):
 
@@ -195,7 +195,7 @@ class MonthSheet(YearSheet):
         nbofi_total = gc.broad_get(self.service, self.full_sheet, f'{date}!D90:D90')
 
         status_list = []
-        if onesite_total == nbofi_total:
+        if Reconciler.month_sheet_final_check(onesite_total=onesite_total, nbofi_total=nbofi_total, period=date, genus='rent sheet'):
             message = [f'balances at {str(dt.today().date())}']
             status_object_row = [(row.id, row.month) for row in StatusObject.select().where(StatusObject.month==date).namedtuples()][0]
             status_object = StatusObject.get(status_object_row[0])

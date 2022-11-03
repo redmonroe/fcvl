@@ -272,7 +272,6 @@ class Utils:
 
         return output
 
-
     @staticmethod
     def decimalconv(num_as_str, places=Decimal('0.01'), round1=ROUND_HALF_UP):
         num_as_quantized_decimal = Decimal(num_as_str).quantize(places, round1)
