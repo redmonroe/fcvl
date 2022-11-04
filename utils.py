@@ -186,7 +186,7 @@ class Utils:
     @staticmethod
     def helper_fix_date_str2(date_str):
         f_date = datetime.strptime(date_str, '%m/%d/%Y')
-        f_date = f_date.strftime('%Y-%d-%m')
+        f_date = f_date.strftime('%Y-%m-%d')
         return f_date
         
     def get_book_name(service, sh_id):

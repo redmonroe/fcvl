@@ -412,7 +412,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
             select().
             where(Findexer.doc_type==self.style_term.opcash).
             namedtuples()]
-
+        
         for name, doc_id in opcash_records:
             if self.get_date_from_opcash_name(name) == [*deposit_iter[0]][0]:
                 proc_date = stmt_date
@@ -420,7 +420,9 @@ class FileIndexer(Utils, Scrape, Reconciler):
                 hap = [*hap_iter[0].values()][0][0] 
                 depsum = [*depsum_iter[0].values()][0][0]
                 # deplist = json.dumps([*deposit_iter[0].values()])
-                deplist = [{item[0], item[1]} for item in [*deposit_iter[0].values()][0]]
+                # deplist = [{item[0]: item[1]} for item in [*deposit_iter[0].values()][0]]
+                deplist = [{self.adjust_deposit_date(item[0]): item[1]} for item in [*deposit_iter[0].values()][0]]
+                # print(deplist)
                 corr_sum = [*corrections_iter[0][0].values()][0][0]
                 
                 find_change = Findexer.get(Findexer.doc_id==doc_id)
