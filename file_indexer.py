@@ -91,21 +91,22 @@ class Scrape:
     def get_df_of_scrape(self, path=None):
         return pd.read_csv(path)
 
+    def adjust_deposit_date(self, date_str=None):
+        if '-' in [letter for letter in date_str]:
+            return date_str
+        elif '/' in [letter for letter in date_str]:
+            return Utils.helper_fix_date_str2(date_str)
+        else:
+            print('issue converting date in scrape sheet from bank')
+            exit
+
     def get_targeted_rows_for_scrape(self, scrape_df=None):
         deposit_list = []
         corr_count = 0
         for index, row in scrape_df.iterrows():
             if row['Description'] == 'DEPOSIT':
                 dict1 = {}
-                date_str = row['Processed Date']
-                if '-' in [letter for letter in date_str]:
-                    date_str = Utils.helper_fix_date_str(date_str)
-                elif '/' in [letter for letter in date_str]:
-                    date_str = date_str
-                else:
-                    print('issue converting date in scrape')
-                    exit
-                dict1 = {'date': row['Processed Date'], 'amount': row['Amount'], 'dep_type': 'deposit'}
+                dict1 = {'date': self.adjust_deposit_date(row['Processed Date']), 'amount': row['Amount'], 'dep_type': 'deposit'}
                 deposit_list.append(dict1)
             if 'INCOMING' in row['Description']:
                 dict1 = {}
@@ -116,7 +117,6 @@ class Scrape:
                 dict1 = {}
                 dict1 = {'date': row['Processed Date'], 'amount': row['Amount'], 'dep_type': 'hap'}                
                 deposit_list.append(dict1)
-
 
             '''following branches are for finding corrections'''
 
@@ -419,7 +419,8 @@ class FileIndexer(Utils, Scrape, Reconciler):
                 rr = [*rr_iter[0].values()][0][0]
                 hap = [*hap_iter[0].values()][0][0] 
                 depsum = [*depsum_iter[0].values()][0][0]
-                deplist = json.dumps([*deposit_iter[0].values()])
+                # deplist = json.dumps([*deposit_iter[0].values()])
+                deplist = [{item[0], item[1]} for item in [*deposit_iter[0].values()][0]]
                 corr_sum = [*corrections_iter[0][0].values()][0][0]
                 
                 find_change = Findexer.get(Findexer.doc_id==doc_id)

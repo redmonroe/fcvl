@@ -51,7 +51,7 @@ class BuildRS(MonthSheet):
         self.load_initial_tenants_and_balances()
         processed_rentr_dates_and_paths = self.iterate_over_remaining_months()
         Damages.load_damages()
-        self.populate.transfer_opcash_to_db() # PROCESSED OPCASHES MOVED INTO DB
+        self.populate.transfer_opcash_from_findex_to_opcash_and_detail() # PROCESSED OPCASHES MOVED INTO DB
 
         '''BUILD ADDRESSES HERE; MOVE IT OUT OF LETTERS'''
 

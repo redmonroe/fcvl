@@ -993,14 +993,28 @@ class PopulateTable(QueryHC):
                 except (ValueError, IndexError, DNE) as e:
                     print(f'error deactivating unit for {name}')
 
-    def transfer_opcash_to_db(self):
+    def transfer_opcash_from_findex_to_opcash_and_detail(self):
         """this function is repsonsible for moving information unpacked into findexer table into OpCash and OpCashDetail tables"""
+
+        """
+        SO HERE!!
+
+        I AM NOT CHECKING SCRAPES AT ALL SO THOSE ARE NOT PULLED INTO OPCASH AND OPCASH_DETAIL
+
+        COULD MERGE WITH SCRAPEDETAIL
+        """
+        file_list = [(item.fn, item.period, item.path, item.hap, item.rr, item.depsum, item.deplist, item.corr_sum) for item in Findexer().select().
+            where(Findexer.doc_type == 'opcash').
+            where(Findexer.status == 'processed').
+            namedtuples()]
+
         file_list = [(item.fn, item.period, item.path, item.hap, item.rr, item.depsum, item.deplist, item.corr_sum) for item in Findexer().select().
             where(Findexer.doc_type == 'opcash').
             where(Findexer.status == 'processed').
             namedtuples()]
 
         for item in file_list:
+            breakpoint()
             try: 
                 with db.atomic():
                     oc = OpCash.create(stmt_key=item[0], date=datetime.strptime(item[1], '%Y-%m'), rr=item[4], hap=item[3], dep_sum=item[5], corr_sum=item[7])
@@ -1010,6 +1024,7 @@ class PopulateTable(QueryHC):
                 print(e)
 
             for lst in json.loads(item[6])[0]:
+                breakpoint()
                 ocd = OpCashDetail.create(stmt_key=item[0], date1=datetime.strptime(lst[0], '%m/%d/%Y'), amount=lst[1])
                 ocd.save()
 

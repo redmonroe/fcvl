@@ -66,7 +66,7 @@ class IterRS(BuildRS):
                 self.iterate_over_remaining_months_incremental(list1=new_files)
                 Damages.load_damages()
 
-                self.populate.transfer_opcash_to_db()
+                self.populate.transfer_opcash_from_findex_to_opcash_and_detail()
 
                 all_months_ytd, report_list, most_recent_status = player.write_to_statusrs_wrapper()
 
