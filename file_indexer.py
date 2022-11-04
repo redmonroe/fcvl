@@ -63,6 +63,7 @@ class Scrape:
             scrape_to_update.save()
 
     def load_directed_scrape(self, path_to_scrape=None, target_date=None):
+        
         populate = PopulateTable() 
         df = self.get_df_of_scrape(path=path_to_scrape)
         scrape_txn_list = self.get_targeted_rows_for_scrape(scrape_df=df)
@@ -419,10 +420,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
                 rr = [*rr_iter[0].values()][0][0]
                 hap = [*hap_iter[0].values()][0][0] 
                 depsum = [*depsum_iter[0].values()][0][0]
-                # deplist = json.dumps([*deposit_iter[0].values()])
-                # deplist = [{item[0]: item[1]} for item in [*deposit_iter[0].values()][0]]
-                deplist = [{self.adjust_deposit_date(item[0]): item[1]} for item in [*deposit_iter[0].values()][0]]
-                # print(deplist)
+                deplist = json.dumps([{self.adjust_deposit_date(item[0]): item[1]} for item in [*deposit_iter[0].values()][0]])
                 corr_sum = [*corrections_iter[0][0].values()][0][0]
                 
                 find_change = Findexer.get(Findexer.doc_id==doc_id)

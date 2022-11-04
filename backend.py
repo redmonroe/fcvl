@@ -1014,7 +1014,6 @@ class PopulateTable(QueryHC):
             namedtuples()]
 
         for item in file_list:
-            breakpoint()
             try: 
                 with db.atomic():
                     oc = OpCash.create(stmt_key=item[0], date=datetime.strptime(item[1], '%Y-%m'), rr=item[4], hap=item[3], dep_sum=item[5], corr_sum=item[7])
@@ -1023,9 +1022,9 @@ class PopulateTable(QueryHC):
                 print('already created this record')
                 print(e)
 
-            for lst in json.loads(item[6])[0]:
-                breakpoint()
-                ocd = OpCashDetail.create(stmt_key=item[0], date1=datetime.strptime(lst[0], '%m/%d/%Y'), amount=lst[1])
+            for lst in json.loads(item[6]):
+                amount = list(lst.values())[0]
+                ocd = OpCashDetail.create(stmt_key=item[0], date1=datetime.strptime(list(lst.keys())[0], '%Y-%m-%d'), amount=amount)
                 ocd.save()
 
     def load_scrape_to_db(self, deposit_list=None, target_date=None):
