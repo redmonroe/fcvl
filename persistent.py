@@ -1,5 +1,8 @@
 class Persistent:
-    damages = [{'morris, michael': (599, '2022-02-01', 'exterm')}]
+    damages = [
+                {'morris, michael': (599, '2022-02-01', 'exterm')}
+                # {'greiner, richard': ()}
+    ]
     
     changes = [{'obj_type': 'Payment', 'action': 'delete', 'col_name1': ('tenant_id', 'newcomb, benny'), 'col_name2': ('amount', '476.0'), 'col_name3': ('date_posted', '2022-02-08')}, 
         

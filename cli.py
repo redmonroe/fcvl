@@ -124,7 +124,7 @@ def write_all_prod():
 def write_all_test():
     click.echo('TEST: write all db contents to rs . . .')
     figure = Figuration()
-    path, full_sheet, build, service, ms = figure.return_configuration() 
+    path, full_sheet, build, service, ms = figure.return_configuration()
     ms.auto_control(source='cli.py', mode='clean_build')
     
     # sample_month_list = ['2022-01', '2022-02']
@@ -204,6 +204,13 @@ def status_findexer_test():
     player = ProcessingLayer()
     player.show_status_table(path=path, db=db)
 
+@click.command()
+def delete_one_sheet():
+    click.echo('deleting one sheet')
+    figure = Figuration()
+    path, full_sheet, build, service, ms = figure.return_configuration()
+    breakpoint()
+
 
 """TESTING COMMANDS"""
 @click.command()
@@ -266,6 +273,7 @@ cli.add_command(workorders)
 cli.add_command(recvactuals)
 cli.add_command(incremental_build)
 cli.add_command(manentry)
+cli.add_command(delete_one_sheet)
 """TESTING COMMANDS"""
 cli.add_command(test_full)
 cli.add_command(test_canonical)
