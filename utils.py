@@ -250,7 +250,7 @@ class Utils:
         files = []
         choice_file = {}
 
-        for count, (k, v) in enumerate(list.items(), 0):
+        for count, (k, v) in enumerate(list.items(), 1):
             print(count, "****", k, '****', v)
             choice.append(count)
             files.append(k)

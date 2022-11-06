@@ -209,8 +209,7 @@ def delete_one_sheet():
     click.echo('deleting one sheet')
     figure = Figuration()
     path, full_sheet, build, service, ms = figure.return_configuration()
-    breakpoint()
-
+    ms.delete_one_month_sheet(service, full_sheet)
 
 """TESTING COMMANDS"""
 @click.command()

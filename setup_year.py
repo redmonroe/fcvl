@@ -43,14 +43,6 @@ class YearSheet:
         
         self.source_id = None
 
-    # def show_current_sheets(self, interactive=False):
-    #     print('showing current sheets')
-    #     titles_dict = Utils.get_existing_sheets(self.service, self.full_sheet)
-    #     path = Utils.show_files_as_choices(titles_dict, interactive=interactive)
-    #     if interactive == True:
-    #         return path
-    #     return titles_dict
-
     def make_base_sheet(self):  
         response = self.calls.make_one_sheet(self.service, self.full_sheet, self.base_month + ' ' + f'{Config.current_year}')
         dict1 = {}
@@ -62,17 +54,13 @@ class YearSheet:
         for title, id1 in titles_dict.items():
             if title == 'base 2022':
                 self.source_id = id1   
-        # offset == len(titles_dict) 
         insert_index = len(titles_dict)
         for name in month_list:
             insert_index += 1
             self.calls.api_duplicate_sheet(self.service, self.full_sheet, source_id=self.source_id, insert_index=insert_index, title=name)
 
     def formatting_runner(self, title_dict=None):
-        # titles_dict = Utils.get_existing_sheets(self.service, self.full_sheet)
-        # titles_dict = {name:id2 for name, id2 in titles_dict.items() if name != 'intake'}
-        
-        for sheet, sheet_id in title_dict.items():
+         for sheet, sheet_id in title_dict.items():
             '''writes the sum formulas in a row'''
             self.calls.write_formula_column(self.service, self.full_sheet, self.G_SUM_KRENT, f'{sheet}!E69:E69')
             self.calls.write_formula_column(self.service, self.full_sheet, self.G_SUM_ACTSUBSIDY, f'{sheet}!F69:F69')

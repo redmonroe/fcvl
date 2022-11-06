@@ -1,6 +1,6 @@
 class Persistent:
     damages = [
-                {'morris, michael': (599, '2022-02-01', 'exterm')}
+                {'morris, michael': (599, '2022-02-01', 'exterm')}, 
                 # {'greiner, richard': ()}
     ]
     

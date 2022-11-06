@@ -267,8 +267,17 @@ class MonthSheet(YearSheet):
         for name, id2, in current_sheets.items():
             if name != 'intake':
                 gc.del_one_sheet(self.service, self.full_sheet, id2)
-
-
+    
+    def delete_one_month_sheet(self, *args, **kwargs):
+        gc = GoogleApiCalls()
+        titles_dict = Utils.get_existing_sheets(args[0], args[1])
+        titles_dict = {name:id2 for name, id2 in titles_dict.items() if name != 'intake'}
+        path = Utils.show_files_as_choices(titles_dict, interactive=True)
+        gc = GoogleApiCalls()
+        for name, id2 in titles_dict.items():
+            if path[0] == name:
+                gc.del_one_sheet(args[0], args[1], id2)
+        
 
 
 
