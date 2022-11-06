@@ -22,7 +22,7 @@ class Utils:
         __delattr__ = dict.__delitem__
 
     @staticmethod
-    def months_in_ytd(current_year, style=None):
+    def months_in_ytd(current_year, style=None, show_choices=None):
         range_month = datetime.now().strftime('%m')
         str_month = datetime.now().strftime('%b').lower()
         date_info = monthrange(int(current_year), int(range_month))
@@ -35,6 +35,13 @@ class Utils:
             month_list = pd.date_range(f'{current_year}-01-01',f'{current_year}-{range_month}-{last_day}',freq='MS').strftime("%Y-%m").tolist()
             month_list = [item for item in month_list]
 
+        if show_choices:
+            for count, item in enumerate(month_list, 1):
+                print(count, item)
+            choice = [{count: month} for count, month in (enumerate(month_list, 1))]
+            selection = int(input('Please select an item to work with: '))
+            month1 = [list(month.values())[0] for month in choice if list(month.keys())[0] == selection]     
+            return month1
         return month_list
 
     @staticmethod

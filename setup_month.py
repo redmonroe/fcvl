@@ -33,7 +33,7 @@ class MonthSheet(YearSheet):
             self.service = test_service
         else:
             self.service = oauth(Config.my_scopes, 'sheet')
-
+    
     def auto_control(self, source=None, mode='clean_build', month_list=None):
         if month_list != None:
             wrange = f'This list has been expressly passed from {source}.'
@@ -48,11 +48,16 @@ class MonthSheet(YearSheet):
 
         if mode == 'clean_build':
             self.reset_spreadsheet()
+            titles_dict = self.make_base_sheet()
+            self.formatting_runner(title_dict=titles_dict) 
+            self.duplicate_formatted_sheets(month_list=month_list)
+            self.remove_base_sheet()
+        else:
+            month_list = Utils.months_in_ytd(Config.dynamic_current_year, show_choices=True)
+            print(f'MAKE SINGLE RENT SHEET FOR {month_list} | DO NOT RESET SHEET.')
+            titles_dict = self.make_single_sheet(single_month_list=month_list)
+            self.formatting_runner(title_dict=titles_dict) 
     
-        title_dict = self.make_base_sheet()
-        self.formatting_runner(title_dict=title_dict) 
-        self.duplicate_formatted_sheets(month_list=month_list)
-        self.remove_base_sheet()
 
         status_list = []
         for date in month_list:
@@ -277,6 +282,9 @@ class MonthSheet(YearSheet):
         for name, id2 in titles_dict.items():
             if path[0] == name:
                 gc.del_one_sheet(args[0], args[1], id2)
+
+    def make_one_sheet(self, *args, **kwargs):
+        pass
         
 
 

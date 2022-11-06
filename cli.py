@@ -211,6 +211,13 @@ def delete_one_sheet():
     path, full_sheet, build, service, ms = figure.return_configuration()
     ms.delete_one_month_sheet(service, full_sheet)
 
+@click.command()
+def make_one_sheet():
+    click.echo('making one sheet')
+    figure = Figuration()
+    path, full_sheet, build, service, ms = figure.return_configuration()
+    ms.auto_control(mode='not clean build')
+
 """TESTING COMMANDS"""
 @click.command()
 @click.option('--write', default='False', help='do you want to write to rs or not?')
@@ -273,6 +280,7 @@ cli.add_command(recvactuals)
 cli.add_command(incremental_build)
 cli.add_command(manentry)
 cli.add_command(delete_one_sheet)
+cli.add_command(make_one_sheet)
 """TESTING COMMANDS"""
 cli.add_command(test_full)
 cli.add_command(test_canonical)

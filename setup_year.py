@@ -49,6 +49,12 @@ class YearSheet:
         dict1[response['replies'][0]['addSheet']['properties']['title']] = response['replies'][0]['addSheet']['properties']['sheetId']
         return dict1
 
+    def make_single_sheet(self, single_month_list=None): 
+        response = self.calls.make_one_sheet(self.service, self.full_sheet, single_month_list[0])
+        dict1 = {}
+        dict1[response['replies'][0]['addSheet']['properties']['title']] = response['replies'][0]['addSheet']['properties']['sheetId']
+        return dict1
+
     def duplicate_formatted_sheets(self, month_list=None):       
         titles_dict = Utils.get_existing_sheets(self.service, self.full_sheet)
         for title, id1 in titles_dict.items():
