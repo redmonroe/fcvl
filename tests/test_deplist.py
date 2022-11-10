@@ -27,7 +27,7 @@ class TestDeplist:
 
     base_path = '/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/fcvl_test/first_three_months_op_only'
 
-    scrape_only_last_month_path2 = '/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/april_scrape_only'
+    scrape_path = '/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/fcvl_test/april_scrape_only'
 
     @pytest.fixture
     def set_write_mode(self, write):
@@ -85,18 +85,19 @@ class TestDeplist:
     def test_on_opcash_only_findexer(self, query):
         print(f'\n running {inspect.currentframe().f_code.co_name.capitalize()}\n')        
         indexed_files = query.get_all_by_rows_by_argument(model1=Findexer)
-        breakpoint()
         assert len(indexed_files) == 9
+        # breakpoint()
 
-    '''
     def test_load_april_from_scrape(self, set_write_mode):
         print('\n START SCRAPE ONLY for April\n')
-        path, full_sheet, build, service, ms, findexer = self.return_scrape_config(configured_path=self.base_path2)   # uses BuildRS not IterRS
-        build.build_db_from_scratch(write=set_write_mode)  # this should write to rs
+        path, full_sheet, iterb, service, ms, findexer = self.return_op_config(type1='iter', configured_path=self.scrape_path)   # return IterRS
+        # breakpoint()
+        iterb.incremental_load(write=set_write_mode)
 
 
         
 
+    '''
 
     def test_db_reset1(self, populate):
         path, full_sheet, build, service, ms, findexer = self.return_op_config(configured_path=self.base_path)  

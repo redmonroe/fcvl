@@ -269,8 +269,11 @@ def test_various(select):
         click.echo('run canonical docs test suite WITHOUT WRITE')
         no_write = pytest.main(['-s', '--write', 'False', 'tests/test_main_canonical.py',])
     elif select == 'deplist':
-        click.echo('run deplist test to simulate writng from a month with a scrape only; WRITE is enabled')
-        no_write = pytest.main(['-s', '--write', 'True', 'tests/test_deplist.py',])
+        click.echo('run deplist test to simulate writng from a month with a scrape only; WRITE is NOT enabled')
+        no_write = pytest.main(['-s', '--write', 'False', 'tests/test_deplist.py',])
+    elif select == 'deplistw':
+        click.echo('run deplist test to simulate writng from a month with a scrape only; WRITE is ENABLED')
+        write = pytest.main(['-s', '--write', 'True', 'tests/test_deplist.py',])
 
 
 cli.add_command(escrow)

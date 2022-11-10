@@ -126,7 +126,7 @@ class BuildRS(MonthSheet):
                     assert scrape_deposit_sum == grand_total
                     # except AssertionError as e:
                         # print(e)
-                        # breakpoint()
+                    breakpoint()
                     target_status_object = [item for item in StatusObject().select().where(StatusObject.month==data[0])][0]
                     target_status_object.scrape_reconciled = True
                     target_status_object.save() 
