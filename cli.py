@@ -260,6 +260,19 @@ def test_addresses():
     click.echo('run testing for addressing package')
     no_write = pytest.main(['-s', 'tests/test_addresses.py',])
 
+@click.command()
+@click.option('--select', default='canonical', help='which type of test would you like to run?')
+def test_various(select):
+    click.echo('run one of a variety of tests')
+
+    if select == 'canonical':
+        click.echo('run canonical docs test suite WITHOUT WRITE')
+        no_write = pytest.main(['-s', '--write', 'False', 'tests/test_main_canonical.py',])
+    elif select == 'deplist':
+        click.echo('run deplist test to simulate writng from a month with a scrape only; WRITE is enabled')
+        breakpoint()
+        no_write = pytest.main(['-s', '--write', 'True', 'tests/test_deplist.py',])
+
 
 cli.add_command(escrow)
 cli.add_command(receipts)
@@ -286,6 +299,7 @@ cli.add_command(test_full)
 cli.add_command(test_canonical)
 cli.add_command(test_rent_receipts)
 cli.add_command(test_addresses)
+cli.add_command(test_various)
 
 if __name__ == '__main__':
     cli()
