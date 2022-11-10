@@ -270,7 +270,6 @@ def test_various(select):
         no_write = pytest.main(['-s', '--write', 'False', 'tests/test_main_canonical.py',])
     elif select == 'deplist':
         click.echo('run deplist test to simulate writng from a month with a scrape only; WRITE is enabled')
-        breakpoint()
         no_write = pytest.main(['-s', '--write', 'True', 'tests/test_deplist.py',])
 
 

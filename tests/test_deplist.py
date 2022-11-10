@@ -25,10 +25,9 @@ print('IT IS VERY LIKELY THAT A STATUSOBJECT HAS FAILED TO RECONCILE')
 
 class TestDeplist:
 
-    init_series_path = '/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/fcvl_test/jan_only_2022_OP_ONLY'
+    base_path = '/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/fcvl_test/first_three_months_op_only'
 
-    scrape_only_last_month_path2 = '/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/fcvl_test/jan_only_2022_SCRAPE_ONLY'
-
+    scrape_only_last_month_path2 = '/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/april_scrape_only'
 
     @pytest.fixture
     def set_write_mode(self, write):
@@ -50,6 +49,7 @@ class TestDeplist:
         return query 
 
     def return_op_config(self, type1=None, configured_path=None):
+        '''this is just to set up first three months for testing deplist writing from scrape'''
         if type1 == 'iter':
             figure = Figuration(path=Path(configured_path), pytest=True)
         else: 
@@ -78,18 +78,25 @@ class TestDeplist:
         ms.reset_spreadsheet()
 
     def test_load_init_db_state1_VIA_BUILD(self, set_write_mode):
-        print('\n START OP ONLY JAN BUILD\n')
+        print('\n START OP ONLY JAN FEB MAR\n')
         path, full_sheet, build, service, ms, findexer = self.return_op_config(configured_path=self.base_path)   # uses BuildRS not IterRS
-        build.build_db_from_scratch(write=set_write_mode)  # this should write to rs
+        build.build_db_from_scratch(write=set_write_mode)  
 
     def test_on_opcash_only_findexer(self, query):
-        print(f'\n running {inspect.currentframe().f_code.co_name.capitalize()}\n')
-        
+        print(f'\n running {inspect.currentframe().f_code.co_name.capitalize()}\n')        
         indexed_files = query.get_all_by_rows_by_argument(model1=Findexer)
-        assert len(indexed_files) == 3
-        # breakpoint()
+        breakpoint()
+        assert len(indexed_files) == 9
+
+    '''
+    def test_load_april_from_scrape(self, set_write_mode):
+        print('\n START SCRAPE ONLY for April\n')
+        path, full_sheet, build, service, ms, findexer = self.return_scrape_config(configured_path=self.base_path2)   # uses BuildRS not IterRS
+        build.build_db_from_scratch(write=set_write_mode)  # this should write to rs
+
+
         
-    """CLEAN UP AFTER JAN OP ONLY BUILD"""
+
 
     def test_db_reset1(self, populate):
         path, full_sheet, build, service, ms, findexer = self.return_op_config(configured_path=self.base_path)  
@@ -101,10 +108,6 @@ class TestDeplist:
         path, full_sheet, build, service, ms, findexer = self.return_op_config(configured_path=self.base_path)  
         ms.reset_spreadsheet()
 
-    def test_load_init_db_state1_VIA_SCRAPE(self, set_write_mode):
-        print('\n START SCRAPE ONLY JAN BUILD\n')
-        path, full_sheet, build, service, ms, findexer = self.return_scrape_config(configured_path=self.base_path2)   # uses BuildRS not IterRS
-        build.build_db_from_scratch(write=set_write_mode)  # this should write to rs
 
     """CLEAN UP AFTER JAN SCRAPE ONLY BUILD"""
     
@@ -125,3 +128,5 @@ class TestDeplist:
 
     def test_x(self):
         pass
+
+    '''
