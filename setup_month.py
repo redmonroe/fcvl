@@ -52,6 +52,12 @@ class MonthSheet(YearSheet):
             self.formatting_runner(title_dict=titles_dict) 
             self.duplicate_formatted_sheets(month_list=month_list)
             self.remove_base_sheet()
+        elif mode == 'iter_build':
+            self.reset_spreadsheet()
+            titles_dict = self.make_base_sheet()
+            self.formatting_runner(title_dict=titles_dict) 
+            self.duplicate_formatted_sheets(month_list=month_list)
+            self.remove_base_sheet()
         else:
             month_list = Utils.months_in_ytd(Config.dynamic_current_year, show_choices=True)
             print(f'MAKE SINGLE RENT SHEET FOR {month_list} | DO NOT RESET SHEET.')
