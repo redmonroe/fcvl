@@ -4,6 +4,20 @@ from utils import Utils
 class Reconciler:
 
     @staticmethod
+    def iter_build_assert_scrape_total_match_deposits(scrape_deposit_sum=None, grand_total_from_deposits=None, genus=None, period=None):
+        try: 
+            assert scrape_deposit_sum == grand_total_from_deposits
+            print(f'Final check for {genus} if payment reports == scrape for {period}:')
+            print(f'{scrape_deposit_sum} == {grand_total_from_deposits}.\n')
+            return True
+        except AssertionError as e:
+            print(f'\nAssertionError in MonthSheet {genus} deposits do not match payments report for period {period}.')
+            print(f'{genus}:{scrape_deposit_sum} does not equal payment report:{grand_total_from_deposits}.\n')
+            raise    
+
+
+
+    @staticmethod
     def month_sheet_final_check(onesite_total=None, nbofi_total=None, period=None, genus=None):
         try: 
             assert onesite_total == nbofi_total 

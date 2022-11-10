@@ -38,7 +38,6 @@ class IterRS(BuildRS):
     def task_list(self, *args, **kwargs):   
         self.iterate_over_remaining_months_incremental(list1=kwargs['new_files'])
         Damages.load_damages()
-        breakpoint()
 
         self.populate.transfer_opcash_from_findex_to_opcash_and_detail()
 
@@ -51,12 +50,16 @@ class IterRS(BuildRS):
 
         player.display_most_recent_status(mr_status=most_recent_status, months_ytd=all_months_ytd)
 
-        writeable_months = player.final_check_writeable_months(month_list=all_months_ytd)
-        
-        player.find_complete_pw_months_and_iter_write(writeable_months=writeable_months)
+        breakpoint()
+        if kw.get('write'):
+            writeable_months = player.final_check_writeable_months(month_list=all_months_ytd)
+            player.find_complete_pw_months_and_iter_write(writeable_months=writeable_months)
+        else:
+            print('you have passed the option not to write in iter_rs.')
 
         """need to incrementally add opcash if new
         RIGHT NOW THE OPCASH IS NOT ADDED TO OPCASH TABLE""" 
+        
 
     def incremental_load(self, **kw):
         print('...attempting incremental load')
@@ -87,14 +90,13 @@ class IterRS(BuildRS):
             else:
                 print('there are no finalized months waiting to be written to sheets.')
 
-        if kw.get('write') == True:
-            """we need both new files and SOME unfinalized months to do anything"""
-            if new_files != [] and unfinalized_months != []:
-                self.task_list(new_files=new_files, write=kw.get('write'))
-            else:
-                print('there are no new files, but some months are still unfinalized')
-                print('exiting iter_build')
-        elif kw.get('write') == False:
-            pass
+        # if kw.get('write') == True:
+        """we need both new files and SOME unfinalized months to do anything"""
+        if new_files != [] and unfinalized_months != []:
+            self.task_list(new_files=new_files, write=kw.get('write'))
         else:
-            print('you have chosen not to pass write=True so nothing is written to sheets')
+            print('there are no new files, but some months are still unfinalized')
+            print('exiting iter_build')
+       
+        # else:
+        #     print('you have chosen not to pass write=True so nothing is written to sheets')

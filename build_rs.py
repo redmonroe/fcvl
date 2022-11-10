@@ -2,12 +2,16 @@ import json
 from datetime import datetime
 
 from auth_work import oauth
-from backend import (ProcessingLayer, BalanceLetter, Damages, Findexer, NTPayment, OpCash, OpCashDetail, Payment, PopulateTable, StatusObject,
-                     StatusRS, Subsidy, Tenant, TenantRent, Unit, db)
+from backend import (BalanceLetter, Damages, Findexer, NTPayment, OpCash,
+                     OpCashDetail, Payment, PopulateTable, ProcessingLayer,
+                     StatusObject, StatusRS, Subsidy, Tenant, TenantRent, Unit,
+                     db)
 from config import Config
 from file_indexer import FileIndexer
+from reconciler import Reconciler
 from records import record
 from setup_month import MonthSheet
+
 
 class BuildRS(MonthSheet):
     def __init__(self, sleep=None, full_sheet=None, path=None, mode=None, test_service=None, pytest=None):
@@ -123,13 +127,14 @@ class BuildRS(MonthSheet):
 
                     """this really needs to be combined"""
                     
-                    assert scrape_deposit_sum == grand_total
-                    # except AssertionError as e:
-                        # print(e)
-                    breakpoint()
-                    target_status_object = [item for item in StatusObject().select().where(StatusObject.month==data[0])][0]
-                    target_status_object.scrape_reconciled = True
-                    target_status_object.save() 
+                    Reconciler.iter_build_assert_scrape_total_match_deposits(scrape_deposit_sum=scrape_deposit_sum, grand_total_from_deposits=grand_total, period=data[0], genus='reconcile scrape to deposits in iterative build')
+                    
+                    try:
+                        target_status_object = [item for item in StatusObject().select().where(StatusObject.month==data[0])][0]
+                        target_status_object.scrape_reconciled = True
+                        target_status_object.save() 
+                    except IndexError as e:
+                        breakpoint()
 
     def iterate_over_remaining_months(self):       
         # load remaining months rent
