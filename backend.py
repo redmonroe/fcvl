@@ -1084,11 +1084,11 @@ class ProcessingLayer(StatusRS):
         print(f'current date: {mr_status.current_date} | current month: {months_ytd[-1]}\n')
         print('months ytd ' + Config.current_year + ': ' + '  '.join(m for m in months_ytd))
 
-    def find_complete_pw_months_and_iter_write(self,writeable_months=None):
+    def find_complete_pw_months_and_iter_write(self, writeable_months=None, *args, **kwargs):
         '''passing results of get_existing_sheets would reduce calls'''
 
         """if sheet already exists for a month, that month will not be included in list to write)"""
-     
+        breakpoint()
         existing_sheets_dict = Utils.get_existing_sheets(self.service, self.full_sheet) 
         existing_sheets = [sheet for sheet in [*existing_sheets_dict.keys()] if sheet != 'intake']
 

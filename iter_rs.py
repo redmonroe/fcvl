@@ -90,7 +90,7 @@ class IterRS(BuildRS):
         if kw.get('write') == True:
             """we need both new files and SOME unfinalized months to do anything"""
             if new_files != [] and unfinalized_months != []:
-                self.task_list(new_files=new_files)
+                self.task_list(new_files=new_files, write=kw.get('write'))
             else:
                 print('there are no new files, but some months are still unfinalized')
                 print('exiting iter_build')
