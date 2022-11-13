@@ -189,6 +189,7 @@ class Mentry(BaseModel):
     obj_type = CharField(default='0')
     ch_type = CharField(default='0')
     change_time = DateField()
+    txn_date = DateField()
     original_item = CharField(default='0')
 
 class QueryHC(Reconciler):
@@ -329,6 +330,19 @@ class QueryHC(Reconciler):
         where(Damages.dam_date<=last_dt).
         namedtuples()]
         return damages
+
+    def get_mentries_by_month(self, first_dt=None, last_dt=None, type1=None):
+        mentries = [(row.original_item) for row in Mentry.select().
+        where(Mentry.txn_date>=first_dt).
+        where(Mentry.txn_date<=last_dt).
+        where(Mentry.ch_type==type1).
+        namedtuples()]
+
+        delete_sum = []
+        if type1 == 'delete' and mentries != []:
+            print([item for item in mentries])
+            breakpoint()
+        return mentries
 
     def consolidated_get_stmt_by_month(self, first_dt=None, last_dt=None):
         opcash_sum = self.get_opcash_by_period(first_dt=first_dt, last_dt=last_dt)
@@ -1387,9 +1401,15 @@ class ProcessingLayer(StatusRS):
             ten_payments = sum([float(row[2]) for row in populate.get_payments_by_tenant_by_period(first_dt=first_dt, last_dt=last_dt)])
             ntp = sum(populate.get_ntp_by_period(first_dt=first_dt, last_dt=last_dt))
             opcash = populate.get_opcash_by_period(first_dt=first_dt, last_dt=last_dt)
+            # damages = populate.get_damages_by_month(first_dt=first_dt, last_dt=last_dt)
+            mentries = populate.get_mentries_by_month            (first_dt=first_dt, last_dt=last_dt, type1='delete')
 
             '''probably need to add the concept of "adjustments" in here'''
             sum_from_payments = ten_payments + ntp
+            if month == '2022-02':
+                # 15931.3 from adding ten_payments
+                # opcash 15931.3
+                breakpoint()
 
             if sum_from_payments == 0:
                 print(f'no tenant deposit report available for {month}\n')

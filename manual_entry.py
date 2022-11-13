@@ -50,11 +50,12 @@ class ManualEntry:
         print('delete ui')
         payment = Payment.delete_by_id(selected_item.id)
         selected_item = selected_item.__data__
-        self.record_entry_to_manentry(obj_type='Payment', action='delete',selected_item=str(selected_item))
+        self.record_entry_to_manentry(obj_type='Payment', action='delete', txn_date=txn_date, selected_item=str(selected_item))
 
     def delete_ui_dynamic(self, obj_type=None, obj_str=None, selected_item=None):
         item = obj_type.delete_by_id(selected_item.id)
-        self.record_entry_to_manentry(obj_type=obj_str, action='delete',selected_item=str(selected_item))
+        txn_date = selected_item.date_posted
+        self.record_entry_to_manentry(obj_type=obj_str, action='delete', txn_date=txn_date, selected_item=str(selected_item))
         print('ok')
 
     def update_amount_dynamic(self,target_attribute=None, obj_type=None, obj_str=None, updated_amount=None, selected_item=None):
@@ -133,8 +134,8 @@ class ManualEntry:
     def connect_to_db(self):
         DBUtils.pw_connect_to_db(db=self.db, tables_list=self.tables_list)
 
-    def record_entry_to_manentry(self, obj_type=None, action=None, selected_item=None):
-        mentry = Mentry.create(obj_type=obj_type, ch_type=action, original_item=str(selected_item), change_time=dt.now())
+    def record_entry_to_manentry(self, obj_type=None, action=None, selected_item=None, txn_date=None):
+        mentry = Mentry.create(obj_type=obj_type, ch_type=action, original_item=str(selected_item), txn_date=txn_date, change_time=dt.now())
         mentry.save()
 
     def find_persisted_changes_from_config(self):

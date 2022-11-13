@@ -31,6 +31,7 @@ class Reconciler:
 
     @staticmethod
     def backend_processing_layer_assert_bank_deposits_tenant_deposits(bank_deposits=None, sum_from_payments_report=None, period=None, genus=None):
+        # breakpoint()
         try: 
             assert bank_deposits == sum_from_payments_report 
             print(f'Reconciling {genus} deposits to payments report for {period}:')

@@ -30,30 +30,31 @@ class IterRS(BuildRS):
         self.populate = PopulateTable()
         self.ms = MonthSheet(full_sheet=self.full_sheet, path=self.path)
         self.findex = FileIndexer(path=self.path, db=self.main_db)
+        self.player = ProcessingLayer(service=self.service, full_sheet=self.full_sheet, ms=self.ms)
         self.pytest = pytest
 
     def __repr__(self):
         return f'{self.__class__.__name__} object path: {self.path} write sheet: {self.full_sheet} service:{self.service}'
     
     def task_list(self, *args, **kwargs):   
-        self.iterate_over_remaining_months_incremental(list1=kwargs['new_files'])
+        scrape_bool, month = self.iterate_over_remaining_months_incremental(list1=kwargs['new_files'])
         Damages.load_damages()
+        self.player.write_manual_entries_from_config()
 
         self.populate.transfer_opcash_from_findex_to_opcash_and_detail()
 
-        all_months_ytd, report_list, most_recent_status = player.write_to_statusrs_wrapper()
+        all_months_ytd, report_list, most_recent_status = self.player.write_to_statusrs_wrapper()
 
         """this is the critical control function"""
-        player.reconcile_and_inscribe_state(month_list=all_months_ytd, ref_rec=most_recent_status, from_iter=1)
+        self.player.reconcile_and_inscribe_state(month_list=all_months_ytd, ref_rec=most_recent_status, from_iter=1)
 
-        player.write_manual_entries_from_config()
 
-        player.display_most_recent_status(mr_status=most_recent_status, months_ytd=all_months_ytd)
+        self.player.display_most_recent_status(mr_status=most_recent_status, months_ytd=all_months_ytd)
 
         breakpoint()
         if kw.get('write'):
-            writeable_months = player.final_check_writeable_months(month_list=all_months_ytd)
-            player.find_complete_pw_months_and_iter_write(writeable_months=writeable_months)
+            writeable_months = self.player.final_check_writeable_months(month_list=all_months_ytd)
+            self.player.find_complete_pw_months_and_iter_write(writeable_months=writeable_months)
         else:
             print('you have passed the option not to write in iter_rs.')
 
@@ -75,7 +76,7 @@ class IterRS(BuildRS):
         
         """
         status = StatusRS()
-        player = ProcessingLayer(service=self.service, full_sheet=self.full_sheet, ms=self.ms)
+        # player = ProcessingLayer(service=self.service, full_sheet=self.full_sheet, ms=self.ms)
 
         populate = self.setup_tables(mode='create_only')
         new_files, unfinalized_months, final_not_written = self.findex.incremental_filer(pytest=self.pytest)
@@ -86,7 +87,7 @@ class IterRS(BuildRS):
             if final_not_written != []:
                 """this branch is in case db is up-to-date but we have not written the month"""
                 print('writing remaining months to rs & marking to statusobject table')
-                player.find_complete_pw_months_and_iter_write( writeable_months=final_not_written)
+                self.player.find_complete_pw_months_and_iter_write( writeable_months=final_not_written)
             else:
                 print('there are no finalized months waiting to be written to sheets.')
 

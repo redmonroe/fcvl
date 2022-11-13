@@ -128,13 +128,18 @@ class BuildRS(MonthSheet):
                     """this really needs to be combined"""
                     
                     Reconciler.iter_build_assert_scrape_total_match_deposits(scrape_deposit_sum=scrape_deposit_sum, grand_total_from_deposits=grand_total, period=data[0], genus='reconcile scrape to deposits in iterative build')
+
+                    month = data[0]
+
+                    return True, month
                     
-                    try:
-                        target_status_object = [item for item in StatusObject().select().where(StatusObject.month==data[0])][0]
-                        target_status_object.scrape_reconciled = True
-                        target_status_object.save() 
-                    except IndexError as e:
-                        breakpoint()
+                    # try:
+                        
+                    #     target_status_object = [item for item in StatusObject().select().where(StatusObject.month==data[0])][0]
+                    #     target_status_object.scrape_reconciled = True
+                    #     target_status_object.save() 
+                    # except IndexError as e:
+                    #     breakpoint()
 
     def iterate_over_remaining_months(self):       
         # load remaining months rent

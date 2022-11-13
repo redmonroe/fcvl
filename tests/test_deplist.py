@@ -91,9 +91,15 @@ class TestDeplist:
     def test_load_april_from_scrape(self, set_write_mode):
         print('\n START SCRAPE ONLY for April\n')
         path, full_sheet, iterb, service, ms, findexer = self.return_op_config(type1='iter', configured_path=self.scrape_path)   # return IterRS
-        # breakpoint()
         iterb.incremental_load(write=set_write_mode)
 
+    """explicit teardown"""
+
+    def test_db_reset1(self, populate):
+        path, full_sheet, build, service, ms, findexer = self.return_op_config(configured_path=self.base_path)  
+        create_tables_list1 = populate.return_tables_list()
+        build.main_db.drop_tables(models=create_tables_list1)
+        assert build.main_db.get_tables() == []
 
         
 
