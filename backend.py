@@ -338,11 +338,9 @@ class QueryHC(Reconciler):
         where(Mentry.ch_type==type1).
         namedtuples()]
 
-        delete_sum = []
         if type1 == 'delete' and mentries != []:
-            print([item for item in mentries])
-            breakpoint()
-        return mentries
+            return  [float(item.replace("'", "").split(',')[3].split('=')[1]) for item in mentries][0]
+        
 
     def consolidated_get_stmt_by_month(self, first_dt=None, last_dt=None):
         opcash_sum = self.get_opcash_by_period(first_dt=first_dt, last_dt=last_dt)
@@ -1402,14 +1400,14 @@ class ProcessingLayer(StatusRS):
             ntp = sum(populate.get_ntp_by_period(first_dt=first_dt, last_dt=last_dt))
             opcash = populate.get_opcash_by_period(first_dt=first_dt, last_dt=last_dt)
             # damages = populate.get_damages_by_month(first_dt=first_dt, last_dt=last_dt)
-            mentries = populate.get_mentries_by_month            (first_dt=first_dt, last_dt=last_dt, type1='delete')
+            delete_mentries = populate.get_mentries_by_month(first_dt=first_dt, last_dt=last_dt, type1='delete')
 
             '''probably need to add the concept of "adjustments" in here'''
-            sum_from_payments = ten_payments + ntp
-            if month == '2022-02':
-                # 15931.3 from adding ten_payments
-                # opcash 15931.3
-                breakpoint()
+            sum_from_payments = ten_payments + ntp - delete_mentries
+            # if month == '2022-02':
+            #     # 15931.3 from adding ten_payments
+            #     # opcash 15931.3
+            #     breakpoint()
 
             if sum_from_payments == 0:
                 print(f'no tenant deposit report available for {month}\n')
