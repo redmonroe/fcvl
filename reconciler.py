@@ -4,6 +4,23 @@ from utils import Utils
 class Reconciler:
 
     @staticmethod
+    def master_sum_from_payments_totaler(ten_payments=None, non_ten_pay=None, delete_mentries=None, period=None):
+        breakpoint()
+        try:
+            if delete_mentries:
+                sum_from_payments = ten_payments + non_ten_pay - delete_mentries
+                print(f'Reconciling prior to StatusObject write for period {period}: tenant payments: {ten_payments} nontenant payments: {non_ten_pay} less deleted manual entries: {delete_mentries} = {sum_from_payments}.')
+              
+            else:
+                sum_from_payments = ten_payments + non_ten_pay
+                print(f'Reconciling prior to StatusObject write for period {period}: tenant payments: {ten_payments} nontenant payments: {non_ten_pay} = {sum_from_payments}.')
+            return sum_from_payments
+        except TypeError as e:
+            print(e)
+            breakpoint()
+            raise
+
+    @staticmethod
     def iter_build_assert_scrape_total_match_deposits(scrape_deposit_sum=None, grand_total_from_deposits=None, genus=None, period=None):
         try: 
             assert scrape_deposit_sum == grand_total_from_deposits
@@ -14,8 +31,6 @@ class Reconciler:
             print(f'\nAssertionError in MonthSheet {genus} deposits do not match payments report for period {period}.')
             print(f'{genus}:{scrape_deposit_sum} does not equal payment report:{grand_total_from_deposits}.\n')
             raise    
-
-
 
     @staticmethod
     def month_sheet_final_check(onesite_total=None, nbofi_total=None, period=None, genus=None):

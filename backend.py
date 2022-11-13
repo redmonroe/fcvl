@@ -1403,11 +1403,8 @@ class ProcessingLayer(StatusRS):
             delete_mentries = populate.get_mentries_by_month(first_dt=first_dt, last_dt=last_dt, type1='delete')
 
             '''probably need to add the concept of "adjustments" in here'''
-            sum_from_payments = ten_payments + ntp - delete_mentries
-            # if month == '2022-02':
-            #     # 15931.3 from adding ten_payments
-            #     # opcash 15931.3
-            #     breakpoint()
+            sum_from_payments = Reconciler.master_sum_from_payments_totaler(ten_payments=ten_payments, non_ten_pay=ntp, delete_mentries=delete_mentries, period=month)
+
 
             if sum_from_payments == 0:
                 print(f'no tenant deposit report available for {month}\n')
