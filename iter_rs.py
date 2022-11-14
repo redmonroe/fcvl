@@ -79,9 +79,9 @@ class IterRS(BuildRS):
 
         populate = self.setup_tables(mode='create_only')
         new_files, unfinalized_months, final_not_written = self.findex.incremental_filer(pytest=self.pytest)
-        breakpoint()
 
         if kw.get('write') == True:
+            breakpoint()
 
             """this needs to be moved down: should still process for db if write=False"""
             if final_not_written != []:
