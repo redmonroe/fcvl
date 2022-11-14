@@ -1403,8 +1403,7 @@ class ProcessingLayer(StatusRS):
             delete_mentries = populate.get_mentries_by_month(first_dt=first_dt, last_dt=last_dt, type1='delete')
 
             '''probably need to add the concept of "adjustments" in here'''
-            sum_from_payments = Reconciler.master_sum_from_payments_totaler(ten_payments=ten_payments, non_ten_pay=ntp, delete_mentries=delete_mentries, period=month)
-            breakpoint()
+            sum_from_payments = Reconciler.master_sum_from_payments_totaler(ten_payments=ten_payments, non_ten_pay=ntp, period=month)
 
 
             if sum_from_payments == 0:
@@ -1412,8 +1411,16 @@ class ProcessingLayer(StatusRS):
             elif sum_from_payments != 0 and opcash != []:
                 print(f'opcash available for {month}')
                 bank_deposits = float(opcash[0][4])
+                deposit_corrections = float(opcash[0][5])
 
-                bank_deposits = Reconciler.adjust_bank_deposits(bank_deposits=bank_deposits, delete_mentries=delete_mentries)
+                if kwargs['source'] == 'iter':
+                    bank_deposits = Reconciler.adjust_bank_deposits(bank_deposits=bank_deposits, deposit_corrections=deposit_corrections)
+
+                # if kwargs['source'] == 'iter' and month == '2022-02':
+                #     breakpoint()
+                # if kwargs['source'] == 'build' and month == '2022-02':
+                #     breakpoint()
+
 
                 if Reconciler.backend_processing_layer_assert_bank_deposits_tenant_deposits(bank_deposits=bank_deposits, sum_from_payments_report=sum_from_payments, period=month, genus='opcash', source=kwargs['source']):
                     """critical reconciliation logic for statusObject"""

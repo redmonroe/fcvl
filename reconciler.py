@@ -44,21 +44,14 @@ class Reconciler:
             raise    
 
     @staticmethod
-    def adjust_bank_deposits(bank_deposits=None, delete_mentries=None):
-        if delete_mentries:
-            return bank_deposits - delete_mentries
+    def adjust_bank_deposits(bank_deposits=None, deposit_corrections=None):
+        if deposit_corrections:
+            return bank_deposits - deposit_corrections 
         else:
             return bank_deposits
 
     @staticmethod
-    def backend_processing_layer_assert_bank_deposits_tenant_deposits(bank_deposits=None, sum_from_payments_report=None, period=None, genus=None, **kwargs):
-        # if kwargs['source'] == 'build' and period == '2022-02':
-        #     breakpoint()
-
-        if kwargs['source'] == 'iter' and period == '2022-02':
-            breakpoint()
-
-        
+    def backend_processing_layer_assert_bank_deposits_tenant_deposits(bank_deposits=None, sum_from_payments_report=None, period=None, genus=None, **kwargs):       
         try: 
             assert bank_deposits == sum_from_payments_report 
             print(f'Reconciling {genus} deposits to payments report for {period}:')
