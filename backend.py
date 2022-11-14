@@ -1404,6 +1404,7 @@ class ProcessingLayer(StatusRS):
 
             '''probably need to add the concept of "adjustments" in here'''
             sum_from_payments = Reconciler.master_sum_from_payments_totaler(ten_payments=ten_payments, non_ten_pay=ntp, delete_mentries=delete_mentries, period=month)
+            breakpoint()
 
 
             if sum_from_payments == 0:
