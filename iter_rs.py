@@ -46,12 +46,11 @@ class IterRS(BuildRS):
         all_months_ytd, report_list, most_recent_status = self.player.write_to_statusrs_wrapper()
 
         """this is the critical control function"""
-        self.player.reconcile_and_inscribe_state(month_list=all_months_ytd, ref_rec=most_recent_status, from_iter=1)
+        self.player.reconcile_and_inscribe_state(month_list=all_months_ytd, ref_rec=most_recent_status, source='iter')
 
 
         self.player.display_most_recent_status(mr_status=most_recent_status, months_ytd=all_months_ytd)
 
-        breakpoint()
         if kw.get('write'):
             writeable_months = self.player.final_check_writeable_months(month_list=all_months_ytd)
             self.player.find_complete_pw_months_and_iter_write(writeable_months=writeable_months)

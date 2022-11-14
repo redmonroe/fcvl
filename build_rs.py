@@ -62,7 +62,7 @@ class BuildRS(MonthSheet):
         all_months_ytd, report_list, most_recent_status = player.write_to_statusrs_wrapper()
 
         """this is the critical control function"""
-        player.reconcile_and_inscribe_state(month_list=all_months_ytd, ref_rec=most_recent_status)
+        player.reconcile_and_inscribe_state(month_list=all_months_ytd, ref_rec=most_recent_status, source='build')
 
         player.write_manual_entries_from_config()
 

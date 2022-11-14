@@ -1389,7 +1389,7 @@ class ProcessingLayer(StatusRS):
 
         return tp_list, ntp_list, total_list, opcash_amt_list, dc_list  
 
-    def reconcile_and_inscribe_state(self, month_list=None, ref_rec=None, from_iter=None):
+    def reconcile_and_inscribe_state(self, month_list=None, ref_rec=None, *args, **kwargs):
         """takes list of months in year to date, gets tenant payments by period, non-tenant payments, and opcash information and reconciles the deposits on the opcash statement to the sum of tenant payments and non-tenant payments     
         then updates existing StatusRS db and, most importantly, writes to StatusObject db whether opcash has been processed and whether tenant has reconciled: currently will reconcile a scrape against a deposit list sheets"""
         populate = PopulateTable()
@@ -1410,9 +1410,11 @@ class ProcessingLayer(StatusRS):
                 print(f'no tenant deposit report available for {month}\n')
             elif sum_from_payments != 0 and opcash != []:
                 print(f'opcash available for {month}')
-                opcash_deposits = float(opcash[0][4])
+                bank_deposits = float(opcash[0][4])
 
-                if Reconciler.backend_processing_layer_assert_bank_deposits_tenant_deposits(bank_deposits=opcash_deposits, sum_from_payments_report=sum_from_payments, period=month, genus='opcash'):
+                bank_deposits = Reconciler.adjust_bank_deposits(bank_deposits=bank_deposits, delete_mentries=delete_mentries)
+
+                if Reconciler.backend_processing_layer_assert_bank_deposits_tenant_deposits(bank_deposits=bank_deposits, sum_from_payments_report=sum_from_payments, period=month, genus='opcash', source=kwargs['source']):
                     """critical reconciliation logic for statusObject"""
                     mr_status = StatusRS().get(StatusRS.status_id==ref_rec.status_id)  
 

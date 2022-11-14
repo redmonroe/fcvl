@@ -5,7 +5,6 @@ class Reconciler:
 
     @staticmethod
     def master_sum_from_payments_totaler(ten_payments=None, non_ten_pay=None, delete_mentries=None, period=None):
-        breakpoint()
         try:
             if delete_mentries:
                 sum_from_payments = ten_payments + non_ten_pay - delete_mentries
@@ -45,14 +44,28 @@ class Reconciler:
             raise    
 
     @staticmethod
-    def backend_processing_layer_assert_bank_deposits_tenant_deposits(bank_deposits=None, sum_from_payments_report=None, period=None, genus=None):
-        # breakpoint()
+    def adjust_bank_deposits(bank_deposits=None, delete_mentries=None):
+        if delete_mentries:
+            return bank_deposits - delete_mentries
+        else:
+            return bank_deposits
+
+    @staticmethod
+    def backend_processing_layer_assert_bank_deposits_tenant_deposits(bank_deposits=None, sum_from_payments_report=None, period=None, genus=None, **kwargs):
+        # if kwargs['source'] == 'build' and period == '2022-02':
+        #     breakpoint()
+
+        if kwargs['source'] == 'iter' and period == '2022-02':
+            breakpoint()
+
+        
         try: 
             assert bank_deposits == sum_from_payments_report 
             print(f'Reconciling {genus} deposits to payments report for {period}:')
             print(f'{bank_deposits} == {sum_from_payments_report}.\n')
             return True
         except AssertionError as e:
+            breakpoint()
             print(f'\nAssertionError in backend processing_layer {genus} deposits do not match payments report for period {period}.')
             print(f'{genus}:{bank_deposits} does not equal payment report:{sum_from_payments_report}.\n')
             raise    
