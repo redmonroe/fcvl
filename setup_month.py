@@ -33,6 +33,16 @@ class MonthSheet(YearSheet):
             self.service = test_service
         else:
             self.service = oauth(Config.my_scopes, 'sheet')
+
+        self.contract_rent = '!E2:E68'
+        self.subsidy = '!F2:F68'
+        self.unit = '!A2:A68'
+        self.tenant_names = '!B2:B68'
+        self.beg_bal = '!D2:D68'
+        self.end_bal = '!L2:L68'
+        self.charge_month = '!H2:H68'
+        self.pay_month = '!K2:K68'
+        self.dam_month = '!J2:J68'
     
     def auto_control(self, source=None, mode='clean_build', month_list=None):
         if month_list != None:
@@ -91,10 +101,6 @@ class MonthSheet(YearSheet):
         print(f'\n\t\t{wrange}\n')
         print(f'\n\t\t{status}')
 
-    def sum_move_in_payments_period(self, mi_payments=None):
-        sum_mi_payments = sum([float(item[1]) for item in mi_payments])
-        return sum_mi_payments
-
     def write_rs_col(self, date):
         gc = GoogleApiCalls()
         query = QueryHC()
@@ -112,16 +118,16 @@ class MonthSheet(YearSheet):
         subsidy = df['subsidy'].tolist()
         contract_rent = df['contract_rent'].tolist()
         endbal = df['end_bal_m'].tolist()
-   
-        gc.update_int(self.service, self.full_sheet, contract_rent, f'{date}!E2:E68', value_input_option='USER_ENTERED')        
-        gc.update_int(self.service, self.full_sheet,subsidy, f'{date}!F2:F68', value_input_option='USER_ENTERED')        
-        gc.update(self.service, self.full_sheet, unit, f'{date}!A2:A68')
-        gc.update(self.service, self.full_sheet, tenant_names, f'{date}!B2:B68')   
-        gc.update_int(self.service, self.full_sheet, beg_bal, f'{date}!D2:D68', value_input_option='USER_ENTERED')
-        gc.update_int(self.service, self.full_sheet, endbal, f'{date}!L2:L68', value_input_option='USER_ENTERED')
-        gc.update_int(self.service, self.full_sheet, charge_month, f'{date}!H2:H68', value_input_option='USER_ENTERED')
-        gc.update_int(self.service, self.full_sheet, pay_month, f'{date}!K2:K68', value_input_option='USER_ENTERED')
-        gc.update_int(self.service, self.full_sheet, dam_month, f'{date}!J2:J68', value_input_option='USER_ENTERED')
+
+        gc.update_int(self.service, self.full_sheet, contract_rent, f'{date}' + self.contract_rent, value_input_option='USER_ENTERED')        
+        gc.update_int(self.service, self.full_sheet, subsidy, f'{date}' + self.subsidy, value_input_option='USER_ENTERED')        
+        gc.update(self.service, self.full_sheet, unit, f'{date}' + self.unit)
+        gc.update(self.service, self.full_sheet, tenant_names, f'{date}' + self.tenant_names)   
+        gc.update_int(self.service, self.full_sheet, beg_bal, f'{date}' + self.beg_bal, value_input_option='USER_ENTERED')
+        gc.update_int(self.service, self.full_sheet, endbal, f'{date}' + self.end_bal, value_input_option='USER_ENTERED')
+        gc.update_int(self.service, self.full_sheet, charge_month, f'{date}' + self.charge_month, value_input_option='USER_ENTERED')
+        gc.update_int(self.service, self.full_sheet, pay_month, f'{date}' + self.pay_month, value_input_option='USER_ENTERED')
+        gc.update_int(self.service, self.full_sheet, dam_month, f'{date}' + self.dam_month, value_input_option='USER_ENTERED')
 
     def get_ntp_wrapper(self, date):
         populate = PopulateTable()
@@ -220,11 +226,9 @@ class MonthSheet(YearSheet):
         return status_list
 
     def index_np_with_df(self, np):
-        unit_raw = [unit.unit_name for unit in Unit().select()]
-
         final_list = []
         idx_list = []
-        for index, unit in enumerate(unit_raw): 
+        for index, unit in enumerate([unit.unit_name for unit in Unit().select()]): 
             idx_list.append(int(index))
             final_list.append(unit)
 
@@ -252,9 +256,7 @@ class MonthSheet(YearSheet):
             mi_tp = query.get_single_ten_pay_by_period(first_dt=first_dt, last_dt=last_dt, name=name)
             mi_payments.append(mi_tp)
 
-        sum_mi_payments = self.sum_move_in_payments_period(mi_payments=mi_payments)
-
-        return sum_mi_payments
+        return sum([float(item[1]) for item in mi_payments])
 
     def reset_spreadsheet(self):
         print('resetting spreadsheet')
