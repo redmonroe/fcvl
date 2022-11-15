@@ -38,8 +38,8 @@ class TestMainCanonical:
         elif write == 'True':
             yield True
         else:            
-            breakpoint()
-
+            yield False
+            
     @pytest.fixture
     def populate(self):
         populate = PopulateTable()

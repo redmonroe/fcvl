@@ -48,10 +48,12 @@ class IterRS(BuildRS):
         """this is the critical control function"""
         self.player.reconcile_and_inscribe_state(month_list=all_months_ytd, ref_rec=most_recent_status, source='iter')
 
-
         self.player.display_most_recent_status(mr_status=most_recent_status, months_ytd=all_months_ytd)
 
-        if kw.get('write'):
+        
+        write1 = kwargs.get('write')
+
+        if write1 == True:
             writeable_months = self.player.final_check_writeable_months(month_list=all_months_ytd)
             self.player.find_complete_pw_months_and_iter_write(writeable_months=writeable_months)
         else:
@@ -75,13 +77,11 @@ class IterRS(BuildRS):
         
         """
         status = StatusRS()
-        # player = ProcessingLayer(service=self.service, full_sheet=self.full_sheet, ms=self.ms)
 
         populate = self.setup_tables(mode='create_only')
         new_files, unfinalized_months, final_not_written = self.findex.incremental_filer(pytest=self.pytest)
 
         if kw.get('write') == True:
-            breakpoint()
 
             """this needs to be moved down: should still process for db if write=False"""
             if final_not_written != []:
@@ -90,6 +90,8 @@ class IterRS(BuildRS):
                 self.player.find_complete_pw_months_and_iter_write( writeable_months=final_not_written)
             else:
                 print('there are no finalized months waiting to be written to sheets.')
+        else:
+            print('you have chosen not to pass write=True so nothing is written to sheets')
 
         # if kw.get('write') == True:
         """we need both new files and SOME unfinalized months to do anything"""
@@ -99,5 +101,3 @@ class IterRS(BuildRS):
             print('there are no new files, but some months are still unfinalized')
             print('exiting iter_build')
        
-        # else:
-        #     print('you have chosen not to pass write=True so nothing is written to sheets')
