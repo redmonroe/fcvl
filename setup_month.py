@@ -53,7 +53,6 @@ class MonthSheet(YearSheet):
             self.duplicate_formatted_sheets(month_list=month_list)
             self.remove_base_sheet()
         elif mode == 'iter_build':
-            # self.reset_spreadsheet()
             titles_dict = self.make_base_sheet()
             self.formatting_runner(title_dict=titles_dict) 
             self.duplicate_formatted_sheets(month_list=month_list)
@@ -64,7 +63,6 @@ class MonthSheet(YearSheet):
             titles_dict = self.make_single_sheet(single_month_list=month_list)
             self.formatting_runner(title_dict=titles_dict) 
     
-
         status_list = []
         for date in month_list:
             self.write_rs_col(date)
@@ -74,11 +72,7 @@ class MonthSheet(YearSheet):
                 print(f'for {date} you have returned an empty list indicating that your db did not reconcile for that month for File_Indexer or StatusObject')
                 raise
             
-            if reconciliation_type == True:
-                self.write_deposit_detail_from_scrape(date)
-            elif reconciliation_type == False:
-                self.write_deposit_detail_from_opcash(date)
-                    
+            self.write_deposit_detail(date, genus=reconciliation_type)                    
             ntp = self.get_ntp_wrapper(date)
             sum_laundry, other_list = self.split_ntp(ntp)
             sum_mi_payments = self.get_move_ins(date)
@@ -162,23 +156,21 @@ class MonthSheet(YearSheet):
             self.write_list_to_col(func=gc.update, start_row=73, list1=names_list, col_letter='B', date=date)
             self.write_list_to_col(func=gc.update, start_row=73, list1=dates_list, col_letter='C', date=date)
 
-    def write_deposit_detail_from_opcash(self, date):
-        print(f'writing dd from opcash {date}')
+    def write_deposit_detail(self, date, genus=None):
         populate = PopulateTable()
         first_dt, last_dt = populate.make_first_and_last_dates(date_str=date)
-        rec = populate.get_opcash_by_period(first_dt=first_dt, last_dt=last_dt)
-        dep_detail = populate.get_opcashdetail_by_stmt(stmt_key=rec[0][0])
-        self.export_deposit_detail(date=date, res_rep=rec[0][2], hap=rec[0][3], dep_sum=rec[0][4], corr_sum=rec[0][5], dep_detail=dep_detail)
-
-    def write_deposit_detail_from_scrape(self, date):
-        print(f'writing dd from scrape {date}')
-        populate = PopulateTable()
-        first_dt, last_dt = populate.make_first_and_last_dates(date_str=date)
-        hap = populate.get_scrape_detail_by_month_by_type(type1='hap', first_dt=first_dt, last_dt=last_dt)
-        dep_correction_sum = populate.get_scrape_detail_by_month_by_type(type1='corr', first_dt=first_dt, last_dt=last_dt)
-        dep_correction_sum = sum([float(item) for item in dep_correction_sum])
-        dep_detail = populate.get_scrape_detail_by_month_deposit(first_dt=first_dt, last_dt=last_dt)
-        self.export_deposit_detail(date=date, res_rep=0, hap=hap[0], dep_sum=0, corr_sum=dep_correction_sum, dep_detail=dep_detail)
+        if genus == True:
+            print(f'writing deposit detail from scrape {date}')
+            hap = populate.get_scrape_detail_by_month_by_type(type1='hap', first_dt=first_dt, last_dt=last_dt)
+            dep_correction_sum = populate.get_scrape_detail_by_month_by_type(type1='corr', first_dt=first_dt, last_dt=last_dt)
+            dep_correction_sum = sum([float(item) for item in dep_correction_sum])
+            dep_detail = populate.get_scrape_detail_by_month_deposit(first_dt=first_dt, last_dt=last_dt)
+            self.export_deposit_detail(date=date, res_rep=0, hap=hap[0], dep_sum=0, corr_sum=dep_correction_sum, dep_detail=dep_detail)
+        elif genus == False:
+            print(f'writing deposit detail from opcash {date}')
+            rec = populate.get_opcash_by_period(first_dt=first_dt, last_dt=last_dt)
+            dep_detail = populate.get_opcashdetail_by_stmt(stmt_key=rec[0][0])
+            self.export_deposit_detail(date=date, res_rep=rec[0][2], hap=rec[0][3], dep_sum=rec[0][4], corr_sum=rec[0][5], dep_detail=dep_detail)
 
     def export_deposit_detail(self, **kw):
         gc = GoogleApiCalls()
