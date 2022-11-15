@@ -130,13 +130,11 @@ class GoogleApiCalls:
 
     @retry_google_api(times, sleep1, exceptions)
     def del_one_sheet(self, service, spreadsheet_id, id):
-        sh_id = spreadsheet_id
-
         data = {"requests": [
                 {"deleteSheet": {"sheetId": f'{id}'}
                 } ]  }
         response = service.spreadsheets().batchUpdate(
-            spreadsheetId=sh_id,
+            spreadsheetId=spreadsheet_id,
             body=data
         ).execute()
         print(f"Deleting sheet id: {response['spreadsheetId']}")

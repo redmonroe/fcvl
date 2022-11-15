@@ -104,7 +104,7 @@ class MonthSheet(YearSheet):
 
         df = self.index_np_with_df(np)
         unit = df['unit'].tolist()
-        tenant_names = self.capitalize_name(tenant_list=df['name'].tolist())
+        tenant_names = Utils.capitalize_name(tenant_list=df['name'].tolist())
         beg_bal = df['lp_endbal'].tolist()
         charge_month = df['charge_month'].tolist()
         pay_month = df['pay_month'].tolist()
@@ -256,13 +256,6 @@ class MonthSheet(YearSheet):
 
         return sum_mi_payments
 
-    def capitalize_name(self, tenant_list=None):
-        t_list = []
-        for name in tenant_list:
-            new = [item.rstrip().lstrip().capitalize() for item in name.split(',')]
-            t_list.append(', '.join(new))
-        return t_list
-
     def reset_spreadsheet(self):
         print('resetting spreadsheet')
         current_sheets = Utils.get_existing_sheets(self.service, self.full_sheet)
@@ -281,8 +274,7 @@ class MonthSheet(YearSheet):
             if path[0] == name:
                 gc.del_one_sheet(args[0], args[1], id2)
 
-    def make_one_sheet(self, *args, **kwargs):
-        pass
+
         
 
 

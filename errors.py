@@ -24,9 +24,7 @@ def retry_google_api(times, sleep1, exceptions):
                     return func(*args, **kwargs)
                 except HttpError as e:
                     if e.resp.status == exceptions:
-                        print('Exception thrown when attempting to run %s, attempt '
-                            '%d of %d' % (func, attempt, times))
-                        print(f'sleep time = {sleep1}, exception code: {exceptions}')
+                        print(f'\nException on {func}, attempt {attempt} of {times} | sleep={sleep1} | code={exceptions}\n')
                         time.sleep(sleep1)
                     attempt += 1
             return func(*args, **kwargs)

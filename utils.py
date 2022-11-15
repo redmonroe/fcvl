@@ -203,6 +203,14 @@ class Utils:
 
         book_name = response['properties']['title']
         return book_name
+    
+    @staticmethod
+    def capitalize_name(tenant_list=None):
+        t_list = []
+        for name in tenant_list:
+            new = [item.rstrip().lstrip().capitalize() for item in name.split(',')]
+            t_list.append(', '.join(new))
+        return t_list
 
     @staticmethod
     def get_existing_sheets(service, sh_id, verbose=None):
