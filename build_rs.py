@@ -1,4 +1,3 @@
-import json
 from datetime import datetime
 
 from auth_work import oauth
@@ -132,14 +131,6 @@ class BuildRS(MonthSheet):
                     month = data[0]
 
                     return True, month
-                    
-                    # try:
-                        
-                    #     target_status_object = [item for item in StatusObject().select().where(StatusObject.month==data[0])][0]
-                    #     target_status_object.scrape_reconciled = True
-                    #     target_status_object.save() 
-                    # except IndexError as e:
-                    #     breakpoint()
 
     def iterate_over_remaining_months(self):       
         # load remaining months rent

@@ -61,9 +61,18 @@ class ManualEntry:
     def update_amount_dynamic(self,target_attribute=None, obj_type=None, obj_str=None, updated_amount=None, selected_item=None):
         item = obj_type.get(selected_item.id)
         item.__setattr__(target_attribute, updated_amount)
+        if type(item) == Payment or type(item) == Subsidy:
+            txn_date = item.date_posted
+        elif type(item) == TenantRent:
+            txn_date = item.rent_date
         item.save()
-        self.record_entry_to_manentry(obj_type=obj_str, action='updated_amount', selected_item=str(item))        
-        print('ok')
+        try:
+            self.record_entry_to_manentry(obj_type=obj_str, action='updated_amount', txn_date=txn_date, selected_item=str(item))        
+            print('ok')
+        except UnboundLocalError as e:
+            print(f'{type(item)} not currently supported')
+            print('you can add support in ManualEntry.update_amount_dynamic')
+            breakpoint()
 
     def update_ui(self, selected_item=None):
         '''this does nothing right now'''
