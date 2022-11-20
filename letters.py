@@ -318,8 +318,10 @@ class AddressWriter(Letters):
                                 columns=['name', 'street', 'unit', 'city', 'zip'], 
                                 )
         self.df.set_index('name', inplace=True)
-        self.df.to_excel(self.testing_save_path / Path('testing.xlsx'))
-    
+        write_path = self.testing_save_path / Path('testing.xlsx')
+        self.df.to_excel(write_path)
+        print(f'look for output in {write_path}')
+
 class DocxWriter(Letters):
 
     default_save_path = Config.TEST_DOCX_BASE

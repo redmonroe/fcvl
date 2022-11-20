@@ -34,6 +34,8 @@ class MonthSheet(YearSheet):
         else:
             self.service = oauth(Config.my_scopes, 'sheet')
 
+        self.gc = GoogleApiCalls()
+        self.query = QueryHC()
         self.contract_rent = '!E2:E68'
         self.subsidy = '!F2:F68'
         self.unit = '!A2:A68'
@@ -75,7 +77,8 @@ class MonthSheet(YearSheet):
     
         status_list = []
         for date in month_list:
-            self.write_rs_col(date)
+            df, contract_rent, subsidy, unit, tenant_names, beg_bal, endbal, charge_month, pay_month, dam_month = self.get_rs_col(date)
+            self.write_rs_col(date, contract_rent, subsidy, unit, tenant_names, beg_bal, endbal, charge_month, pay_month, dam_month)
             try:
                 reconciliation_type = [rec.scrape_reconciled for rec in StatusObject().select().where(StatusObject.month==date).namedtuples()][0]              
             except IndexError as e:
@@ -101,12 +104,10 @@ class MonthSheet(YearSheet):
         print(f'\n\t\t{wrange}\n')
         print(f'\n\t\t{status}')
 
-    def write_rs_col(self, date):
-        gc = GoogleApiCalls()
-        query = QueryHC()
-        first_dt, last_dt = query.make_first_and_last_dates(date_str=date)
+    def get_rs_col(self, date):
+        first_dt, last_dt = self.query.make_first_and_last_dates(date_str=date)
 
-        np, cumsum = query.full_month_position_tenant_by_month(first_dt=first_dt, last_dt=last_dt)
+        np, cumsum = self.query.full_month_position_tenant_by_month(first_dt=first_dt, last_dt=last_dt)
 
         df = self.index_np_with_df(np)
         unit = df['unit'].tolist()
@@ -119,15 +120,19 @@ class MonthSheet(YearSheet):
         contract_rent = df['contract_rent'].tolist()
         endbal = df['end_bal_m'].tolist()
 
-        gc.update_int(self.service, self.full_sheet, contract_rent, f'{date}' + self.contract_rent, value_input_option='USER_ENTERED')        
-        gc.update_int(self.service, self.full_sheet, subsidy, f'{date}' + self.subsidy, value_input_option='USER_ENTERED')        
-        gc.update(self.service, self.full_sheet, unit, f'{date}' + self.unit)
-        gc.update(self.service, self.full_sheet, tenant_names, f'{date}' + self.tenant_names)   
-        gc.update_int(self.service, self.full_sheet, beg_bal, f'{date}' + self.beg_bal, value_input_option='USER_ENTERED')
-        gc.update_int(self.service, self.full_sheet, endbal, f'{date}' + self.end_bal, value_input_option='USER_ENTERED')
-        gc.update_int(self.service, self.full_sheet, charge_month, f'{date}' + self.charge_month, value_input_option='USER_ENTERED')
-        gc.update_int(self.service, self.full_sheet, pay_month, f'{date}' + self.pay_month, value_input_option='USER_ENTERED')
-        gc.update_int(self.service, self.full_sheet, dam_month, f'{date}' + self.dam_month, value_input_option='USER_ENTERED')
+        return df, contract_rent, subsidy, unit, tenant_names, beg_bal, endbal, charge_month, pay_month, dam_month
+
+    def write_rs_col(self, date, *args):
+        self.gc.update_int(self.service, self.full_sheet, args[0], f'{date}' + self.contract_rent, value_input_option='USER_ENTERED')        
+        self.gc.update_int(self.service, self.full_sheet, args[1], f'{date}' + self.subsidy, value_input_option='USER_ENTERED')        
+        self.gc.update(self.service, self.full_sheet, args[2], f'{date}' + self.unit)
+        self.gc.update(self.service, self.full_sheet, args[3], f'{date}' + self.tenant_names)   
+        self.gc.update_int(self.service, self.full_sheet, args[4], f'{date}' + self.beg_bal, value_input_option='USER_ENTERED')
+        self.gc.update_int(self.service, self.full_sheet, args[5], f'{date}' + self.end_bal, value_input_option='USER_ENTERED')
+        self.gc.update_int(self.service, self.full_sheet, args[6], f'{date}' + self.charge_month, value_input_option='USER_ENTERED')
+        self.gc.update_int(self.service, self.full_sheet, args[7], f'{date}' + self.pay_month, value_input_option='USER_ENTERED')
+        self.gc.update_int(self.service, self.full_sheet, args[8], f'{date}' + self.dam_month, value_input_option='USER_ENTERED')
+
 
     def get_ntp_wrapper(self, date):
         populate = PopulateTable()
