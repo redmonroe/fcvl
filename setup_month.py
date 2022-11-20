@@ -47,43 +47,41 @@ class MonthSheet(YearSheet):
         self.dam_month = '!J2:J68'
     
     def auto_control(self, source=None, mode='clean_build', month_list=None):
-        if month_list != None:
-            wrange = f'This list has been expressly passed from {source}.'
-            print(f'writing rent sheets for {month_list}. {wrange}')
-        else:
-            wrange = 'This list has been generated from reconciled scrapes or opcash.'
-            print('generating list of months where either scrape or opcash has reconciled to deposits.xls.')
-            month_list = [rec.month for rec in StatusObject().select().where(       (StatusObject.tenant_reconciled==1) |
-                    (StatusObject.scrape_reconciled==1)).namedtuples()]
-    
-            print(f'reconciled months = {month_list}')
 
+        month_list, wrange = self.what_is_month_list(source=source, month_list=month_list)
+            
         if mode == 'clean_build':
             self.reset_spreadsheet()
             titles_dict = self.make_base_sheet()
             self.formatting_runner(title_dict=titles_dict) 
             self.duplicate_formatted_sheets(month_list=month_list)
             self.remove_base_sheet()
+            status_list = self.to_google_sheets(month_list=month_list)
         elif mode == 'iter_build':
             titles_dict = self.make_base_sheet()
             self.formatting_runner(title_dict=titles_dict) 
             self.duplicate_formatted_sheets(month_list=month_list)
             self.remove_base_sheet()
-        else:
+            status_list = self.to_google_sheets(month_list=month_list)
+        elif mode == 'single_sheet':
             month_list = Utils.months_in_ytd(Config.dynamic_current_year, show_choices=True)
             print(f'MAKE SINGLE RENT SHEET FOR {month_list} | DO NOT RESET SHEET.')
             titles_dict = self.make_single_sheet(single_month_list=month_list)
             self.formatting_runner(title_dict=titles_dict) 
+        elif mode == 'to_excel':
+            breakpoint()
+
+
+
+        self.report_status(month_list=month_list, status=status_list, wrange=wrange)
     
+    def to_google_sheets(self, month_list=None):
         status_list = []
         for date in month_list:
             df, contract_rent, subsidy, unit, tenant_names, beg_bal, endbal, charge_month, pay_month, dam_month = self.get_rs_col(date)
             self.write_rs_col(date, contract_rent, subsidy, unit, tenant_names, beg_bal, endbal, charge_month, pay_month, dam_month)
-            try:
-                reconciliation_type = [rec.scrape_reconciled for rec in StatusObject().select().where(StatusObject.month==date).namedtuples()][0]              
-            except IndexError as e:
-                print(f'for {date} you have returned an empty list indicating that your db did not reconcile for that month for File_Indexer or StatusObject')
-                raise
+
+            reconciliation_type = self.scrape_or_opcash(date=date)
             
             self.write_deposit_detail(date, genus=reconciliation_type)                    
             ntp = self.get_ntp_wrapper(date)
@@ -94,15 +92,37 @@ class MonthSheet(YearSheet):
             self.write_ntp(date, other_list, start_row=72)
             self.write_sum_mi_payments(date, sum_mi_payments)
             status = self.check_totals_reconcile(date)
-            status_list.append(status)
+            status_list.append(status)        
+        return status_list
 
-        self.report_status(month_list=month_list, status=status_list, wrange=wrange)
-    
     def report_status(self, month_list=None, status=None, wrange=None):
         print('\n\tcompleted writing to sheets\n')
         print(f'\n\t\t{month_list}\n')
         print(f'\n\t\t{wrange}\n')
         print(f'\n\t\t{status}')
+
+    def scrape_or_opcash(self, date=None):
+        try:
+            reconciliation_type = [rec.scrape_reconciled for rec in StatusObject().select().where(StatusObject.month==date).namedtuples()][0]              
+        except IndexError as e:
+            print(f'for {date} you have returned an empty list indicating that your db did not reconcile for that month for File_Indexer or StatusObject')
+            raise
+        return reconciliation_type
+    
+    def what_is_month_list(self, source=None, month_list=None):
+        """depending on inputs determines whether express list of month's to write is used or function will generate its own lists of months fro StatusObject"""
+        if month_list != None:
+            wrange = f'MonthSheet: This list has been expressly passed from {source}.'
+            print(f'writing rent sheets for {month_list}. {wrange}')
+        else:
+            wrange = 'MonthSheet: This list has been generated from reconciled scrapes or opcash.'
+            print('generating list of months where either scrape or opcash has reconciled to deposits.xls.')
+            month_list = [rec.month for rec in StatusObject().select().where(       (StatusObject.tenant_reconciled==1) |
+                    (StatusObject.scrape_reconciled==1)).namedtuples()]
+    
+            print(f'reconciled months = {month_list}')
+
+        return month_list, wrange
 
     def get_rs_col(self, date):
         first_dt, last_dt = self.query.make_first_and_last_dates(date_str=date)
@@ -132,8 +152,7 @@ class MonthSheet(YearSheet):
         self.gc.update_int(self.service, self.full_sheet, args[6], f'{date}' + self.charge_month, value_input_option='USER_ENTERED')
         self.gc.update_int(self.service, self.full_sheet, args[7], f'{date}' + self.pay_month, value_input_option='USER_ENTERED')
         self.gc.update_int(self.service, self.full_sheet, args[8], f'{date}' + self.dam_month, value_input_option='USER_ENTERED')
-
-
+   
     def get_ntp_wrapper(self, date):
         populate = PopulateTable()
         first_dt, last_dt = populate.make_first_and_last_dates(date_str=date)
@@ -203,7 +222,7 @@ class MonthSheet(YearSheet):
             kw['func'](self.service, self.full_sheet, [item], f'{kw["date"]}' + cat_str, value_input_option='USER_ENTERED')
             start_row += 1
             
-    def check_totals_reconcile(self, date):
+    def check_totals_reconcile(self, date=None):
         gc = GoogleApiCalls()
         onesite_total = gc.broad_get(self.service, self.full_sheet, f'{date}!K79:K79')
         nbofi_total = gc.broad_get(self.service, self.full_sheet, f'{date}!D90:D90')

@@ -55,7 +55,7 @@ def load_db_test():
     click.echo('TEST: loading all available files in path to db')
     figure = Figuration()
     path, full_sheet, build, service, ms = figure.return_configuration()
-    build.build_db_from_scratch(write=True)    
+    build.build_db_from_scratch()    
 
 @click.command()
 def load_db_prod():
@@ -169,7 +169,14 @@ def make_one_sheet():
     click.echo('making one sheet')
     figure = Figuration()
     path, full_sheet, build, service, ms = figure.return_configuration()
-    ms.auto_control(mode='not clean build')
+    ms.auto_control(mode='single_sheet')
+
+@click.command()
+def db_to_excel():
+    click.echo('db_to_excel')
+    figure = Figuration()
+    path, full_sheet, build, service, ms = figure.return_configuration()
+    ms.auto_control(mode='to_excel')
 
 """TESTING COMMANDS"""
 @click.command()
@@ -248,6 +255,7 @@ cli.add_command(recvactuals)
 cli.add_command(manentry)
 cli.add_command(delete_one_sheet)
 cli.add_command(make_one_sheet)
+cli.add_command(db_to_excel)
 """TESTING COMMANDS"""
 cli.add_command(test_full)
 cli.add_command(test_canonical)
