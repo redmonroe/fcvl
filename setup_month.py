@@ -97,8 +97,9 @@ class MonthSheet(YearSheet):
 
             hap, corr_sum, rr_sum, dep_detail = self.write_deposit_detail_to_excel(date, genus=reconciliation_type)
             ntp = self.get_ntp_wrapper(date)
+            sum_mi_payments = self.get_move_ins(date)
 
-            new_row1 = pd.Series(['hap', 'corrections', 'rr', 'laundry', 'other'])
+            new_row1 = pd.Series(['hap', 'corrections', 'rr', 'laundry', 'other', 'mi_payments'])
             try:
                 laundry = ntp[0][0]
             except IndexError as e:
@@ -110,7 +111,15 @@ class MonthSheet(YearSheet):
             except IndexError as e:
                 print(e)
                 other = 0
-            new_row = pd.Series([hap, corr_sum, rr_sum, laundry, other])
+
+            try:
+                mis = sum_mi_payments
+            except IndexError as e:
+                print(e)
+                mis = 0
+
+
+            new_row = pd.Series([hap, corr_sum, rr_sum, laundry, other, mis])
             
             df = df.append(new_row1, ignore_index=True)
             df = df.append(new_row, ignore_index=True)
