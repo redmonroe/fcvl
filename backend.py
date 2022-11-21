@@ -175,6 +175,7 @@ class StatusObject(BaseModel):
     tenant_reconciled = BooleanField(default=False)
     scrape_reconciled = BooleanField(default=False)
     rs_reconciled = BooleanField(default=False)
+    excel_reconciled = BooleanField(default=False)
     bal_letters = BooleanField(default=False)
     rent_recipts = BooleanField(default=False)
 

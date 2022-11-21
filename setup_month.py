@@ -76,7 +76,7 @@ class MonthSheet(YearSheet):
         self.report_status(month_list=month_list, status=status_list, wrange=wrange)
    
     def to_excel(self, month_list=None):
-        import os
+
         status_list = []
         try:
             writer = pd.ExcelWriter(Config.TEST_EXCEL, engine='xlsxwriter')
@@ -84,11 +84,12 @@ class MonthSheet(YearSheet):
             print(e)
             breakpoint()
             raise
-            # os.system('TASKKILL /F /IM excel.exe')
+        
         df_list = []
 
 
         for date in month_list:
+            first_dt, last_dt = self.query.make_first_and_last_dates(date_str=date)
             reconciliation_type = self.scrape_or_opcash(date=date)
 
             df, contract_rent, subsidy, unit, tenant_names, beg_bal, endbal, charge_month, pay_month, dam_month = self.get_rs_col(date)
@@ -99,7 +100,11 @@ class MonthSheet(YearSheet):
             ntp = self.get_ntp_wrapper(date)
             sum_mi_payments = self.get_move_ins(date)
 
-            new_row1 = pd.Series(['hap', 'corrections', 'rr', 'laundry', 'other', 'mi_payments'])
+            move_in_row = self.query.get_move_ins_by_period(first_dt=first_dt, last_dt=last_dt)
+
+            adjustments = 0
+
+     
             try:
                 laundry = ntp[0][0]
             except IndexError as e:
@@ -118,17 +123,27 @@ class MonthSheet(YearSheet):
                 print(e)
                 mis = 0
 
+            if move_in_row == []:
+                move_in_row = 'no move ins this month'
 
+            new_row1 = pd.Series(['hap', 'corrections', 'rr', 'laundry', 'other', 'mi_payments'])
             new_row = pd.Series([hap, corr_sum, rr_sum, laundry, other, mis])
+            move_in_row1 = pd.Series('MI date/name: ')
+            move_in_row = pd.Series([move_in_row])
+            space = pd.Series('')
+            adjustments1 = pd.Series('total tenant damages + adjustments: ')
+            adjustments = pd.Series([adjustments])
             
             df = df.append(new_row1, ignore_index=True)
             df = df.append(new_row, ignore_index=True)
+            df = df.append(space, ignore_index=True)
+            df = df.append(move_in_row1, ignore_index=True)
+            df = df.append(move_in_row, ignore_index=True)
+            df = df.append(space, ignore_index=True)
+            df = df.append(adjustments1, ignore_index=True)
+            df = df.append(adjustments, ignore_index=True)
             
-
-
             df_list.append((date, df))
-
-            # breakpoint()
 
         for item in df_list:
             df = item[1]
@@ -137,8 +152,11 @@ class MonthSheet(YearSheet):
 
         """I have to do a reconcilation"""
         """I have to mark in StatusObject"""
+        """adjustments"""
+        """damages"""
+        """deposit corrections"""
         writer.save()
-        writer.close()
+
         return status_list
 
     def to_google_sheets(self, month_list=None):
@@ -231,8 +249,7 @@ class MonthSheet(YearSheet):
         return sum_laundry, other_list
 
     def write_sum_mi_payments(self, date, data):
-        gc = GoogleApiCalls()
-        gc.update_int(self.service, self.full_sheet, [data], f'{date}' + f'{self.wrange_sum_mi_payments}', value_input_option='USER_ENTERED')   
+        self.gc.update_int(self.service, self.full_sheet, [data], f'{date}' + f'{self.wrange_sum_mi_payments}', value_input_option='USER_ENTERED')   
 
     def write_ntp(self, date, data, start_row=None):
         gc = GoogleApiCalls()
@@ -245,7 +262,7 @@ class MonthSheet(YearSheet):
         mi_list_to_write = populate.get_move_ins_by_period(first_dt=first_dt, last_dt=last_dt)
         if mi_list_to_write == []:
             mi_write_item = ['no move ins this month']
-            gc.format_row(self.service, self.full_sheet, f'{date}!B73:B73', "ROWS", mi_write_item)
+            gc.format_row(self.service, self.full_sheet, f'{date}!B73:B73', 'ROWS', mi_write_item)
         else:
             names_list = [item[1] for item in mi_list_to_write]
             dates_list = [item[0] for item in mi_list_to_write]
@@ -297,11 +314,11 @@ class MonthSheet(YearSheet):
         self.export_deposit_detail(date=date, res_rep=rr_sum, hap=hap, corr_sum=corr_sum, dep_detail=dep_detail)
 
     def export_deposit_detail(self, **kw):
+        print(date, 'writing deposit corrections to gsheet:', kw['corr_sum'] ) 
         date = kw['date']
         self.gc.update_int(self.service, self.full_sheet, [kw['hap']], f'{date}' + f'{self.wrange_hap_partial}', value_input_option='USER_ENTERED')
         self.gc.update_int(self.service, self.full_sheet, [kw['res_rep']], f'{date}' + f'{self.wrange_rr_partial}', value_input_option='USER_ENTERED')   
         self.gc.update_int(self.service, self.full_sheet, [kw['corr_sum']], f'{date}' + f'{self.wrange_corr_partial}', value_input_option='USER_ENTERED')  
-        print(date, 'writing deposit corrections to gsheet:', kw['corr_sum'] ) 
         dep_detail_amounts = [item.amount for item in kw['dep_detail']]
         self.write_list_to_col(func=self.gc.update_int, start_row=82, list1=dep_detail_amounts, col_letter='D', date=date)
 
@@ -316,9 +333,8 @@ class MonthSheet(YearSheet):
             start_row += 1
             
     def check_totals_reconcile(self, date=None):
-        gc = GoogleApiCalls()
-        onesite_total = gc.broad_get(self.service, self.full_sheet, f'{date}!K79:K79')
-        nbofi_total = gc.broad_get(self.service, self.full_sheet, f'{date}!D90:D90')
+        onesite_total = self.gc.broad_get(self.service, self.full_sheet, f'{date}!K79:K79')
+        nbofi_total = self.gc.broad_get(self.service, self.full_sheet, f'{date}!D90:D90')
 
         status_list = []
         if Reconciler.month_sheet_final_check(onesite_total=onesite_total, nbofi_total=nbofi_total, period=date, genus='rent sheet'):
@@ -327,12 +343,12 @@ class MonthSheet(YearSheet):
             status_object = StatusObject.get(status_object_row[0])
             status_object.rs_reconciled = True
             status_object.save()
-            gc.update(self.service, self.full_sheet, message, f'{date}' + self.wrange_reconciled)
+            self.gc.update(self.service, self.full_sheet, message, f'{date}' + self.wrange_reconciled)
             dict1 = {date: message}
             status_list.append(dict1)
         else:
             message = ['does not balance']
-            gc.update(self.service, self.full_sheet, message, f'{date}' + self.wrange_reconciled)
+            self.gc.update(self.service, self.full_sheet, message, f'{date}' + self.wrange_reconciled)
             status_object_row = [(row.id, row.month) for row in StatusObject.select().where(StatusObject.month==date).namedtuples()][0]
             status_object = StatusObject.get(status_object_row[0])
             status_object.rs_reconciled = False
