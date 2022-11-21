@@ -3,6 +3,7 @@ from datetime import datetime as dt
 from pathlib import Path
 
 import pandas as pd
+import xlsxwriter
 from numpy import nan
 from peewee import JOIN, fn
 
@@ -16,6 +17,7 @@ from google_api_calls_abstract import GoogleApiCalls
 from reconciler import Reconciler
 from setup_year import YearSheet
 from utils import Utils
+
 
 class MonthSheet(YearSheet):
 
@@ -69,12 +71,67 @@ class MonthSheet(YearSheet):
             titles_dict = self.make_single_sheet(single_month_list=month_list)
             self.formatting_runner(title_dict=titles_dict) 
         elif mode == 'to_excel':
-            breakpoint()
-
-
+            status_list = self.to_excel(month_list=month_list)
 
         self.report_status(month_list=month_list, status=status_list, wrange=wrange)
-    
+   
+    def to_excel(self, month_list=None):
+        import os
+        status_list = []
+        try:
+            writer = pd.ExcelWriter(Config.TEST_EXCEL, engine='xlsxwriter')
+        except PermissionError as e:
+            print(e)
+            breakpoint()
+            raise
+            # os.system('TASKKILL /F /IM excel.exe')
+        df_list = []
+
+
+        for date in month_list:
+            reconciliation_type = self.scrape_or_opcash(date=date)
+
+            df, contract_rent, subsidy, unit, tenant_names, beg_bal, endbal, charge_month, pay_month, dam_month = self.get_rs_col(date)
+
+            df = df[['name', 'unit','beg_bal_at', 'contract_rent', 'subsidy', 'charge_month', 'pay_month', 'dam_month', 'end_bal_m']]
+
+            hap, corr_sum, rr_sum, dep_detail = self.write_deposit_detail_to_excel(date, genus=reconciliation_type)
+            ntp = self.get_ntp_wrapper(date)
+
+            new_row1 = pd.Series(['hap', 'corrections', 'rr', 'laundry', 'other'])
+            try:
+                laundry = ntp[0][0]
+            except IndexError as e:
+                print(e)
+                laundry = 0
+           
+            try:
+                other = ntp[1][0]
+            except IndexError as e:
+                print(e)
+                other = 0
+            new_row = pd.Series([hap, corr_sum, rr_sum, laundry, other])
+            
+            df = df.append(new_row1, ignore_index=True)
+            df = df.append(new_row, ignore_index=True)
+            
+
+
+            df_list.append((date, df))
+
+            # breakpoint()
+
+        for item in df_list:
+            df = item[1]
+            date = item[0]
+            df.to_excel(writer, sheet_name=date, header=True)                   
+
+        """I have to do a reconcilation"""
+        """I have to mark in StatusObject"""
+        writer.save()
+        writer.close()
+        return status_list
+
     def to_google_sheets(self, month_list=None):
         status_list = []
         for date in month_list:
@@ -83,7 +140,7 @@ class MonthSheet(YearSheet):
 
             reconciliation_type = self.scrape_or_opcash(date=date)
             
-            self.write_deposit_detail(date, genus=reconciliation_type)                    
+            self.write_deposit_detail_to_gs(date, genus=reconciliation_type)                    
             ntp = self.get_ntp_wrapper(date)
             sum_laundry, other_list = self.split_ntp(ntp)
             sum_mi_payments = self.get_move_ins(date)
@@ -186,31 +243,58 @@ class MonthSheet(YearSheet):
             self.write_list_to_col(func=gc.update, start_row=73, list1=names_list, col_letter='B', date=date)
             self.write_list_to_col(func=gc.update, start_row=73, list1=dates_list, col_letter='C', date=date)
 
-    def write_deposit_detail(self, date, genus=None):
+    def scrape_dep_detail_func_list(self, date=None):
+        print(f'writing deposit detail from scrape {date}')
+        populate = PopulateTable()
+        first_dt, last_dt = populate.make_first_and_last_dates(date_str=date)
+        hap = populate.get_scrape_detail_by_month_by_type(type1='hap', first_dt=first_dt, last_dt=last_dt)
+        dep_correction_sum = populate.get_scrape_detail_by_month_by_type(type1='corr', first_dt=first_dt, last_dt=last_dt)
+        dep_correction_sum = sum([float(item) for item in dep_correction_sum])
+        dep_detail = populate.get_scrape_detail_by_month_deposit(first_dt=first_dt, last_dt=last_dt)
+
+        """scrape does not pick up replacement_reserve amounts from csv"""
+        """vvv"""
+        res_rep = 0
+        return hap[0], dep_correction_sum, dep_detail
+
+    def opcash_dep_detail_func_list(self, date=None):
+        print(f'writing deposit detail from opcash {date}')
+        populate = PopulateTable()
+        first_dt, last_dt = populate.make_first_and_last_dates(date_str=date)
+        rec = populate.get_opcash_by_period(first_dt=first_dt, last_dt=last_dt)
+        dep_detail = populate.get_opcashdetail_by_stmt(stmt_key=rec[0][0])
+        hap = rec[0][3]
+        corr_sum = rec[0][5]
+        rr_sum = rec[0][2]
+
+        return hap, corr_sum, rr_sum, dep_detail
+
+    def write_deposit_detail_to_excel(self, date, genus=None):
         populate = PopulateTable()
         first_dt, last_dt = populate.make_first_and_last_dates(date_str=date)
         if genus == True:
-            print(f'writing deposit detail from scrape {date}')
-            hap = populate.get_scrape_detail_by_month_by_type(type1='hap', first_dt=first_dt, last_dt=last_dt)
-            dep_correction_sum = populate.get_scrape_detail_by_month_by_type(type1='corr', first_dt=first_dt, last_dt=last_dt)
-            dep_correction_sum = sum([float(item) for item in dep_correction_sum])
-            dep_detail = populate.get_scrape_detail_by_month_deposit(first_dt=first_dt, last_dt=last_dt)
-            self.export_deposit_detail(date=date, res_rep=0, hap=hap[0], dep_sum=0, corr_sum=dep_correction_sum, dep_detail=dep_detail)
+            hap, corr_sum, rr_sum, dep_detail = self.scrape_dep_detail_func_list(date=date)
         elif genus == False:
-            print(f'writing deposit detail from opcash {date}')
-            rec = populate.get_opcash_by_period(first_dt=first_dt, last_dt=last_dt)
-            dep_detail = populate.get_opcashdetail_by_stmt(stmt_key=rec[0][0])
-            self.export_deposit_detail(date=date, res_rep=rec[0][2], hap=rec[0][3], dep_sum=rec[0][4], corr_sum=rec[0][5], dep_detail=dep_detail)
+            hap, corr_sum, rr_sum, dep_detail = self.opcash_dep_detail_func_list(date=date)
+
+        return hap, corr_sum, rr_sum, dep_detail
+
+    def write_deposit_detail_to_gs(self, date, genus=None):
+        if genus == True:
+            hap, corr_sum, rr_sum, dep_detail = self.scrape_dep_detail_func_list(date=date)
+        elif genus == False:
+            hap, corr_sum, rr_sum, dep_detail = self.opcash_dep_detail_func_list(date=date)
+
+        self.export_deposit_detail(date=date, res_rep=rr_sum, hap=hap, corr_sum=corr_sum, dep_detail=dep_detail)
 
     def export_deposit_detail(self, **kw):
-        gc = GoogleApiCalls()
         date = kw['date']
-        gc.update_int(self.service, self.full_sheet, [kw['hap']], f'{date}' + f'{self.wrange_hap_partial}', value_input_option='USER_ENTERED')
-        gc.update_int(self.service, self.full_sheet, [kw['res_rep']], f'{date}' + f'{self.wrange_rr_partial}', value_input_option='USER_ENTERED')   
-        gc.update_int(self.service, self.full_sheet, [kw['corr_sum']], f'{date}' + f'{self.wrange_corr_partial}', value_input_option='USER_ENTERED')  
-        print(date, 'deposit corrections:', kw['corr_sum'] ) 
+        self.gc.update_int(self.service, self.full_sheet, [kw['hap']], f'{date}' + f'{self.wrange_hap_partial}', value_input_option='USER_ENTERED')
+        self.gc.update_int(self.service, self.full_sheet, [kw['res_rep']], f'{date}' + f'{self.wrange_rr_partial}', value_input_option='USER_ENTERED')   
+        self.gc.update_int(self.service, self.full_sheet, [kw['corr_sum']], f'{date}' + f'{self.wrange_corr_partial}', value_input_option='USER_ENTERED')  
+        print(date, 'writing deposit corrections to gsheet:', kw['corr_sum'] ) 
         dep_detail_amounts = [item.amount for item in kw['dep_detail']]
-        self.write_list_to_col(func=gc.update_int, start_row=82, list1=dep_detail_amounts, col_letter='D', date=date)
+        self.write_list_to_col(func=self.gc.update_int, start_row=82, list1=dep_detail_amounts, col_letter='D', date=date)
 
     def write_list_to_col(self, **kw):
         start_row = kw['start_row']
