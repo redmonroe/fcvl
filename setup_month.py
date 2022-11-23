@@ -84,8 +84,6 @@ class MonthSheet(YearSheet):
 
         writer = Errors.xlsx_permission_error(Config.TEST_EXCEL, pandas_object=pd)
         
-
-
         for date in month_list:
             first_dt, last_dt = self.query.make_first_and_last_dates(date_str=date)
             reconciliation_type = self.scrape_or_opcash(date=date)
@@ -102,10 +100,10 @@ class MonthSheet(YearSheet):
 
             damages = self.query.get_damages_by_month(first_dt=first_dt, last_dt=last_dt)
 
-            adjustments = self.query.get_mentries_by_month(first_dt=first_dt, last_dt=last_dt)
+            # adjustments = self.query.get_mentries_by_month(first_dt=first_dt, last_dt=last_dt)
 
-            if adjustments == []:
-                adjustments = 'no manual entries this month (from persistent.py'
+            # if adjustments == []:
+            #     adjustments = 'no manual entries this month (from persistent.py'
 
             if damages == []:
                 damages = 'no damages from persistent.py this month'
@@ -132,34 +130,25 @@ class MonthSheet(YearSheet):
                 print(e)
                 mis = 0
 
+            row_list = []
+            row_list.append(pd.Series(['hap', 'corrections', 'rr', 'laundry', 'other', 'mi_payments']))
+            row_list.append(pd.Series([hap, corr_sum, rr_sum, laundry, other, mis]))
+            row_list.append(pd.Series('MI date/name: '))
+            row_list.append(pd.Series([move_in_row]))
+            row_list.append(pd.Series(''))
+            row_list.append(pd.Series('damages this month'))
+            row_list.append(pd.Series([damages]))
+            row_list.append(pd.Series(''))
+            # adjustments1 = pd.Series('total tenant-side adjustments: ')
+            # adjustments = pd.Series([adjustments])
 
-            new_row1 = pd.Series(['hap', 'corrections', 'rr', 'laundry', 'other', 'mi_payments'])
-            new_row = pd.Series([hap, corr_sum, rr_sum, laundry, other, mis])
-            move_in_row1 = pd.Series('MI date/name: ')
-            move_in_row = pd.Series([move_in_row])
-            space = pd.Series('')
-            damages1 = pd.Series('damages this month')
-            damages = pd.Series([damages])
-            space = pd.Series('')
-            adjustments1 = pd.Series('total tenant-side adjustments: ')
-            adjustments = pd.Series([adjustments])
-            
-            df = df.append(new_row1, ignore_index=True)
-            df = df.append(new_row, ignore_index=True)
-            df = df.append(space, ignore_index=True)
-            df = df.append(move_in_row1, ignore_index=True)
-            df = df.append(move_in_row, ignore_index=True)
-            df = df.append(space, ignore_index=True)
-            df = df.append(adjustments1, ignore_index=True)
-            df = df.append(damages1, ignore_index=True)
-            df = df.append(damages, ignore_index=True)
-            
+            for series in row_list:
+                df = df.append(series, ignore_index=True)
+                 
             df_list.append((date, df))
 
         for item in df_list:
-            df = item[1]
-            date = item[0]
-            df.to_excel(writer, sheet_name=date, header=True)                   
+            item[1].to_excel(writer, sheet_name=item[0], header=True)                   
 
         #TODO
         """I have to do a reconcilation"""
