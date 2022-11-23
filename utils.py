@@ -260,13 +260,30 @@ class Utils:
 
         return idx_list
 
+    @staticmethod
+    def enumerate_choices_for_user_input(chlist=None):
+        choices = []
+        files = []
+        
+        for count, item in enumerate(chlist, 1):
+            print(count, "****", item, '****')
+            choices.append(count)
+            files.append(item)
+        
+        selection = int(input('Please select an item to work with: '))
+    
+        choice_file = dict(zip(choices, files))
+
+        for k, v in choice_file.items():
+            if selection == k:
+                return v, selection
+
     def show_files_as_choices(list, interactive=True):
         choice = []
         files = []
         choice_file = {}
 
         for count, (k, v) in enumerate(list.items(), 1):
-            print(count, "****", k, '****', v)
             choice.append(count)
             files.append(k)
 
