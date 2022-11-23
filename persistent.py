@@ -1,7 +1,7 @@
 class Persistent:
     damages = [
                 {'morris, michael': (599, '2022-02-01', 'exterm')}, 
-                # {'greiner, richard': (-25, '2022-10-01', 'temp_reasons')}
+                {'greiner, richard': (146, '2022-10-01', 'ur sept_oct')}
     ]
     
     changes = [{'obj_type': 'Payment', 'action': 'delete', 'col_name1': ('tenant_id', 'newcomb, benny'), 'col_name2': ('amount', '476.0'), 'col_name3': ('date_posted', '2022-02-08')}, 
@@ -25,6 +25,11 @@ class Persistent:
 
         {'obj_type': 'TenantRent', 'action': 'update_amount', 'col_name1': ('t_name_id', 'brown, alicia'), 'col_name2': ('rent_amount', '1140.00'), 'col_name3': ('rent_date', '2022-10-01'), 'col_name4': ('new_amount', '546.00')},
 
+        {'obj_type': 'TenantRent', 'action': 'update_amount', 'col_name1': ('t_name_id', 'greiner, richard'), 'col_name2': ('rent_amount', '0'), 'col_name3': ('rent_date', '2022-09-01'), 'col_name4': ('new_amount', '-73.00')},
+
+        {'obj_type': 'TenantRent', 'action': 'update_amount', 'col_name1': ('t_name_id', 'greiner, richard'), 'col_name2': ('rent_amount', '-74'), 'col_name3': ('rent_date', '2022-10-01'), 'col_name4': ('new_amount', '-73.00')},
+
+        # {'obj_type': 'Subsidy', 'action': 'update_amount', 'col_name1': ('tenant_id', 'greiner, richard'), 'col_name2': ('sub_amount', '-3'), 'col_name3': ('date_posted', '2022-10-01'), 'col_name4': ('new_amount', '224.00')},
         
         ]
 

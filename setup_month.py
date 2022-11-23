@@ -161,10 +161,10 @@ class MonthSheet(YearSheet):
             date = item[0]
             df.to_excel(writer, sheet_name=date, header=True)                   
 
+        #TODO
         """I have to do a reconcilation"""
         """I have to mark in StatusObject"""
         """adjustments"""
-        """damages"""
         """deposit corrections"""
         writer.save()
 
@@ -325,8 +325,8 @@ class MonthSheet(YearSheet):
         self.export_deposit_detail(date=date, res_rep=rr_sum, hap=hap, corr_sum=corr_sum, dep_detail=dep_detail)
 
     def export_deposit_detail(self, **kw):
-        print(date, 'writing deposit corrections to gsheet:', kw['corr_sum'] ) 
         date = kw['date']
+        print(date, 'writing deposit corrections to gsheet:', kw['corr_sum'] ) 
         self.gc.update_int(self.service, self.full_sheet, [kw['hap']], f'{date}' + f'{self.wrange_hap_partial}', value_input_option='USER_ENTERED')
         self.gc.update_int(self.service, self.full_sheet, [kw['res_rep']], f'{date}' + f'{self.wrange_rr_partial}', value_input_option='USER_ENTERED')   
         self.gc.update_int(self.service, self.full_sheet, [kw['corr_sum']], f'{date}' + f'{self.wrange_corr_partial}', value_input_option='USER_ENTERED')  
