@@ -341,6 +341,8 @@ class QueryHC(Reconciler):
 
         if type1 == 'delete' and mentries != []:
             return  [float(item.replace("'", "").split(',')[3].split('=')[1]) for item in mentries][0]
+
+        return mentries
         
 
     def consolidated_get_stmt_by_month(self, first_dt=None, last_dt=None):

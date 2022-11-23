@@ -94,7 +94,7 @@ class MonthSheet(YearSheet):
 
             df, contract_rent, subsidy, unit, tenant_names, beg_bal, endbal, charge_month, pay_month, dam_month = self.get_rs_col(date)
 
-            df = df[['name', 'unit','beg_bal_at', 'contract_rent', 'subsidy', 'charge_month', 'pay_month', 'dam_month', 'end_bal_m']]
+            df = df[['name', 'unit','lp_endbal', 'contract_rent', 'subsidy', 'charge_month', 'pay_month', 'dam_month', 'end_bal_m']]
 
             hap, corr_sum, rr_sum, dep_detail = self.write_deposit_detail_to_excel(date, genus=reconciliation_type)
             ntp = self.get_ntp_wrapper(date)
@@ -102,8 +102,15 @@ class MonthSheet(YearSheet):
 
             move_in_row = self.query.get_move_ins_by_period(first_dt=first_dt, last_dt=last_dt)
 
-            adjustments = 0
+            damages = self.query.get_damages_by_month(first_dt=first_dt, last_dt=last_dt)
 
+            adjustments = self.query.get_mentries_by_month(first_dt=first_dt, last_dt=last_dt)
+
+            if adjustments == []:
+                adjustments = 'no manual entries this month (from persistent.py'
+
+            if damages == []:
+                damages = 'no damages from persistent.py this month'
      
             try:
                 laundry = ntp[0][0]
@@ -131,7 +138,10 @@ class MonthSheet(YearSheet):
             move_in_row1 = pd.Series('MI date/name: ')
             move_in_row = pd.Series([move_in_row])
             space = pd.Series('')
-            adjustments1 = pd.Series('total tenant damages + adjustments: ')
+            damages1 = pd.Series('damages this month')
+            damages = pd.Series([damages])
+            space = pd.Series('')
+            adjustments1 = pd.Series('total tenant-side adjustments: ')
             adjustments = pd.Series([adjustments])
             
             df = df.append(new_row1, ignore_index=True)
@@ -141,7 +151,8 @@ class MonthSheet(YearSheet):
             df = df.append(move_in_row, ignore_index=True)
             df = df.append(space, ignore_index=True)
             df = df.append(adjustments1, ignore_index=True)
-            df = df.append(adjustments, ignore_index=True)
+            df = df.append(damages1, ignore_index=True)
+            df = df.append(damages, ignore_index=True)
             
             df_list.append((date, df))
 
@@ -370,6 +381,7 @@ class MonthSheet(YearSheet):
         ui_df = pd.DataFrame(unit_index, columns=['Rank', 'unit'])
         df = pd.DataFrame(np, columns=['name', 'beg_bal_at', 'lp_endbal', 'pay_month', 'charge_month', 'dam_month', 'end_bal_m', 'st_date', 'end_date',  'unit', 'subsidy', 'contract_rent'])
         df = df.set_index('unit')
+
 
         # merge indexes to order units in way we always have
         merged_df = pd.merge(df, ui_df, on='unit', how='outer')
