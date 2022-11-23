@@ -17,6 +17,7 @@ from google_api_calls_abstract import GoogleApiCalls
 from reconciler import Reconciler
 from setup_year import YearSheet
 from utils import Utils
+from errors import Errors
 
 
 class MonthSheet(YearSheet):
@@ -76,16 +77,13 @@ class MonthSheet(YearSheet):
         self.report_status(month_list=month_list, status=status_list, wrange=wrange)
    
     def to_excel(self, month_list=None):
+        print(f'sending {month_list} to excel')
 
         status_list = []
-        try:
-            writer = pd.ExcelWriter(Config.TEST_EXCEL, engine='xlsxwriter')
-        except PermissionError as e:
-            print(e)
-            breakpoint()
-            raise
-        
         df_list = []
+
+        writer = Errors.xlsx_permission_error(Config.TEST_EXCEL, pandas_object=pd)
+        
 
 
         for date in month_list:
@@ -112,9 +110,13 @@ class MonthSheet(YearSheet):
             if damages == []:
                 damages = 'no damages from persistent.py this month'
      
+            if move_in_row == []:
+                move_in_row = 'no move ins this month'
+
             try:
                 laundry = ntp[0][0]
             except IndexError as e:
+                breakpoint()
                 print(e)
                 laundry = 0
            
@@ -130,8 +132,6 @@ class MonthSheet(YearSheet):
                 print(e)
                 mis = 0
 
-            if move_in_row == []:
-                move_in_row = 'no move ins this month'
 
             new_row1 = pd.Series(['hap', 'corrections', 'rr', 'laundry', 'other', 'mi_payments'])
             new_row = pd.Series([hap, corr_sum, rr_sum, laundry, other, mis])

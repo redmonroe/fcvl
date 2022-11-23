@@ -31,3 +31,18 @@ def retry_google_api(times, sleep1, exceptions):
         return newfn
     return decorator
 
+class Errors:
+    
+    @staticmethod
+    def xlsx_permission_error(path, pandas_object):
+        try:
+            return pandas_object.ExcelWriter(path, engine='xlsxwriter')
+        except PermissionError as e:
+            decision = input('Exception caught in workbook.close(): %s\n'
+                        "Please close the file if it is open in Excel.\n"
+                        "Try to write file again? [Y/n]: " % e)
+            if decision != 'n':
+                return pandas_object.ExcelWriter(path, engine='xlsxwriter')
+            else:
+                raise
+                
