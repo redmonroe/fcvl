@@ -216,26 +216,6 @@ class QueryHC(Reconciler):
             return different_names
         return []
 
-    def ur_query_wrapper(self):
-
-        populate = PopulateTable()
-        first_dt, last_dt = populate.make_first_and_last_dates(date_str='2022-01')
-        populate.ur_query(model='Tenant', query_fields={'move_in_date': first_dt, 'move_out_date': last_dt})
-
-    def ur_query(self, model=None, query_fields=None):
-        # data = {'field_a': 1, 'field_b': 33, 'field_c': 'test'}
-        import operator
-        import sys
-        from functools import reduce
-        model = getattr(sys.modules[__name__], model)
-        clauses = []
-        for key, value in query_fields.items():
-            field = model._meta.fields[key]
-            clauses.append(field == value)
-
-        expr = reduce(operator.and_, clauses) # from itertools import reduce in Py3
-        breakpoint()
-
     def get_all_by_rows_by_argument(self, model1=None):
         return [row for row in model1.select().namedtuples()]
 
@@ -640,6 +620,42 @@ class QueryHC(Reconciler):
             cumsum += row.end_bal
        
         return position_list1, cumsum
+
+class UrQuery(QueryHC):
+
+    def __init__(self, **kwargs):
+        print('urquery')
+
+    def ur_query_wrapper(self):
+
+        populate = PopulateTable()
+        first_dt, last_dt = populate.make_first_and_last_dates(date_str='2022-01')
+        populate.ur_query(model_str='Tenant', query_fields={'move_in_date': first_dt, 'move_out_date': last_dt})
+
+    def ur_query(self, model_str=None, query_fields=None, **kwargs):
+        # data = {'field_a': 1, 'field_b': 33, 'field_c': 'test'}
+        import operator
+        import sys
+        from functools import reduce
+        model = getattr(sys.modules[__name__], model_str)
+        clauses = []
+        populate = PopulateTable()
+        first_dt, last_dt = populate.make_first_and_last_dates(date_str='2022-01')
+        query_fields = {'move_in_date': first_dt, 'move_out_date': last_dt}
+        if query_fields:
+            for key, value in query_fields.items():
+                field = model._meta.fields[key]
+                clauses.append(field == value)
+
+        if clauses:
+            expr = reduce(operator.and_, clauses) # from itertools import reduce in Py3
+        else:
+            pass
+
+        breakpoint()
+
+    def get_all_status_objects(self):
+        return [row for row in StatusObject.select().namedtuples()]
 
 class PopulateTable(QueryHC):
 

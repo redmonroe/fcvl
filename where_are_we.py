@@ -1,6 +1,7 @@
 from backend import ProcessingLayer, PopulateTable, StatusObject
 from config import Config
 from utils import Utils
+from backend import UrQuery
 
 
 class WhereAreWe(ProcessingLayer):
@@ -25,6 +26,12 @@ class WhereAreWe(ProcessingLayer):
 
     def select_month(self, range=None):
         """could set explicit range if wanted"""
+        query = UrQuery()
+        query.ur_query(model_str='Tenant')
+
+
+        breakpoint()
+
         date, _ = Utils.enumerate_choices_for_user_input(chlist=Utils.months_in_ytd(Config.current_year))
         first_dt, last_dt = self.populate.make_first_and_last_dates(date_str=date)
 
@@ -37,17 +44,22 @@ class WhereAreWe(ProcessingLayer):
         ## did opcash reconcile to deposits
         did_opcash_or_scrape_reconcile_with_deposit_report = self.populate.get_all_by_rows_by_argument(model1=StatusObject)
 
-        
-        
-        
-        
+        self.filter_rows(collection=did_opcash_or_scrape_reconcile_with_deposit_report, target='month', date=date)
         breakpoint()
 
-
-
+        
+        self.print_rows(date=date, beg_tenants=tenants_at_1, opcash=opcash, reconcile_status=did_opcash_or_scrape_reconcile_with_deposit_report)
     
     def greetings(self, **kwargs):
         print(kwargs)
-        breakpoint()
 
-    def filter_rows(self, date=None):
+    def filter_rows(self, **kwargs):
+        print(kwargs)
+
+
+
+    def print_rows(self, date=None, **kwargs):
+        print(f'current month: {date}')
+        print(f'reconciliation status: {kwargs["reconcile_status"]}')
+        print(f'occupieds at first of month: {len(kwargs["beg_tenants"])}')
+        breakpoint()
