@@ -3,11 +3,14 @@ import datetime
 import json
 import logging
 import math
+import operator
 import os
+import sys
 from calendar import monthrange
-from collections import namedtuple
+from collections import namedtuple, defaultdict
 from datetime import datetime, timedelta
 from decimal import ROUND_DOWN, ROUND_UP, Decimal
+from functools import reduce
 from pathlib import Path
 from pprint import pprint
 from sqlite3 import IntegrityError
@@ -17,17 +20,18 @@ import pytest
 from dateutil.relativedelta import relativedelta
 from numpy import nan
 from peewee import *
-from peewee import IntegrityError as PIE
+from peewee import JOIN
 from peewee import DoesNotExist as DNE
-from peewee import JOIN, fn
+from peewee import IntegrityError as PIE
+from peewee import fn
 from recordtype import \
     recordtype  # i edit the source code here, so requirements won't work if this is ever published, after 3.10, collection.abc change
 
 from config import Config
 from letters import Letters
+from reconciler import Reconciler
 from records import record
 from utils import Utils
-from reconciler import Reconciler
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 db = SqliteDatabase(None)
@@ -330,10 +334,6 @@ class QueryHC(Reconciler):
         opcash_detail = self.get_opcashdetail_by_stmt(stmt_key=opcash_sum[0][0])
         return opcash_sum, opcash_detail
 
-    def get_opcash_sum_by_period(self, first_dt=None, last_dt=None):
-        return [row.dep_sum for row in OpCash.select().
-        where(OpCash.date >= first_dt).
-        where(OpCash.date <= last_dt).namedtuples()]
     
     def get_opcash_by_period(self, first_dt=None, last_dt=None):
         return [(row.stmt_key, row.date, row.rr, row.hap, row.dep_sum, row.corr_sum) for row in OpCash.select(OpCash.stmt_key, OpCash.date, OpCash.rr, OpCash.hap, OpCash.dep_sum, OpCash.corr_sum).
@@ -581,6 +581,7 @@ class QueryHC(Reconciler):
         return position_list1, cumsum
 
     def net_position_by_tenant_by_month(self, first_dt=None, last_dt=None, after_first_month=None):
+      
         '''heaviest business logic here'''
         '''returns relatively hefty object with everything you'd need to write the report/make the sheets'''
         '''model we are using now is do alltime payments, charges, and alltime beg_bal'''
@@ -632,30 +633,45 @@ class UrQuery(QueryHC):
         first_dt, last_dt = populate.make_first_and_last_dates(date_str='2022-01')
         populate.ur_query(model_str='Tenant', query_fields={'move_in_date': first_dt, 'move_out_date': last_dt})
 
-    def ur_query(self, model_str=None, query_fields=None, **kwargs):
+    def ur_query(self, model_str=None, query_dict=None, query_tup=None, operators_list=None, **kwargs):
         # data = {'field_a': 1, 'field_b': 33, 'field_c': 'test'}
         import operator
-        import sys
-        from functools import reduce
         model = getattr(sys.modules[__name__], model_str)
-        clauses = []
-        populate = PopulateTable()
-        first_dt, last_dt = populate.make_first_and_last_dates(date_str='2022-01')
-        query_fields = {'move_in_date': first_dt, 'move_out_date': last_dt}
-        if query_fields:
-            for key, value in query_fields.items():
-                field = model._meta.fields[key]
-                clauses.append(field == value)
 
-        if clauses:
-            expr = reduce(operator.and_, clauses) # from itertools import reduce in Py3
+        operators = []
+        if operators_list is None:
+            operators = [operator.and_]
         else:
-            pass
+            for item in operators_list:
+                if item == '>=':
+                    operators.append(operator.ge)
+                elif item == '<=':
+                    operators.append(operator.le)
+                elif item == '&':
+                    operators.append(operator.and_)
 
-        breakpoint()
+        
+        clauses = []
+        expressions = []
+        if query_dict:
+            for key, value in query_dict.items():
+                field = model._meta.fields[key]
+                clauses.append(field == value)   
+            expr = reduce(operator.and_, clauses)
+        elif query_tup:
+            for item in query_tup:
+                field = model._meta.fields[item[0]]
+                clauses.append(field == item[1])   
+            
+            for operator, clause in zip(operators, clauses):
+                expr = reduce(operator, clause)
+                expressions.append(expr)
+            breakpoint()
+        else:    
+            # get_all
+            expr = model.select()
 
-    def get_all_status_objects(self):
-        return [row for row in StatusObject.select().namedtuples()]
+        return expr
 
 class PopulateTable(QueryHC):
 
@@ -1311,7 +1327,7 @@ class ProcessingLayer(StatusRS):
             - deposit corrections
             - what do I want to show whether reconciled?
         """
-        from file_indexer import FileIndexer # circular import work around
+        from file_indexer import FileIndexer  # circular import work around
 
         populate  = PopulateTable()
         findex = FileIndexer(path=kw['path'], db=kw['db'])

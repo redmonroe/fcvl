@@ -3,7 +3,6 @@ from config import Config
 from utils import Utils
 from backend import UrQuery
 
-
 class WhereAreWe(ProcessingLayer):
 
     def __init__(self, **kwargs):
@@ -24,14 +23,31 @@ class WhereAreWe(ProcessingLayer):
         """
         pass
 
+    def query_practice(self):
+        first_dt, last_dt = self.populate.make_first_and_last_dates(date_str='2022-01')
+
+        query_fields = {'move_in_date': first_dt, 'move_out_date': last_dt}
+
+        query = UrQuery()
+        # query.ur_query(model_str='Tenant', query_fields=query_fields)
+        # results = query.ur_query(model_str='Tenant')
+        # filt_results = [row.move_in_date for row in results.namedtuples()]
+        # print(filt_results)
+    
+        results = query.ur_query(model_str='OpCash', query_tup= [('date', first_dt), ('date', last_dt)], operators_list=['>=', '<='])
+        breakpoint()
+        
+        filt_results = [row for row in results.namedtuples()]
+
+    # def get_opcash_sum_by_period(self, first_dt=None, last_dt=None):
+    '''
+    return [row.dep_sum for row in OpCash.select().
+    where(OpCash.date >= first_dt).
+    where(OpCash.date <= last_dt).namedtuples()]
+    '''
+
     def select_month(self, range=None):
         """could set explicit range if wanted"""
-        query = UrQuery()
-        query.ur_query(model_str='Tenant')
-
-
-        breakpoint()
-
         date, _ = Utils.enumerate_choices_for_user_input(chlist=Utils.months_in_ytd(Config.current_year))
         first_dt, last_dt = self.populate.make_first_and_last_dates(date_str=date)
 
