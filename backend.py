@@ -3,7 +3,6 @@ import datetime
 import json
 import logging
 import math
-import operator
 import os
 import sys
 from calendar import monthrange
@@ -219,9 +218,6 @@ class QueryHC(Reconciler):
             different_names = [name for name in pay_names if pay_names.count(name) > 1]
             return different_names
         return []
-
-    def get_all_by_rows_by_argument(self, model1=None):
-        return [row for row in model1.select().namedtuples()]
 
     def get_all_status_objects(self):
         return [row for row in StatusObject.select().namedtuples()]
@@ -637,11 +633,11 @@ class UrQuery(QueryHC):
         # data = {'field_a': 1, 'field_b': 33, 'field_c': 'test'}
         import operator
         model = getattr(sys.modules[__name__], model_str)
-
-        operators = []
+        
         if operators_list is None:
             operators = [operator.and_]
         else:
+            operators = []
             for item in operators_list:
                 if item == '>=':
                     operators.append(operator.ge)
@@ -649,29 +645,26 @@ class UrQuery(QueryHC):
                     operators.append(operator.le)
                 elif item == '&':
                     operators.append(operator.and_)
-
-        
+       
         clauses = []
         expressions = []
         if query_dict:
             for key, value in query_dict.items():
                 field = model._meta.fields[key]
                 clauses.append(field == value)   
-            expr = reduce(operator.and_, clauses)
+            return reduce(operator.and_, clauses)
         elif query_tup:
-            for item in query_tup:
+            for item, op in zip(query_tup, operators):
                 field = model._meta.fields[item[0]]
-                clauses.append(field == item[1])   
+                clauses.append(op(field, item[1]))   
             
-            for operator, clause in zip(operators, clauses):
-                expr = reduce(operator, clause)
-                expressions.append(expr)
-            breakpoint()
+            for cl in clauses:
+                print(cl.__dict__['lhs'], cl.__dict__['op'], cl.__dict__['rhs'])
+            expr = reduce(operator.and_, clauses)
+            return model.select().where(expr)
         else:    
             # get_all
-            expr = model.select()
-
-        return expr
+            return model.select()
 
 class PopulateTable(QueryHC):
 

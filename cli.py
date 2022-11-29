@@ -37,8 +37,8 @@ def where_are_we():
     path, full_sheet, build, service, ms = figure.return_configuration()    
     where = WhereAreWe(path=path, full_sheet=full_sheet, build=build, service=service, ms=ms)
     #TODO
-    where.query_practice()
-    # where.select_month()
+    # where.query_practice()
+    where.select_month()
     
 @click.command()
 def status_findexer_test():
