@@ -35,15 +35,7 @@ class WhereAreWe(ProcessingLayer):
         print(filt_results)
 
         print(filt_results)
-        breakpoint()
-        
-
-    # def get_opcash_sum_by_period(self, first_dt=None, last_dt=None):
-    '''
-    return [row.dep_sum for row in OpCash.select().
-    where(OpCash.date >= first_dt).
-    where(OpCash.date <= last_dt).namedtuples()]
-    '''
+    
 
     def select_month(self, range=None):
         """could set explicit range if wanted"""
@@ -59,14 +51,7 @@ class WhereAreWe(ProcessingLayer):
 
         ## did opcash reconcile to deposits
         did_opcash_or_scrape_reconcile_with_deposit_report = [row for row in query.ur_query(model_str='StatusObject').namedtuples() if row.month == date]
-        breakpoint()    
-
-        # = self.populate.get_all_by_rows_by_argument(model1=StatusObject)
-        def get_all_by_rows_by_argument(self, model1=None):
-            return [row for row in model1.select().namedtuples()]
-
-        self.filter_rows(collection=did_opcash_or_scrape_reconcile_with_deposit_report, target='month', date=date)
-        breakpoint()
+        # breakpoint()  
 
         
         self.print_rows(date=date, beg_tenants=tenants_at_1, opcash=opcash, reconcile_status=did_opcash_or_scrape_reconcile_with_deposit_report)
