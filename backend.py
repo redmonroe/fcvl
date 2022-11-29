@@ -208,17 +208,6 @@ class QueryHC(Reconciler):
 
         return dt_obj_first, dt_obj_last
 
-    def check_for_multiple_payments(self, detail_beg_bal_all=None, first_dt=None, last_dt=None):
-        pay_names = [row.tenant for row in Payment().
-                select().
-                where(Payment.date_posted >= first_dt).
-                where(Payment.date_posted <= last_dt).
-                join(Tenant).namedtuples()]
-        if len(pay_names) != len(set(pay_names)):
-            different_names = [name for name in pay_names if pay_names.count(name) > 1]
-            return different_names
-        return []
-
     def get_all_status_objects(self):
         return [row for row in StatusObject.select().namedtuples()]
 
@@ -229,35 +218,6 @@ class QueryHC(Reconciler):
     def get_all_findexer_recon_status(self, type1=None):
         rows = [(row.recon, row.period) for row in Findexer.select().where(Findexer.doc_type == type1).namedtuples()]
         return rows
-
-    def get_all_tenants_beg_bal(self, cumsum=False):
-        '''returns a list of all tenants and their all time beginning balances'''
-        '''does not consider active status at this point'''
-        return [row.beg_bal_amount for row in Tenant.select(
-            fn.SUM(Tenant.beg_bal_amount)).
-            namedtuples()][0] 
-
-    def get_current_tenants_by_month(self, last_dt=None, first_dt=None):
-        '''must be a tenant on first day of month; midmonths move-ins need an adjustment'''
-        tenants = [row.tenant_name for row in Tenant.select().
-                    where(
-                        (Tenant.move_in_date <= first_dt) |                
-                        (Tenant.move_out_date >=last_dt))
-                .namedtuples()]
-        return tenants
-
-    def get_current_vacants_by_month(self, last_dt=None, first_dt=None):
-        return[(row.tenant, row.unit_name) for row in Unit.select().order_by(Unit.unit_name).where(
-        (Unit.last_occupied=='0')        
-        ).namedtuples()]
-
-    def get_rent_roll_by_month_at_first_of_month_basic(self, last_dt=None, first_dt=None):
-        current_tenants = [(row.tenant_name, row.move_in_date) for row in Tenant().select().
-            where(
-                (Tenant.move_in_date <= first_dt) &
-                ((Tenant.move_out_date=='0') | (Tenant.move_out_date>=first_dt)))
-                .namedtuples()]
-        return current_tenants
 
     def get_rent_roll_by_month_at_first_of_month(self, first_dt=None, last_dt=None):
         '''lots of work in this func'''
@@ -281,26 +241,6 @@ class QueryHC(Reconciler):
 
         return tenants_mi_on_or_before_first, vacants, tenants
 
-    def get_beg_bal_sum_by_period(self, style=None, first_dt=None, last_dt=None):
-        if style == 'initial':
-            sum_beg_bal_all = [float(row.beg_bal_amount) for row in Tenant.select(
-                Tenant.active, Tenant.beg_bal_amount).
-                where(Tenant.active=='True').
-                namedtuples()]     
-        else:
-            sum_beg_bal_all = [float(row.beg_bal_amount) for row in Tenant.select(
-                Tenant.active, Tenant.beg_bal_amount, Payment.date_posted).
-                where(Payment.date_posted >= first_dt).
-                where(Payment.date_posted <= last_dt).
-                where(Tenant.active=='True').
-                join(Payment).namedtuples()]      
-
-        return sum(sum_beg_bal_all)
-
-    def get_end_bal_by_tenant(self, first_dt=None, last_dt=None):
-        sum_payment_list = self.get_payments_by_tenant_by_period(first_dt=first_dt, last_dt=last_dt)
-        return [(rec[0], float(rec[1]) - rec[2]) for rec in sum_payment_list]
-
     def get_beg_bal_by_tenant(self):
         return [(row.tenant_name, float(row.beg_bal_amount)) for row in Tenant.select(Tenant.tenant_name, Tenant.beg_bal_amount).
             namedtuples()]
@@ -323,13 +263,6 @@ class QueryHC(Reconciler):
             return  [float(item.replace("'", "").split(',')[3].split('=')[1]) for item in mentries][0]
 
         return mentries
-        
-
-    def consolidated_get_stmt_by_month(self, first_dt=None, last_dt=None):
-        opcash_sum = self.get_opcash_by_period(first_dt=first_dt, last_dt=last_dt)
-        opcash_detail = self.get_opcashdetail_by_stmt(stmt_key=opcash_sum[0][0])
-        return opcash_sum, opcash_detail
-
     
     def get_opcash_by_period(self, first_dt=None, last_dt=None):
         return [(row.stmt_key, row.date, row.rr, row.hap, row.dep_sum, row.corr_sum) for row in OpCash.select(OpCash.stmt_key, OpCash.date, OpCash.rr, OpCash.hap, OpCash.dep_sum, OpCash.corr_sum).
@@ -355,12 +288,6 @@ class QueryHC(Reconciler):
         where(ScrapeDetail.scrape_dep_date <= last_dt).
         where(ScrapeDetail.dep_type==type1).namedtuples()]
         return recs
-
-    def get_status_object_by_month(self, first_dt=None, last_dt=None):
-        month = first_dt.strftime('%m')
-        year = first_dt.year
-        period = str(year) + '-' + str(month)
-        return [{'opcash_processed': item.opcash_processed, 'tenant_reconciled': item.tenant_reconciled, 'scrape_reconciled': item.scrape_reconciled} for item in StatusObject().select().where(StatusObject.month==period).namedtuples()]
 
     def get_processed_by_month(self, month_list=None):
         """returns list of dicts from Findexer of files that have been attribute 'processed' and packaged with month, path, and report_type(ie 'rent', 'deposits')"""
@@ -623,14 +550,7 @@ class UrQuery(QueryHC):
     def __init__(self, **kwargs):
         print('urquery')
 
-    def ur_query_wrapper(self):
-
-        populate = PopulateTable()
-        first_dt, last_dt = populate.make_first_and_last_dates(date_str='2022-01')
-        populate.ur_query(model_str='Tenant', query_fields={'move_in_date': first_dt, 'move_out_date': last_dt})
-
     def ur_query(self, model_str=None, query_dict=None, query_tup=None, operators_list=None, **kwargs):
-        # data = {'field_a': 1, 'field_b': 33, 'field_c': 'test'}
         import operator
         model = getattr(sys.modules[__name__], model_str)
         
@@ -647,19 +567,17 @@ class UrQuery(QueryHC):
                     operators.append(operator.and_)
        
         clauses = []
-        expressions = []
         if query_dict:
             for key, value in query_dict.items():
                 field = model._meta.fields[key]
                 clauses.append(field == value)   
-            return reduce(operator.and_, clauses)
+            expr = reduce(operator.and_, clauses)
+            return model.select().where(expr)
         elif query_tup:
             for item, op in zip(query_tup, operators):
                 field = model._meta.fields[item[0]]
                 clauses.append(op(field, item[1]))   
             
-            for cl in clauses:
-                print(cl.__dict__['lhs'], cl.__dict__['op'], cl.__dict__['rhs'])
             expr = reduce(operator.and_, clauses)
             return model.select().where(expr)
         else:    
@@ -1102,9 +1020,6 @@ class ProcessingLayer(StatusRS):
         most_recent_status = [item for item in StatusRS().select().order_by(-StatusRS.status_id).namedtuples()][0] # note: - = descending order syntax in peewee
         return most_recent_status
 
-    def get_all_months_ytd(self):
-        return Utils.months_in_ytd(Config.current_year)
-
     def write_manual_entries_from_config(self):
         from manual_entry import ManualEntry  # circular import workaround
         manentry = ManualEntry(db=db)
@@ -1114,7 +1029,7 @@ class ProcessingLayer(StatusRS):
         populate = PopulateTable()
         self.set_current_date()
         most_recent_status = self.get_most_recent_status()
-        all_months_ytd = self.get_all_months_ytd()
+        all_months_ytd = Utils.months_in_ytd(Config.current_year)
         report_list = populate.get_processed_by_month(month_list=all_months_ytd)
 
         return all_months_ytd, report_list, most_recent_status
@@ -1163,44 +1078,6 @@ class ProcessingLayer(StatusRS):
             status_object = [item for item in StatusObject().select().where(StatusObject.month==month)][0]
             status_object.rs_reconciled = 1
             status_object.save()
-
-
-    '''
-    def load_scrape_and_mark_as_processed(self, most_recent_status=None, target_mid_month=None):
-        print('load midmonth scrape from bank website')
-        populate = PopulateTable()
-
-        target_mm_date = datetime.strptime(list(target_mid_month.items())[0][0], '%Y-%m')
-
-        all_relevant_scrape_txn_list, scrape_deposit_sum = self.load_scrape_wrapper(target_mid_month=target_mid_month)
-
-        populate.load_scrape_to_db(deposit_list=all_relevant_scrape_txn_list, target_date=target_mm_date)
-
-        first_dt = target_mm_date.replace(day = 1)
-        most_recent_status.current_date.replace(day = 1)
-        last_dt = target_mm_date.replace(day = calendar.monthrange(target_mm_date.year, target_mm_date.month)[1])
-
-
-        all_tp, all_ntp = populate.check_db_tp_and_ntp(grand_total=scrape_deposit_sum, first_dt=first_dt, last_dt=last_dt)    
-
-        if all_tp:
-            target_month = list(target_mid_month.items())[0][0]
-            mr_status_object = [item for item in StatusObject().select().where(StatusObject.month==target_month)][0]
-            mr_status_object.scrape_reconciled = True
-            mr_status_object.save()   
-            return True
-        else:
-            return False
-
-
-    def load_scrape_wrapper(self, target_mid_month=None):
-        from file_indexer import FileIndexer  # circular import workaroud
-        findex = FileIndexer()
-        scrape_txn_list = findex.load_mm_scrape(list1=target_mid_month)
-        scrape_deposit_sum = sum([float(item['amount']) for item in scrape_txn_list if item['dep_type'] == 'deposit'])
-
-        return scrape_txn_list, scrape_deposit_sum
-    '''
 
     def make_rent_receipts(self, first_incomplete_month=None):
         choice1 = input(f'\nWould you like to make rent receipts for period between {first_incomplete_month} ? Y/n ')
@@ -1304,117 +1181,6 @@ class ProcessingLayer(StatusRS):
 
         mr_status.proc_file = json.dumps(dump_list)
         mr_status.save()
-
-    def show_status_table(self, **kw):
-
-        """ this exists to show the status of the FileIndexer table
-        table cols:
-            - months year to date
-            - deposit detail reports by month
-            - rentroll reports by month
-            - scrapes available by month
-            - tenant payments (from ?)
-            - non-tenant payments (from what doc?)
-            - total payments (from ??)
-            - total deposits related to payments from oc
-            - deposit corrections
-            - what do I want to show whether reconciled?
-        """
-        from file_indexer import FileIndexer  # circular import work around
-
-        populate  = PopulateTable()
-        findex = FileIndexer(path=kw['path'], db=kw['db'])
-
-        months_ytd, unfin_month = findex.test_for_unfinalized_months()    
-
-        status_objects = populate.get_all_status_objects() 
-    
-        deposits = self.status_table_finder_helper(months_ytd, type1='deposits')
-
-        dep_recon = populate.get_all_findexer_recon_status(type1='deposits')
-        
-        deposit_rec = [(row.recon) for row in Findexer.select()]
-        rents = self.status_table_finder_helper(months_ytd, type1='rent')
-        scrapes = self.status_table_finder_helper(months_ytd, type1='scrape') 
-
-        tp_list, ntp_list, total_list, opcash_amt_list, dc_list = self.make_mega_tup_list_for_table(months_ytd)
-
-        dl_tup_list = list(zip(deposits, rents, scrapes, tp_list, ntp_list, total_list, opcash_amt_list, dc_list, dep_recon)) 
-        
-        header = ['month', 'deps', 'rtroll', 'scrapes', 'ten_pay', 'ntp', 'tot_pay',  'oc_dep', 'dc', 'pay_rec_f?']
-
-        # ['oc_proc', 'ten_rec', 'rs_rec', 'scrape_rec']
-        table = [header]
-        for item, dep in zip(status_objects, dl_tup_list):
-            row_list = []
-            row_list.append(item.month)
-            row_list.append(str(dep[0][0]))
-            row_list.append(str(dep[1][0]))
-            row_list.append(str(dep[2][0]))
-            row_list.append(str(dep[3][0]))
-            row_list.append(str(dep[4][0]))
-            row_list.append(str(dep[5][0]))
-            row_list.append(str(dep[6][0]))
-            row_list.append(str(dep[7][0]))
-            row_list.append(str(dep[8][0]))
-            # row_list.append(str(item.opcash_processed))
-            # row_list.append(str(item.tenant_reconciled))
-            # row_list.append(str(item.rs_reconciled))
-            # row_list.append(str(item.scrape_reconciled))
-            table.append(row_list)
-        
-        print('\n'.join([''.join(['{:9}'.format(x) for x in r]) for r in table]))
-
-    def status_table_finder_helper(self, months_ytd, type1=None):
-        populate  = PopulateTable()
-        output = populate.get_all_findexer_by_type(type1=type1)
-        output_months = [month for name, month in output]
-        return [(True, month) if month in output_months else (False, month) for month in months_ytd] 
-
-    def make_mega_tup_list_for_table(self, months_ytd):
-        tp_list = []
-        ntp_list = []
-        total_list = []
-        opcash_amt_list = []
-        dc_list = []
-
-        for month in months_ytd:
-            first_dt, last_dt = self.populate.make_first_and_last_dates(date_str=month)
-        
-            ten_payments = sum([float(row[2]) for row in self.populate.get_payments_by_tenant_by_period(first_dt=first_dt, last_dt=last_dt)])
-            tp_tup = (ten_payments, first_dt)
-            tp_list.append(tp_tup)
-
-            ntp = sum(self.populate.get_ntp_by_period(first_dt=first_dt, last_dt=last_dt))
-            ntp_tup = (ntp, first_dt)
-            ntp_list.append(ntp_tup)
-
-            total = float(ten_payments) + float(ntp)
-            total_list.append((total, first_dt))
-            
-            opcash = self.populate.get_opcash_by_period(first_dt=first_dt, last_dt=last_dt)
-            if opcash:
-                oc_tup = (opcash[0][4], first_dt)
-            else:
-                oc_tup = (0, first_dt)
-            opcash_amt_list.append(oc_tup)
-
-            if opcash:
-                dc_tup = (opcash[0][5], first_dt)
-                dc_list.append(dc_tup)
-            else:
-                """branch if not opcash for month to try to get corr_amount from findexer"""
-                '''should assert it with a month reading'''
-                '''
-                '''
-                scrapes = self.populate.get_scrape_detail_by_month_by_type(type1='corr', first_dt=first_dt, last_dt=last_dt)
-
-                dc_tup = (sum([float(n) for n in scrapes]), first_dt)
-                print('current branch')
-                dc_list.append(dc_tup)
-
-
-        return tp_list, ntp_list, total_list, opcash_amt_list, dc_list  
 
     def reconcile_and_inscribe_state(self, month_list=None, ref_rec=None, *args, **kwargs):
         """takes list of months in year to date, gets tenant payments by period, non-tenant payments, and opcash information and reconciles the deposits on the opcash statement to the sum of tenant payments and non-tenant payments     
