@@ -82,16 +82,17 @@ class WhereAreWe(ProcessingLayer):
 
             other_sum = sum([float(row.amount) for row in laundry if row.genus == 'other'])
         
+        mi_payments = []
         if [row for row in query.ur_query(model_str='MoveIn', query_tup= [('mi_date', first_dt), ('mi_date', last_dt)], operators_list=['>=', '<='] ).namedtuples()] == []:
             mis = {'none': 'none'}
         else:
             mis = [{row.name: str(row.mi_date)} for row in query.ur_query(model_str='MoveIn', query_tup= [('mi_date', first_dt), ('mi_date', last_dt)], operators_list=['>=', '<='] ).namedtuples()]           
 
-            mi_payments = []
-            for name, date in [(k, v) for x in kwargs["mis"] for (k, v) in x.items()]:                
+            for name, date in [(k, v) for rec in mis for (k, v) in rec.items()]:                
                 mi_tp = query.get_single_ten_pay_by_period(first_dt=first_dt, last_dt=last_dt, name=name)
                 mi_payments.append(mi_tp)
-        breakpoint()
+        
+        # breakpoint()
         # mi rent
         # mi sd
         # last good month
@@ -110,6 +111,7 @@ class WhereAreWe(ProcessingLayer):
             replacement_reserve=replacement_reserve, 
             hap=hap, 
             mis=mis,
+            mi_payments=mi_payments,
             damage_sum=damage_sum, 
             dam_types=dam_types, 
             laundry=laundry_sum,
@@ -130,6 +132,9 @@ class WhereAreWe(ProcessingLayer):
         print(f'MI/MOS')
         for k, v in [(k, v) for x in kwargs["mis"] for (k, v) in x.items()]:
             print(f'name: {v}, date: {k} ')
+
+        for rec in kwargs['mi_payments']:
+            print(f'name: {rec[0]}, payments: {rec[1]}')
         print(f'no of move_ins: {len(kwargs["mis"])}')
         print('*' * 45)
         print(f'subcategories for {date}')
