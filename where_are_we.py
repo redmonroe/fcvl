@@ -85,8 +85,13 @@ class WhereAreWe(ProcessingLayer):
         if [row for row in query.ur_query(model_str='MoveIn', query_tup= [('mi_date', first_dt), ('mi_date', last_dt)], operators_list=['>=', '<='] ).namedtuples()] == []:
             mis = {'none': 'none'}
         else:
-            mis = [{row.name: str(row.mi_date)} for row in query.ur_query(model_str='MoveIn', query_tup= [('mi_date', first_dt), ('mi_date', last_dt)], operators_list=['>=', '<='] ).namedtuples()]
-        # breakpoint()
+            mis = [{row.name: str(row.mi_date)} for row in query.ur_query(model_str='MoveIn', query_tup= [('mi_date', first_dt), ('mi_date', last_dt)], operators_list=['>=', '<='] ).namedtuples()]           
+
+            mi_payments = []
+            for name, date in [(k, v) for x in kwargs["mis"] for (k, v) in x.items()]:                
+                mi_tp = query.get_single_ten_pay_by_period(first_dt=first_dt, last_dt=last_dt, name=name)
+                mi_payments.append(mi_tp)
+        breakpoint()
         # mi rent
         # mi sd
         # last good month
