@@ -245,13 +245,6 @@ class QueryHC(Reconciler):
         return [(row.tenant_name, float(row.beg_bal_amount)) for row in Tenant.select(Tenant.tenant_name, Tenant.beg_bal_amount).
             namedtuples()]
 
-    def get_damages_by_month(self, first_dt=None, last_dt=None):
-        damages = [(row.tenant, row.dam_amount, row.dam_date, row.dam_type) for row in Damages().select().
-        where(Damages.dam_date>=first_dt).
-        where(Damages.dam_date<=last_dt).
-        namedtuples()]
-        return damages
-
     def get_mentries_by_month(self, first_dt=None, last_dt=None, type1=None):
         mentries = [(row.original_item) for row in Mentry.select().
         where(Mentry.txn_date>=first_dt).
@@ -565,6 +558,8 @@ class UrQuery(QueryHC):
                     operators.append(operator.le)
                 elif item == '&':
                     operators.append(operator.and_)
+                elif item == '==':
+                    operators.append(operator.eq)
        
         clauses = []
         if query_dict:
@@ -577,7 +572,6 @@ class UrQuery(QueryHC):
             for item, op in zip(query_tup, operators):
                 field = model._meta.fields[item[0]]
                 clauses.append(op(field, item[1]))   
-            
             expr = reduce(operator.and_, clauses)
             return model.select().where(expr)
         else:    

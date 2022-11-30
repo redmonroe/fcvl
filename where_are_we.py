@@ -40,16 +40,6 @@ class WhereAreWe(ProcessingLayer):
     def select_month(self, range=None):
         """could set explicit range if wanted"""
 
-        """
-        PULL in the shit from player: SHOW_STATUS()
-        
-        
-        
-        
-        
-        """
-
-
         query = UrQuery()
         date, _ = Utils.enumerate_choices_for_user_input(chlist=Utils.months_in_ytd(Config.current_year))
         first_dt, last_dt = self.populate.make_first_and_last_dates(date_str=date)
@@ -62,15 +52,88 @@ class WhereAreWe(ProcessingLayer):
 
         ## did opcash reconcile to deposits
         did_opcash_or_scrape_reconcile_with_deposit_report = [row for row in query.ur_query(model_str='StatusObject').namedtuples() if row.month == date]
-        # breakpoint()  
+
+        ## replacement reserve
+        replacement_reserve = [row.rr for row in query.ur_query(model_str='Findexer', query_tup= [('period', date)], operators_list=['=='] ).namedtuples() if row.doc_type == 'scrape']
+
+        if replacement_reserve == []:
+            replacement_reserve = [row.rr for row in query.ur_query(model_str='Findexer', query_tup= [('period', date)], operators_list=['=='] ).namedtuples() if row.doc_type == 'opcash']
+
+        hap = [row.hap for row in query.ur_query(model_str='Findexer', query_tup= [('period', date)], operators_list=['=='] ).namedtuples() if row.doc_type == 'scrape']
+
+        if hap == []:
+            hap = [row.hap for row in query.ur_query(model_str='Findexer', query_tup= [('period', date)], operators_list=['=='] ).namedtuples() if row.doc_type == 'opcash']
+        
+        if [row for row in query.ur_query(model_str='Damages', query_tup= [('dam_date', first_dt), ('dam_date', last_dt)], operators_list=['>=', '<='] ).namedtuples()] == []:
+            damage_sum = 0
+            dam_types = []
+        else:
+            damages = [row for row in query.ur_query(model_str='Damages', query_tup= [('dam_date', first_dt), ('dam_date', last_dt)], operators_list=['>=', '<='] ).namedtuples()]
+            damage_sum = sum([float(row.dam_amount) for row in damages])
+            dam_types = [row.dam_type for row in damages]
+
+        if [row for row in query.ur_query(model_str='NTPayment', query_tup= [('date_posted', first_dt), ('date_posted', last_dt)], operators_list=['>=', '<='] ).namedtuples()] == []:
+            laundry_sum = 0
+            other_sum = 0
+        else: 
+            laundry = [row for row in query.ur_query(model_str='NTPayment', query_tup= [('date_posted', first_dt), ('date_posted', last_dt)], operators_list=['>=', '<='] ).namedtuples()]
+
+            laundry_sum = sum([float(row.amount) for row in laundry if row.genus == 'laundry'])
+
+            other_sum = sum([float(row.amount) for row in laundry if row.genus == 'other'])
+        
+        if [row for row in query.ur_query(model_str='MoveIn', query_tup= [('mi_date', first_dt), ('mi_date', last_dt)], operators_list=['>=', '<='] ).namedtuples()] == []:
+            mis = {'none': 'none'}
+        else:
+            mis = [{row.name: str(row.mi_date)} for row in query.ur_query(model_str='MoveIn', query_tup= [('mi_date', first_dt), ('mi_date', last_dt)], operators_list=['>=', '<='] ).namedtuples()]
+        # breakpoint()
+        # mi rent
+        # mi sd
+        # last good month
+        # what do we need to process next month?
+        # fix move-outs
+        # do you want to process next month?
+            # iter build here
+            # can we stop processing and drop prior to lengthy write?
+        
 
         
-        self.print_rows(date=date, beg_tenants=tenants_at_1, opcash=opcash, reconcile_status=did_opcash_or_scrape_reconcile_with_deposit_report)
+        self.print_rows(
+            date=date, 
+            beg_tenants=tenants_at_1, 
+            opcash=opcash, reconcile_status=did_opcash_or_scrape_reconcile_with_deposit_report, 
+            replacement_reserve=replacement_reserve, 
+            hap=hap, 
+            mis=mis,
+            damage_sum=damage_sum, 
+            dam_types=dam_types, 
+            laundry=laundry_sum,
+            other=other_sum, 
+            )
 
     def print_rows(self, date=None, **kwargs):
-        print(f'current month: {date}')
-        print(f'reconciliation status: {kwargs["reconcile_status"]}')
+        print(f'selected month: {date}\n')
+
+        print(f'\t opcash and deposit sheet reconcile: {kwargs["reconcile_status"][0].tenant_reconciled}')
+        print(f'\t scrape and deposit sheet reconcile: {kwargs["reconcile_status"][0].scrape_reconciled}')
+        print(f'\t rent sheet produced: {kwargs["reconcile_status"][0].rs_reconciled}')
+        print(f'\t rent sheet reconciled: {kwargs["reconcile_status"][0].rs_reconciled}')
+        print(f'\t excel sheet reconciled: {kwargs["reconcile_status"][0].excel_reconciled}')
+        print(f'\t balance letters produced: {kwargs["reconcile_status"][0].bal_letters}')
         print(f'occupieds at first of month: {len(kwargs["beg_tenants"])}')
+        print('*' * 45)
+        print(f'MI/MOS')
+        for k, v in [(k, v) for x in kwargs["mis"] for (k, v) in x.items()]:
+            print(f'name: {v}, date: {k} ')
+        print(f'no of move_ins: {len(kwargs["mis"])}')
+        print('*' * 45)
+        print(f'subcategories for {date}')
+        print(f'\t replacement reserve: {kwargs["replacement_reserve"][0]}')
+        print(f'\t hap: {kwargs["hap"][0]}')
+        print(f'\t damages: {kwargs["damage_sum"]}')
+        print(f'\t damage types: {kwargs["dam_types"]}')
+        print(f'\t laundry: {kwargs["laundry"]}')
+        print(f'\t other(ntp): {kwargs["other"]}')
 
     def show_status_table(self, **kw):
 

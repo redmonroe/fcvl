@@ -10,14 +10,14 @@ from peewee import JOIN, fn
 from auth_work import oauth
 from backend import (Damages, Findexer, NTPayment, OpCash, OpCashDetail,
                      Payment, PopulateTable, QueryHC, StatusObject, StatusRS,
-                     Tenant, TenantRent, Unit, db)
+                     Tenant, TenantRent, Unit, UrQuery, db)
 from config import Config
 from db_utils import DBUtils
+from errors import Errors
 from google_api_calls_abstract import GoogleApiCalls
 from reconciler import Reconciler
 from setup_year import YearSheet
 from utils import Utils
-from errors import Errors
 
 
 class MonthSheet(YearSheet):
@@ -39,6 +39,7 @@ class MonthSheet(YearSheet):
 
         self.gc = GoogleApiCalls()
         self.query = QueryHC()
+        self.uq = UrQuery()
         self.contract_rent = '!E2:E68'
         self.subsidy = '!F2:F68'
         self.unit = '!A2:A68'
@@ -98,7 +99,11 @@ class MonthSheet(YearSheet):
 
             move_in_row = self.query.get_move_ins_by_period(first_dt=first_dt, last_dt=last_dt)
 
-            damages = self.query.get_damages_by_month(first_dt=first_dt, last_dt=last_dt)
+            damages = ([row for row in self.uq.ur_query(model_str='Damages', query_tup= [('dam_date', first_dt), ('dam_date', last_dt)], operators_list=['>=', '<='] ).namedtuples()])
+            
+            
+            # breakpoint()
+        
 
             # adjustments = self.query.get_mentries_by_month(first_dt=first_dt, last_dt=last_dt)
 
