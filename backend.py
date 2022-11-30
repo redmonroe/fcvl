@@ -538,6 +538,32 @@ class QueryHC(Reconciler):
        
         return position_list1, cumsum
 
+    def all_available_by_fk_by_period(self, target=None, first_dt=None, last_dt=None):
+        record_cut_off_date = datetime(2022, 1, 1, 0, 0)
+        
+        if record_cut_off_date == first_dt:
+            print('getting beginning balance from Tenant table')
+            record = [row for row in Tenant.select().where(
+            (Tenant.tenant_name==target)
+            ).namedtuples()]
+        else:
+            record = None
+
+        #TODO
+        """
+        This is building the final stage of the db, this will write and be a final record of a month, that would be closed, we can drop some of the other tables at this point; we can also, use earlier stages as A STAGING AREA
+        """
+        # period_startbal + tenant_rent - tenantpayments + damages + adjustments = period_end_bal
+
+        # if first period get_beg_bal from Tenant table
+        # else
+
+
+
+
+
+        breakpoint()
+
 class UrQuery(QueryHC):
 
     def __init__(self, **kwargs):

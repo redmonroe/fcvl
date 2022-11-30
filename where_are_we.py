@@ -22,27 +22,22 @@ class WhereAreWe(ProcessingLayer):
         
         """
         pass
-
-    def query_practice(self):
-        first_dt, last_dt = self.populate.make_first_and_last_dates(date_str='2022-01')
-
-        query_fields = {'move_in_date': first_dt, 'move_out_date': last_dt}
-
-        query = UrQuery()
-        query.ur_query(model_str='Tenant', query_dict=query_fields)
-        results = query.ur_query(model_str='Tenant')
-        filt_results = [row.move_in_date for row in results.namedtuples()]
-        print(filt_results)
-
-        print(filt_results)
-    
+   
 
     def select_month(self, range=None):
         """could set explicit range if wanted"""
 
         query = UrQuery()
         date, _ = Utils.enumerate_choices_for_user_input(chlist=Utils.months_in_ytd(Config.current_year))
+
         first_dt, last_dt = self.populate.make_first_and_last_dates(date_str=date)
+        
+        query.all_available_by_fk_by_period(target='woods, leon', first_dt=first_dt, last_dt=last_dt)
+
+        breakpoint()
+
+
+
 
         ## beginning month rent roll and vacancy
         tenants_at_1, vacants, tenants_at_2 = self.populate.get_rent_roll_by_month_at_first_of_month(first_dt=first_dt, last_dt=last_dt)
@@ -59,11 +54,13 @@ class WhereAreWe(ProcessingLayer):
         if replacement_reserve == []:
             replacement_reserve = [row.rr for row in query.ur_query(model_str='Findexer', query_tup= [('period', date)], operators_list=['=='] ).namedtuples() if row.doc_type == 'opcash']
 
+        #hap
         hap = [row.hap for row in query.ur_query(model_str='Findexer', query_tup= [('period', date)], operators_list=['=='] ).namedtuples() if row.doc_type == 'scrape']
 
         if hap == []:
             hap = [row.hap for row in query.ur_query(model_str='Findexer', query_tup= [('period', date)], operators_list=['=='] ).namedtuples() if row.doc_type == 'opcash']
         
+        #damages
         if [row for row in query.ur_query(model_str='Damages', query_tup= [('dam_date', first_dt), ('dam_date', last_dt)], operators_list=['>=', '<='] ).namedtuples()] == []:
             damage_sum = 0
             dam_types = []
@@ -72,6 +69,7 @@ class WhereAreWe(ProcessingLayer):
             damage_sum = sum([float(row.dam_amount) for row in damages])
             dam_types = [row.dam_type for row in damages]
 
+        #laundry, ntp, other
         if [row for row in query.ur_query(model_str='NTPayment', query_tup= [('date_posted', first_dt), ('date_posted', last_dt)], operators_list=['>=', '<='] ).namedtuples()] == []:
             laundry_sum = 0
             other_sum = 0
@@ -82,6 +80,7 @@ class WhereAreWe(ProcessingLayer):
 
             other_sum = sum([float(row.amount) for row in laundry if row.genus == 'other'])
         
+        #MIs
         mi_payments = []
         if [row for row in query.ur_query(model_str='MoveIn', query_tup= [('mi_date', first_dt), ('mi_date', last_dt)], operators_list=['>=', '<='] ).namedtuples()] == []:
             mis = {'none': 'none'}
@@ -93,18 +92,21 @@ class WhereAreWe(ProcessingLayer):
                 mi_payments.append(mi_tp)
         
         # breakpoint()
+        #TODO
 
         # can we get tenant rent of current tenants with adjustments and damages, write to db, with start_bal, end_bal, subsidy etc all with a foreign key system and joins
 
 
         # mi rent
         # mi sd
+        # adjustments
         # last good month
         # what do we need to process next month?
         # fix move-outs
         # do you want to process next month?
             # iter build here
             # can we stop processing and drop prior to lengthy write?
+        # run scrape from here?
         
 
         
