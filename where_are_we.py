@@ -93,6 +93,10 @@ class WhereAreWe(ProcessingLayer):
                 mi_payments.append(mi_tp)
         
         # breakpoint()
+
+        # can we get tenant rent of current tenants with adjustments and damages, write to db, with start_bal, end_bal, subsidy etc all with a foreign key system and joins
+
+
         # mi rent
         # mi sd
         # last good month
