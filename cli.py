@@ -38,7 +38,8 @@ def where_are_we():
     where = WhereAreWe(path=path, full_sheet=full_sheet, build=build, service=service, ms=ms)
     #TODO
     # where.query_practice()
-    where.select_month()
+    # where.select_month()
+    where.load_canon()
     
 @click.command()
 def status_findexer_test():

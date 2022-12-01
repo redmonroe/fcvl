@@ -541,10 +541,15 @@ class QueryHC(Reconciler):
     def all_available_by_fk_by_period(self, target=None, first_dt=None, last_dt=None):
         record_cut_off_date = datetime(2022, 1, 1, 0, 0)
 
-        # target= 'morris, michael'
-        target= 'woods, leon'
-
         damages_predicate = ((Damages.dam_date.between(first_dt,last_dt) & (Damages.tenant_id == target)))
+
+        payment_predicate = ((Payment.date_posted.between(first_dt,last_dt) & (Payment.tenant_id == target)))
+
+        contract_rent_predicate = ((ContractRent.date_posted.between(first_dt,last_dt) & (ContractRent.tenant_id == target)))
+
+        subsidy_predicate = ((Subsidy.date_posted.between(first_dt,last_dt) & (Subsidy.tenant_id == target)))
+
+        tenant_rent_predicate = ((TenantRent.rent_date.between(first_dt,last_dt) & (TenantRent.t_name_id == target)))
 
         select_expression1 = Tenant.select(Tenant.tenant_name, 
                         Tenant.unit, 
@@ -555,37 +560,32 @@ class QueryHC(Reconciler):
                     fn.SUM(TenantRent.rent_amount).over(partition_by=[Tenant.tenant_name]).alias('t_rent_charges'),
                     fn.SUM(Damages.dam_amount).over(partition_by=[Tenant.tenant_name]).alias('t_damages'),)
 
-        
-        print(target)
         if record_cut_off_date == first_dt:
             print('getting beginning balance from Tenant table')
             record = [row for row in select_expression1.
-                # select(select_expression).
-
-                    join(Payment, JOIN.LEFT_OUTER).
+                    join(Payment, JOIN.LEFT_OUTER, on=payment_predicate).
                     switch(Tenant).
-                    join(ContractRent, JOIN.LEFT_OUTER).
+                    join(ContractRent, JOIN.LEFT_OUTER, on=contract_rent_predicate).
                     switch(Tenant).
-                    join(Subsidy, JOIN.LEFT_OUTER).
+                    join(Subsidy, JOIN.LEFT_OUTER, on=subsidy_predicate).
                     switch(Tenant).
-                    join(TenantRent, JOIN.LEFT_OUTER).
+                    join(TenantRent, JOIN.LEFT_OUTER, on=tenant_rent_predicate).
                     switch(Tenant).
-                    join(Damages, JOIN.LEFT_OUTER,on=damages_predicate).
-        
+                    join(Damages, JOIN.LEFT_OUTER,on=damages_predicate).        
                 where(
                     (Tenant.tenant_name==target)
-                    &
-                    (Payment.date_posted.between(first_dt, last_dt)) 
-                    &
-                    (ContractRent.date_posted.between(first_dt,last_dt))
-                    &
-                    (Subsidy.date_posted.between(first_dt,last_dt))
-                    &
-                    (TenantRent.rent_date.between(first_dt,last_dt))
+                    # &
+                    # (Payment.date_posted.between(first_dt, last_dt)) 
+                    # &
+                    # (ContractRent.date_posted.between(first_dt,last_dt))
+                    # &
+                    # (Subsidy.date_posted.between(first_dt,last_dt))
+                    # &
+                    # (TenantRent.rent_date.between(first_dt,last_dt))
                 ).
                 namedtuples()]
             print(record)
-            breakpoint()
+            # breakpoint()
         else:
             print('no beginning balance available yet')
             record = [row for row in Tenant.
@@ -631,7 +631,7 @@ class QueryHC(Reconciler):
                 ).
                 namedtuples()]
             print(record)
-            breakpoint()
+
 
         #TODO
         """
@@ -685,8 +685,7 @@ class UrQuery(QueryHC):
             expr = reduce(operator.and_, clauses)
             return model.select().where(expr)
         else:    
-            # get_all
-            return model.select()
+            return model.select()     # get_all
 
 class PopulateTable(QueryHC):
 

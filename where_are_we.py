@@ -22,7 +22,17 @@ class WhereAreWe(ProcessingLayer):
         
         """
         pass
-   
+
+    def load_canon(self):
+        query = UrQuery()   
+        
+        targets = ['morris, michael', 'woods, leon', 'fielder, emily']
+
+        date = '2022-01'
+        first_dt, last_dt = self.populate.make_first_and_last_dates(date_str=date)
+
+        for target in targets:
+            query.all_available_by_fk_by_period(target=target, first_dt=first_dt, last_dt=last_dt)
 
     def select_month(self, range=None):
         """could set explicit range if wanted"""
@@ -32,7 +42,7 @@ class WhereAreWe(ProcessingLayer):
 
         first_dt, last_dt = self.populate.make_first_and_last_dates(date_str=date)
 
-        query.all_available_by_fk_by_period(target='morris, michael', first_dt=first_dt, last_dt=last_dt)
+        query.all_available_by_fk_by_period(target=target, first_dt=first_dt, last_dt=last_dt)
 
         breakpoint()
 
