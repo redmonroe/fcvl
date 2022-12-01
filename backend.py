@@ -557,6 +557,7 @@ class QueryHC(Reconciler):
 
                     fn.SUM(TenantRent.rent_amount).over(partition_by=[Tenant.tenant_name]).alias('t_rent_charges'),
 
+                    fn.SUM(Damages.dam_amount).over(partition_by=[Tenant.tenant_name]).alias('t_rent_charges'),
                     
                     ).
 
@@ -567,6 +568,8 @@ class QueryHC(Reconciler):
                     join(Subsidy).
                     switch(Tenant).
                     join(TenantRent).
+                    switch(Tenant).
+                    join(Damages).
         
                 where(
                     (Tenant.tenant_name==target)
@@ -578,6 +581,8 @@ class QueryHC(Reconciler):
                     (Subsidy.date_posted.between(first_dt,last_dt))
                     &
                     (TenantRent.rent_date.between(first_dt,last_dt))
+                    &
+                    (Damages.dam_date.between(first_dt,last_dt))
                 ).
                 namedtuples()]
             breakpoint()
@@ -585,13 +590,6 @@ class QueryHC(Reconciler):
             record = None
 
         #TODO
-
-        # return [(rec.tenant_name, rec.total_damages) for rec in Tenant.select(
-        # Tenant.tenant_name, 
-        # Damages.dam_amount,
-        # fn.SUM(Damages.dam_amount).over(partition_by=[Tenant.tenant_name]).alias('total_damages')).
-        # where(Damages.dam_date <= dt_obj_last).
-        # join(Damages).namedtuples()]
         """
         This is building the final stage of the db, this will write and be a final record of a month, that would be closed, we can drop some of the other tables at this point; we can also, use earlier stages as A STAGING AREA
         """
