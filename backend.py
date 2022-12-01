@@ -543,13 +543,55 @@ class QueryHC(Reconciler):
         
         if record_cut_off_date == first_dt:
             print('getting beginning balance from Tenant table')
-            record = [row for row in Tenant.select().where(
-            (Tenant.tenant_name==target)
-            ).namedtuples()]
+            record = [row for row in Tenant.
+                select(
+                    Tenant.tenant_name, 
+                    Tenant.unit, 
+                    Tenant.beg_bal_amount, 
+                    
+                    fn.SUM(Payment.amount).over(partition_by=[Tenant.tenant_name]).alias('t_payments'),
+
+                    fn.SUM(ContractRent.sub_amount).over(partition_by=[Tenant.tenant_name]).alias('t_contract_rent'),
+
+                    fn.SUM(Subsidy.sub_amount).over(partition_by=[Tenant.tenant_name]).alias('t_subsidy'),
+
+                    fn.SUM(TenantRent.rent_amount).over(partition_by=[Tenant.tenant_name]).alias('t_rent_charges'),
+
+                    
+                    ).
+
+                    join(Payment).
+                    switch(Tenant).
+                    join(ContractRent).
+                    switch(Tenant).
+                    join(Subsidy).
+                    switch(Tenant).
+                    join(TenantRent).
+        
+                where(
+                    (Tenant.tenant_name==target)
+                    &
+                    (Payment.date_posted.between(first_dt, last_dt)) 
+                    &
+                    (ContractRent.date_posted.between(first_dt,last_dt))
+                    &
+                    (Subsidy.date_posted.between(first_dt,last_dt))
+                    &
+                    (TenantRent.rent_date.between(first_dt,last_dt))
+                ).
+                namedtuples()]
+            breakpoint()
         else:
             record = None
 
         #TODO
+
+        # return [(rec.tenant_name, rec.total_damages) for rec in Tenant.select(
+        # Tenant.tenant_name, 
+        # Damages.dam_amount,
+        # fn.SUM(Damages.dam_amount).over(partition_by=[Tenant.tenant_name]).alias('total_damages')).
+        # where(Damages.dam_date <= dt_obj_last).
+        # join(Damages).namedtuples()]
         """
         This is building the final stage of the db, this will write and be a final record of a month, that would be closed, we can drop some of the other tables at this point; we can also, use earlier stages as A STAGING AREA
         """
