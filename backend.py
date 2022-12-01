@@ -1218,7 +1218,7 @@ class ProcessingLayer(StatusRS):
     def show_balance_letter_list_mr_reconciled(self):
         """triggers off of most recent reconciled month"""
         query = QueryHC()
-        mr_good_month = self.get_mr_good_month()
+        mr_good_month, _ = self.get_mr_good_month()
         if mr_good_month:
             first_dt, last_dt = query.make_first_and_last_dates(date_str=mr_good_month)
 
@@ -1238,23 +1238,23 @@ class ProcessingLayer(StatusRS):
         '''get most recent finalized month'''
         query = QueryHC()
         try:
-            mr_good_month = [rec.month for rec in StatusObject().select(StatusObject.month).
+            good_months = [rec.month for rec in StatusObject().select(StatusObject.month).
             where(
                 ((StatusObject.opcash_processed==1) &
                 (StatusObject.tenant_reconciled==1)) |
                 ((StatusObject.opcash_processed==0) &
                 (StatusObject.scrape_reconciled==1))).
-                namedtuples()][-1]
+                namedtuples()]
         except IndexError as e:
             print('bypassing error on mr_good_month', e)
-            mr_good_month = False
-            return mr_good_month
-        return mr_good_month
+            good_months = False
+            return good_months, []
+        return good_months[-1], good_months
 
     def generate_balance_letter_list_mr_reconciled(self):
         query = QueryHC()
 
-        mr_good_month = self.get_mr_good_month()
+        mr_good_month, _ = self.get_mr_good_month()
 
         if mr_good_month:
             first_dt, last_dt = query.make_first_and_last_dates(date_str=mr_good_month)
@@ -1300,7 +1300,6 @@ class ProcessingLayer(StatusRS):
 
             '''probably need to add the concept of "adjustments" in here'''
             sum_from_payments = Reconciler.master_sum_from_payments_totaler(ten_payments=ten_payments, non_ten_pay=ntp, period=month)
-
 
             if sum_from_payments == 0:
                 print(f'no tenant deposit report available for {month}\n')

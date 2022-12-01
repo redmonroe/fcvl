@@ -20,6 +20,14 @@ class Utils:
         __getattr__ = dict.get
         __setattr__ = dict.__setitem__
         __delattr__ = dict.__delitem__
+    
+    @staticmethod
+    def get_next_month(target_month=None):
+        from dateutil.relativedelta import relativedelta
+        
+        last_date = datetime.strptime(target_month, '%Y-%m')
+        new_date = last_date + relativedelta(months=+1)
+        return datetime.strftime(new_date, '%Y-%m')
 
     @staticmethod
     def months_in_ytd(current_year, style=None, show_choices=None):

@@ -11,6 +11,7 @@ class WhereAreWe(ProcessingLayer):
         self.full_sheet = kwargs['full_sheet']
         self.db = self.build.main_db
         self.populate = PopulateTable()
+        self.player = ProcessingLayer()
 
     def _todo_(self):
         """basic idea:
@@ -38,16 +39,15 @@ class WhereAreWe(ProcessingLayer):
         """could set explicit range if wanted"""
 
         query = UrQuery()
-        date, _ = Utils.enumerate_choices_for_user_input(chlist=Utils.months_in_ytd(Config.current_year))
 
-        first_dt, last_dt = self.populate.make_first_and_last_dates(date_str=date)
+        last_reconciled_month, good_months = self.player.get_mr_good_month()
 
-        query.all_available_by_fk_by_period(target=target, first_dt=first_dt, last_dt=last_dt)
-
+        first_incomplete_month = Utils.get_next_month(target_month=last_reconciled_month)
         breakpoint()
 
+        date, _ = Utils.enumerate_choices_for_user_input(chlist=good_months)
 
-
+        first_dt, last_dt = self.populate.make_first_and_last_dates(date_str=date)
 
         ## beginning month rent roll and vacancy
         tenants_at_1, vacants, tenants_at_2 = self.populate.get_rent_roll_by_month_at_first_of_month(first_dt=first_dt, last_dt=last_dt)
@@ -97,21 +97,43 @@ class WhereAreWe(ProcessingLayer):
         else:
             mis = [{row.name: str(row.mi_date)} for row in query.ur_query(model_str='MoveIn', query_tup= [('mi_date', first_dt), ('mi_date', last_dt)], operators_list=['>=', '<='] ).namedtuples()]           
 
-            for name, date in [(k, v) for rec in mis for (k, v) in rec.items()]:                
+            for name, _ in [(k, v) for rec in mis for (k, v) in rec.items()]:                
                 mi_tp = query.get_single_ten_pay_by_period(first_dt=first_dt, last_dt=last_dt, name=name)
                 mi_payments.append(mi_tp)
         
         # breakpoint()
         #TODO
+        """NEED TO GET NEXT MONTH FOR THIS FUNC"""
+        what_do_we_have_for_next_month = [row.doc_type for row in query.ur_query(model_str='Findexer', query_tup= [('period', date)], operators_list=['=='] ).namedtuples()]           
 
-        # can we get tenant rent of current tenants with adjustments and damages, write to db, with start_bal, end_bal, subsidy etc all with a foreign key system and joins
+        """be careful opcash 11 is in /canonical"""
 
+
+        if 'opcash' not in what_do_we_have_for_this_month:
+            print('is it the end of the month yet? No, try scrape')
+        elif 'deposits' not in what_do_we_have_for_this_month:
+            print('is month closed do you want to try to get deposits.')
+        elif 'rent' not in what_do_we_have_for_this_month:
+            print('is month closed do you want to try to get rent roll.')
+        else:
+            print('three doc types are present: do you want to try to process month')
 
         # mi rent
         # mi sd
-        # adjustments
-        # last good month
+        # adjustments        
+        
         # what do we need to process next month?
+        # do membership tests on what_do_we_have
+        breakpoint()
+            # do we have the docs ? yes, go
+                # no, can we scrape
+                # no? can we manually download
+
+
+        # what are supposed to return if we have nothing?
+
+
+
         # fix move-outs
         # do you want to process next month?
             # iter build here
@@ -132,6 +154,7 @@ class WhereAreWe(ProcessingLayer):
             dam_types=dam_types, 
             laundry=laundry_sum,
             other=other_sum, 
+            last_reconciled_month=last_reconciled_month
             )
 
     def print_rows(self, date=None, **kwargs):
@@ -147,11 +170,11 @@ class WhereAreWe(ProcessingLayer):
         print('*' * 45)
         print(f'MI/MOS')
         for k, v in [(k, v) for x in kwargs["mis"] for (k, v) in x.items()]:
-            print(f'name: {v}, date: {k} ')
+            print(f'\tname: {v}, date: {k} ')
 
         for rec in kwargs['mi_payments']:
-            print(f'name: {rec[0]}, payments: {rec[1]}')
-        print(f'no of move_ins: {len(kwargs["mis"])}')
+            print(f'\tname: {rec[0]}, payments: {rec[1]}')
+        print(f'\tno of move_ins: {len(kwargs["mis"])}')
         print('*' * 45)
         print(f'subcategories for {date}')
         print(f'\t replacement reserve: {kwargs["replacement_reserve"][0]}')
@@ -160,6 +183,8 @@ class WhereAreWe(ProcessingLayer):
         print(f'\t damage types: {kwargs["dam_types"]}')
         print(f'\t laundry: {kwargs["laundry"]}')
         print(f'\t other(ntp): {kwargs["other"]}')
+        print('*' * 45)
+        print(f'last reconciled month: {kwargs["last_reconciled_month"]}')
 
     def show_status_table(self, **kw):
 
