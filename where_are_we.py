@@ -31,8 +31,8 @@ class WhereAreWe(ProcessingLayer):
         date, _ = Utils.enumerate_choices_for_user_input(chlist=Utils.months_in_ytd(Config.current_year))
 
         first_dt, last_dt = self.populate.make_first_and_last_dates(date_str=date)
-        
-        query.all_available_by_fk_by_period(target='woods, leon', first_dt=first_dt, last_dt=last_dt)
+
+        query.all_available_by_fk_by_period(target='morris, michael', first_dt=first_dt, last_dt=last_dt)
 
         breakpoint()
 

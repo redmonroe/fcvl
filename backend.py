@@ -540,36 +540,37 @@ class QueryHC(Reconciler):
 
     def all_available_by_fk_by_period(self, target=None, first_dt=None, last_dt=None):
         record_cut_off_date = datetime(2022, 1, 1, 0, 0)
+
+        # target= 'morris, michael'
+        target= 'woods, leon'
+
+        damages_predicate = ((Damages.dam_date.between(first_dt,last_dt) & (Damages.tenant_id == target)))
+
+        select_expression1 = Tenant.select(Tenant.tenant_name, 
+                        Tenant.unit, 
+                        Tenant.beg_bal_amount,                     
+                    fn.SUM(Payment.amount).over(partition_by=[Tenant.tenant_name]).alias('t_payments'),
+                    fn.SUM(ContractRent.sub_amount).over(partition_by=[Tenant.tenant_name]).alias('t_contract_rent'),
+                    fn.SUM(Subsidy.sub_amount).over(partition_by=[Tenant.tenant_name]).alias('t_subsidy'),
+                    fn.SUM(TenantRent.rent_amount).over(partition_by=[Tenant.tenant_name]).alias('t_rent_charges'),
+                    fn.SUM(Damages.dam_amount).over(partition_by=[Tenant.tenant_name]).alias('t_damages'),)
+
         
+        print(target)
         if record_cut_off_date == first_dt:
             print('getting beginning balance from Tenant table')
-            record = [row for row in Tenant.
-                select(
-                    Tenant.tenant_name, 
-                    Tenant.unit, 
-                    Tenant.beg_bal_amount, 
-                    
-                    fn.SUM(Payment.amount).over(partition_by=[Tenant.tenant_name]).alias('t_payments'),
+            record = [row for row in select_expression1.
+                # select(select_expression).
 
-                    fn.SUM(ContractRent.sub_amount).over(partition_by=[Tenant.tenant_name]).alias('t_contract_rent'),
-
-                    fn.SUM(Subsidy.sub_amount).over(partition_by=[Tenant.tenant_name]).alias('t_subsidy'),
-
-                    fn.SUM(TenantRent.rent_amount).over(partition_by=[Tenant.tenant_name]).alias('t_rent_charges'),
-
-                    fn.SUM(Damages.dam_amount).over(partition_by=[Tenant.tenant_name]).alias('t_rent_charges'),
-                    
-                    ).
-
-                    join(Payment).
+                    join(Payment, JOIN.LEFT_OUTER).
                     switch(Tenant).
-                    join(ContractRent).
+                    join(ContractRent, JOIN.LEFT_OUTER).
                     switch(Tenant).
-                    join(Subsidy).
+                    join(Subsidy, JOIN.LEFT_OUTER).
                     switch(Tenant).
-                    join(TenantRent).
+                    join(TenantRent, JOIN.LEFT_OUTER).
                     switch(Tenant).
-                    join(Damages).
+                    join(Damages, JOIN.LEFT_OUTER,on=damages_predicate).
         
                 where(
                     (Tenant.tenant_name==target)
@@ -581,13 +582,56 @@ class QueryHC(Reconciler):
                     (Subsidy.date_posted.between(first_dt,last_dt))
                     &
                     (TenantRent.rent_date.between(first_dt,last_dt))
-                    &
-                    (Damages.dam_date.between(first_dt,last_dt))
                 ).
                 namedtuples()]
+            print(record)
             breakpoint()
         else:
-            record = None
+            print('no beginning balance available yet')
+            record = [row for row in Tenant.
+                select(
+                    
+                    Tenant.tenant_name, 
+                    Tenant.unit, 
+                    ## need to get beginning balance from elsewhere
+                    
+                    fn.SUM(Payment.amount).over(partition_by=[Tenant.tenant_name]).alias('t_payments'),
+
+                    fn.SUM(ContractRent.sub_amount).over(partition_by=[Tenant.tenant_name]).alias('t_contract_rent'),
+
+                    fn.SUM(Subsidy.sub_amount).over(partition_by=[Tenant.tenant_name]).alias('t_subsidy'),
+
+                    fn.SUM(TenantRent.rent_amount).over(partition_by=[Tenant.tenant_name]).alias('t_rent_charges'),
+
+                    fn.SUM(Damages.dam_amount).over(partition_by=[Tenant.tenant_name]).alias('t_damages'),
+                    
+                    ).
+
+                    join(Payment, JOIN.LEFT_OUTER).
+                    switch(Tenant).
+                    join(ContractRent, JOIN.LEFT_OUTER).
+                    switch(Tenant).
+                    join(Subsidy, JOIN.LEFT_OUTER).
+                    switch(Tenant).
+                    join(TenantRent, JOIN.LEFT_OUTER).
+                    switch(Tenant).
+                    # join_from(Damages, Tenant).
+                    join(Damages, JOIN.LEFT_OUTER,on=damages_predicate).
+        
+                where(
+                    (Tenant.tenant_name==target)
+                    &
+                    (Payment.date_posted.between(first_dt, last_dt)) 
+                    &
+                    (ContractRent.date_posted.between(first_dt,last_dt))
+                    &
+                    (Subsidy.date_posted.between(first_dt,last_dt))
+                    &
+                    (TenantRent.rent_date.between(first_dt,last_dt))
+                ).
+                namedtuples()]
+            print(record)
+            breakpoint()
 
         #TODO
         """
