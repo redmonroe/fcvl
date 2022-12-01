@@ -43,7 +43,8 @@ class WhereAreWe(ProcessingLayer):
         last_reconciled_month, good_months = self.player.get_mr_good_month()
 
         first_incomplete_month = Utils.get_next_month(target_month=last_reconciled_month)
-        breakpoint()
+
+        is_first_pw_incomplete_month_over = Utils.is_target_month_over(target_month=first_incomplete_month)
 
         date, _ = Utils.enumerate_choices_for_user_input(chlist=good_months)
 
@@ -101,23 +102,23 @@ class WhereAreWe(ProcessingLayer):
                 mi_tp = query.get_single_ten_pay_by_period(first_dt=first_dt, last_dt=last_dt, name=name)
                 mi_payments.append(mi_tp)
         
-        # breakpoint()
-        #TODO
-        """NEED TO GET NEXT MONTH FOR THIS FUNC"""
-        what_do_we_have_for_next_month = [row.doc_type for row in query.ur_query(model_str='Findexer', query_tup= [('period', date)], operators_list=['=='] ).namedtuples()]           
-
-        """be careful opcash 11 is in /canonical"""
+        what_do_we_have_for_next_month = [row.doc_type for row in query.ur_query(model_str='Findexer', query_tup= [('period', first_incomplete_month)], operators_list=['=='] ).namedtuples()]           
 
 
-        if 'opcash' not in what_do_we_have_for_this_month:
-            print('is it the end of the month yet? No, try scrape')
-        elif 'deposits' not in what_do_we_have_for_this_month:
+        if 'opcash' not in what_do_we_have_for_next_month:
+            if is_first_pw_incomplete_month_over:
+                print(f'{first_incomplete_month} is over; attempt to download opcash')
+        
+        breakpoint()
+        if 'deposits' not in what_do_we_have_for_next_month:
             print('is month closed do you want to try to get deposits.')
-        elif 'rent' not in what_do_we_have_for_this_month:
+        if 'rent' not in what_do_we_have_for_next_month:
             print('is month closed do you want to try to get rent roll.')
         else:
             print('three doc types are present: do you want to try to process month')
 
+        """WILL NEED TO PUT OPCASH IN TESTS; IT IS IN CANONICAL"""
+        #TODO
         # mi rent
         # mi sd
         # adjustments        

@@ -30,6 +30,12 @@ class Utils:
         return datetime.strftime(new_date, '%Y-%m')
 
     @staticmethod
+    def is_target_month_over(target_month=None):
+        dt_obj = datetime.strptime(target_month, '%Y-%m')
+        last_day = dt_obj.replace(day = monthrange(dt_obj.year, dt_obj.month)[1])
+        return datetime.now() > last_day  
+
+    @staticmethod
     def months_in_ytd(current_year, style=None, show_choices=None):
         range_month = datetime.now().strftime('%m')
         str_month = datetime.now().strftime('%b').lower()
