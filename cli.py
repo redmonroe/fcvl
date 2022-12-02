@@ -31,14 +31,20 @@ def cli():
     pass
 
 @click.command()
-def where_are_we():
+@click.option('-m', '--most-recent-good', default=True, help='most recent good month or select ui')
+def where_are_we(most_recent_good):
     click.echo('TEST: where_are_we')
     figure = Figuration()
     path, full_sheet, build, service, ms = figure.return_configuration()    
     where = WhereAreWe(path=path, full_sheet=full_sheet, build=build, service=service, ms=ms)
+    
     #TODO
+    if most_recent_good:
+        where.select_month(date=True)
+    else:
+        where.select_month()
+        
     # where.query_practice()
-    where.select_month()
     # where.load_canon()
     
 @click.command()

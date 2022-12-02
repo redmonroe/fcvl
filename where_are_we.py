@@ -12,6 +12,8 @@ class WhereAreWe(ProcessingLayer):
         self.db = self.build.main_db
         self.populate = PopulateTable()
         self.player = ProcessingLayer()
+        self.most_recent_good_month, self.good_months = self.player.get_mr_good_month()
+        self.ur_query = UrQuery()
 
     def _todo_(self):
         """basic idea:
@@ -25,28 +27,25 @@ class WhereAreWe(ProcessingLayer):
         pass
 
     def load_canon(self):
-        query = UrQuery()   
-        
         targets = ['morris, michael', 'woods, leon', 'fielder, emily']
 
         date = '2022-01'
         first_dt, last_dt = self.populate.make_first_and_last_dates(date_str=date)
 
         for target in targets:
-            query.all_available_by_fk_by_period(target=target, first_dt=first_dt, last_dt=last_dt)
+            self.ur_query.all_available_by_fk_by_period(target=target, first_dt=first_dt, last_dt=last_dt)
 
-    def select_month(self, range=None):
+    def select_month(self, date=None):
         """could set explicit range if wanted"""
 
         query = UrQuery()
 
-        last_reconciled_month, good_months = self.player.get_mr_good_month()
+        first_incomplete_month = Utils.get_next_month(target_month=self.most_recent_good_month)
 
-        first_incomplete_month = Utils.get_next_month(target_month=last_reconciled_month)
-
-        is_first_pw_incomplete_month_over = Utils.is_target_month_over(target_month=first_incomplete_month)
-
-        date, _ = Utils.enumerate_choices_for_user_input(chlist=good_months)
+        if date:
+            date = self.most_recent_good_month
+        else:            
+            date, _ = Utils.enumerate_choices_for_user_input(chlist=self.good_months)
 
         first_dt, last_dt = self.populate.make_first_and_last_dates(date_str=date)
 
@@ -101,48 +100,7 @@ class WhereAreWe(ProcessingLayer):
             for name, _ in [(k, v) for rec in mis for (k, v) in rec.items()]:                
                 mi_tp = query.get_single_ten_pay_by_period(first_dt=first_dt, last_dt=last_dt, name=name)
                 mi_payments.append(mi_tp)
-        
-        what_do_we_have_for_next_month = [row.doc_type for row in query.ur_query(model_str='Findexer', query_tup= [('period', first_incomplete_month)], operators_list=['=='] ).namedtuples()]           
 
-
-        if 'opcash' not in what_do_we_have_for_next_month:
-            if is_first_pw_incomplete_month_over:
-                print(f'{first_incomplete_month} is over; attempt to download opcash')
-        
-        breakpoint()
-        if 'deposits' not in what_do_we_have_for_next_month:
-            print('is month closed do you want to try to get deposits.')
-        if 'rent' not in what_do_we_have_for_next_month:
-            print('is month closed do you want to try to get rent roll.')
-        else:
-            print('three doc types are present: do you want to try to process month')
-
-        """WILL NEED TO PUT OPCASH IN TESTS; IT IS IN CANONICAL"""
-        #TODO
-        # mi rent
-        # mi sd
-        # adjustments        
-        
-        # what do we need to process next month?
-        # do membership tests on what_do_we_have
-        breakpoint()
-            # do we have the docs ? yes, go
-                # no, can we scrape
-                # no? can we manually download
-
-
-        # what are supposed to return if we have nothing?
-
-
-
-        # fix move-outs
-        # do you want to process next month?
-            # iter build here
-            # can we stop processing and drop prior to lengthy write?
-        # run scrape from here?
-        
-
-        
         self.print_rows(
             date=date, 
             beg_tenants=tenants_at_1, 
@@ -155,8 +113,34 @@ class WhereAreWe(ProcessingLayer):
             dam_types=dam_types, 
             laundry=laundry_sum,
             other=other_sum, 
-            last_reconciled_month=last_reconciled_month
+            last_reconciled_month=self.most_recent_good_month
             )
+
+        self.what_do_we_have(first_incomplete_month=first_incomplete_month)
+        breakpoint()
+
+        
+
+        """WILL NEED TO PUT OPCASH IN TESTS; IT IS IN CANONICAL"""
+        #TODO
+        # mi rent
+        # mi sd
+        # adjustments        
+        
+        # what do we need to process next month?
+        # do membership tests on what_do_we_have
+            # do we have the docs ? yes, go
+                # no, can we scrape
+                # no? can we manually download
+
+
+        # what are supposed to return if we have nothing?
+
+        # fix move-outs
+        # do you want to process next month?
+            # iter build here
+            # can we stop processing and drop prior to lengthy write?
+        # run scrape from here?
 
     def print_rows(self, date=None, **kwargs):
         print(f'selected month: {date}\n')
@@ -186,6 +170,25 @@ class WhereAreWe(ProcessingLayer):
         print(f'\t other(ntp): {kwargs["other"]}')
         print('*' * 45)
         print(f'last reconciled month: {kwargs["last_reconciled_month"]}')
+
+    def what_do_we_have(self, first_incomplete_month=None, **kwargs):
+
+        what_do_we_have_for_next_month = [row.doc_type for row in self.ur_query.ur_query(model_str='Findexer', query_tup= [('period', first_incomplete_month)], operators_list=['=='] ).namedtuples()]           
+
+        is_first_pw_incomplete_month_over = Utils.is_target_month_over(target_month=first_incomplete_month)        
+
+        if 'opcash' not in what_do_we_have_for_next_month:
+            if is_first_pw_incomplete_month_over:
+                print(f'{first_incomplete_month} is over; attempt to download opcash')
+                print('attempting to get opcash from nbofi')
+                breakpoint()
+        
+        if 'deposits' not in what_do_we_have_for_next_month:
+            print('is month closed do you want to try to get deposits.')
+        if 'rent' not in what_do_we_have_for_next_month:
+            print('is month closed do you want to try to get rent roll.')
+        else:
+            print('three doc types are present: do you want to try to process month')
 
     def show_status_table(self, **kw):
 
