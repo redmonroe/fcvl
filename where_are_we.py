@@ -1,7 +1,8 @@
-from backend import ProcessingLayer, PopulateTable, StatusObject
+from backend import PopulateTable, ProcessingLayer, StatusObject, UrQuery
 from config import Config
+from scrape import Scrape
 from utils import Utils
-from backend import UrQuery
+
 
 class WhereAreWe(ProcessingLayer):
 
@@ -172,19 +173,28 @@ class WhereAreWe(ProcessingLayer):
         print(f'last reconciled month: {kwargs["last_reconciled_month"]}')
 
     def what_do_we_have(self, first_incomplete_month=None, **kwargs):
-
+        
+        scrape = Scrape()
         what_do_we_have_for_next_month = [row.doc_type for row in self.ur_query.ur_query(model_str='Findexer', query_tup= [('period', first_incomplete_month)], operators_list=['=='] ).namedtuples()]           
 
         is_first_pw_incomplete_month_over = Utils.is_target_month_over(target_month=first_incomplete_month)        
 
+        if 'deposits' not in what_do_we_have_for_next_month:
+            if is_first_pw_incomplete_month_over:
+                print(f'{first_incomplete_month} is over; attempt to download deposit report this month')
+                print('attempting to get deposit report from realpage')
+                scrape.pw_context()
+                breakpoint()
+        breakpoint()
+            
+        
+        
+        
         if 'opcash' not in what_do_we_have_for_next_month:
             if is_first_pw_incomplete_month_over:
                 print(f'{first_incomplete_month} is over; attempt to download opcash')
                 print('attempting to get opcash from nbofi')
-                breakpoint()
         
-        if 'deposits' not in what_do_we_have_for_next_month:
-            print('is month closed do you want to try to get deposits.')
         if 'rent' not in what_do_we_have_for_next_month:
             print('is month closed do you want to try to get rent roll.')
         else:
