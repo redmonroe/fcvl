@@ -183,7 +183,7 @@ class WhereAreWe(ProcessingLayer):
             if is_first_pw_incomplete_month_over:
                 print(f'{first_incomplete_month} is over; attempt to download deposit report this month')
                 print('attempting to get deposit report from realpage')
-                scrape.pw_context(path=self.path)
+                scrape.pw_context(genus="current_month_deposits", path=self.path)
                 breakpoint()
         breakpoint()
             

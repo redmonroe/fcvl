@@ -5,7 +5,8 @@ class Scrape:
     def hello(self):
         print('hello from scrape')
 
-    def pw_context(self, path):
+    def pw_context(self, path, genus):
+        print(f'attempting to get report for {genus}, will save to {path}')
         with sync_playwright() as playwright:
             self.run_realpage_test(playwright, path)
     
