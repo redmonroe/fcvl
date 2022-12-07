@@ -191,8 +191,7 @@ class WhereAreWe(ProcessingLayer):
                 result = scrape.pw_context(path=save_path, times=times)
                 #TODO how to handle filename, how to handle previous current, #truncate save file date
                 if result == 'playwright scraping error':
-                    print
-
+                    pass
                 breakpoint()
         breakpoint()
             
