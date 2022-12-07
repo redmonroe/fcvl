@@ -1,19 +1,21 @@
 from playwright.sync_api import Playwright, sync_playwright, expect
+from errors import Errors
 
 class Scrape:
 
-    def hello(self):
-        print('hello from scrape')
+    @Errors.playwright_timeerror
+    def hello(self, genus=None):
+        print('hello from hello')
+        return genus
 
-    def pw_context(self, path, genus):
-        print(f'attempting to get report for {genus}, will save to {path}')
+    @Errors.playwright_timeerror
+    def pw_context(self, path=None):
         with sync_playwright() as playwright:
             self.run_realpage_test(playwright, path)
     
     def run_realpage_test(self, playwright, path):
         browser = playwright.chromium.launch(headless=True)
         context = browser.new_context()
-        print(context)
 
         page = context.new_page()
 
@@ -31,9 +33,7 @@ class Scrape:
         page.get_by_placeholder("Password").click()
         page.get_by_placeholder("Password").fill("Freedom7!")
         page.locator("button").click()
-        page.wait_for_url("https://www.realpage.com/home/")
-
-        #take screenshot with playwright    
+        page.wait_for_url("https://www.realpage.com/home/")  
 
         page.get_by_role("menuitem", name="Reports").get_by_role("link", name="Reports").click()
         page.wait_for_url("https://www.realpage.com/reporting/")
