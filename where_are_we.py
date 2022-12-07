@@ -181,13 +181,18 @@ class WhereAreWe(ProcessingLayer):
 
         is_first_pw_incomplete_month_over = Utils.is_target_month_over(target_month=first_incomplete_month)        
 
+        times = 0
+        print(f'currently attempting to scrape {times}')
         if 'deposits' not in what_do_we_have_for_next_month:
             if is_first_pw_incomplete_month_over:
                 print(f'{first_incomplete_month} is over; attempt to download deposit report this month')
                 print('attempting to get deposit report from realpage')
                 save_path = self.download_path / f'{first_incomplete_month}_deposits.xlsx'
-                result = scrape.pw_context(path=save_path)
-                #TODO how to handle filename, how to handle previous current, then 
+                result = scrape.pw_context(path=save_path, times=times)
+                #TODO how to handle filename, how to handle previous current, #truncate save file date
+                if result == 'playwright scraping error':
+                    print
+
                 breakpoint()
         breakpoint()
             

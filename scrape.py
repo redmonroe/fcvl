@@ -3,13 +3,13 @@ from errors import Errors
 
 class Scrape:
 
-    @Errors.playwright_timeerror
-    def hello(self, genus=None):
-        print('hello from hello')
-        return genus
+    # @Errors.playwright_timeerror(times=1)
+    # def hello(self, genus=None):
+    #     print('hello from hello')
+    #     return genus
 
-    @Errors.playwright_timeerror(times=1)
-    def pw_context(self, path=None):
+    @Errors.playwright_timeerror
+    def pw_context(self, path=None, times=None):
         with sync_playwright() as playwright:
             self.run_realpage_test(playwright, path)
     

@@ -49,12 +49,11 @@ class Errors:
                 raise
 
     @staticmethod
-    def playwright_timeerror(func, times):
+    def playwright_timeerror(func):
         @wraps(func)
         def error_wrapper(*args, **kwargs):
-            print(f'running {func.__name__}')
-            times = 3
-            attempt = 0
+            times, attempt = kwargs["times"], 0
+            print(f'attemting to run {func.__name__} for {times} attempts')
             while attempt < times:
                 try:
                     func(*args, **kwargs)
