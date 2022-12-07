@@ -49,7 +49,7 @@ class Errors:
                 raise
 
     @staticmethod
-    def playwright_timeerror(func):
+    def playwright_timeerror(func, times):
         @wraps(func)
         def error_wrapper(*args, **kwargs):
             print(f'running {func.__name__}')
@@ -66,15 +66,3 @@ class Errors:
                     print(f'attempt no {attempt} of {times}')
             return 'playwright scraping error'
         return error_wrapper
-
-
-
-
-        # def decorator(func):
-        #     @wraps(func)
-        #     def inner_pwtout_error(*args, **kwargs):
-        #             pw_func
-        #         except PlaywrightTimeoutError as e:
-        #             print(e)
-        #         return pw_func
-        #     return inner_pwtout_error

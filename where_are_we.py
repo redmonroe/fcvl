@@ -187,7 +187,7 @@ class WhereAreWe(ProcessingLayer):
                 print('attempting to get deposit report from realpage')
                 save_path = self.download_path / f'{first_incomplete_month}_deposits.xlsx'
                 result = scrape.pw_context(path=save_path)
-                #TODO how to handle filename, how to handle previous current
+                #TODO how to handle filename, how to handle previous current, then 
                 breakpoint()
         breakpoint()
             

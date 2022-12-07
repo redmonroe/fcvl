@@ -8,7 +8,7 @@ class Scrape:
         print('hello from hello')
         return genus
 
-    @Errors.playwright_timeerror
+    @Errors.playwright_timeerror(times=1)
     def pw_context(self, path=None):
         with sync_playwright() as playwright:
             self.run_realpage_test(playwright, path)
