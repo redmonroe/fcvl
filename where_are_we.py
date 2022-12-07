@@ -174,8 +174,14 @@ class WhereAreWe(ProcessingLayer):
         print('*' * 45)
         print(f'last reconciled month: {kwargs["last_reconciled_month"]}')
 
+    def user_input_loop(self):
+        try:
+            return int(input("Press 1 to continue or 2 to exit..."))
+        except ValueError as e:
+            print('invalid input')
+
+
     def what_do_we_have(self, first_incomplete_month=None, **kwargs):
-        
         scrape = Scrape()
         what_do_we_have_for_next_month = [row.doc_type for row in self.ur_query.ur_query(model_str='Findexer', query_tup= [('period', first_incomplete_month)], operators_list=['=='] ).namedtuples()]           
 
@@ -183,6 +189,7 @@ class WhereAreWe(ProcessingLayer):
 
         times = 0
         print(f'currently attempting to scrape {times}')
+
         if 'deposits' not in what_do_we_have_for_next_month:
             if is_first_pw_incomplete_month_over:
                 print(f'{first_incomplete_month} is over; attempt to download deposit report this month')
@@ -191,6 +198,21 @@ class WhereAreWe(ProcessingLayer):
                 result = scrape.pw_context(path=save_path, times=times)
                 #TODO how to handle filename, how to handle previous current, #truncate save file date
                 if result == 'playwright scraping error':
+                    print('try to manually download to {}'.format(self.path))
+                    ready = True
+                    while ready:
+                        user_input = self.user_input_loop()
+                        if user_input == 1:
+                            break
+                        elif user_input == 2:
+                            break
+                            exit
+                            
+                    print('attempting to read deposit report from realpage')
+                    breakpoint()
+
+                    ## give user change to download
+                    
                     pass
                 breakpoint()
         breakpoint()
