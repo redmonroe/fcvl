@@ -11,6 +11,7 @@ class WhereAreWe(ProcessingLayer):
         self.build = kwargs['build']
         self.path = kwargs['path']
         self.full_sheet = kwargs['full_sheet']
+        self.download_path = Config.SCRAPE_TESTING_SAVE_PATH
         self.db = self.build.main_db
         self.populate = PopulateTable()
         self.player = ProcessingLayer()
@@ -184,8 +185,9 @@ class WhereAreWe(ProcessingLayer):
             if is_first_pw_incomplete_month_over:
                 print(f'{first_incomplete_month} is over; attempt to download deposit report this month')
                 print('attempting to get deposit report from realpage')
-                x = scrape.pw_context(path='an example path')
-                # scrape.pw_context(genus="current_month_deposits", path=self.path)
+                save_path = self.download_path / f'{first_incomplete_month}_deposits.xlsx'
+                result = scrape.pw_context(path=save_path)
+                #TODO how to handle filename, how to handle previous current
                 breakpoint()
         breakpoint()
             

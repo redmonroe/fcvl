@@ -14,6 +14,7 @@ class Scrape:
             self.run_realpage_test(playwright, path)
     
     def run_realpage_test(self, playwright, path):
+        print(f'any successful downloads will go to {path}')
         browser = playwright.chromium.launch(headless=True)
         context = browser.new_context()
 
@@ -67,8 +68,8 @@ class Scrape:
             page.get_by_role("button", name="Download").click()
         download = download_info.value
         print(download)
+        print(f'saving to {path}')
         download.save_as(path)
-        breakpoint()
 
         page.close()
 

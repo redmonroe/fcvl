@@ -53,14 +53,18 @@ class Errors:
         @wraps(func)
         def error_wrapper(*args, **kwargs):
             print(f'running {func.__name__}')
-            try:
-                # breakpoint()
-                func(*args, **kwargs)
-                return 'ok'
-            except PlaywrightTimeoutError as e:
-                print('up hook')
-                print('playwright aint succeeded in downloading file.  Please try manually downloading.')
-                return 'error'
+            times = 3
+            attempt = 0
+            while attempt < times:
+                try:
+                    func(*args, **kwargs)
+                    return 'success downloading insert type and date'
+                except PlaywrightTimeoutError as e:
+                    attempt += 1
+                    print('playwright aint succeeded in downloading file.  Please try manually downloading.')
+                    time.sleep(3)
+                    print(f'attempt no {attempt} of {times}')
+            return 'playwright scraping error'
         return error_wrapper
 
 
