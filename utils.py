@@ -211,6 +211,12 @@ class Utils:
         return f_date
     
     @staticmethod
+    def helper_fix_date_str3(date_str):
+        f_date = datetime.strptime(date_str, '%Y-%m-%d')
+        f_date = f_date.strftime('%Y-%m')
+        return f_date
+    
+    @staticmethod
     def unpacking_list_of_dicts(list_of_dicts, index=None):
         try:
             target = list(list_of_dicts[0].values())[0][0]

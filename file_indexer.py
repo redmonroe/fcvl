@@ -10,6 +10,7 @@ import pandas as pd
 from backend import Findexer, PopulateTable, Reconciler, StatusObject
 from config import Config
 from pdf import StructDataExtract
+from persistent import Persistent
 from reconciler import Reconciler
 from utils import Utils
 
@@ -220,12 +221,17 @@ class FileIndexer(Utils, Scrape, Reconciler):
     def incremental_filer_sub_1_for_dry_run(self, *args, **kwargs):
         #TODO: missing scrape report from nbofi flow
         target_month = kwargs.get('target_month')
+        damages = []
+        for item in Persistent.damages:
+            for name, values in item.items():
+                dict1 = {}
+                match_date = Utils.helper_fix_date_str3(values[1])
+                if match_date == target_month:
+                    dict1 = {name: (values[0], values[1], values[2])}
+                    damages.append(dict1)
+        
         for entry in kwargs['currently_availables']:
             for genus, path in entry.items():
-                for item in Config.damages:
-                    print(item)
-                breakpoint()
-                # get damages for the period
                 # get changes we want to persist
 
 
@@ -238,7 +244,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
                 if genus == 'rent':
                     rent_dry_run = self.survey_rent_report_for_dry_run(path[1], target_month=target_month)
 
-        return {'opcash': opcash_dry_run, 'deposits': deposits_dry_run, 'rent': rent_dry_run}
+        return {'opcash': opcash_dry_run, 'deposits': deposits_dry_run, 'rent': rent_dry_run, 'damages': damages}
 
 
     def build_index_runner(self):

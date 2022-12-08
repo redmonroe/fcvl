@@ -166,11 +166,14 @@ class WhereAreWe(ProcessingLayer):
         print(f'\tdeposits {target_month}: {dry_run_iter["opcash"]["dep"]}')
         print(f'\thap {target_month}: {dry_run_iter["opcash"]["hap"]}')
         print(f'\trr {target_month}: {dry_run_iter["opcash"]["rr"]}')
-        print(f'\tdeposit corrections on opcash side: {dry_run_iter["opcash"]["corr_sum`"]}')
+        print(f'\tdeposit corrections on opcash side: {dry_run_iter["opcash"]["corr_sum"]}')
         print('*' * 45)
 
-
+        print('*' * 45)
+        print(f'damage charges/credits for {target_month}: {dry_run_iter["damages"]} ')
+        print('*' * 45)
         breakpoint()
+
         # what can we reconcile?
         # THEN LOOP BACK TO RECONCILIATION AND THEN IF ALL IS WELL WE CAN TRY TO RECONCILE
 
