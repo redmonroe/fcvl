@@ -737,7 +737,7 @@ class PopulateTable(QueryHC):
     
         return nt_list, total_tenant_charges, explicit_move_outs
 
-    def after_jan_load(self, filename=None, date=None):
+    def after_jan_load(self, filename=None, date=None, *args, **kwargs):
         ''' order matters'''
         ''' get tenants from jan end/feb start'''
         ''' get rent roll from feb end in nt_list from df'''
@@ -749,18 +749,11 @@ class PopulateTable(QueryHC):
             where(Tenant.move_in_date <= datetime.strptime(date, '%Y-%m')).
             join(Unit, on=Tenant.tenant_name==Unit.tenant).namedtuples()]
 
-        for item in period_start_tenant_names:
-            print(item)
-
-
-        breakpoint()
-
         fill_item = '0'
         df = pd.read_excel(filename, header=16)
         df = df.fillna(fill_item)
       
         nt_list, explicit_move_outs = self.nt_from_df(df=df, date=date, fill_item=fill_item)
-        breakpoint()
 
         total_tenant_charges = float(((nt_list.pop(-1)).rent).replace(',', ''))
 
@@ -771,36 +764,41 @@ class PopulateTable(QueryHC):
         computed_mis, computed_mos = self.find_rent_roll_changes_by_comparison(start_set=set(period_start_tenant_names), end_set=set(period_end_tenant_names))
     
         cleaned_mos = self.merge_move_outs(explicit_move_outs=explicit_move_outs, computed_mos=computed_mos, date=date)
-        self.insert_move_ins(move_ins=computed_mis, date=date, filename=filename)
 
-        if cleaned_mos != []:
-            self.deactivate_move_outs(date, move_outs=cleaned_mos)
+        if kwargs['dry_run']:
+            return nt_list, total_tenant_charges, cleaned_mos, computed_mis
+        else:        
+            breakpoint()
+            self.insert_move_ins(move_ins=computed_mis, date=date, filename=filename)
 
-        ''' now we should have updated list of active tenants'''
-        cleaned_nt_list = [row for row in self.return_nt_list_with_no_vacants(keyword='vacant', nt_list=nt_list)]
+            if cleaned_mos != []:
+                self.deactivate_move_outs(date, move_outs=cleaned_mos)
 
-        insert_many_rent = [{'t_name': row.name, 'unit': row.unit, 'rent_amount': row.rent.replace(',',''), 'rent_date': row.date} for row in cleaned_nt_list]  
+            ''' now we should have updated list of active tenants'''
+            cleaned_nt_list = [row for row in self.return_nt_list_with_no_vacants(keyword='vacant', nt_list=nt_list)]
 
-        '''update last_occupied for occupied: SLOW, Don't like'''
-        for row in cleaned_nt_list:
-            try:
-                unit = Unit.get(Unit.tenant==row.name)
-                unit.last_occupied = last_dt
-            except Exception as e:
-                unit = Unit.get(Unit.unit_name==row.unit)
-                unit.last_occupied = '0'
-            unit.save()
+            insert_many_rent = [{'t_name': row.name, 'unit': row.unit, 'rent_amount': row.rent.replace(',',''), 'rent_date': row.date} for row in cleaned_nt_list]  
 
-        subs_insert_many = [{'tenant': row.name, 'sub_amount': row.subsidy.replace(',',''), 'date_posted': row.date} for row in cleaned_nt_list if row.name != 'vacant']
-        krent_insert_many = [{'tenant': row.name, 'sub_amount': row.contract.replace(',',''), 'date_posted': row.date} for row in cleaned_nt_list if row.name != 'vacant']
+            '''update last_occupied for occupied: SLOW, Don't like'''
+            for row in cleaned_nt_list:
+                try:
+                    unit = Unit.get(Unit.tenant==row.name)
+                    unit.last_occupied = last_dt
+                except Exception as e:
+                    unit = Unit.get(Unit.unit_name==row.unit)
+                    unit.last_occupied = '0'
+                unit.save()
 
-        query = TenantRent.insert_many(insert_many_rent)
-        query.execute()
-        query = Subsidy.insert_many(subs_insert_many)
-        query.execute()
-        query = ContractRent.insert_many(krent_insert_many)
-        query.execute()
-        '''Units: now we should check whether end of period '''
+            subs_insert_many = [{'tenant': row.name, 'sub_amount': row.subsidy.replace(',',''), 'date_posted': row.date} for row in cleaned_nt_list if row.name != 'vacant']
+            krent_insert_many = [{'tenant': row.name, 'sub_amount': row.contract.replace(',',''), 'date_posted': row.date} for row in cleaned_nt_list if row.name != 'vacant']
+
+            query = TenantRent.insert_many(insert_many_rent)
+            query.execute()
+            query = Subsidy.insert_many(subs_insert_many)
+            query.execute()
+            query = ContractRent.insert_many(krent_insert_many)
+            query.execute()
+            '''Units: now we should check whether end of period '''
         return cleaned_nt_list, total_tenant_charges, cleaned_mos
 
     def merge_move_outs(self, explicit_move_outs=None, computed_mos=None, date=None):    

@@ -139,14 +139,23 @@ class WhereAreWe(ProcessingLayer):
         print(f'ready to dry run? {target_month}.')
         print('*' * 45)
 
-        # get paths in currently_availables, process them in findexer through iter_rs
-            # opcash first; we already know the filenames
-
         if count == 3:
             print(self.path)
-            self.iter.dry_run(currently_availables=currently_availables, target_month=target_month)
+            dry_run_iter = self.iter.dry_run(currently_availables=currently_availables, target_month=target_month)
+        else:
+            print('you dont have enough files to do a dry run')
+            exit
 
-            breakpoint()
+        print('*' * 45)
+        print(f'dry run for {target_month}.')
+        print('*' * 45)
+
+
+        breakpoint()
+
+
+        # what can we reconcile?
+
 
        
 

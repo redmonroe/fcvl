@@ -218,7 +218,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
                 exit   
 
     def incremental_filer_sub_1_for_dry_run(self, *args, **kwargs):
-        # start with opcash
+        #TODO: missing scrape login flow
         target_month = kwargs.get('target_month')
         for entry in kwargs['currently_availables']:
             for genus, path in entry.items():
@@ -229,8 +229,8 @@ class FileIndexer(Utils, Scrape, Reconciler):
                     deposits_dry_run = self.survey_deposits_report_for_dry_run(path[1])
                 if genus == 'rent':
                     rent_dry_run = self.survey_rent_report_for_dry_run(path[1], target_month=target_month)
-                    breakpoint()
-            
+
+        return {'opcash': opcash_dry_run, 'deposits': deposits_dry_run, 'rent': rent_dry_run}
 
 
     def build_index_runner(self):
@@ -344,10 +344,10 @@ class FileIndexer(Utils, Scrape, Reconciler):
 
     def survey_rent_report_for_dry_run(self, path, *args, **kwargs):
         populate = PopulateTable()
-        cleaned_nt_list, total_tenant_charges, cleaned_mos = populate.after_jan_load(filename=path, date=kwargs['target_month'])
+        dirty_nt_list, total_tenant_charges, cleaned_mos, computed_mis = populate.after_jan_load(filename=path, date=kwargs['target_month'], dry_run=True)
+        #TODO: NEED TO DO SOMETHING TO DIRTY_NT_LIST
 
-        breakpoint()
-    
+        return {'tenant_charges': total_tenant_charges, 'mos': cleaned_mos, 'mis': computed_mis }   
     
     def find_by_content(self, style, target_string=None, **kw):
         for path, doc_id in self.indexed_list:
