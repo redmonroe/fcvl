@@ -15,6 +15,7 @@ from file_manager import path_to_statements, write_hap
 from letters import AddressWriter, DocxWriter, Letters
 from manual_entry import ManualEntry
 from pdf import StructDataExtract
+from where_are_we import WhereAreWe
 
 '''
 cli.add_command(nbofi)
@@ -30,9 +31,28 @@ def cli():
     pass
 
 @click.command()
-def staging_area():
-    click.echo('TEST: staging area')
-    from staging_area import Staging
+@click.option('-m', '--most-recent-good', default=True, help='most recent good month or select ui')
+def where_are_we(most_recent_good):
+    click.echo('TEST: where_are_we')
+    figure = Figuration()
+    path, full_sheet, build, service, ms = figure.return_configuration()    
+    where = WhereAreWe(path=path, full_sheet=full_sheet, build=build, service=service, ms=ms)
+    
+    #TODO
+    if most_recent_good:
+        where.select_month(date=True)
+    else:
+        where.select_month()
+        
+    # where.query_practice()
+    # where.load_canon()
+    
+@click.command()
+def status_findexer_test():
+    click.echo('show status of findex db')
+    # path, full_sheet, build, service, ms = return_test_config()
+    # player = ProcessingLayer()
+    player.show_status_table(path=path, db=db)
 
  
 
@@ -150,12 +170,6 @@ def recvactuals():
     annfin = AnnFin(db=Config.TEST_DB)
     annfin.start_here()
     
-@click.command()
-def status_findexer_test():
-    click.echo('show status of findex db')
-    path, full_sheet, build, service, ms = return_test_config()
-    player = ProcessingLayer()
-    player.show_status_table(path=path, db=db)
 
 @click.command()
 def delete_one_sheet():
@@ -240,6 +254,7 @@ cli.add_command(escrow)
 cli.add_command(receipts)
 cli.add_command(receipts_sixm)
 cli.add_command(status_findexer_test)
+cli.add_command(where_are_we)
 cli.add_command(reset_db_test)
 cli.add_command(reset_db_prod)
 cli.add_command(write_all_test)

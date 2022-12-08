@@ -2,9 +2,11 @@ import time
 from functools import wraps
 
 from googleapiclient.errors import HttpError
+from playwright._impl._api_types import TimeoutError as PlaywrightTimeoutError
+
 
 # interesting link: https://stackoverflow.com/questions/50246304/using-python-decorators-to-retry-request
-# also tenacity
+
 def retry_google_api(times, sleep1, exceptions):
     """
     Retry Decorator
@@ -45,4 +47,21 @@ class Errors:
                 return pandas_object.ExcelWriter(path, engine='xlsxwriter')
             else:
                 raise
-                
+
+    @staticmethod
+    def playwright_timeerror(func):
+        @wraps(func)
+        def error_wrapper(*args, **kwargs):
+            times, attempt = kwargs["times"], 0
+            print(f'attemting to run {func.__name__} for {times} attempts')
+            while attempt < times:
+                try:
+                    func(*args, **kwargs)
+                    return 'success downloading insert type and date'
+                except PlaywrightTimeoutError as e:
+                    attempt += 1
+                    print('playwright aint succeeded in downloading file.  Please try manually downloading.')
+                    time.sleep(3)
+                    print(f'attempt no {attempt} of {times}')
+            return 'playwright scraping error'
+        return error_wrapper

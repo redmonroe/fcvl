@@ -1,3 +1,4 @@
+import time
 from datetime import datetime
 
 from auth_work import oauth
@@ -10,6 +11,7 @@ from file_indexer import FileIndexer
 from reconciler import Reconciler
 from records import record
 from setup_month import MonthSheet
+
 
 
 class BuildRS(MonthSheet):
@@ -47,12 +49,15 @@ class BuildRS(MonthSheet):
         status = StatusRS()
         player = ProcessingLayer(service=self.service, full_sheet=self.full_sheet, ms=self.ms)
         print('building db from scratch')
+        start = time.time()
         self.ctx = 'db empty'
         print(f'{self.ctx}')
         populate = self.setup_tables(mode='drop_and_create')
-        self.findex.build_index_runner() 
+        start1 = time.time()
+        self.findex.build_index_runner() # 3 sec in november
+        print(f'Time1: {time.time() - start1}')
         self.load_initial_tenants_and_balances()
-        processed_rentr_dates_and_paths = self.iterate_over_remaining_months()
+        processed_rentr_dates_and_paths = self.iterate_over_remaining_months() # 4 seconds in november
         Damages.load_damages()
         self.populate.transfer_opcash_from_findex_to_opcash_and_detail() # PROCESSED OPCASHES MOVED INTO DB
 
@@ -76,6 +81,7 @@ class BuildRS(MonthSheet):
             print('if you would like to write to rent spreadsheet enable "write" flag')
     
         self.main_db.close()
+        print(f'Time: {time.time() - start}')
 
     def setup_tables(self, mode=None):
         populate = PopulateTable()

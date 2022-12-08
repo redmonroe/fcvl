@@ -20,6 +20,20 @@ class Utils:
         __getattr__ = dict.get
         __setattr__ = dict.__setitem__
         __delattr__ = dict.__delitem__
+    
+    @staticmethod
+    def get_next_month(target_month=None):
+        from dateutil.relativedelta import relativedelta
+        
+        last_date = datetime.strptime(target_month, '%Y-%m')
+        new_date = last_date + relativedelta(months=+1)
+        return datetime.strftime(new_date, '%Y-%m')
+
+    @staticmethod
+    def is_target_month_over(target_month=None):
+        dt_obj = datetime.strptime(target_month, '%Y-%m')
+        last_day = dt_obj.replace(day = monthrange(dt_obj.year, dt_obj.month)[1])
+        return datetime.now() > last_day  
 
     @staticmethod
     def months_in_ytd(current_year, style=None, show_choices=None):
@@ -195,6 +209,22 @@ class Utils:
         f_date = datetime.strptime(date_str, '%m/%d/%Y')
         f_date = f_date.strftime('%Y-%m-%d')
         return f_date
+    
+    @staticmethod
+    def helper_fix_date_str3(date_str):
+        f_date = datetime.strptime(date_str, '%Y-%m-%d')
+        f_date = f_date.strftime('%Y-%m')
+        return f_date
+    
+    @staticmethod
+    def unpacking_list_of_dicts(list_of_dicts, index=None):
+        try:
+            target = list(list_of_dicts[0].values())[0][0]
+            return target
+        except AttributeError as e:
+            print(e)
+            print('the funny business is from the unpacking of a nasty list of dicts func in Utils.')
+            breakpoint()
         
     def get_book_name(service, sh_id):
         response = service.spreadsheets().get(
@@ -260,13 +290,30 @@ class Utils:
 
         return idx_list
 
+    @staticmethod
+    def enumerate_choices_for_user_input(chlist=None):
+        choices = []
+        files = []
+        
+        for count, item in enumerate(chlist, 1):
+            print(count, "****", item, '****')
+            choices.append(count)
+            files.append(item)
+        
+        selection = int(input('Please select an item to work with: '))
+    
+        choice_file = dict(zip(choices, files))
+
+        for k, v in choice_file.items():
+            if selection == k:
+                return v, selection
+
     def show_files_as_choices(list, interactive=True):
         choice = []
         files = []
         choice_file = {}
 
         for count, (k, v) in enumerate(list.items(), 1):
-            print(count, "****", k, '****', v)
             choice.append(count)
             files.append(k)
 

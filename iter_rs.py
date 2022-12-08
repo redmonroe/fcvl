@@ -61,7 +61,14 @@ class IterRS(BuildRS):
 
         """need to incrementally add opcash if new
         RIGHT NOW THE OPCASH IS NOT ADDED TO OPCASH TABLE""" 
-        
+
+    def is_new_file_available(self, genus=None, filename=None):
+        dir_cont = [(item, item.name) for item in self.path.iterdir() if item.name not in self.findex.excluded_file_names]
+        record = [{genus: (True, entry[0])} for entry in dir_cont if entry[1] in filename][0]
+        return record
+   
+    def dry_run(self, *args, **kwargs):
+        return self.findex.incremental_filer_sub_1_for_dry_run(currently_availables=kwargs['currently_availables'], target_month=kwargs['target_month'])
 
     def incremental_load(self, **kw):
         print('...attempting incremental load')
@@ -80,6 +87,7 @@ class IterRS(BuildRS):
 
         populate = self.setup_tables(mode='create_only')
         new_files, unfinalized_months, final_not_written = self.findex.incremental_filer(pytest=self.pytest)
+        breakpoint()
 
         if kw.get('write') == True:
 

@@ -10,6 +10,7 @@ import pandas as pd
 from backend import Findexer, PopulateTable, Reconciler, StatusObject
 from config import Config
 from pdf import StructDataExtract
+from persistent import Persistent
 from reconciler import Reconciler
 from utils import Utils
 
@@ -217,6 +218,32 @@ class FileIndexer(Utils, Scrape, Reconciler):
                 print('exiting program from incremental_filer()')
                 exit   
 
+    def incremental_filer_sub_1_for_dry_run(self, *args, **kwargs):
+        #TODO: missing scrape report from nbofi flow
+        target_month = kwargs.get('target_month')
+        damages = []
+        for item in Persistent.damages:
+            for name, values in item.items():
+                dict1 = {}
+                match_date = Utils.helper_fix_date_str3(values[1])
+                if match_date == target_month:
+                    dict1 = {name: (values[0], values[1], values[2])}
+                    damages.append(dict1)
+        
+        for entry in kwargs['currently_availables']:
+            for genus, path in entry.items():
+                # get changes we want to persist
+                if genus == 'opcash':
+                    self.op_cash_list.append(path[1])
+                    opcash_dry_run = self.rename_by_content_pdf(bypass_write_to_db=True)
+                if genus == 'deposits':
+                    deposits_dry_run = self.survey_deposits_report_for_dry_run(path[1])
+                if genus == 'rent':
+                    rent_dry_run = self.survey_rent_report_for_dry_run(path[1], target_month=target_month)
+
+        return {'opcash': opcash_dry_run, 'deposits': deposits_dry_run, 'rent': rent_dry_run, 'damages': damages}
+
+
     def build_index_runner(self):
         """this function is just a list of the funcs one would run to create the index from a fresh start"""
         self.connect_to_db()
@@ -306,7 +333,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
             index_dict[Path.joinpath(self.path, fn)] = (Path(fn).suffix, fn)
         
         self.index_dict_iter = index_dict # for testing, do not just erase this
-        return index_dict        
+        return index_dict   
 
     def load_what_is_in_dir_as_indexed(self, dict1={}, autodrop=None, verbose=None):
         insert_dir_contents = [{'path': path, 'fn': name, 'c_date': path.lstat().st_ctime, 'indexed': 'true', 'file_ext': suffix} for path, (suffix, name) in dict1.items()]
@@ -320,6 +347,19 @@ class FileIndexer(Utils, Scrape, Reconciler):
                 (Findexer.file_ext == kw['mode'][1][0]) |
                 (Findexer.file_ext == kw['mode'][1][1])).namedtuples()]
 
+    def survey_deposits_report_for_dry_run(self, path, *args, **kwargs):
+        df = pd.read_excel(path)
+        deposits = self.deposit_report_unpacker(df=df)
+        # breakpoint()\
+        #TODO: THIS GOES NOWHERE
+
+    def survey_rent_report_for_dry_run(self, path, *args, **kwargs):
+        populate = PopulateTable()
+        dirty_nt_list, total_tenant_charges, cleaned_mos, computed_mis = populate.after_jan_load(filename=path, date=kwargs['target_month'], dry_run=True)
+        #TODO: NEED TO DO SOMETHING TO DIRTY_NT_LIST
+
+        return {'tenant_charges': total_tenant_charges, 'mos': cleaned_mos, 'mis': computed_mis }   
+    
     def find_by_content(self, style, target_string=None, **kw):
         for path, doc_id in self.indexed_list:
             part_list = ((Path(path).stem)).split('_')
@@ -327,7 +367,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
                 df1 = pd.read_excel(path)
                 df2 = df1.iloc[:, 0].to_list()
 
-                if target_string in df2:
+                if target_string in df2: # rent roll piece
                     period = self.df_date_wrapper(path, kw=kw['format'])
                     find_change = Findexer.get(Findexer.doc_id==doc_id)
                     find_change.period = period
@@ -336,16 +376,20 @@ class FileIndexer(Utils, Scrape, Reconciler):
                     find_change.save()
                     
                 if style == self.style_term.deposits:
-                    deposits = df1.iloc[:, 13].to_list()
-                    deposits = [item for item in deposits if isinstance(item, str)]
-                    deposits =  deposits[:-1]
-                    deposits =  deposits[1:]
-                    deposits = [deposit.replace(',', '') for deposit in deposits]
-                    deposits = str(sum([float(item) for item in deposits]))
+                    deposits = self.deposit_report_unpacker(df=df1)
                     find_change = Findexer.get(Findexer.doc_id==doc_id)
                     find_change.depsum = deposits    
                     find_change.save()
 
+    def deposit_report_unpacker(self, df=None):
+        deposits = df.iloc[:, 13].to_list()
+        deposits = [item for item in deposits if isinstance(item, str)]
+        deposits =  deposits[:-1]
+        deposits =  deposits[1:]
+        deposits = [deposit.replace(',', '') for deposit in deposits]
+        deposits = str(sum([float(item) for item in deposits]))
+        return deposits
+    
     def df_date_wrapper(self, path, **kw):
         split_col = kw['kw']['split_col']
         df_date = pd.read_excel(path)
@@ -356,6 +400,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
             print(e)
             print(f'issue is with {path}')
             print(f'relevant kwargs: {kw}')
+            breakpoint()
         period = df_date[kw['kw']['date_split']]
         period = period.rstrip()
         period = period.lstrip()        
@@ -377,7 +422,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
             find_change.doc_type = self.style_term.opcash
             find_change.save()
 
-    def rename_by_content_pdf(self):
+    def rename_by_content_pdf(self, **kwargs):
         for op_cash_stmt_path in self.op_cash_list:
             hap_iter_one_month, stmt_date = self.extract_deposits_by_type(op_cash_stmt_path, style=self.style_term.hap, target_str=self.target_string.quadel)
             date = stmt_date
@@ -387,7 +432,17 @@ class FileIndexer(Utils, Scrape, Reconciler):
             corrections_sum = self.extract_deposits_by_type(op_cash_stmt_path, style=self.style_term.corrections, target_str=self.target_string.corrections, target_str2=self.target_string.chargebacks, date=date)
             Reconciler.findexer_assert_stmt_dates_match(stmt1_date=stmt_date, stmt2_date=stmt_date1)
 
-            self.write_deplist_to_db(hap_iter_one_month, rr_iter_one_month, dep_iter_one_month, deposit_and_date_iter_one_month, corrections_sum, stmt_date)
+            
+            if kwargs.get('bypass_write_to_db'):
+                return {'date': date, 
+                        'hap': Utils.unpacking_list_of_dicts(hap_iter_one_month), 
+                        'rr': Utils.unpacking_list_of_dicts(rr_iter_one_month),
+                        'corr_sum': Utils.unpacking_list_of_dicts(corrections_sum[0]),
+                        'dep': Utils.unpacking_list_of_dicts(dep_iter_one_month), 
+                        'dep_and_date': list(deposit_and_date_iter_one_month[0].values())[0]}
+    
+            else:
+                self.write_deplist_to_db(hap_iter_one_month, rr_iter_one_month, dep_iter_one_month, deposit_and_date_iter_one_month, corrections_sum, stmt_date)
 
     def extract_deposits_by_type(self, path, style=None, target_str=None, target_str2=None, date=None):
         return_list = []

@@ -1,7 +1,8 @@
 class Persistent:
     damages = [
                 {'morris, michael': (599, '2022-02-01', 'exterm')}, 
-                {'greiner, richard': (146, '2022-10-01', 'ur sept_oct')}
+                {'greiner, richard': (146, '2022-10-01', 'ur sept_oct')}, 
+                {'greiner, richard': (48, '2022-11-01', 'nov')}, 
     ]
     
     changes = [{'obj_type': 'Payment', 'action': 'delete', 'col_name1': ('tenant_id', 'newcomb, benny'), 'col_name2': ('amount', '476.0'), 'col_name3': ('date_posted', '2022-02-08')}, 
@@ -31,6 +32,7 @@ class Persistent:
 
         # {'obj_type': 'Subsidy', 'action': 'update_amount', 'col_name1': ('tenant_id', 'greiner, richard'), 'col_name2': ('sub_amount', '-3'), 'col_name3': ('date_posted', '2022-10-01'), 'col_name4': ('new_amount', '224.00')},
         
+        {'obj_type': 'TenantRent', 'action': 'update_amount', 'col_name1': ('t_name_id', 'hawkins, norland'), 'col_name2': ('rent_amount', '314.00'), 'col_name3': ('rent_date', '2022-11-11'), 'col_name4': ('new_amount', '204.00')},
         ]
 
     units = ['CD-A','CD-B','CD-101', 'CD-102', 'CD-104', 'CD-105', 'CD-106', 'CD-107', 'CD-108',
