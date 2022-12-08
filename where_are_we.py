@@ -149,12 +149,30 @@ class WhereAreWe(ProcessingLayer):
         print('*' * 45)
         print(f'dry run for {target_month}.')
         print('*' * 45)
+        print(f'rent roll {target_month}.')
+        print('*' * 45)
+        print(f'\tmove outs {target_month}: {dry_run_iter["rent"]["mos"]}')
+        print(f'\tmove-ins {target_month}: {dry_run_iter["rent"]["mis"]}')
+        print(f'\ttenant chages {target_month}: {dry_run_iter["rent"]["tenant_charges"]}')
+        # still want beginning vacancy and ending vacancy actuals not just from subtractions and additions
+        print('*' * 45)
+        print(f'deposits report for {target_month}.')
+        print('*' * 45)
+        print(f'\tdeposits for {target_month}: {dry_run_iter["deposits"]}')
+
+        print('*' * 45)
+        print(f'opcash summary for {target_month}.')
+        print('*' * 45)
+        print(f'\tdeposits {target_month}: {dry_run_iter["opcash"]["dep"]}')
+        print(f'\thap {target_month}: {dry_run_iter["opcash"]["hap"]}')
+        print(f'\trr {target_month}: {dry_run_iter["opcash"]["rr"]}')
+        print(f'\tdeposit corrections on opcash side: {dry_run_iter["opcash"]["corr_sum`"]}')
+        print('*' * 45)
 
 
         breakpoint()
-
-
         # what can we reconcile?
+        # THEN LOOP BACK TO RECONCILIATION AND THEN IF ALL IS WELL WE CAN TRY TO RECONCILE
 
 
        
@@ -176,21 +194,6 @@ class WhereAreWe(ProcessingLayer):
         # mi rent
         # mi sd
         # adjustments        
-        
-        # what do we need to process next month?
-        # do membership tests on what_do_we_have
-            # do we have the docs ? yes, go
-                # no, can we scrape
-                # no? can we manually download
-
-
-        # what are supposed to return if we have nothing?
-
-        # fix move-outs
-        # do you want to process next month?
-            # iter build here
-            # can we stop processing and drop prior to lengthy write?
-        # run scrape from here?
 
     def print_rows(self, date=None, **kwargs):
         print(f'selected month: {date}\n')
