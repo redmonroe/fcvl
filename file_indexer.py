@@ -218,10 +218,18 @@ class FileIndexer(Utils, Scrape, Reconciler):
                 exit   
 
     def incremental_filer_sub_1_for_dry_run(self, *args, **kwargs):
-        #TODO: missing scrape login flow
+        #TODO: missing scrape report from nbofi flow
         target_month = kwargs.get('target_month')
         for entry in kwargs['currently_availables']:
             for genus, path in entry.items():
+                for item in Config.damages:
+                    print(item)
+                breakpoint()
+                # get damages for the period
+                # get changes we want to persist
+
+
+
                 if genus == 'opcash':
                     self.op_cash_list.append(path[1])
                     opcash_dry_run = self.rename_by_content_pdf(bypass_write_to_db=True)
