@@ -219,6 +219,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
 
     def incremental_filer_sub_1_for_dry_run(self, *args, **kwargs):
         # start with opcash
+        target_month = kwargs.get('target_month')
         for entry in kwargs['currently_availables']:
             for genus, path in entry.items():
                 if genus == 'opcash':
@@ -226,9 +227,11 @@ class FileIndexer(Utils, Scrape, Reconciler):
                     opcash_dry_run = self.rename_by_content_pdf(bypass_write_to_db=True)
                 if genus == 'deposits':
                     deposits_dry_run = self.survey_deposits_report_for_dry_run(path[1])
+                if genus == 'rent':
+                    rent_dry_run = self.survey_rent_report_for_dry_run(path[1], target_month=target_month)
+                    breakpoint()
             
 
-                    breakpoint()
 
     def build_index_runner(self):
         """this function is just a list of the funcs one would run to create the index from a fresh start"""
@@ -336,6 +339,13 @@ class FileIndexer(Utils, Scrape, Reconciler):
     def survey_deposits_report_for_dry_run(self, path, *args, **kwargs):
         df = pd.read_excel(path)
         deposits = self.deposit_report_unpacker(df=df)
+        # breakpoint()\
+        #TODO: THIS GOES NOWHERE
+
+    def survey_rent_report_for_dry_run(self, path, *args, **kwargs):
+        populate = PopulateTable()
+        cleaned_nt_list, total_tenant_charges, cleaned_mos = populate.after_jan_load(filename=path, date=kwargs['target_month'])
+
         breakpoint()
     
     
@@ -419,7 +429,6 @@ class FileIndexer(Utils, Scrape, Reconciler):
             deposit_and_date_iter_one_month = self.extract_deposits_by_type(op_cash_stmt_path, style=self.style_term.dep_detail, target_str=self.target_string.oc_deposit)
             corrections_sum = self.extract_deposits_by_type(op_cash_stmt_path, style=self.style_term.corrections, target_str=self.target_string.corrections, target_str2=self.target_string.chargebacks, date=date)
             Reconciler.findexer_assert_stmt_dates_match(stmt1_date=stmt_date, stmt2_date=stmt_date1)
-
 
             if kwargs['bypass_write_to_db']:
                 return {'date': date, 

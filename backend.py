@@ -754,6 +754,7 @@ class PopulateTable(QueryHC):
         df = df.fillna(fill_item)
       
         nt_list, explicit_move_outs = self.nt_from_df(df=df, date=date, fill_item=fill_item)
+        breakpoint()
 
         total_tenant_charges = float(((nt_list.pop(-1)).rent).replace(',', ''))
 
@@ -773,7 +774,7 @@ class PopulateTable(QueryHC):
         cleaned_nt_list = [row for row in self.return_nt_list_with_no_vacants(keyword='vacant', nt_list=nt_list)]
 
         insert_many_rent = [{'t_name': row.name, 'unit': row.unit, 'rent_amount': row.rent.replace(',',''), 'rent_date': row.date} for row in cleaned_nt_list]  
-        # breakpoint()
+
         '''update last_occupied for occupied: SLOW, Don't like'''
         for row in cleaned_nt_list:
             try:
@@ -832,6 +833,8 @@ class PopulateTable(QueryHC):
         tenant_payment_df, ntp_df = self.return_and_remove_ntp(df=df, col='unit', remove_str=0, drop_col='description')
 
         ntp_sum = sum(ntp_df['amount'].astype(float).tolist())  # can split up ntp further here
+
+        breakpoint()
 
         if len(ntp_df) > 0:
             insert_nt_list = self.ntp_split(ntp_df=ntp_df)

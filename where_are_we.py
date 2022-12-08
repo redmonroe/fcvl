@@ -144,7 +144,7 @@ class WhereAreWe(ProcessingLayer):
 
         if count == 3:
             print(self.path)
-            self.iter.dry_run(currently_availables=currently_availables)
+            self.iter.dry_run(currently_availables=currently_availables, target_month=target_month)
 
             breakpoint()
 
