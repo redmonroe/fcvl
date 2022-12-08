@@ -749,6 +749,12 @@ class PopulateTable(QueryHC):
             where(Tenant.move_in_date <= datetime.strptime(date, '%Y-%m')).
             join(Unit, on=Tenant.tenant_name==Unit.tenant).namedtuples()]
 
+        for item in period_start_tenant_names:
+            print(item)
+
+
+        breakpoint()
+
         fill_item = '0'
         df = pd.read_excel(filename, header=16)
         df = df.fillna(fill_item)
