@@ -306,7 +306,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
             index_dict[Path.joinpath(self.path, fn)] = (Path(fn).suffix, fn)
         
         self.index_dict_iter = index_dict # for testing, do not just erase this
-        return index_dict        
+        return index_dict   
 
     def load_what_is_in_dir_as_indexed(self, dict1={}, autodrop=None, verbose=None):
         insert_dir_contents = [{'path': path, 'fn': name, 'c_date': path.lstat().st_ctime, 'indexed': 'true', 'file_ext': suffix} for path, (suffix, name) in dict1.items()]
@@ -357,7 +357,12 @@ class FileIndexer(Utils, Scrape, Reconciler):
             print(f'issue is with {path}')
             print(f'relevant kwargs: {kw}')
         period = df_date[kw['kw']['date_split']]
-        period = period.rstrip()
+        try:
+            period = period.rstrip()
+        except AttributeError as e:
+            print(e)
+            print(f'issue is with {path}')
+            print(f'relevant kwargs: {kw}')
         period = period.lstrip()        
         month = period[:-4]
         year = period[-4:]

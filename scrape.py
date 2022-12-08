@@ -1,7 +1,7 @@
 from playwright.sync_api import Playwright, sync_playwright, expect
 from errors import Errors
 
-class Scrape:
+class PWScrape:
 
     # @Errors.playwright_timeerror(times=1)
     # def hello(self, genus=None):

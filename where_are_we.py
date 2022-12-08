@@ -1,9 +1,9 @@
 from backend import PopulateTable, ProcessingLayer, StatusObject, UrQuery
 from config import Config
 from errors import Errors
-from scrape import Scrape
+from scrape import PWScrape
 from utils import Utils
-
+from iter_rs import IterRS
 
 class WhereAreWe(ProcessingLayer):
 
@@ -15,8 +15,12 @@ class WhereAreWe(ProcessingLayer):
         self.db = self.build.main_db
         self.populate = PopulateTable()
         self.player = ProcessingLayer()
+        self.testing = True
+        self.times = 0
+        self.iter = IterRS(full_sheet=self.full_sheet, path=self.path, mode='testing', test_service=None, pytest=None)
         self.most_recent_good_month, self.good_months = self.player.get_mr_good_month()
         self.ur_query = UrQuery()
+        self.support_doc_types_list = ['deposits', 'opcash', 'rent']
 
     def _todo_(self):
         """basic idea:
@@ -119,13 +123,28 @@ class WhereAreWe(ProcessingLayer):
             last_reconciled_month=self.most_recent_good_month
             )
 
-        self.what_do_we_have(first_incomplete_month=first_incomplete_month)
-        breakpoint()
+        target_month, currently_availables = self.what_do_we_have(first_incomplete_month=first_incomplete_month, allow_print=False)
+        count = 0
+        for item in currently_availables:
+            for type1, available in item.items():    
+                print(f'{type1}: {available}')
+                if available == True:
+                    count += 1
+
+        ### we hit a problem with the database and dropping shit
+        
+        # print(count)
+        # if count == 3:
+        #     self.iter.incremental_load()
+
+        
+
 
         
 
         """WILL NEED TO PUT OPCASH IN TESTS; IT IS IN CANONICAL"""
         #TODO
+        # this flow does not support scrape report from nbofi
         # mi rent
         # mi sd
         # adjustments        
@@ -180,55 +199,72 @@ class WhereAreWe(ProcessingLayer):
         except ValueError as e:
             print('invalid input')
 
+    def user_input_outer_loop(self):
+        ready = True
+        while ready:
+            if self.testing == True:
+                user_input = 1
+            else:
+                user_input = self.user_input_loop()
+            if user_input == 1:
+                break
+            elif user_input == 2:
+                break
+                exit
+
+    def make_file_name(self, genus=None, period=None):
+        #TODO SUPPORT ALL TYPES
+        # 'op_cash_2022_08.pdf
+        # rent_roll_05_2022.xls'
+        # 'CHECKING_1891_Transactions_2022-06-01_2022-06-29.csv'
+        period = period.split('-')
+        if genus == 'deposits':
+            return [f'{genus}_{period[1]}_{period[0]}.xls', f'{genus}_{period[1]}_{period[0]}.xlsx']
+        if genus == 'opcash':
+            return [f'op_cash_{period[0]}_{period[1]}.pdf']
+        if genus == 'rent':
+            return [f'rent_roll_{period[1]}_{period[0]}.xls', f'rent_roll_{period[1]}_{period[0]}.xlsx']
+
+    def check_for_presence(self, doc_type=None, **kwargs):
+        #TODO how to handle previous versus current, #truncate save file date
+        #TODO need less fragile way to scrape
+        #TODO needs support for scraping nbofi, opcash, and rent roll
+
+
+        scrape = PWScrape()
+        if doc_type not in kwargs['what_do_we_have_for_next_month']:
+            if kwargs['is_first_pw_incomplete_month_over']:
+                if kwargs['allow_print']:
+                    print(f'{kwargs["first_incomplete_month"]} is over; attempt to download {doc_type} report this period.')
+                    print('trying realpage first...')
+                    print(f'currently attempting to scrape {doc_type} for {self.times} attempts...')
+                filename = self.make_file_name(genus=doc_type, period=kwargs["first_incomplete_month"])
+                if doc_type is 'deposits':
+                    save_path = self.download_path / filename[0]
+                    result = scrape.pw_context(path=save_path, times=self.times)
+                else:
+                    if kwargs['allow_print']:
+                        print(f'scraping not implemented for {doc_type} currently.')
+                    result = 'playwright scraping error'
+
+                if result == 'playwright scraping error':
+                    print('try to manually download {} for {} to {}'.format(doc_type, kwargs['first_incomplete_month'],self.path))
+                    self.user_input_outer_loop()           
+                    return self.iter.is_new_file_available(genus=doc_type, filename=filename)
 
     def what_do_we_have(self, first_incomplete_month=None, **kwargs):
-        scrape = Scrape()
         what_do_we_have_for_next_month = [row.doc_type for row in self.ur_query.ur_query(model_str='Findexer', query_tup= [('period', first_incomplete_month)], operators_list=['=='] ).namedtuples()]           
 
         is_first_pw_incomplete_month_over = Utils.is_target_month_over(target_month=first_incomplete_month)        
 
-        times = 0
-        print(f'currently attempting to scrape {times}')
+        currently_availables = []
+        for doc_type in self.support_doc_types_list:
+            is_target_file_available = self.check_for_presence(doc_type=doc_type, 
+                                what_do_we_have_for_next_month=what_do_we_have_for_next_month, first_incomplete_month=first_incomplete_month,
+                                is_first_pw_incomplete_month_over=is_first_pw_incomplete_month_over, allow_print=kwargs['allow_print'])
+            currently_availables.append(is_target_file_available)
 
-        if 'deposits' not in what_do_we_have_for_next_month:
-            if is_first_pw_incomplete_month_over:
-                print(f'{first_incomplete_month} is over; attempt to download deposit report this month')
-                print('attempting to get deposit report from realpage')
-                save_path = self.download_path / f'{first_incomplete_month}_deposits.xlsx'
-                result = scrape.pw_context(path=save_path, times=times)
-                #TODO how to handle filename, how to handle previous current, #truncate save file date
-                if result == 'playwright scraping error':
-                    print('try to manually download to {}'.format(self.path))
-                    ready = True
-                    while ready:
-                        user_input = self.user_input_loop()
-                        if user_input == 1:
-                            break
-                        elif user_input == 2:
-                            break
-                            exit
-                            
-                    print('attempting to read deposit report from realpage')
-                    breakpoint()
-
-                    ## give user change to download
-                    
-                    pass
-                breakpoint()
-        breakpoint()
-            
-        
-        
-        
-        if 'opcash' not in what_do_we_have_for_next_month:
-            if is_first_pw_incomplete_month_over:
-                print(f'{first_incomplete_month} is over; attempt to download opcash')
-                print('attempting to get opcash from nbofi')
-        
-        if 'rent' not in what_do_we_have_for_next_month:
-            print('is month closed do you want to try to get rent roll.')
-        else:
-            print('three doc types are present: do you want to try to process month')
+        return first_incomplete_month, currently_availables
 
     def show_status_table(self, **kw):
 
