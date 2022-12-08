@@ -765,10 +765,9 @@ class PopulateTable(QueryHC):
     
         cleaned_mos = self.merge_move_outs(explicit_move_outs=explicit_move_outs, computed_mos=computed_mos, date=date)
 
-        if kwargs['dry_run']:
+        if kwargs.get('dry_run'):
             return nt_list, total_tenant_charges, cleaned_mos, computed_mis
         else:        
-            breakpoint()
             self.insert_move_ins(move_ins=computed_mis, date=date, filename=filename)
 
             if cleaned_mos != []:
@@ -838,15 +837,11 @@ class PopulateTable(QueryHC):
 
         ntp_sum = sum(ntp_df['amount'].astype(float).tolist())  # can split up ntp further here
 
-        breakpoint()
-
         if len(ntp_df) > 0:
             insert_nt_list = self.ntp_split(ntp_df=ntp_df)
             query = NTPayment.insert_many(insert_nt_list)
             query.execute()
         
-        # if filename == '/mnt/c/Users/joewa/Google Drive/fall creek village I/fcvl/iter_build_first/deposits_04_2022.xlsx':
-        #     breakpoint()
         insert_many_list = [{
             'tenant': name.lower(),
             'amount': amount, 

@@ -233,9 +233,6 @@ class FileIndexer(Utils, Scrape, Reconciler):
         for entry in kwargs['currently_availables']:
             for genus, path in entry.items():
                 # get changes we want to persist
-
-
-
                 if genus == 'opcash':
                     self.op_cash_list.append(path[1])
                     opcash_dry_run = self.rename_by_content_pdf(bypass_write_to_db=True)
@@ -370,7 +367,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
                 df1 = pd.read_excel(path)
                 df2 = df1.iloc[:, 0].to_list()
 
-                if target_string in df2:
+                if target_string in df2: # rent roll piece
                     period = self.df_date_wrapper(path, kw=kw['format'])
                     find_change = Findexer.get(Findexer.doc_id==doc_id)
                     find_change.period = period
@@ -403,19 +400,10 @@ class FileIndexer(Utils, Scrape, Reconciler):
             print(e)
             print(f'issue is with {path}')
             print(f'relevant kwargs: {kw}')
+            breakpoint()
         period = df_date[kw['kw']['date_split']]
-        try:
-            period = period.rstrip()
-        except AttributeError as e:
-            print(e)
-            print(f'issue is with {path}')
-            print(f'relevant kwargs: {kw}')
-        try:
-            period = period.lstrip()        
-        except AttributeError as e:
-            print(e)
-            print(f'issue is with {path}')
-            print(f'relevant kwargs: {kw}')
+        period = period.rstrip()
+        period = period.lstrip()        
         month = period[:-4]
         year = period[-4:]
         period = year + '-' + month
@@ -444,13 +432,15 @@ class FileIndexer(Utils, Scrape, Reconciler):
             corrections_sum = self.extract_deposits_by_type(op_cash_stmt_path, style=self.style_term.corrections, target_str=self.target_string.corrections, target_str2=self.target_string.chargebacks, date=date)
             Reconciler.findexer_assert_stmt_dates_match(stmt1_date=stmt_date, stmt2_date=stmt_date1)
 
-            if kwargs['bypass_write_to_db']:
+            
+            if kwargs.get('bypass_write_to_db'):
                 return {'date': date, 
                         'hap': Utils.unpacking_list_of_dicts(hap_iter_one_month), 
                         'rr': Utils.unpacking_list_of_dicts(rr_iter_one_month),
                         'corr_sum': Utils.unpacking_list_of_dicts(corrections_sum[0]),
                         'dep': Utils.unpacking_list_of_dicts(dep_iter_one_month), 
                         'dep_and_date': list(deposit_and_date_iter_one_month[0].values())[0]}
+    
             else:
                 self.write_deplist_to_db(hap_iter_one_month, rr_iter_one_month, dep_iter_one_month, deposit_and_date_iter_one_month, corrections_sum, stmt_date)
 
