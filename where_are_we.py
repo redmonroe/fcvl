@@ -123,19 +123,28 @@ class WhereAreWe(ProcessingLayer):
             last_reconciled_month=self.most_recent_good_month
             )
 
-        target_month, currently_availables = self.what_do_we_have(first_incomplete_month=first_incomplete_month, allow_print=False)
+        target_month, currently_availables, first_pw_incomplete_month = self.what_do_we_have(first_incomplete_month=first_incomplete_month, allow_print=False)
         count = 0
+        print('*' * 45)
+        print(f'\nfor target month: {target_month}, the following items are ready.')
+        print('*' * 45)
+        print(f'target month {target_month} is over? {first_pw_incomplete_month}.')
+        print('*' * 45)
         for item in currently_availables:
             for type1, available in item.items():    
-                print(f'{type1}: {available}')
+                print(f'\t{type1}: {available}')
                 if available == True:
                     count += 1
+        breakpoint()
 
-        ### we hit a problem with the database and dropping shit
-        
+       
+
         # print(count)
         # if count == 3:
         #     self.iter.incremental_load()
+
+        if self.testing:
+            print('hi')
 
         
 
@@ -230,10 +239,9 @@ class WhereAreWe(ProcessingLayer):
         #TODO need less fragile way to scrape
         #TODO needs support for scraping nbofi, opcash, and rent roll
 
-
         scrape = PWScrape()
         if doc_type not in kwargs['what_do_we_have_for_next_month']:
-            if kwargs['is_first_pw_incomplete_month_over']:
+            if kwargs['is_first_pw_incomplete_month_over']: # look for opcash over scrape
                 if kwargs['allow_print']:
                     print(f'{kwargs["first_incomplete_month"]} is over; attempt to download {doc_type} report this period.')
                     print('trying realpage first...')
@@ -246,25 +254,33 @@ class WhereAreWe(ProcessingLayer):
                     if kwargs['allow_print']:
                         print(f'scraping not implemented for {doc_type} currently.')
                     result = 'playwright scraping error'
+                    is_available = {doc_type: 'you went down wrong branch.'}
 
                 if result == 'playwright scraping error':
                     print('try to manually download {} for {} to {}'.format(doc_type, kwargs['first_incomplete_month'],self.path))
-                    self.user_input_outer_loop()           
-                    return self.iter.is_new_file_available(genus=doc_type, filename=filename)
+                    self.user_input_outer_loop()     
+                    is_available = self.iter.is_new_file_available(genus=doc_type, filename=filename)
+            else:
+                # TODO: LOOK FOR SCRAPE FIRST IN THIS BRANCH; OPCASH NOT READY
+                pass
+        else:
+            is_available = {doc_type: True}
+            
+        return is_available
 
     def what_do_we_have(self, first_incomplete_month=None, **kwargs):
         what_do_we_have_for_next_month = [row.doc_type for row in self.ur_query.ur_query(model_str='Findexer', query_tup= [('period', first_incomplete_month)], operators_list=['=='] ).namedtuples()]           
 
         is_first_pw_incomplete_month_over = Utils.is_target_month_over(target_month=first_incomplete_month)        
 
-        currently_availables = []
+        currently_availables = [{}]
         for doc_type in self.support_doc_types_list:
             is_target_file_available = self.check_for_presence(doc_type=doc_type, 
                                 what_do_we_have_for_next_month=what_do_we_have_for_next_month, first_incomplete_month=first_incomplete_month,
                                 is_first_pw_incomplete_month_over=is_first_pw_incomplete_month_over, allow_print=kwargs['allow_print'])
             currently_availables.append(is_target_file_available)
-
-        return first_incomplete_month, currently_availables
+    
+        return first_incomplete_month, currently_availables, is_first_pw_incomplete_month_over
 
     def show_status_table(self, **kw):
 
