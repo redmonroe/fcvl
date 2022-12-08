@@ -131,16 +131,26 @@ class WhereAreWe(ProcessingLayer):
         print(f'target month {target_month} is over? {first_pw_incomplete_month}.')
         print('*' * 45)
         for item in currently_availables:
-            for type1, available in item.items():    
-                print(f'\t{type1}: {available}')
-                if available == True:
+            for genus, available in item.items():    
+                print(f'\t{genus}: {available[0]} |  path: {available[1]}')
+                if available[0] == True:
                     count += 1
-        breakpoint()
+        print('*' * 45)
+        print(f'ready to dry run? {target_month}.')
+        print('*' * 45)
+
+        # get paths in currently_availables, process them in findexer through iter_rs
+            # opcash first; we already know the filenames
+
+        if count == 3:
+            print(self.path)
+            self.iter.dry_run(currently_availables=currently_availables)
+
+            breakpoint()
 
        
 
         # print(count)
-        # if count == 3:
         #     self.iter.incremental_load()
 
         if self.testing:
@@ -238,6 +248,8 @@ class WhereAreWe(ProcessingLayer):
         #TODO how to handle previous versus current, #truncate save file date
         #TODO need less fragile way to scrape
         #TODO needs support for scraping nbofi, opcash, and rent roll
+        filename = self.make_file_name(genus=doc_type, period=kwargs["first_incomplete_month"])
+        possible_file_locations = [self.path / fn for fn in filename]
 
         scrape = PWScrape()
         if doc_type not in kwargs['what_do_we_have_for_next_month']:
@@ -246,7 +258,7 @@ class WhereAreWe(ProcessingLayer):
                     print(f'{kwargs["first_incomplete_month"]} is over; attempt to download {doc_type} report this period.')
                     print('trying realpage first...')
                     print(f'currently attempting to scrape {doc_type} for {self.times} attempts...')
-                filename = self.make_file_name(genus=doc_type, period=kwargs["first_incomplete_month"])
+
                 if doc_type is 'deposits':
                     save_path = self.download_path / filename[0]
                     result = scrape.pw_context(path=save_path, times=self.times)
@@ -264,8 +276,7 @@ class WhereAreWe(ProcessingLayer):
                 # TODO: LOOK FOR SCRAPE FIRST IN THIS BRANCH; OPCASH NOT READY
                 pass
         else:
-            is_available = {doc_type: True}
-            
+            is_available = {doc_type: (True, possible_file_locations)}
         return is_available
 
     def what_do_we_have(self, first_incomplete_month=None, **kwargs):

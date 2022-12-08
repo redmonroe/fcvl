@@ -56,7 +56,6 @@ class BuildRS(MonthSheet):
         start1 = time.time()
         self.findex.build_index_runner() # 3 sec in november
         print(f'Time1: {time.time() - start1}')
-        breakpoint()
         self.load_initial_tenants_and_balances()
         processed_rentr_dates_and_paths = self.iterate_over_remaining_months() # 4 seconds in november
         Damages.load_damages()

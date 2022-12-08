@@ -63,13 +63,12 @@ class IterRS(BuildRS):
         RIGHT NOW THE OPCASH IS NOT ADDED TO OPCASH TABLE""" 
 
     def is_new_file_available(self, genus=None, filename=None):
-        dir_cont = [item.name for item in self.path.iterdir() if item.name not in self.findex.excluded_file_names]
-        
-        for fn in filename:
-            if fn in dir_cont:
-                return {genus: True}
-            else:
-                return {genus: False}
+        dir_cont = [(item, item.name) for item in self.path.iterdir() if item.name not in self.findex.excluded_file_names]
+        record = [{genus: (True, entry[0])} for entry in dir_cont if entry[1] in filename][0]
+        return record
+   
+    def dry_run(self, *args, **kwargs):
+        self.findex.incremental_filer_sub_1_for_dry_run(currently_availables=kwargs['currently_availables'])
 
     def incremental_load(self, **kw):
         print('...attempting incremental load')

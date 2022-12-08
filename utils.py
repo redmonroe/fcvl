@@ -209,6 +209,16 @@ class Utils:
         f_date = datetime.strptime(date_str, '%m/%d/%Y')
         f_date = f_date.strftime('%Y-%m-%d')
         return f_date
+    
+    @staticmethod
+    def unpacking_list_of_dicts(list_of_dicts, index=None):
+        try:
+            target = list(list_of_dicts[0].values())[0][0]
+            return target
+        except AttributeError as e:
+            print(e)
+            print('the funny business is from the unpacking of a nasty list of dicts func in Utils.')
+            breakpoint()
         
     def get_book_name(service, sh_id):
         response = service.spreadsheets().get(
