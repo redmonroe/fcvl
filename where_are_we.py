@@ -292,6 +292,7 @@ class WhereAreWe(ProcessingLayer):
                 pass
         else:
             is_available = {doc_type: (True, possible_file_locations)}
+        breakpoint()
         return is_available
 
     def what_do_we_have(self, first_incomplete_month=None, **kwargs):
