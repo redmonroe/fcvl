@@ -48,6 +48,10 @@ class AnnFin:
         self.laundry_code = '5910'
         self.db = db
         self.trial_balance_2021_ye = 'trial_balance_ye_2021.xls'
+        self.trial_balance_2022_ye = 'Fall+Creek+Village+I_Trial+Balance.xls'
+        self.output_path = Config.TEST_ANNFIN_OUTPUT / 'merged_trial_balance.xlsx'
+        self.last_year = '2021'
+        self.this_year = '2022'
 
     def connect_to_db(self, mode=None):
         if self.db.is_closed():
@@ -56,24 +60,33 @@ class AnnFin:
             self.db.drop_tables(models=self.tables)
         self.db.create_tables(models=self.tables)
 
-    def trial_balance_portal(self):
-        path = Config.TEST_ANNFIN_PATH / self.trial_balance_2021_ye
+    def prep_trial_balance_dataframe(self, path=None, year=None):
         df = pd.read_excel(path, header=4)
         df = df.fillna(0)
-        accounts = df['Unnamed: 0'].tolist()
-        debits = df['Debit'].tolist()
-        credits = df['Credit'].tolist()
+        # set index to 'Unnamed: 0'
+        df.set_index('Unnamed: 0', inplace=True)
 
-        amounts = [debit if debit != 0.0 else credit for debit, credit in zip(debits, credits)]
+        df[year] = df['Debit'] + df['Credit']
+        df.drop('Debit', inplace=True, axis=1)
+        df.drop('Credit', inplace=True, axis=1)
 
-        tb_21 = [{account: amount} for account, amount in zip(accounts, amounts)]
-            
-        breakpoint()
+        return df
 
-        # Fall+Creek+Village+I_Trial+Balance.xlsx
-
-        # df = pd.DataFrame()
     
+
+    def trial_balance_portal(self):
+        path = Config.TEST_ANNFIN_PATH / self.trial_balance_2021_ye
+        base = self.prep_trial_balance_dataframe(path, year=self.last_year)
+        path2 = Config.TEST_ANNFIN_PATH / self.trial_balance_2022_ye
+        new = self.prep_trial_balance_dataframe(path2, year=self.this_year)
+
+        final = pd.merge(base, new, on='Unnamed: 0', how='outer')
+        final['variance'] = round(final[self.this_year] / final[self.last_year] * 100)
+        
+        writer = pd.ExcelWriter(self.output_path, engine='xlsxwriter')
+
+        final.to_excel(writer, sheet_name='merged_tb') 
+        writer.save()
     
     def receivables_actual(self):    
         '''notes on canonical amounts:'''
