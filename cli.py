@@ -54,8 +54,6 @@ def status_findexer_test():
     # player = ProcessingLayer()
     player.show_status_table(path=path, db=db)
 
- 
-
 @click.command()
 def reset_db_test():
     click.echo('TEST: dropping test db . . .')
@@ -170,7 +168,6 @@ def recvactuals():
     annfin = AnnFin(db=Config.TEST_DB)
     annfin.start_here()
     
-
 @click.command()
 def delete_one_sheet():
     click.echo('deleting one sheet')
@@ -191,6 +188,11 @@ def db_to_excel():
     figure = Figuration()
     path, full_sheet, build, service, ms = figure.return_configuration()
     ms.auto_control(mode='to_excel')
+    
+"""ANNUAL FINANCIALS"""
+@click.command()
+def annfin():
+    pass
 
 """TESTING COMMANDS"""
 @click.command()
