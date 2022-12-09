@@ -72,9 +72,10 @@ class MonthSheet(YearSheet):
             print(f'MAKE SINGLE RENT SHEET FOR {month_list} | DO NOT RESET SHEET.')
             titles_dict = self.make_single_sheet(single_month_list=month_list)
             self.formatting_runner(title_dict=titles_dict) 
+            status_list = []
         elif mode == 'to_excel':
             status_list = self.to_excel(month_list=month_list)
-
+            #TODO: writing status back to StatusObject is not supported in any of these flows
         self.report_status(month_list=month_list, status=status_list, wrange=wrange)
    
     def to_excel(self, month_list=None):
