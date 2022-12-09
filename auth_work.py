@@ -4,7 +4,6 @@ import pickle
 from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
-from oauth2client.service_account import ServiceAccountCredentials
 from config import Config
 
 def oauth(SCOPES, type, mode=None):
