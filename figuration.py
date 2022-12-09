@@ -44,6 +44,9 @@ class Figuration:
             self.build = self.method(path=self.path, full_sheet=self.full_sheet)
             self.service = oauth(Config.my_scopes, 'sheet')
             self.ms = MonthSheet(full_sheet=self.full_sheet, path=self.path)
+    
+    def annfin_test_configuration(self):
+        return Config.TEST_ANNFIN_PATH, Config.TEST_ANNFIN_OUTPUT, Config.TEST_DB
 
     def return_configuration(self):
         return self.path, self.full_sheet, self.build, self.service, self.ms

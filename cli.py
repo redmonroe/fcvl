@@ -188,11 +188,15 @@ def db_to_excel():
     figure = Figuration()
     path, full_sheet, build, service, ms = figure.return_configuration()
     ms.auto_control(mode='to_excel')
-    
+
 """ANNUAL FINANCIALS"""
 @click.command()
 def annfin():
-    pass
+    click.echo('annual financials')
+    figure = Figuration()
+    path, output_path, db = figure.annfin_test_configuration()
+    annfin = AnnFin(db=db)
+    annfin.trial_balance_portal()
 
 """TESTING COMMANDS"""
 @click.command()
@@ -273,6 +277,8 @@ cli.add_command(manentry)
 cli.add_command(delete_one_sheet)
 cli.add_command(make_one_sheet)
 cli.add_command(db_to_excel)
+"""ANNUAL FINANCIALS"""
+cli.add_command(annfin)
 """TESTING COMMANDS"""
 cli.add_command(test_full)
 cli.add_command(test_canonical)

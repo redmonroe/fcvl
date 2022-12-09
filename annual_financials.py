@@ -1,20 +1,15 @@
-    # this needs to be moved to own file, but do it with some forethought for chrissakes!
-
-    # do I want to do something with "TOTal" part of p and l?  I have it busted out into its own dict
-    # do I want to do something with "mtd" part of p and L?  I have it also busted out into its own dict
-
 import math
 from datetime import datetime as dt
 
 import numpy as np
 import pandas as pd
+import requests
 
 from auth_work import oauth
 from backend import Findexer, PopulateTable, StatusObject, IncomeMonth
 from config import Config
 from file_indexer import FileIndexer
 from utils import Utils
-
 
 class AnnFin:   
 
@@ -52,6 +47,7 @@ class AnnFin:
         self.hap_code = '5121'
         self.laundry_code = '5910'
         self.db = db
+        self.trial_balance_2021_ye = 'trial_balance_ye_2021.xls'
 
     def connect_to_db(self, mode=None):
         if self.db.is_closed():
@@ -60,6 +56,25 @@ class AnnFin:
             self.db.drop_tables(models=self.tables)
         self.db.create_tables(models=self.tables)
 
+    def trial_balance_portal(self):
+        path = Config.TEST_ANNFIN_PATH / self.trial_balance_2021_ye
+        df = pd.read_excel(path, header=4)
+        df = df.fillna(0)
+        accounts = df['Unnamed: 0'].tolist()
+        debits = df['Debit'].tolist()
+        credits = df['Credit'].tolist()
+
+        amounts = [debit if debit != 0.0 else credit for debit, credit in zip(debits, credits)]
+
+        tb_21 = [{account: amount} for account, amount in zip(accounts, amounts)]
+            
+        breakpoint()
+
+        # Fall+Creek+Village+I_Trial+Balance.xlsx
+
+        # df = pd.DataFrame()
+    
+    
     def receivables_actual(self):    
         '''notes on canonical amounts:'''
         '''01/22: 501.71 laundry'''
