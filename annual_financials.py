@@ -49,7 +49,8 @@ class AnnFin:
         self.laundry_code = '5910'
         self.db = db
         self.trial_balance_2021_ye = 'trial_balance_ye_2021.xlsx'
-        self.trial_balance_2022_ye = 'Fall+Creek+Village+I_Trial+Balance.xlsx'
+        self.trial_balance_2022_ye = 'Fall+Creek+Village+I_Trial+Balance.xls'
+        # self.trial_balance_2022_ye = 'Fall+Creek+Village+I_Trial+Balance.xlsx'
         self.output_path = Config.TEST_ANNFIN_OUTPUT / 'merged_trial_balance.xlsx'
         self.last_year = '2021'
         self.this_year = '2022'
@@ -62,10 +63,14 @@ class AnnFin:
         self.db.create_tables(models=self.tables)
 
     def prep_trial_balance_dataframe(self, path=None, year=None):
-        df = pd.read_excel(path, engine='openpyxl', header=4)
+        try:
+            df = pd.read_excel(path, engine='openpyxl', header=4)
+        except OSError as e:
+            df = pd.read_excel(path, engine='xlrd', sheet_name='Trial Balance', header=4)
+
         df = df.fillna(0)
-        # set index to 'Unnamed: 0'
         df.set_index('Unnamed: 0', inplace=True)
+        # breakpoint()
 
         df[year] = df['Debit'] + df['Credit']
         df.drop('Debit', inplace=True, axis=1)
@@ -96,6 +101,12 @@ class AnnFin:
         workbook.close()
 
     
+    def df_formatting_insert_row(self, df=None, target=None, index=None):
+        i = df.index.get_loc(target)
+        new_row = pd.DataFrame(index=[index])
+        index_position = i + 1
+        final = pd.concat([df.iloc[:index_position], new_row, df.iloc[index_position:]])
+        return final
 
     def trial_balance_portal(self):
         path = Config.TEST_ANNFIN_PATH / self.trial_balance_2021_ye
@@ -104,29 +115,22 @@ class AnnFin:
         new = self.prep_trial_balance_dataframe(path2, year=self.this_year)
 
         final = pd.merge(base, new, on='Unnamed: 0', how='outer')
+        final.fillna(0)
 
-        i = final.index.get_loc('3900 Retained Earnings')
-        new_row1 = pd.DataFrame(index=['INCOME'])
-        index_position = i + 1
-        final = pd.concat([final.iloc[:index_position], new_row1, final.iloc[index_position:]])
-
-        i = final.index.get_loc('5940 Other Revenue:Forf Ten Security Deposits')
-        new_row2 = pd.DataFrame(index=['ADMIN & OFFICE'])
-        index_position = i + 1
-        final = pd.concat([final.iloc[:index_position], new_row2, final.iloc[index_position:]])
-
-        i = final.index.get_loc('Operating & Maintainance:Other:Equipment Rental')
-        new_row3 = pd.DataFrame(index=['JOURNAL ENTRIES & OTHER'])
-        index_position = i + 1
-        final = pd.concat([final.iloc[:index_position], new_row3, final.iloc[index_position:]])
-    
+        final = self.df_formatting_insert_row(df=final, target='3900 Retained Earnings', index='INCOME')
+        final = self.df_formatting_insert_row(df=final, target='5940 Other Revenue:Forf Ten Security Deposits', index='ADMIN & OFFICE')
+        final = self.df_formatting_insert_row(df=final, target='Operating & Maintainance:Other:Equipment Rental', index='JOURNAL ENTRIES & OTHER')
 
         final['variance'] =  (round(final[self.this_year] / final[self.last_year] * 100)) - 100
+        # print(final.loc['6700 Taxes & Insurance'])\
 
-        
+
+
+        # what do I want to do? 
+            # conditional formatting
+
+
         writer = Errors.xlsx_permission_error(self.output_path, pandas_object=pd)
-        # writer = pd.ExcelWriter(self.output_path, engine='xlsxwriter')
-        # breakpoint()
 
         final.to_excel(writer, sheet_name='merged_tb') 
 
@@ -143,6 +147,7 @@ class AnnFin:
         worksheet.set_column('C:C', 20, cell_format)
         worksheet.set_column('D:D', 20, cell_format)
 
+        breakpoint()
         writer.close()
 
         # self.add_xlsxwriter_formatting(output_path=self.output_path)
