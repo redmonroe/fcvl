@@ -8,6 +8,7 @@ import requests
 from auth_work import oauth
 from backend import Findexer, PopulateTable, StatusObject, IncomeMonth
 from config import Config
+from errors import Errors
 from file_indexer import FileIndexer
 from utils import Utils
 
@@ -47,8 +48,8 @@ class AnnFin:
         self.hap_code = '5121'
         self.laundry_code = '5910'
         self.db = db
-        self.trial_balance_2021_ye = 'trial_balance_ye_2021.xls'
-        self.trial_balance_2022_ye = 'Fall+Creek+Village+I_Trial+Balance.xls'
+        self.trial_balance_2021_ye = 'trial_balance_ye_2021.xlsx'
+        self.trial_balance_2022_ye = 'Fall+Creek+Village+I_Trial+Balance.xlsx'
         self.output_path = Config.TEST_ANNFIN_OUTPUT / 'merged_trial_balance.xlsx'
         self.last_year = '2021'
         self.this_year = '2022'
@@ -61,7 +62,7 @@ class AnnFin:
         self.db.create_tables(models=self.tables)
 
     def prep_trial_balance_dataframe(self, path=None, year=None):
-        df = pd.read_excel(path, header=4)
+        df = pd.read_excel(path, engine='openpyxl', header=4)
         df = df.fillna(0)
         # set index to 'Unnamed: 0'
         df.set_index('Unnamed: 0', inplace=True)
@@ -69,8 +70,30 @@ class AnnFin:
         df[year] = df['Debit'] + df['Credit']
         df.drop('Debit', inplace=True, axis=1)
         df.drop('Credit', inplace=True, axis=1)
-
         return df
+
+    def add_xlsxwriter_formatting(self, output_path=None):
+        import xlsxwriter
+
+        workbook = xlsxwriter.Workbook(output_path)
+        worksheet = workbook.add_worksheet()
+
+        # set column width
+        # set conditional formatting
+        # set out divisions
+        # set number formatting
+
+        currency_format = workbook.add_format({'num_format': '[$$-409]#,##0.00'})
+
+
+
+        worksheet.set_column('A:A', 35)
+        worksheet.set_column('B:B', 20)
+        worksheet.set_column('C:C', 20)
+        worksheet.set_column('D:D', 20)
+        # worksheet.write('A1', 1234.56, currency_format)
+
+        workbook.close()
 
     
 
@@ -81,12 +104,48 @@ class AnnFin:
         new = self.prep_trial_balance_dataframe(path2, year=self.this_year)
 
         final = pd.merge(base, new, on='Unnamed: 0', how='outer')
-        final['variance'] = round(final[self.this_year] / final[self.last_year] * 100)
+
+        i = final.index.get_loc('3900 Retained Earnings')
+        new_row1 = pd.DataFrame(index=['INCOME'])
+        index_position = i + 1
+        final = pd.concat([final.iloc[:index_position], new_row1, final.iloc[index_position:]])
+
+        i = final.index.get_loc('5940 Other Revenue:Forf Ten Security Deposits')
+        new_row2 = pd.DataFrame(index=['ADMIN & OFFICE'])
+        index_position = i + 1
+        final = pd.concat([final.iloc[:index_position], new_row2, final.iloc[index_position:]])
+
+        i = final.index.get_loc('Operating & Maintainance:Other:Equipment Rental')
+        new_row3 = pd.DataFrame(index=['JOURNAL ENTRIES & OTHER'])
+        index_position = i + 1
+        final = pd.concat([final.iloc[:index_position], new_row3, final.iloc[index_position:]])
+    
+
+        final['variance'] =  (round(final[self.this_year] / final[self.last_year] * 100)) - 100
+
         
-        writer = pd.ExcelWriter(self.output_path, engine='xlsxwriter')
+        writer = Errors.xlsx_permission_error(self.output_path, pandas_object=pd)
+        # writer = pd.ExcelWriter(self.output_path, engine='xlsxwriter')
+        # breakpoint()
 
         final.to_excel(writer, sheet_name='merged_tb') 
-        writer.save()
+
+        workbook = writer.book
+        # Get Sheet1
+        worksheet = writer.sheets['merged_tb']
+
+        cell_format = workbook.add_format()
+        cell_format.set_bold()
+        # cell_format.set_font_color('blue')
+
+        worksheet.set_column('A:A', 35, cell_format)
+        worksheet.set_column('B:B', 20, cell_format)
+        worksheet.set_column('C:C', 20, cell_format)
+        worksheet.set_column('D:D', 20, cell_format)
+
+        writer.close()
+
+        # self.add_xlsxwriter_formatting(output_path=self.output_path)
     
     def receivables_actual(self):    
         '''notes on canonical amounts:'''
