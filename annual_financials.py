@@ -49,8 +49,8 @@ class AnnFin:
         self.laundry_code = '5910'
         self.db = db
         self.trial_balance_2021_ye = 'trial_balance_ye_2021.xlsx'
-        self.trial_balance_2022_ye = 'Fall+Creek+Village+I_Trial+Balance.xls'
-        # self.trial_balance_2022_ye = 'Fall+Creek+Village+I_Trial+Balance.xlsx'
+        # self.trial_balance_2022_ye = 'Fall+Creek+Village+I_Trial+Balance.xls'
+        self.trial_balance_2022_ye = 'Fall+Creek+Village+I_Trial+Balance.xlsx'
         self.output_path = Config.TEST_ANNFIN_OUTPUT / 'merged_trial_balance.xlsx'
         self.last_year = '2021'
         self.this_year = '2022'
@@ -109,6 +109,38 @@ class AnnFin:
         return final
 
     def trial_balance_portal(self):
+        import io
+        from xlwt import Workbook
+        filename = Config.TEST_ANNFIN_PATH / self.trial_balance_2022_ye   
+        with open(filename, 'rb') as f:
+            lines = [x.decode('utf8').strip() for x in f.readlines()]    
+            print(lines) 
+
+
+        breakpoint()
+        file1 = io.open(filename, "r")
+
+        for line in file1:
+            print(line)
+        # data = file1.readlines()
+
+        # Creating a workbook object
+        xldoc = Workbook()
+        # Adding a sheet to the workbook object
+        sheet = xldoc.add_sheet("Sheet1", cell_overwrite_ok=True)
+        # Iterating and saving the data to sheet
+        for i, row in enumerate(data):
+            print(row)
+            # Two things are done here
+            # Removeing the '\n' which comes while reading the file using io.open
+            # Getting the values after splitting using '\t'
+            for j, val in enumerate(row.replace('\n', '').split('\t')):
+                sheet.write(i, j, val)
+            
+        # Saving the file as an excel file
+        output_path = Config.TEST_ANNFIN_OUTPUT / 'myexcel.xlsx'
+        xldoc.save(output_path)
+        breakpoint()
         path = Config.TEST_ANNFIN_PATH / self.trial_balance_2021_ye
         base = self.prep_trial_balance_dataframe(path, year=self.last_year)
         path2 = Config.TEST_ANNFIN_PATH / self.trial_balance_2022_ye
@@ -136,6 +168,7 @@ class AnnFin:
 
         workbook = writer.book
         # Get Sheet1
+        writer.close()
         worksheet = writer.sheets['merged_tb']
 
         cell_format = workbook.add_format()
@@ -147,8 +180,7 @@ class AnnFin:
         worksheet.set_column('C:C', 20, cell_format)
         worksheet.set_column('D:D', 20, cell_format)
 
-        breakpoint()
-        writer.close()
+        # breakpoint()
 
         # self.add_xlsxwriter_formatting(output_path=self.output_path)
     
