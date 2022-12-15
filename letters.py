@@ -7,6 +7,7 @@ from docx import Document
 from docx.oxml.ns import qn
 from docx.oxml.shared import OxmlElement
 from docx.shared import Inches
+from peewee import *
 
 from auth_work import oauth
 from config import Config
@@ -16,8 +17,14 @@ from utils import Utils
 
 class Letters():
 
-    def __init__(self, db=None):
+    def __init__(self, db=None, mode=None, work_order_range=None, gsheet_id=None):
         self.main_db = db
+        self.spreadsheet_id = gsheet_id 
+        if mode == 'testing':
+            self.service = test_service
+        else:
+            self.service = oauth(Config.my_scopes, 'sheet')
+        self.work_order_range = work_order_range
 
     def setup_tables(self, mode=None):
         from backend import PopulateTable
@@ -158,6 +165,65 @@ class Letters():
         Letters.run_script(service=service_scripts, deploy_id=deploy_id, function_name='myFunction', 
         # parameters=parameters
         ) 
+
+    def get_all_archived_work_orders(self):
+        print('get_all_archived_work_orders')
+        gc = GoogleApiCalls()
+        from backend import WorkOrder, db
+        from peewee import IntegrityError as PIE
+        
+        self.main_db.drop_tables(models=[WorkOrder])
+        self.setup_tables(mode='create_only')
+        
+        values = gc.broad_get(service=self.service, spreadsheet_id=self.spreadsheet_id, range=self.work_order_range)
+        df = pd.DataFrame(values)
+        df.columns = df.iloc[0]
+        df = df[1:] # remove first row and set first row as column names
+        work_orders_insert_many = []
+        
+        work_dict = df.to_dict(orient='records')
+        
+        work_orders_insert_many = [{
+            'name': work_order['name'],
+            'init_date': work_order['date'],
+            'location': work_order['location'],
+            'work_req': work_order['work requested'],
+            'notes': work_order['notes'],
+            'status': work_order['status'],
+            'date_completed': work_order['date completed? '],
+            'assigned_to': work_order['assigned to'],
+            
+        } for work_order in work_dict]
+        
+        for item in work_orders_insert_many:
+            try:
+                with db.atomic():
+                    nt = WorkOrder.create(name=item['name'], 
+                                          init_date=item['init_date'],
+                                          location=item['location'],
+                                          work_req=item['work_req'],
+                                          notes=item['notes'],
+                                          status=item['status'],
+                                          date_completed=item['date_completed'],
+                                          assigned_to=item['assigned_to'], 
+                                        )
+            except PIE as e:
+                print(e, item)
+                nt = WorkOrder.create(name=item['name'], 
+                                        init_date=item['init_date'],
+                                        location=item['location'],
+                                        work_req=item['work_req'],
+                                        notes=item['notes'],
+                                        status=item['status'],
+                                        date_completed=item['date_completed'],
+                                        assigned_to='ron/bob/from_script', 
+                )
+                            
+        
+        # query = WorkOrder.insert_many(work_orders_insert_many)
+        # query.execute()
+        breakpoint()       
+        
 
     def bal_let_pprint_parameters(self, parameters):
         print('current date', parameters['current_date'], parameters['display_year'])

@@ -151,10 +151,12 @@ def receipts_sixm():
     player.rent_receipts_wrapper_version2()
 
 @click.command()
-def workorders():
-    click.echo('work orders')
-    work_orders = RentReceipts()
-    work_orders.work_orders()
+def workorders_to_db():
+    click.echo('work orders to db')
+    figure = Figuration()
+    path, full_sheet, build, service, ms = figure.return_configuration()
+    work_orders = Letters(db=build.main_db, gsheet_id=Config.WORK_ORDER_SHEET, work_order_range='archived_wo_2022!A1:H350')
+    work_orders.get_all_archived_work_orders()
 
 @click.command()
 def escrow():
@@ -271,7 +273,7 @@ cli.add_command(sqlite_dump)
 cli.add_command(docx_letters)
 cli.add_command(addresses)
 cli.add_command(balanceletters)
-cli.add_command(workorders)
+cli.add_command(workorders_to_db)
 cli.add_command(recvactuals)
 cli.add_command(manentry)
 cli.add_command(delete_one_sheet)

@@ -196,10 +196,20 @@ class Mentry(BaseModel):
     txn_date = DateField()
     original_item = CharField(default='0')
 
+class WorkOrder(BaseModel):
+    name = ForeignKeyField(Tenant, backref='work_orders', null=True)
+    init_date = DateField(null=True)
+    location = CharField(null=True)
+    work_req = CharField(null=True)
+    notes = CharField(null=True)
+    status = CharField(null=True)
+    date_completed = DateField(null=True)
+    assigned_to = CharField(default='ron/bob')
+
 class QueryHC(Reconciler):
 
     def return_tables_list(self):
-        return [Mentry, IncomeMonth, LP_EndBal, ContractRent, Subsidy, BalanceLetter, StatusRS, StatusObject, OpCash, OpCashDetail, Damages, Tenant, Unit, Payment, NTPayment, TenantRent, Findexer, ScrapeDetail, MoveIn]
+        return [Mentry, IncomeMonth, LP_EndBal, ContractRent, Subsidy, BalanceLetter, StatusRS, StatusObject, OpCash, OpCashDetail, Damages, Tenant, Unit, Payment, NTPayment, TenantRent, Findexer, ScrapeDetail, MoveIn, WorkOrder]
 
     def make_first_and_last_dates(self, date_str=None):
         dt_obj = datetime.strptime(date_str, '%Y-%m')
