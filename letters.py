@@ -66,6 +66,16 @@ class Letters():
                 elif unit[0].split('-')[0] == 'PT':
                     addresses.append(self.fix_name(unit, address_bp=Config.ADDRESS_PT))
         return addresses
+    
+    def get_workorders(self):
+        from backend import WorkOrder, QueryHC
+        query = QueryHC()
+        first_dt = datetime(2022, 1, 1)
+        last_dt = datetime(2022, 12, 31)
+        workorders = [row for row in WorkOrder.select().namedtuples()]
+        # self.setup_tables(mode='create_only')
+        breakpoint()
+        
         
     def get_doc_title(self, doc, service_docs): #doc is DOCS_FILE_ID
         document = service_docs.documents().get(documentId=doc).execute()
@@ -173,15 +183,19 @@ class Letters():
         from peewee import IntegrityError as PIE
         
         self.main_db.drop_tables(models=[WorkOrder])
+        print('WE ARE DROPPING WORK ORDER TABLE IN THIS FUNC RIGHT NOW!')
         self.setup_tables(mode='create_only')
         
         values = gc.broad_get(service=self.service, spreadsheet_id=self.spreadsheet_id, range=self.work_order_range)
         df = pd.DataFrame(values)
         df.columns = df.iloc[0]
         df = df[1:] # remove first row and set first row as column names
+
+        df['date'] = pd.to_datetime(df['date'])
         work_orders_insert_many = []
         
         work_dict = df.to_dict(orient='records')
+        # dates = [wo['date'] for wo in work_dict]
         
         work_orders_insert_many = [{
             'name': work_order['name'],
@@ -195,6 +209,14 @@ class Letters():
             
         } for work_order in work_dict]
         
+        # breakpoint()
+        try: 
+            # try bulk insert
+            query = WorkOrder.insert_many(work_orders_insert_many)
+            query.execute()
+        except PIE as e:
+            print(e, 'BULK INSERT FAILED, attempting atomic inserts')
+            
         for item in work_orders_insert_many:
             try:
                 with db.atomic():
@@ -217,12 +239,7 @@ class Letters():
                                         status=item['status'],
                                         date_completed=item['date_completed'],
                                         assigned_to='ron/bob/from_script', 
-                )
-                            
-        
-        # query = WorkOrder.insert_many(work_orders_insert_many)
-        # query.execute()
-        breakpoint()       
+                ) 
         
 
     def bal_let_pprint_parameters(self, parameters):
@@ -463,6 +480,10 @@ class DocxWriter(Letters):
 
             document.add_page_break()
         return document
+    
+    def export_workorders_to_docx(self, mode=None):
+        print('exporting workorders to docx')
+        self.get_workorders()
 
     def docx_rent_receipts_from_rent_sheet(self, mode=None):
         print('docx rent rent receipts directly from rent sheets')

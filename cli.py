@@ -159,6 +159,15 @@ def workorders_to_db():
     work_orders.get_all_archived_work_orders()
 
 @click.command()
+def export_workorders_docx():
+    click.echo('export work orders to docx')
+    figure = Figuration()
+    path, full_sheet, build, service, ms = figure.return_configuration()
+    docx = DocxWriter(db=build.main_db, service=service)
+    docx.export_workorders_to_docx()
+    breakpoint()
+
+@click.command()
 def escrow():
     """ For now we output each dataframe into fcvl/escrow"""
     click.echo('take apart escrow report')
@@ -274,6 +283,7 @@ cli.add_command(docx_letters)
 cli.add_command(addresses)
 cli.add_command(balanceletters)
 cli.add_command(workorders_to_db)
+cli.add_command(export_workorders_docx)
 cli.add_command(recvactuals)
 cli.add_command(manentry)
 cli.add_command(delete_one_sheet)
