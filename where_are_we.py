@@ -1,9 +1,12 @@
+import sys
+
 from backend import PopulateTable, ProcessingLayer, StatusObject, UrQuery
 from config import Config
 from errors import Errors
+from iter_rs import IterRS
 from scrape import PWScrape
 from utils import Utils
-from iter_rs import IterRS
+
 
 class WhereAreWe(ProcessingLayer):
 
@@ -15,7 +18,7 @@ class WhereAreWe(ProcessingLayer):
         self.db = self.build.main_db
         self.populate = PopulateTable()
         self.player = ProcessingLayer()
-        self.testing = False
+        self.testing = True
         self.times = 0
         self.iter = IterRS(full_sheet=self.full_sheet, path=self.path, mode='testing', test_service=None, pytest=None)
         self.most_recent_good_month, self.good_months = self.player.get_mr_good_month()
@@ -130,7 +133,6 @@ class WhereAreWe(ProcessingLayer):
         print('*' * 45)
         print(f'target month {target_month} is over? {first_pw_incomplete_month}.')
         print('*' * 45)
-        breakpoint()
         for item in currently_availables:
             for genus, available in item.items():    
                 print(f'\t{genus}: {available[0]} |  path: {available[1]}')
@@ -145,9 +147,9 @@ class WhereAreWe(ProcessingLayer):
             dry_run_iter = self.iter.dry_run(currently_availables=currently_availables, target_month=target_month)
         else:
             print('you dont have enough files to do a dry run')
-            exit
+            breakpoint()
+            sys.exit(0)
 
-        breakpoint()
         print('*' * 45)
         print(f'dry run for {target_month}.')
         print('*' * 45)
@@ -237,23 +239,19 @@ class WhereAreWe(ProcessingLayer):
 
     def user_input_outer_loop(self):
         ready = True
+        if self.testing == True:
+            user_input = 1
+        else:
+            user_input = self.user_input_loop()
+        
         while ready:
-            if self.testing == True:
-                user_input = 1
-            else:
-                user_input = self.user_input_loop()
             if user_input == 1:
                 ready = False
-                breakpoint()
             elif user_input == 2:
                 break
-                exit
+                sys.exit(0)
 
     def make_file_name(self, genus=None, period=None):
-        #TODO SUPPORT ALL TYPES
-        # 'op_cash_2022_08.pdf
-        # rent_roll_05_2022.xls'
-        # 'CHECKING_1891_Transactions_2022-06-01_2022-06-29.csv'
         period = period.split('-')
         if genus == 'deposits':
             return [f'{genus}_{period[1]}_{period[0]}.xls', f'{genus}_{period[1]}_{period[0]}.xlsx']
@@ -262,8 +260,8 @@ class WhereAreWe(ProcessingLayer):
         if genus == 'rent':
             return [f'rent_roll_{period[1]}_{period[0]}.xls', f'rent_roll_{period[1]}_{period[0]}.xlsx']
         if genus == 'scrape':
-            return ['scrape.csv']
-            # TODO: HOW CAN i MATCH THIS UP APPROPRIATELY IF IT IS IN THERE????
+            scrape_name = [f'CHECKING_1891_Transactions_{period[0]}-{period[1]}', '.csv']
+            return scrape_name
 
     def scrape_type_runner(self, target=None, doc_type=None, filename=None, scrape_func=None, **kwargs):
         if doc_type == target:
@@ -279,7 +277,6 @@ class WhereAreWe(ProcessingLayer):
             print('try to manually download {} for {} to {}'.format(doc_type, kwargs['first_incomplete_month'], self.path))
             self.user_input_outer_loop()     
             is_available = self.iter.is_new_file_available(genus=doc_type, filename=filename)
-            # breakpoint()
         
         try:
             return is_available
@@ -296,13 +293,13 @@ class WhereAreWe(ProcessingLayer):
     def check_for_presence(self, doc_type=None, **kwargs):
         #TODO how to handle previous versus current, #truncate save file date
         #TODO need less fragile way to scrape
-        #TODO needs support for scraping nbofi, opcash, and rent roll
         scrape = PWScrape()
         
         filename = self.make_file_name(genus=doc_type, period=kwargs["first_incomplete_month"])
         possible_file_locations = [self.path / fn for fn in filename]
     
         if doc_type in kwargs['what_do_we_have_for_next_month']:
+            # check findex table, if that fails try scrape, then try manual
             is_available = {doc_type: (True, possible_file_locations)}
         else:
             if doc_type == 'deposits':
@@ -312,15 +309,23 @@ class WhereAreWe(ProcessingLayer):
             if doc_type == 'rent':
                 is_available = self.scrape_type_runner(target='rent', doc_type=doc_type, filename=filename, scrape_func=scrape.playwright_rentroll_scrape, allow_print=kwargs['allow_print'], first_incomplete_month=kwargs["first_incomplete_month"])
                 self.just_longer_message(doc_type, first_incomplete_month=kwargs["first_incomplete_month"], allow_print=kwargs['allow_print'], is_first_pw_incomplete_month_over=kwargs['is_first_pw_incomplete_month_over'])
+                
             
-            if doc_type == 'opcash':
-                is_available = self.scrape_type_runner(target='opcash', doc_type=doc_type, filename=filename, scrape_func=scrape.playwright_nbofi_opcash, allow_print=kwargs['allow_print'], first_incomplete_month=kwargs["first_incomplete_month"])
-                self.just_longer_message(doc_type, first_incomplete_month=kwargs["first_incomplete_month"], allow_print=kwargs['allow_print'], is_first_pw_incomplete_month_over=kwargs['is_first_pw_incomplete_month_over'])
-            else:
+            if kwargs['is_first_pw_incomplete_month_over']:            
+                if doc_type == 'opcash':
+                    is_available = self.scrape_type_runner(target='opcash', doc_type=doc_type, filename=filename, scrape_func=scrape.playwright_nbofi_opcash, allow_print=kwargs['allow_print'], first_incomplete_month=kwargs["first_incomplete_month"])
+                    self.just_longer_message(doc_type, first_incomplete_month=kwargs["first_incomplete_month"], allow_print=kwargs['allow_print'], is_first_pw_incomplete_month_over=kwargs['is_first_pw_incomplete_month_over'])
+                    
+            if doc_type == 'opcash' and kwargs['is_first_pw_incomplete_month_over'] == False:
+                is_available = {doc_type: (False, 'target month is not over; not opcash')}
+            
+            if doc_type == 'scrape':
                 is_available = self.scrape_type_runner(target='scrape', doc_type=doc_type, filename=filename, scrape_func=scrape.playwright_nbofi_scrape, allow_print=kwargs['allow_print'], first_incomplete_month=kwargs["first_incomplete_month"])
                 self.just_longer_message(doc_type, first_incomplete_month=kwargs["first_incomplete_month"], allow_print=kwargs['allow_print'], is_first_pw_incomplete_month_over=kwargs['is_first_pw_incomplete_month_over'])
-            
-        return is_available
+        try:
+            return is_available
+        except UnboundLocalError as e:
+            breakpoint()
 
     def what_do_we_have(self, first_incomplete_month=None, **kwargs):
         what_do_we_have_for_next_month = [row.doc_type for row in self.ur_query.ur_query(model_str='Findexer', query_tup= [('period', first_incomplete_month)], operators_list=['=='] ).namedtuples()]           

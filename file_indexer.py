@@ -232,13 +232,14 @@ class FileIndexer(Utils, Scrape, Reconciler):
         
         for entry in kwargs['currently_availables']:
             for genus, path in entry.items():
-                # get changes we want to persist
-                if genus == 'opcash':
+                if genus == 'scrape'and path[0] == True:
+                    breakpoint()
+                if genus == 'opcash' and path[0] == True:
                     self.op_cash_list.append(path[1])
                     opcash_dry_run = self.rename_by_content_pdf(bypass_write_to_db=True)
-                if genus == 'deposits':
+                if genus == 'deposits' and path[0] == True:
                     deposits_dry_run = self.survey_deposits_report_for_dry_run(path[1])
-                if genus == 'rent':
+                if genus == 'rent' and path[0] == True:
                     rent_dry_run = self.survey_rent_report_for_dry_run(path[1], target_month=target_month)
 
         return {'opcash': opcash_dry_run, 'deposits': deposits_dry_run, 'rent': rent_dry_run, 'damages': damages}
