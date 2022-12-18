@@ -32,7 +32,7 @@ def cli():
     pass
 
 @click.command()
-@click.option('-m', '--most-recent-good', default=True, help='most recent good month or select ui')
+@click.option('-m', '--most-recent-good', default=True, help='most recent good month versus select ui')
 def where_are_we(most_recent_good):
     click.echo('TEST: where_are_we')
     figure = Figuration()
@@ -164,18 +164,6 @@ def export_workorders_docx():
     docx.export_workorders_to_docx(first_dt=first_dt, last_dt=last_dt)
 
 @click.command()
-def escrow():
-    """ For now we output each dataframe into fcvl/escrow"""
-    click.echo('take apart escrow report')
-    StructDataExtract.escrow_wrapper(output_path=Config.TEST_FCVL_BASE)
-    
-@click.command()
-def recvactuals():
-    click.echo('receivable actuals')
-    annfin = AnnFin(db=Config.TEST_DB)
-    annfin.start_here()
-    
-@click.command()
 def delete_one_sheet():
     click.echo('deleting one sheet')
     figure = Figuration()
@@ -205,6 +193,18 @@ def annfin():
     annfin = AnnFin(db=db)
     annfin.trial_balance_portal()
 
+@click.command()
+def escrow():
+    """ For now we output each dataframe into fcvl/escrow"""
+    click.echo('take apart escrow report')
+    StructDataExtract.escrow_wrapper(output_path=Config.TEST_FCVL_BASE)
+    
+@click.command()
+def recvactuals():
+    click.echo('receivable actuals')
+    annfin = AnnFin(db=Config.TEST_DB)
+    annfin.start_here()
+    
 """TESTING COMMANDS"""
 @click.command()
 @click.option('--write', default='False', help='do you want to write to rs or not?')

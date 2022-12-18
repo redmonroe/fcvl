@@ -64,8 +64,12 @@ class IterRS(BuildRS):
 
     def is_new_file_available(self, genus=None, filename=None):
         dir_cont = [(item, item.name) for item in self.path.iterdir() if item.name not in self.findex.excluded_file_names]
-        record = [{genus: (True, entry[0])} for entry in dir_cont if entry[1] in filename][0]
-        return record
+        
+        try:
+            record = [{genus: (True, entry[0])} for entry in dir_cont if entry[1] in filename][0]
+            return record
+        except IndexError:
+            return {genus: (False, 'file not scraped and not found in path')}
    
     def dry_run(self, *args, **kwargs):
         return self.findex.incremental_filer_sub_1_for_dry_run(currently_availables=kwargs['currently_availables'], target_month=kwargs['target_month'])

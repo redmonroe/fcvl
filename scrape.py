@@ -9,11 +9,36 @@ class PWScrape:
     #     return genus
 
     @Errors.playwright_timeerror
-    def pw_context(self, path=None, times=None):
+    def pw_deposits(self, path=None, times=None):
         with sync_playwright() as playwright:
-            self.run_realpage_test(playwright, path)
+            self.run_deposits_realpage(playwright, path)
+            
+    @Errors.playwright_timeerror
+    def playwright_nbofi_opcash(self, path=None, times=None):
+        with sync_playwright() as playwright:
+            self.run_opcash_test(playwright, path)
+            
+    @Errors.playwright_timeerror
+    def playwright_nbofi_scrape(self, path=None, times=None):
+        with sync_playwright() as playwright:
+            self.run_nbofi_mtd_test(playwright, path)
+            
+    @Errors.playwright_timeerror
+    def playwright_rentroll_scrape(self, path=None, times=None):
+        with sync_playwright() as playwright:
+            self.run_rentroll_realpage(playwright, path)
+            
+    def run_opcash_test(self, playwright, path):
+        print('run opcash test')
+        
+    def run_nbofi_mtd_test(self, playwright, path):
+        print('run nbofi mtd test')
+        
+    def run_rentroll_realpage(self, playwright, path):
+        print('run rentroll from realpage')
     
-    def run_realpage_test(self, playwright, path):
+    def run_deposits_realpage(self, playwright, path):
+        print('run deposits from realpage')
         print(f'any successful downloads will go to {path}')
         browser = playwright.chromium.launch(headless=True)
         context = browser.new_context()
