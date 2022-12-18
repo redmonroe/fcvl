@@ -1216,11 +1216,6 @@ class ProcessingLayer(StatusRS):
 
         if balance_letter_list:
             print(f'balance letter list for {mr_good_month}: {balance_letter_list}')
-
-    def rent_receipts_wrapper(self):
-        print('generating rent receipts')
-        receipts = Letters()
-        receipts.rent_receipts()
         
     def rent_receipts_wrapper_version2(self):
         print('generating rent receipts')

@@ -166,14 +166,6 @@ class Letters():
 
         return parameters
 
-    def work_orders(self):
-        service_scripts = oauth(Config.my_scopes, 'script')
-        service = oauth(Config.my_scopes, 'sheet')
-        deploy_id = 'AKfycbw5Sdkkqq6f34el5uz_wRGSWdORN8BNyzay2HYLyh6JIW1hwcGTn06zYVR5RMuUiFr_JA'
-        Letters.run_script(service=service_scripts, deploy_id=deploy_id, function_name='myFunction', 
-        # parameters=parameters
-        ) 
-
     def get_all_archived_work_orders(self):
         print('get_all_archived_work_orders')
         gc = GoogleApiCalls()
@@ -234,7 +226,7 @@ class Letters():
                                         notes=item['notes'],
                                         status=item['status'],
                                         date_completed=item['date_completed'],
-                                        assigned_to='ron/bob/from_script', 
+                                        assigned_to='ron/bob/fs', 
                 ) 
         
 
@@ -365,19 +357,6 @@ class Letters():
         'rent_sheet': Config.TEST_RS, 
         }
         return parameters
-    
-    def rent_receipts(self):
-        '''if there is an issue, check deployment id'''  
-
-        parameters = self.rent_receipts_configuration()          
-
-        pprint(parameters)
-        choice = str(input('Send these results to google script & make receipts? y/n '))
-        if choice == 'y':
-            Letters.run_script(service=oauth(Config.my_scopes, 'script'), deploy_id=Config.receipts_deploy_id, function_name="test1", parameters=parameters) 
-        else:
-            print('exiting program')
-            exit
 
 class AddressWriter(Letters):
 
@@ -481,7 +460,6 @@ class DocxWriter(Letters):
     
     def format_workorders(self, document=None, parameters=None, records=None):
         for record in records:
-            # breakpoint()
             self.insert_header(document)
             paragraph = document.add_paragraph(' ', style='No Spacing')
             paragraph = document.add_paragraph(f'Work Order Date: {record[0]}', style='No Spacing')
@@ -494,27 +472,30 @@ class DocxWriter(Letters):
             paragraph = document.add_paragraph(f'Work Status: {record[5]}', style='No Spacing')
             paragraph = document.add_paragraph(' ', style='No Spacing')
             paragraph = document.add_paragraph(f'Notes: {record[4]}', style='No Spacing')
+            paragraph = document.add_paragraph(f'Assigned to/Completed by: {record[7]}', style='No Spacing')
             paragraph = document.add_paragraph(' ', style='No Spacing')
             paragraph = document.add_paragraph(' ', style='No Spacing')
             paragraph = document.add_paragraph(' ', style='No Spacing')
             paragraph = document.add_paragraph(' ', style='No Spacing')
             paragraph = document.add_paragraph(' ', style='No Spacing')
             paragraph = document.add_paragraph(' ', style='No Spacing')
+            paragraph = document.add_paragraph(' ', style='No Spacing')
+            paragraph = document.add_paragraph(f'Date Completed: {record[6]}', style='No Spacing')
+            paragraph = document.add_paragraph('Verified by: JW', style='No Spacing')
+            paragraph = document.add_picture(Config.image_path, width=Inches(.75), height=Inches(.5))
+            paragraph = document.add_paragraph('_______________________________', style='No Spacing')
             paragraph = document.add_paragraph('Generated: ' + parameters['current_date'], style='No Spacing')
 
             document.add_page_break()
         return document
 
-    
     def export_workorders_to_docx(self, first_dt=None, last_dt=None):
         print('exporting workorders to docx')
         records = []
         parameters = {'current_date': datetime.now().strftime('%m-%d-%Y')}
         document = Document()
         for workorder in self.get_workorders(first_dt=first_dt, last_dt=last_dt):
-            print(workorder)
-            # breakpoint()
-            records.append([workorder.init_date, workorder.name, workorder.location, workorder.work_req, workorder.notes, workorder.status])
+            records.append([workorder.init_date, workorder.name, workorder.location, workorder.work_req, workorder.notes, workorder.status, workorder.date_completed, workorder.assigned_to])
            
         document = self.format_workorders(document=document, parameters=parameters, records=records)
         save_name = 'workorders_' + parameters['current_date'] + '.docx'

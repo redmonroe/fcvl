@@ -1,5 +1,6 @@
 import os
 import time
+from datetime import datetime
 from pathlib import Path
 
 import click
@@ -139,12 +140,6 @@ def balanceletters():
     letters.balance_letters()
 
 @click.command()
-def receipts():
-    click.echo('receipts via google apps, cloud-based')
-    player = ProcessingLayer()
-    player.rent_receipts_wrapper()
-
-@click.command()
 def receipts_sixm():
     click.echo('receipts with 6 month balance; this is an attempt to make a google app; currently unfinished')
     player = ProcessingLayer()
@@ -161,14 +156,12 @@ def workorders_to_db():
 @click.command()
 def export_workorders_docx():
     click.echo('export work orders to docx')
-    from datetime import datetime
     figure = Figuration()
     path, full_sheet, build, service, ms = figure.return_configuration()
     docx = DocxWriter(db=build.main_db, service=service)
     first_dt = datetime(2022, 1, 1)
     last_dt = datetime(2022, 12, 31)
     docx.export_workorders_to_docx(first_dt=first_dt, last_dt=last_dt)
-    breakpoint()
 
 @click.command()
 def escrow():
@@ -198,7 +191,7 @@ def make_one_sheet():
 
 @click.command()
 def db_to_excel():
-    click.echo('db_to_excel')
+    click.echo('write_db_to_excel')
     figure = Figuration()
     path, full_sheet, build, service, ms = figure.return_configuration()
     ms.auto_control(mode='to_excel')
@@ -271,7 +264,6 @@ def test_various(select):
 
 
 cli.add_command(escrow)
-cli.add_command(receipts)
 cli.add_command(receipts_sixm)
 cli.add_command(status_findexer_test)
 cli.add_command(where_are_we)
@@ -284,7 +276,6 @@ cli.add_command(load_db_prod)
 cli.add_command(sqlite_dump)
 cli.add_command(docx_letters)
 cli.add_command(addresses)
-cli.add_command(balanceletters)
 cli.add_command(workorders_to_db)
 cli.add_command(export_workorders_docx)
 cli.add_command(recvactuals)
