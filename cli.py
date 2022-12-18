@@ -161,10 +161,13 @@ def workorders_to_db():
 @click.command()
 def export_workorders_docx():
     click.echo('export work orders to docx')
+    from datetime import datetime
     figure = Figuration()
     path, full_sheet, build, service, ms = figure.return_configuration()
     docx = DocxWriter(db=build.main_db, service=service)
-    docx.export_workorders_to_docx()
+    first_dt = datetime(2022, 1, 1)
+    last_dt = datetime(2022, 12, 31)
+    docx.export_workorders_to_docx(first_dt=first_dt, last_dt=last_dt)
     breakpoint()
 
 @click.command()

@@ -67,15 +67,13 @@ class Letters():
                     addresses.append(self.fix_name(unit, address_bp=Config.ADDRESS_PT))
         return addresses
     
-    def get_workorders(self):
-        from backend import WorkOrder, QueryHC
-        query = QueryHC()
-        first_dt = datetime(2022, 1, 1)
-        last_dt = datetime(2022, 12, 31)
-        workorders = [row for row in WorkOrder.select().namedtuples()]
-        # self.setup_tables(mode='create_only')
-        breakpoint()
-        
+    def get_workorders(self, first_dt=None, last_dt=None):
+        from backend import WorkOrder
+        workorders = [row for row in WorkOrder.select().
+                      where(WorkOrder.init_date>=first_dt).
+                      where(WorkOrder.init_date<=last_dt).
+                            namedtuples()]
+        return workorders
         
     def get_doc_title(self, doc, service_docs): #doc is DOCS_FILE_ID
         document = service_docs.documents().get(documentId=doc).execute()
@@ -190,12 +188,11 @@ class Letters():
         df = pd.DataFrame(values)
         df.columns = df.iloc[0]
         df = df[1:] # remove first row and set first row as column names
-
+        df = df.rename(columns={df.columns[6]: 'date_completed'})
         df['date'] = pd.to_datetime(df['date'])
+        df['date_completed'] = pd.to_datetime(df['date_completed'])
         work_orders_insert_many = []
-        
         work_dict = df.to_dict(orient='records')
-        # dates = [wo['date'] for wo in work_dict]
         
         work_orders_insert_many = [{
             'name': work_order['name'],
@@ -204,12 +201,11 @@ class Letters():
             'work_req': work_order['work requested'],
             'notes': work_order['notes'],
             'status': work_order['status'],
-            'date_completed': work_order['date completed? '],
+            'date_completed': work_order['date_completed'],
             'assigned_to': work_order['assigned to'],
             
         } for work_order in work_dict]
         
-        # breakpoint()
         try: 
             # try bulk insert
             query = WorkOrder.insert_many(work_orders_insert_many)
@@ -410,6 +406,8 @@ class DocxWriter(Letters):
     default_save_path = Config.TEST_DOCX_BASE
     testing_save_path = Config.PYTEST_DOCX_BASE
     testing_save_name = 'testing.docx'
+    workorders_save_name = 'workorders.docx'
+    workorders_save_path = Config.WORKORDER_OUTPUT
 
     def __init__(self, db=None, service=None):
         self.main_db = db
@@ -481,9 +479,48 @@ class DocxWriter(Letters):
             document.add_page_break()
         return document
     
-    def export_workorders_to_docx(self, mode=None):
+    def format_workorders(self, document=None, parameters=None, records=None):
+        for record in records:
+            # breakpoint()
+            self.insert_header(document)
+            paragraph = document.add_paragraph(' ', style='No Spacing')
+            paragraph = document.add_paragraph(f'Work Order Date: {record[0]}', style='No Spacing')
+            paragraph = document.add_paragraph(' ', style='No Spacing')
+            paragraph = document.add_paragraph(f'Tenant Name: {record[1]}', style='No Spacing')
+            paragraph = document.add_paragraph(f'Location: {record[2]}', style='No Spacing')
+            paragraph = document.add_paragraph(f'Work Requested: {record[3]}', style='No Spacing')
+            paragraph = document.add_paragraph(' ', style='No Spacing')
+            paragraph = document.add_paragraph(' ', style='No Spacing')
+            paragraph = document.add_paragraph(f'Work Status: {record[5]}', style='No Spacing')
+            paragraph = document.add_paragraph(' ', style='No Spacing')
+            paragraph = document.add_paragraph(f'Notes: {record[4]}', style='No Spacing')
+            paragraph = document.add_paragraph(' ', style='No Spacing')
+            paragraph = document.add_paragraph(' ', style='No Spacing')
+            paragraph = document.add_paragraph(' ', style='No Spacing')
+            paragraph = document.add_paragraph(' ', style='No Spacing')
+            paragraph = document.add_paragraph(' ', style='No Spacing')
+            paragraph = document.add_paragraph(' ', style='No Spacing')
+            paragraph = document.add_paragraph('Generated: ' + parameters['current_date'], style='No Spacing')
+
+            document.add_page_break()
+        return document
+
+    
+    def export_workorders_to_docx(self, first_dt=None, last_dt=None):
         print('exporting workorders to docx')
-        self.get_workorders()
+        records = []
+        parameters = {'current_date': datetime.now().strftime('%m-%d-%Y')}
+        document = Document()
+        for workorder in self.get_workorders(first_dt=first_dt, last_dt=last_dt):
+            print(workorder)
+            # breakpoint()
+            records.append([workorder.init_date, workorder.name, workorder.location, workorder.work_req, workorder.notes, workorder.status])
+           
+        document = self.format_workorders(document=document, parameters=parameters, records=records)
+        save_name = 'workorders_' + parameters['current_date'] + '.docx'
+        save_path = self.workorders_save_path / Path(save_name)
+        document.save(save_path)
+        return document, save_path 
 
     def docx_rent_receipts_from_rent_sheet(self, mode=None):
         print('docx rent rent receipts directly from rent sheets')
