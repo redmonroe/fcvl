@@ -164,19 +164,18 @@ class WhereAreWe(ProcessingLayer):
         print('*' * 45)
         print(f'\tdeposits for {target_month}: {dry_run_iter["deposits"]}')
 
-        print('*' * 45)
-        print(f'opcash summary for {target_month}.')
-        print('*' * 45)
-        print(f'\tdeposits {target_month}: {dry_run_iter["opcash"]["dep"]}')
-        print(f'\thap {target_month}: {dry_run_iter["opcash"]["hap"]}')
-        print(f'\trr {target_month}: {dry_run_iter["opcash"]["rr"]}')
-        print(f'\tdeposit corrections on opcash side: {dry_run_iter["opcash"]["corr_sum"]}')
-        print('*' * 45)
+        if first_pw_incomplete_month:
+            self.opcash_printer(target_month=target_month, dry_run_iter=dry_run_iter)
+        else:
+            # run scrape
+            pass
+            
 
         print('*' * 45)
         print(f'damage charges/credits for {target_month}: {dry_run_iter["damages"]} ')
         print('*' * 45)
         breakpoint()
+        
 
         # what can we reconcile?
         # THEN LOOP BACK TO RECONCILIATION AND THEN IF ALL IS WELL WE CAN TRY TO RECONCILE
@@ -201,6 +200,15 @@ class WhereAreWe(ProcessingLayer):
         # mi rent
         # mi sd
         # adjustments        
+    def opcash_printer(self, target_month=None, dry_run_iter=None):
+        print('*' * 45)
+        print(f'opcash summary for {target_month}.')
+        print('*' * 45)
+        print(f'\tdeposits {target_month}: {dry_run_iter["opcash"]["dep"]}')
+        print(f'\thap {target_month}: {dry_run_iter["opcash"]["hap"]}')
+        print(f'\trr {target_month}: {dry_run_iter["opcash"]["rr"]}')
+        print(f'\tdeposit corrections on opcash side: {dry_run_iter["opcash"]["corr_sum"]}')
+        print('*' * 45)
 
     def print_rows(self, date=None, **kwargs):
         print(f'selected month: {date}\n')

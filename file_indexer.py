@@ -233,16 +233,22 @@ class FileIndexer(Utils, Scrape, Reconciler):
         for entry in kwargs['currently_availables']:
             for genus, path in entry.items():
                 if genus == 'scrape'and path[0] == True:
-                    breakpoint()
+                    scrape = Scrape()
+                    df = scrape.get_df_of_scrape(path=path[1])
+                    scrape_txn_list = scrape.get_targeted_rows_for_scrape(scrape_df=df)
+                    df = pd.DataFrame(scrape_txn_list)
+                    df = df.groupby(df['dep_type']).sum()
                 if genus == 'opcash' and path[0] == True:
                     self.op_cash_list.append(path[1])
                     opcash_dry_run = self.rename_by_content_pdf(bypass_write_to_db=True)
+                else:
+                    opcash_dry_run = {'dep': 0, 'hap': 0, 'rr': 0, 'corr_sum': 0}
                 if genus == 'deposits' and path[0] == True:
                     deposits_dry_run = self.survey_deposits_report_for_dry_run(path[1])
                 if genus == 'rent' and path[0] == True:
                     rent_dry_run = self.survey_rent_report_for_dry_run(path[1], target_month=target_month)
 
-        return {'opcash': opcash_dry_run, 'deposits': deposits_dry_run, 'rent': rent_dry_run, 'damages': damages}
+        return {'opcash': opcash_dry_run, 'deposits': deposits_dry_run, 'rent': rent_dry_run, 'damages': damages, 'bank_df': df}
 
 
     def build_index_runner(self):
