@@ -70,11 +70,16 @@ class Letters():
     def get_workorders(self, first_dt=None, last_dt=None):
         from backend import WorkOrder
         workorders = [row for row in WorkOrder.select().
-                      where(WorkOrder.init_date>=first_dt).
-                      where(WorkOrder.init_date<=last_dt).
-                            namedtuples()]
+                      where(WorkOrder.init_date >= first_dt).
+                      where(WorkOrder.init_date <= last_dt).
+                      order_by(WorkOrder.init_date).
+                      namedtuples()]
         return workorders
-        
+    
+    def get_workorder_object(self):
+        from backend import WorkOrder
+        return WorkOrder
+            
     def get_doc_title(self, doc, service_docs): #doc is DOCS_FILE_ID
         document = service_docs.documents().get(documentId=doc).execute()
 
@@ -172,8 +177,6 @@ class Letters():
         from backend import WorkOrder, db
         from peewee import IntegrityError as PIE
         
-        self.main_db.drop_tables(models=[WorkOrder])
-        print('WE ARE DROPPING WORK ORDER TABLE IN THIS FUNC RIGHT NOW!')
         self.setup_tables(mode='create_only')
         
         values = gc.broad_get(service=self.service, spreadsheet_id=self.spreadsheet_id, range=self.work_order_range)

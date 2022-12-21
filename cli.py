@@ -150,8 +150,9 @@ def workorders_to_db(drop_table=None):
     path, full_sheet, build, service, ms = figure.return_configuration()
     work_orders = Letters(db=build.main_db, gsheet_id=Config.WORK_ORDER_SHEET, work_order_range='archived_wo_2022!A1:H350')
     if drop_table is True:
-        breakpoint()
-    
+        WorkOrder = work_orders.get_workorder_object()
+        WorkOrder.drop_table()
+        print('successfully dropped WorkOrder table')
     else:
         work_orders.get_all_archived_work_orders()
 

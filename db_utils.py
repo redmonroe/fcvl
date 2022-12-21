@@ -11,7 +11,7 @@ class DBUtils:
 
     @staticmethod
     def pw_connect_to_db(db=None, tables_list=None):
-        if db.is_closed() == True:
+        if db.is_closed() is True:
             db.connect()
         db.create_tables(tables_list)
 
@@ -31,7 +31,7 @@ class DBUtils:
 
     @staticmethod
     def find_sqlite(path_to_existing_db=None, path_to_backup=None):
-        path_to_backup= Path(path_to_backup)
+        path_to_backup = Path(path_to_backup)
         dir_contents = [item for item in path_to_backup.iterdir() if item.suffix != '.ini'] 
 
         backup_time = dt.now()
@@ -52,7 +52,7 @@ class DBUtils:
         return db.tables
 
     @staticmethod
-    def delete_table(self, db):
+    def delete_table(db):
         count_list = []
         item_list = []
         print(f'\nDeleting tables from {db}')
