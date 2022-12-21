@@ -1,5 +1,3 @@
-import os
-import time
 from datetime import datetime
 from pathlib import Path
 
@@ -12,7 +10,6 @@ from backend import ProcessingLayer, db
 from config import Config
 from db_utils import DBUtils
 from figuration import Figuration
-from file_manager import path_to_statements, write_hap
 from letters import AddressWriter, DocxWriter, Letters
 from manual_entry import ManualEntry
 from pdf import StructDataExtract
@@ -146,12 +143,17 @@ def receipts_sixm():
     player.rent_receipts_wrapper_version2()
 
 @click.command()
-def workorders_to_db():
+@click.option('-d', '--drop_table', default=False, help='drop workorder table only')
+def workorders_to_db(drop_table=None):
     click.echo('work orders to db')
     figure = Figuration()
     path, full_sheet, build, service, ms = figure.return_configuration()
     work_orders = Letters(db=build.main_db, gsheet_id=Config.WORK_ORDER_SHEET, work_order_range='archived_wo_2022!A1:H350')
-    work_orders.get_all_archived_work_orders()
+    if drop_table is True:
+        breakpoint()
+    
+    else:
+        work_orders.get_all_archived_work_orders()
 
 @click.command()
 def export_workorders_docx():

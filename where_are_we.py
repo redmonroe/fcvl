@@ -25,26 +25,6 @@ class WhereAreWe(ProcessingLayer):
         self.ur_query = UrQuery()
         self.support_doc_types_list = ['deposits', 'opcash', 'rent', 'scrape']
 
-    def _todo_(self):
-        """basic idea:
-
-        When we start it up at the end of the month, user is basically confused about what the state of the db is
-        
-        
-        
-        
-        """
-        pass
-
-    def load_canon(self):
-        targets = ['morris, michael', 'woods, leon', 'fielder, emily']
-
-        date = '2022-01'
-        first_dt, last_dt = self.populate.make_first_and_last_dates(date_str=date)
-
-        for target in targets:
-            self.ur_query.all_available_by_fk_by_period(target=target, first_dt=first_dt, last_dt=last_dt)
-
     def select_month(self, date=None):
         """could set explicit range if wanted"""
         query = UrQuery()
@@ -151,7 +131,7 @@ class WhereAreWe(ProcessingLayer):
             sys.exit(0)
 
         print('*' * 45)
-        print(f'dry run for {target_month}.')
+        print(f'DRY RUN FOR {target_month}.')
         print('*' * 45)
         print(f'rent roll {target_month}.')
         print('*' * 45)
@@ -160,47 +140,30 @@ class WhereAreWe(ProcessingLayer):
         print(f'\ttenant chages {target_month}: {dry_run_iter["rent"]["tenant_charges"]}')
         # still want beginning vacancy and ending vacancy actuals not just from subtractions and additions
         print('*' * 45)
-        print(f'deposits report for {target_month}.')
-        print('*' * 45)
         print(f'\tdeposits for {target_month}: {dry_run_iter["deposits"]}')
-
-        if first_pw_incomplete_month:
-            self.opcash_printer(target_month=target_month, dry_run_iter=dry_run_iter)
-        else:
-            # run scrape
-            pass
-            
-
+        print('*' * 45)
         print('*' * 45)
         print(f'damage charges/credits for {target_month}: {dry_run_iter["damages"]} ')
         print('*' * 45)
-        breakpoint()
-        
 
+        if first_pw_incomplete_month:
+            print(f'deposits report for {target_month} via opcash.')
+            self.opcash_printer(target_month=target_month, dry_run_iter=dry_run_iter)
+        else:
+            print(f'deposits report for {target_month} via scrape.')
+            for item in dry_run_iter['scrape']['amount'].items():
+                print(f'\t{item[0]}: {item[1]}')
+
+        #TODO
         # what can we reconcile?
         # THEN LOOP BACK TO RECONCILIATION AND THEN IF ALL IS WELL WE CAN TRY TO RECONCILE
-
-
-       
-
-        # print(count)
-        #     self.iter.incremental_load()
-
-        if self.testing:
-            print('hi')
-
         
-
-
-        
-
-        """WILL NEED TO PUT OPCASH IN TESTS; IT IS IN CANONICAL"""
-        #TODO
-        # this flow does not support scrape report from nbofi
         # mi rent
         # mi sd
         # adjustments        
+    
     def opcash_printer(self, target_month=None, dry_run_iter=None):
+        # this would be better as dateframe type thing coming out of findexer
         print('*' * 45)
         print(f'opcash summary for {target_month}.')
         print('*' * 45)
@@ -317,7 +280,6 @@ class WhereAreWe(ProcessingLayer):
             if doc_type == 'rent':
                 is_available = self.scrape_type_runner(target='rent', doc_type=doc_type, filename=filename, scrape_func=scrape.playwright_rentroll_scrape, allow_print=kwargs['allow_print'], first_incomplete_month=kwargs["first_incomplete_month"])
                 self.just_longer_message(doc_type, first_incomplete_month=kwargs["first_incomplete_month"], allow_print=kwargs['allow_print'], is_first_pw_incomplete_month_over=kwargs['is_first_pw_incomplete_month_over'])
-                
             
             if kwargs['is_first_pw_incomplete_month_over']:            
                 if doc_type == 'opcash':

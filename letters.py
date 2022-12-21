@@ -30,7 +30,7 @@ class Letters():
         from backend import PopulateTable
         populate = PopulateTable()
         self.create_tables_list1 = populate.return_tables_list()
-        if self.main_db.is_closed() == True:
+        if self.main_db.is_closed() is True:
             self.main_db.connect()
         if mode == 'create_only':
             self.main_db.create_tables(self.create_tables_list1)
