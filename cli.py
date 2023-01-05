@@ -94,14 +94,22 @@ def write_all_prod():
 
 
 @click.command()
+def write_monthrange_test():
+    click.echo('TEST: write all db contents to rs: EXPRESS MONTHRANGE . . .')
+    figure = Figuration()
+    path, full_sheet, build, service, ms = figure.return_configuration()
+    month_list = ['2022-01', '2022-02', '2022-03', '2022-04', '2022-05',
+                  '2022-06', '2022-07', '2022-08', '2022-09', '2022-10',
+                  '2022-11', '2022-12']
+    ms.auto_control(source='cli.py', mode='clean_build', month_list=month_list)
+
+
+@click.command()
 def write_all_test():
     click.echo('TEST: write all db contents to rs . . .')
     figure = Figuration()
     path, full_sheet, build, service, ms = figure.return_configuration()
     ms.auto_control(source='cli.py', mode='clean_build')
-
-    # sample_month_list = ['2022-01', '2022-02']
-    # ms.auto_control(month_list=sample_month_list)
 
 
 @click.command()
@@ -323,6 +331,7 @@ cli.add_command(where_are_we)
 cli.add_command(reset_db_test)
 cli.add_command(reset_db_prod)
 cli.add_command(write_all_test)
+cli.add_command(write_monthrange_test)
 cli.add_command(write_all_prod)
 cli.add_command(load_db_test)
 cli.add_command(load_db_prod)

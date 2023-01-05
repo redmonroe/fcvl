@@ -428,7 +428,6 @@ class FileIndexer(Utils, Scrape, Reconciler):
                     find_change.save()
 
     def deposit_report_unpacker(self, df=None):
-        breakpoint()
         deposits = df.iloc[:, 13].to_list()
         deposits = [item for item in deposits if isinstance(item, str)]
         deposits = deposits[:-1]

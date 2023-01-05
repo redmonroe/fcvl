@@ -1,22 +1,25 @@
 import calendar
-import datetime
 import json
 import os
 import sys
-from calendar import monthrange
-from collections import namedtuple, defaultdict
+from collections import namedtuple
 from datetime import datetime, timedelta
-from decimal import ROUND_DOWN, ROUND_UP, Decimal
 from functools import reduce
-from pathlib import Path
-from pprint import pprint
 from sqlite3 import IntegrityError
 
 import pandas as pd
-import pytest
 from dateutil.relativedelta import relativedelta
 from numpy import nan
 from peewee import *
+from peewee import (AutoField,
+                    BooleanField,
+                    CharField,
+                    DateField,
+                    DecimalField,
+                    ForeignKeyField,
+                    IntegerField,
+                    SqliteDatabase,
+                    Model,)
 from peewee import JOIN
 from peewee import DoesNotExist as DNE
 from peewee import IntegrityError as PIE
@@ -66,7 +69,9 @@ class Unit(BaseModel):
         return [name.unit_name for name in Unit.select()]
 
     def get_all_occupied_units_at_date(**kwargs):
-        all_units = [(name.tenant, name.unit_name, name.last_occupied) for name in Unit.select().
+        all_units = [(name.tenant,
+                      name.unit_name,
+                      name.last_occupied) for name in Unit.select().
                      where(Unit.last_occupied == kwargs['last_dt']).
                      order_by(Unit.unit_name).namedtuples()]
         return all_units
@@ -102,7 +107,8 @@ class Damages(BaseModel):
         for item in damages_2022:
             for name, packet in item.items():
                 dam = Damages(
-                    tenant=name, dam_amount=packet[0], dam_date=packet[1], dam_type=packet[2])
+                    tenant=name, dam_amount=packet[0],
+                    dam_date=packet[1], dam_type=packet[2])
                 dam.save()
 
 
@@ -231,7 +237,26 @@ class WorkOrder(BaseModel):
 class QueryHC(Reconciler):
 
     def return_tables_list(self):
-        return [Mentry, IncomeMonth, LP_EndBal, ContractRent, Subsidy, BalanceLetter, StatusRS, StatusObject, OpCash, OpCashDetail, Damages, Tenant, Unit, Payment, NTPayment, TenantRent, Findexer, ScrapeDetail, MoveIn, WorkOrder]
+        return [Mentry,
+                IncomeMonth,
+                LP_EndBal,
+                ContractRent,
+                Subsidy,
+                BalanceLetter,
+                StatusRS,
+                StatusObject,
+                OpCash,
+                OpCashDetail,
+                Damages,
+                Tenant,
+                Unit,
+                Payment,
+                NTPayment,
+                TenantRent,
+                Findexer,
+                ScrapeDetail,
+                MoveIn,
+                WorkOrder]
 
     def make_first_and_last_dates(self, date_str=None):
         dt_obj = datetime.strptime(date_str, '%Y-%m')
@@ -256,11 +281,17 @@ class QueryHC(Reconciler):
 
     def get_rent_roll_by_month_at_first_of_month(self, first_dt=None, last_dt=None):
         '''lots of work in this func'''
-        tenants_mi_on_or_before_first = [(rec.tenant_name, rec.unit) for rec in Tenant().select(Tenant, Unit).
-                                         join(Unit, JOIN.LEFT_OUTER, on=(Tenant.tenant_name == Unit.tenant)).
+        tenants_mi_on_or_before_first = [(rec.tenant_name,
+                                         rec.unit) for rec in Tenant().
+                                         select(Tenant, Unit).
+                                         join(Unit, JOIN.LEFT_OUTER,
+                                         on=(
+                                             Tenant.tenant_name == Unit.tenant
+                                             )).
                                          where(
             (Tenant.move_in_date <= first_dt) &
-            ((Tenant.move_out_date == '0') | (Tenant.move_out_date >= first_dt))).
+            ((Tenant.move_out_date == '0') |
+             (Tenant.move_out_date >= first_dt))).
             namedtuples()]
 
         occupied_units = [
@@ -1078,7 +1109,7 @@ class PopulateTable(QueryHC):
 
     def find_rent_roll_changes_by_comparison(self, start_set=None, end_set=None):
         '''compares list of tenants at start of month to those at end'''
-        '''explicit move-outs from excel have been removed from end of month rent_roll_dict 
+        '''explicit move-outs from excel have been removed from end of month rent_roll_dict
         and should initiated a discrepancy in the following code by making end list diverge from start list'''
         '''these tenants are explicitly marked as active='False' in the tenant table in func() deactivate_move_outs'''
 
@@ -1416,7 +1447,7 @@ class ProcessingLayer(StatusRS):
         mr_status.save()
 
     def reconcile_and_inscribe_state(self, month_list=None, ref_rec=None, *args, **kwargs):
-        """takes list of months in year to date, gets tenant payments by period, non-tenant payments, and opcash information and reconciles the deposits on the opcash statement to the sum of tenant payments and non-tenant payments     
+        """takes list of months in year to date, gets tenant payments by period, non-tenant payments, and opcash information and reconciles the deposits on the opcash statement to the sum of tenant payments and non-tenant payments
         then updates existing StatusRS db and, most importantly, writes to StatusObject db whether opcash has been processed and whether tenant has reconciled: currently will reconcile a scrape against a deposit list sheets"""
         populate = PopulateTable()
         for month in month_list:
