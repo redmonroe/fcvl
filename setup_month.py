@@ -1,6 +1,4 @@
-import time
 from datetime import datetime as dt
-from pathlib import Path
 
 import pandas as pd
 import xlsxwriter
@@ -68,7 +66,7 @@ class MonthSheet(YearSheet):
             self.remove_base_sheet()
             status_list = self.to_google_sheets(month_list=month_list)
         elif mode == 'single_sheet':
-            month_list = Utils.months_in_ytd(Config.dynamic_current_year, show_choices=True)
+            month_list = Utils.months_in_ytd(Config.current_year, show_choices=True)
             print(f'MAKE SINGLE RENT SHEET FOR {month_list} | DO NOT RESET SHEET.')
             titles_dict = self.make_single_sheet(single_month_list=month_list)
             self.formatting_runner(title_dict=titles_dict) 
@@ -84,7 +82,9 @@ class MonthSheet(YearSheet):
         status_list = []
         df_list = []
 
-        writer = Errors.xlsx_permission_error(Config.TEST_EXCEL, pandas_object=pd)
+        writer = Errors.xlsx_permission_error(
+                                Config.TEST_EXCEL,
+                                pandas_object=pd)
         
         for date in month_list:
             first_dt, last_dt = self.query.make_first_and_last_dates(date_str=date)

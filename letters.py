@@ -74,6 +74,10 @@ class Letters():
                       where(WorkOrder.init_date <= last_dt).
                       order_by(WorkOrder.init_date).
                       namedtuples()]
+        
+        from pprint import pprint
+        # pprint(workorders)
+        # breakpoint()
         return workorders
     
     def get_workorder_object(self):
@@ -200,7 +204,7 @@ class Letters():
             'assigned_to': work_order['assigned to'],
             
         } for work_order in work_dict]
-        
+         
         try: 
             # try bulk insert
             query = WorkOrder.insert_many(work_orders_insert_many)
@@ -498,13 +502,14 @@ class DocxWriter(Letters):
         parameters = {'current_date': datetime.now().strftime('%m-%d-%Y')}
         document = Document()
         for workorder in self.get_workorders(first_dt=first_dt, last_dt=last_dt):
+            # breakpoint()
             records.append([workorder.init_date, workorder.name, workorder.location, workorder.work_req, workorder.notes, workorder.status, workorder.date_completed, workorder.assigned_to])
            
         document = self.format_workorders(document=document, parameters=parameters, records=records)
         save_name = 'workorders_' + parameters['current_date'] + '.docx'
         save_path = self.workorders_save_path / Path(save_name)
         document.save(save_path)
-        return document, save_path 
+        return document, save_path
 
     def docx_rent_receipts_from_rent_sheet(self, mode=None):
         print('docx rent rent receipts directly from rent sheets')
