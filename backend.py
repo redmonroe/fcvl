@@ -802,12 +802,6 @@ class UrQuery(QueryHC):
 
 class PopulateTable(QueryHC):
 
-    def init_tenant_load(self, filename=None, date=None):
-        nt_list, total_tenant_charges, explicit_move_outs = self.init_load_ten_unit_ten_rent(
-            filename=filename, date=date)
-
-        return nt_list, total_tenant_charges, explicit_move_outs
-
     def init_load_ten_unit_ten_rent(self, filename=None, date=None):
         fill_item = '0'
         df = pd.read_excel(filename, header=16)

@@ -31,9 +31,14 @@ class Utils:
         return datetime.now() > last_day
 
     @staticmethod
-    def months_in_ytd(current_year, style=None, show_choices=None):
-        range_month = datetime.now().strftime('%m')
-        breakpoint()
+    def months_in_ytd(current_year,
+                      style=None,
+                      show_choices=None,
+                      last_range_month=None):
+        if last_range_month:
+            breakpoint()
+        else:
+            range_month = datetime.now().strftime('%m')
         date_info = monthrange(int(current_year), int(range_month))
         last_day = date_info[1]
 
