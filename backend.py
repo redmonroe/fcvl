@@ -802,77 +802,18 @@ class UrQuery(QueryHC):
 
 class PopulateTable(QueryHC):
 
-    def after_jan_load(self, filename=None, date=None, *args, **kwargs):
-        ''' order matters'''
-        ''' get tenants from jan end/feb start'''
-        ''' get rent roll from feb end in nt_list from df'''
+    def _total_tenant_charges(self):
+        return float(
+                ((self.nt_list_w_vacants.pop(-1)).rent).replace(',', ''))
 
-        first_dt, last_dt = self.make_first_and_last_dates(date_str=date)
-
-        # join with expression not foreignkey
-        period_start_tenant_names = [(name.tenant_name, name.unit_name, datetime(name.move_in_date.year, name.move_in_date.month, name.move_in_date.day)) for name in Tenant.select(Tenant.tenant_name, Tenant.move_in_date, Unit.unit_name).
-                                     where(Tenant.move_in_date <= datetime.strptime(date, '%Y-%m')).
-                                     join(Unit, on=Tenant.tenant_name == Unit.tenant).namedtuples()]
-
-        fill_item = '0'
-        df = pd.read_excel(filename, header=16)
-        df = df.fillna(fill_item)
-
-        nt_list, explicit_move_outs = self.nt_from_df(
-            df=df, date=date, fill_item=fill_item)
-
-        total_tenant_charges = float(((nt_list.pop(-1)).rent).replace(',', ''))
-
-        period_end_tenant_names = [(row.name, row.unit, datetime.strptime(row.mi_date, '%m/%d/%Y'))
-                                   for row in self.return_nt_list_with_no_vacants(keyword='vacant', nt_list=nt_list)]
-
-        '''we could get move-ins if move-date is in month range'''
-
-        computed_mis, computed_mos = self.find_rent_roll_changes_by_comparison(
-            start_set=set(period_start_tenant_names), end_set=set(period_end_tenant_names))
-
-        cleaned_mos = self.merge_move_outs(
-            explicit_move_outs=explicit_move_outs, computed_mos=computed_mos, date=date)
-
-        if kwargs.get('dry_run'):
-            return nt_list, total_tenant_charges, cleaned_mos, computed_mis
-        else:
-            self.insert_move_ins(move_ins=computed_mis,
-                                 date=date, filename=filename)
-
-            if cleaned_mos != []:
-                self.deactivate_move_outs(date, move_outs=cleaned_mos)
-
-            ''' now we should have updated list of active tenants'''
-            cleaned_nt_list = [row for row in self.return_nt_list_with_no_vacants(
-                keyword='vacant', nt_list=nt_list)]
-
-            insert_many_rent = [{'t_name': row.name, 'unit': row.unit, 'rent_amount': row.rent.replace(
-                ',', ''), 'rent_date': row.date} for row in cleaned_nt_list]
-
-            '''update last_occupied for occupied: SLOW, Don't like'''
-            for row in cleaned_nt_list:
-                try:
-                    unit = Unit.get(Unit.tenant == row.name)
-                    unit.last_occupied = last_dt
-                except Exception as e:
-                    unit = Unit.get(Unit.unit_name == row.unit)
-                    unit.last_occupied = '0'
-                unit.save()
-
-            subs_insert_many = [{'tenant': row.name, 'sub_amount': row.subsidy.replace(
-                ',', ''), 'date_posted': row.date} for row in cleaned_nt_list if row.name != 'vacant']
-            krent_insert_many = [{'tenant': row.name, 'sub_amount': row.contract.replace(
-                ',', ''), 'date_posted': row.date} for row in cleaned_nt_list if row.name != 'vacant']
-
-            query = TenantRent.insert_many(insert_many_rent)
+    def _write_vals(self, data, cls=None):
+        model = getattr(sys.modules[__name__], cls)
+        query = model.insert_many(data)
+        try:
             query.execute()
-            query = Subsidy.insert_many(subs_insert_many)
-            query.execute()
-            query = ContractRent.insert_many(krent_insert_many)
-            query.execute()
-            '''Units: now we should check whether end of period '''
-        return cleaned_nt_list, total_tenant_charges, cleaned_mos
+        except TypeError as e:
+            print(e)
+            print('issue is with query write execution in InitLoad')
 
     def merge_move_outs(self, explicit_move_outs=None, computed_mos=None, date=None):
 
@@ -1032,7 +973,7 @@ class PopulateTable(QueryHC):
         df = df.fillna(0)
         return df
 
-    def find_rent_roll_changes_by_comparison(self, start_set=None, end_set=None):
+    def compare_rentroll_chng(self, start_set=None, end_set=None):
         '''compares list of tenants at start of month to those at end'''
         '''explicit move-outs from excel have been removed from end of month rent_roll_dict
         and should initiated a discrepancy in the following code by making end list diverge from start list'''
@@ -1094,7 +1035,7 @@ class PopulateTable(QueryHC):
         first_dt, last_dt = self.make_first_and_last_dates(date_str=date)
         if len(move_outs) <= 1:
             for name, date in move_outs:
-                print('move outs:',  name, date)
+                print('deactivating:',  name, date)
                 tenant = Tenant.get(Tenant.tenant_name == name)
                 tenant.active = False
                 tenant.move_out_date = date
@@ -1179,6 +1120,120 @@ class PopulateTable(QueryHC):
                 scrape_dep.save()
 
 
+class AfterInitLoad(PopulateTable):
+
+    def __init__(self, rentrolls, deposits):
+        self.fill_item = '0'
+        self.rentrolls = rentrolls
+        self.deposits = deposits
+        self._loop_over_rentrolls()
+
+    # for date1, path in self.proc_dates_and_paths:
+    #     grand_total, ntp, tenant_payment_df = self.populate.payment_load_full(
+    #         filename=path)
+    def _loop_over_rentrolls(self):
+        for date, filename in self.rentrolls:
+            (self.first_dt,
+             self.last_dt) = self.make_first_and_last_dates(date_str=date)
+            self.start_tenants = [(name.tenant_name, name.unit_name,
+                                  datetime(name.move_in_date.year,
+                                   name.move_in_date.month,
+                                   name.move_in_date.day)) for name in
+                                  Tenant.select(Tenant.tenant_name,
+                                                Tenant.move_in_date,
+                                                Unit.unit_name).where(
+                                  Tenant.move_in_date <=
+                                  datetime.strptime(date, '%Y-%m')).
+                                  join(Unit,
+                                       on=Tenant.tenant_name == Unit.tenant).
+                                  namedtuples()]
+
+            self.df = pd.read_excel(filename, header=16)
+            self.df = self.df.fillna(self.fill_item)
+
+            (self.nt_list_w_vacants,
+             self.explicit_move_outs) = self.nt_from_df(
+                df=self.df, date=date, fill_item=self.fill_item)
+
+            self.total_tenant_charges = self._total_tenant_charges()
+            self.end_tenants = [(row.name, row.unit,
+                                datetime.strptime(row.mi_date,
+                                                  '%m/%d/%Y'))
+                                for row in self.return_nt_list_with_no_vacants(
+                                    keyword='vacant',
+                                    nt_list=self.nt_list_w_vacants)]
+
+            self.computed_mis, self.computed_mos = self.compare_rentroll_chng(
+                start_set=set(self.start_tenants),
+                end_set=set(self.end_tenants))
+
+            self.cleaned_mos = self.merge_move_outs(
+                explicit_move_outs=self.explicit_move_outs,
+                computed_mos=self.computed_mos,
+                date=date)
+
+            self.insert_move_ins(move_ins=self.computed_mis,
+                                 date=date, filename=filename)
+
+            self._deactivate_move_outs(date)
+
+            ''' now we have an updated list of active tenants
+                and may again fetched this updated record
+            '''
+            self.cleaned_nt_list = [
+                            row for row in self.return_nt_list_with_no_vacants(
+                             keyword='vacant', nt_list=self.nt_list_w_vacants)
+                            ]
+
+            self.rents = [{'t_name': row.name,
+                           'unit': row.unit,
+                           'rent_amount': row.rent.replace(
+                            ',', ''),
+                           'rent_date': row.date}
+                          for row in self.cleaned_nt_list]
+
+            self._update_unit_table()
+
+            self.subsidies = [{'tenant': row.name,
+                               'sub_amount': row.subsidy.replace(
+                                ',', ''),
+                               'date_posted': row.date}
+                              for row in self.cleaned_nt_list if row.name
+                              != 'vacant']
+            self.contract_rents = [{'tenant': row.name,
+                                   'sub_amount': row.contract.replace(
+                                    ',', ''),
+                                    'date_posted': row.date}
+                                   for row in self.cleaned_nt_list if row.name
+                                   != 'vacant']
+
+            self._write_vals(self.rents, cls='TenantRent')
+            self._write_vals(self.subsidies, cls='Subsidy')
+            self._write_vals(self.contract_rents, cls='ContractRent')
+
+    def _deactivate_move_outs(self, date):
+        if self.cleaned_mos != []:
+            self.deactivate_move_outs(date, move_outs=self.cleaned_mos)
+
+    def _update_unit_table(self):
+        '''update last_occupied for occupied: SLOW, Don't like'''
+        for row in self.cleaned_nt_list:
+            try:
+                unit = Unit.get(Unit.tenant == row.name)
+                unit.last_occupied = self.last_dt
+            except Exception as e:
+                print(e, 'using Exception to do too much coding')
+                unit = Unit.get(Unit.unit_name == row.unit)
+                unit.last_occupied = '0'
+            unit.save()
+
+    def return_rentroll_data(self):
+        return (self.nt_list_w_vacants,
+                self.total_tenant_charges,
+                self.cleaned_mos,
+                self.computed_mis)
+
+
 class InitLoad(PopulateTable):
 
     def __init__(self, path=None, **kwargs):
@@ -1196,7 +1251,7 @@ class InitLoad(PopulateTable):
                         namedtuples()]
         self.first_dt, self.last_dt = self.make_first_and_last_dates(
                                         date_str=self.records[0][1])
-        self.wb = xlrd.open_workbook(self.records[0][2], 
+        self.wb = xlrd.open_workbook(self.records[0][2],
                                      logfile=open(os.devnull, 'w'))
         self.df = pd.read_excel(self.wb, header=16)
         self.df = self.df.fillna('0')
@@ -1229,17 +1284,13 @@ class InitLoad(PopulateTable):
                                 'date_posted': row.date}
                                for row in self.nt_list if row.name != 'vacant']
 
-        self._write_init_vals(self.init_tenants, cls='Tenant')
-        self._write_init_vals(self.units, cls='Unit')
-        self._write_init_vals(self.rents, cls='TenantRent')
-        self._write_init_vals(self.subsidies, cls='Subsidy')
-        self._write_init_vals(self.contract_rents, cls='ContractRent')
+        self._write_vals(self.init_tenants, cls='Tenant')
+        self._write_vals(self.units, cls='Unit')
+        self._write_vals(self.rents, cls='TenantRent')
+        self._write_vals(self.subsidies, cls='Subsidy')
+        self._write_vals(self.contract_rents, cls='ContractRent')
 
         self._balance_load_from_excel()
-
-    def _total_tenant_charges(self):
-        return float(
-                ((self.nt_list_w_vacants.pop(-1)).rent).replace(',', ''))
 
     def _update_units(self):
         # TODO:WHAT DDOES THIS FUNCTION REALLY DO?
@@ -1252,15 +1303,6 @@ class InitLoad(PopulateTable):
                          'tenant': row.name, 'last_occupied': self.last_dt}
             units.append(dict1)
         return units
-
-    def _write_init_vals(self, data, cls=None):
-        model = getattr(sys.modules[__name__], cls)
-        query = model.insert_many(data)
-        try:
-            query.execute()
-        except TypeError as e:
-            print(e)
-            print('issue is with query write execution in InitLoad')
 
     def _balance_load_from_excel(self):
         # load tenant balances at 01012022

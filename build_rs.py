@@ -1,7 +1,7 @@
 import time
 
 from auth_work import oauth
-from backend import (Damages, Findexer, InitLoad, PopulateTable,
+from backend import (Damages, Findexer, InitLoad, AfterInitLoad, PopulateTable,
                      ProcessingLayer, db)
 from config import Config
 from file_indexer import FileIndexer
@@ -47,7 +47,7 @@ class BuildRS(MonthSheet):
                           where(Findexer.status == 'processed').
                           namedtuples()]
         self.proc_rentrolls = [(item[1], item[2])
-                               for item in self.rr_list] 
+                               for item in self.rr_list]
         self.proc_dates_and_paths = [(item[1], item[2])
                                      for item in self.file_list]
 
@@ -58,9 +58,9 @@ class BuildRS(MonthSheet):
         print('building db from scratch')
         player = ProcessingLayer(service=self.service,
                                  full_sheet=self.full_sheet, ms=self.ms)
-        
+
         start = time.time()
-        
+
         print('loading initial tenant balances')
         init_load_time = time.time()
         initial = InitLoad(
@@ -80,6 +80,7 @@ class BuildRS(MonthSheet):
         print(f'InitLoad time: {time.time() - init_load_time}')
 
         _ = self.iterate_over_remaining_months()
+        breakpoint()
         Damages.load_damages()
         # PROCESSED OPCASHES MOVED INTO DB
         self.populate.transfer_opcash_from_findex_to_opcash_and_detail()
@@ -114,12 +115,12 @@ class BuildRS(MonthSheet):
 
         self.main_db.close()
         print(f'Time: {time.time() - start}')
-        
+
     def _run_raw_findexer(self):
         findexer_time = time.time()
         self.findex.build_index_runner()  # 3 sec in november
         print(f'findexer time: {time.time() - findexer_time}')
-        
+
     def _setup_tables(self, mode=None):
         populate = PopulateTable()
         self.create_tables_list1 = populate.return_tables_list()
@@ -186,18 +187,26 @@ class BuildRS(MonthSheet):
                     return True, month
 
     def iterate_over_remaining_months(self):
+        # TODO: can't we just pass a list of months
+        # to the function? and iterate from there
+        
         # iterate over dep
+        after_initial = AfterInitLoad(rentrolls=self.proc_rentrolls,
+                          deposits=self.proc_dates_and_paths)
+        breakpoint()
+
+
+        '''
         for date, filename in self.proc_rentrolls:
             (cleaned_nt_list,
              total_tenant_charges,
              cleaned_mos) = self.populate.after_jan_load(
                 filename=filename, date=date)
 
-            first_dt, last_dt = self.populate.make_first_and_last_dates(
-                date_str=date)
 
         for date1, path in self.proc_dates_and_paths:
             grand_total, ntp, tenant_payment_df = self.populate.payment_load_full(
                 filename=path)
+        '''
 
 
