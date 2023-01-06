@@ -47,11 +47,29 @@ class BuildRS(MonthSheet):
         print('building db from scratch')
         start = time.time()
         _ = self.setup_tables(mode='drop_and_create')
-        start1 = time.time()
+        
+        findexer_time = time.time()
         self.findex.build_index_runner()  # 3 sec in november
-        print(f'Time1: {time.time() - start1}')
-        self.load_initial_tenants_and_balances()
-        # 4 seconds in november
+        print(f'findexer time: {time.time() - findexer_time}')
+
+        print('loading initial tenant balances')        
+        init_load_time = time.time()
+        initial = InitLoad(
+            # date=records[0][1],
+            path=self.path,
+            custom_load_file=self.target_bal_load_file)
+
+        (tenant_rows,
+         tot_ten_ch,
+         ex_moveouts,
+         init_ten,
+         units,
+         rents,
+         subsidies,
+         contract_rents) = initial.return_init_results()
+        
+        print(f'InitLoad time: {time.time() - init_load_time}')
+        
         _ = self.iterate_over_remaining_months()
         Damages.load_damages()
         # PROCESSED OPCASHES MOVED INTO DB
@@ -187,47 +205,4 @@ class BuildRS(MonthSheet):
                 filename=path)
         return processed_rentr_dates_and_paths
 
-    def load_initial_tenants_and_balances(self):
-        print('loading initial tenant balances')
-        # load tenants as 01-01-2022
-        # populate = PopulateTable()
-        records = [(item.fn, item.period, item.path) for item in Findexer().
-                   select().
-                   where(Findexer.doc_type == 'rent').
-                   where(Findexer.status == 'processed').
-                   where(Findexer.period == '2022-01').
-                   namedtuples()]
 
-        # business logic to load inital tenants; cutoff '2022-01's
-        initial = InitLoad(
-            filename=records[0][2], date=records[0][1])
-
-        (tenant_rows,
-         tot_ten_ch,
-         ex_moveouts,
-         init_ten,
-         units,
-         rents,
-         subsidies,
-         contract_rents) = initial.return_init_results()
-
-        breakpoint()
-        DBUtils.peewee_fast_write(init_ten, cls=Tenant)
-        
-        
-        query = Tenant.insert_many(ten_insert_many)
-        query.execute()
-        query = TenantRent.insert_many(rent_insert_many)
-        query.execute()
-        query = Unit.insert_many(units_insert_many)
-        query.execute()
-        query = Subsidy.insert_many(subs_insert_many)
-        query.execute()
-        query = ContractRent.insert_many(krent_insert_many)
-        query.execute()
-        # nt_list, total_tenant_charges, explicit_move_outs =
-
-        # load tenant balances at 01012022
-        _ = [item.name for item in self.path.iterdir()]
-        target_balance_file = self.path.joinpath(self.target_bal_load_file)
-        populate.balance_load(filename=target_balance_file)

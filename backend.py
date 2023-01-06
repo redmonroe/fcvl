@@ -886,25 +886,6 @@ class PopulateTable(QueryHC):
 
         return cleaned_mos
 
-    def balance_load(self, filename):
-        df = pd.read_excel(filename)
-        t_name = df['name'].tolist()
-        beg_bal = df['balance'].tolist()
-        rent_roll_dict = dict(zip(t_name, beg_bal))
-        rent_roll_dict = {
-            k.lower(): v for k, v in rent_roll_dict.items() if k != 'vacant'}
-        rent_roll_dict = {k: v for k,
-                          v in rent_roll_dict.items() if k != 'vacant'}
-
-        ten_list = [tenant for tenant in Tenant.select()]
-        for tenant in ten_list:
-            for name, bal in rent_roll_dict.items():
-                if tenant.tenant_name == name:
-                    tenant.beg_bal_amount = bal
-                    tenant.save()
-
-        # could also use bulk update query: https://docs.peewee-orm.com/en/latest/peewee/api.html
-
     def payment_load_full(self, filename):
         df = self.read_excel_payments(path=filename)
         df = self.remove_nan_lines(df=df)
@@ -1200,16 +1181,27 @@ class PopulateTable(QueryHC):
 
 class InitLoad(PopulateTable):
 
-    def __init__(self, filename=None, date=None, **kwargs):
+    def __init__(self, path=None, **kwargs):
         """loads initial tenants and tenant accounts from spreadsheet"""
 
         print('initload')
-        self.first_dt, self.last_dt = self.make_first_and_last_dates(date_str=date)
-        self.wb = xlrd.open_workbook(filename, logfile=open(os.devnull, 'w'))
+        self.path = path
+        self.custom_load_file = self.path.joinpath(kwargs['custom_load_file'])
+        self.records = [(item.fn, item.period, item.path)
+                        for item in Findexer().
+                        select().
+                        where(Findexer.doc_type == 'rent').
+                        where(Findexer.status == 'processed').
+                        where(Findexer.period == '2022-01').
+                        namedtuples()]
+        self.first_dt, self.last_dt = self.make_first_and_last_dates(
+                                        date_str=self.records[0][1])
+        self.wb = xlrd.open_workbook(self.records[0][2], 
+                                     logfile=open(os.devnull, 'w'))
         self.df = pd.read_excel(self.wb, header=16)
         self.df = self.df.fillna('0')
         self.nt_list_w_vacants, self.explicit_move_outs = self.nt_from_df(
-            df=self.df, date=date, fill_item='0')
+            df=self.df, date=self.records[0][1], fill_item='0')
         self.total_tenant_charges = self._total_tenant_charges()
         self.nt_list = self.return_nt_list_with_no_vacants(
             keyword='vacant', nt_list=self.nt_list_w_vacants)
@@ -1236,18 +1228,21 @@ class InitLoad(PopulateTable):
                                  ',', ''),
                                 'date_posted': row.date}
                                for row in self.nt_list if row.name != 'vacant']
-        
+
         self._write_init_vals(self.init_tenants, cls='Tenant')
         self._write_init_vals(self.units, cls='Unit')
         self._write_init_vals(self.rents, cls='TenantRent')
         self._write_init_vals(self.subsidies, cls='Subsidy')
         self._write_init_vals(self.contract_rents, cls='ContractRent')
 
+        self._balance_load_from_excel()
+
     def _total_tenant_charges(self):
         return float(
                 ((self.nt_list_w_vacants.pop(-1)).rent).replace(',', ''))
 
     def _update_units(self):
+        # TODO:WHAT DDOES THIS FUNCTION REALLY DO?
         units = []
         for row in self.nt_list_w_vacants:
             if row.name == 'vacant':
@@ -1266,6 +1261,26 @@ class InitLoad(PopulateTable):
         except TypeError as e:
             print(e)
             print('issue is with query write execution in InitLoad')
+
+    def _balance_load_from_excel(self):
+        # load tenant balances at 01012022
+        df = pd.read_excel(self.custom_load_file)
+        t_name = df['name'].tolist()
+        beg_bal = df['balance'].tolist()
+        rent_roll_dict = dict(zip(t_name, beg_bal))
+        rent_roll_dict = {
+            k.lower(): v for k, v in rent_roll_dict.items() if k != 'vacant'}
+        rent_roll_dict = {k: v for k,
+                          v in rent_roll_dict.items() if k != 'vacant'}
+
+        ten_list = [tenant for tenant in Tenant.select()]
+        for tenant in ten_list:
+            for name, bal in rent_roll_dict.items():
+                if tenant.tenant_name == name:
+                    tenant.beg_bal_amount = bal
+                    tenant.save()
+
+        # could also use bulk update query: https://docs.peewee-orm.com/en/latest/peewee/api.html
 
     def return_init_results(self):
         return (self.nt_list,
