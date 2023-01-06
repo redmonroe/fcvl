@@ -31,28 +31,37 @@ class BuildRS(MonthSheet):
             self.service = oauth(Config.my_scopes, 'sheet', mode='testing')
         self.create_tables_list1 = None
         self.target_bal_load_file = Config.beg_bal_xlsx
-        self.populate = PopulateTable()
         self.ms = MonthSheet(full_sheet=self.full_sheet, path=self.path)
         self.findex = FileIndexer(path=self.path, db=self.main_db)
-        self.new_files = None
-        self.unfinalized_months = None
-        self.ctx = None
+        self.populate = self._setup_tables(mode='drop_and_create')
+        self._run_raw_findexer()
+        self.rr_list = [(item.fn, item.period, item.path)
+                        for item in Findexer().select().
+                        where(Findexer.doc_type == 'rent').
+                        where(Findexer.status == 'processed').
+                        where(Findexer.period != '2022-01').
+                        namedtuples()]
+        self.file_list = [(item.fn, item.period, item.path)
+                          for item in Findexer().select().
+                          where(Findexer.doc_type == 'deposits').
+                          where(Findexer.status == 'processed').
+                          namedtuples()]
+        self.proc_rentrolls = [(item[1], item[2])
+                               for item in self.rr_list] 
+        self.proc_dates_and_paths = [(item[1], item[2])
+                                     for item in self.file_list]
 
     def __repr__(self):
         return f'{self.__class__.__name__} | {self.path} | {self.full_sheet}'
 
     def build_db_from_scratch(self, **kw):
+        print('building db from scratch')
         player = ProcessingLayer(service=self.service,
                                  full_sheet=self.full_sheet, ms=self.ms)
-        print('building db from scratch')
-        start = time.time()
-        _ = self.setup_tables(mode='drop_and_create')
         
-        findexer_time = time.time()
-        self.findex.build_index_runner()  # 3 sec in november
-        print(f'findexer time: {time.time() - findexer_time}')
-
-        print('loading initial tenant balances')        
+        start = time.time()
+        
+        print('loading initial tenant balances')
         init_load_time = time.time()
         initial = InitLoad(
             # date=records[0][1],
@@ -67,9 +76,9 @@ class BuildRS(MonthSheet):
          rents,
          subsidies,
          contract_rents) = initial.return_init_results()
-        
+
         print(f'InitLoad time: {time.time() - init_load_time}')
-        
+
         _ = self.iterate_over_remaining_months()
         Damages.load_damages()
         # PROCESSED OPCASHES MOVED INTO DB
@@ -105,8 +114,13 @@ class BuildRS(MonthSheet):
 
         self.main_db.close()
         print(f'Time: {time.time() - start}')
-
-    def setup_tables(self, mode=None):
+        
+    def _run_raw_findexer(self):
+        findexer_time = time.time()
+        self.findex.build_index_runner()  # 3 sec in november
+        print(f'findexer time: {time.time() - findexer_time}')
+        
+    def _setup_tables(self, mode=None):
         populate = PopulateTable()
         self.create_tables_list1 = populate.return_tables_list()
         if self.main_db.is_closed() is True:
@@ -172,37 +186,18 @@ class BuildRS(MonthSheet):
                     return True, month
 
     def iterate_over_remaining_months(self):
-        # load remaining months rent
-        populate = PopulateTable()
-        rent_roll_list = [(item.fn, item.period, item.path) for item in Findexer().select().
-                          where(Findexer.doc_type == 'rent').
-                          where(Findexer.status == 'processed').
-                          where(Findexer.period != '2022-01').
-                          namedtuples()]
-
-        processed_rentr_dates_and_paths = [
-            (item[1], item[2]) for item in rent_roll_list]
-        processed_rentr_dates_and_paths.sort()
-
         # iterate over dep
-        for date, filename in processed_rentr_dates_and_paths:
-            cleaned_nt_list, total_tenant_charges, cleaned_mos = populate.after_jan_load(
+        for date, filename in self.proc_rentrolls:
+            (cleaned_nt_list,
+             total_tenant_charges,
+             cleaned_mos) = self.populate.after_jan_load(
                 filename=filename, date=date)
 
-            first_dt, last_dt = populate.make_first_and_last_dates(
+            first_dt, last_dt = self.populate.make_first_and_last_dates(
                 date_str=date)
 
-        file_list = [(item.fn, item.period, item.path) for item in Findexer().select().
-                     where(Findexer.doc_type == 'deposits').
-                     where(Findexer.status == 'processed').
-                     namedtuples()]
-
-        processed_dates_and_paths = [(item[1], item[2]) for item in file_list]
-        processed_dates_and_paths.sort()
-
-        for date1, path in processed_dates_and_paths:
-            grand_total, ntp, tenant_payment_df = populate.payment_load_full(
+        for date1, path in self.proc_dates_and_paths:
+            grand_total, ntp, tenant_payment_df = self.populate.payment_load_full(
                 filename=path)
-        return processed_rentr_dates_and_paths
 
 

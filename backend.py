@@ -1280,8 +1280,6 @@ class InitLoad(PopulateTable):
                     tenant.beg_bal_amount = bal
                     tenant.save()
 
-        # could also use bulk update query: https://docs.peewee-orm.com/en/latest/peewee/api.html
-
     def return_init_results(self):
         return (self.nt_list,
                 self.total_tenant_charges,

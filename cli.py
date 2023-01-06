@@ -72,7 +72,7 @@ def reset_db_prod():
 @click.command()
 def load_db_test():
     click.echo('TEST: loading all available files in path to db')
-    figure = Figuration()
+    figure = Figuration(method='not_iter')
     path, full_sheet, build, service, ms = figure.return_configuration()
     build.build_db_from_scratch()
 
