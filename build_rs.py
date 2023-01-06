@@ -79,7 +79,9 @@ class BuildRS(MonthSheet):
 
         print(f'InitLoad time: {time.time() - init_load_time}')
 
-        _ = self.iterate_over_remaining_months()
+        # TODO: can't we just pass a list of months
+        after_initial = AfterInitLoad(rentrolls=self.proc_rentrolls,
+                                      deposits=self.proc_dates_and_paths)
         breakpoint()
         Damages.load_damages()
         # PROCESSED OPCASHES MOVED INTO DB
@@ -185,28 +187,5 @@ class BuildRS(MonthSheet):
                     month = data[0]
 
                     return True, month
-
-    def iterate_over_remaining_months(self):
-        # TODO: can't we just pass a list of months
-        # to the function? and iterate from there
-        
-        # iterate over dep
-        after_initial = AfterInitLoad(rentrolls=self.proc_rentrolls,
-                          deposits=self.proc_dates_and_paths)
-        breakpoint()
-
-
-        '''
-        for date, filename in self.proc_rentrolls:
-            (cleaned_nt_list,
-             total_tenant_charges,
-             cleaned_mos) = self.populate.after_jan_load(
-                filename=filename, date=date)
-
-
-        for date1, path in self.proc_dates_and_paths:
-            grand_total, ntp, tenant_payment_df = self.populate.payment_load_full(
-                filename=path)
-        '''
 
 

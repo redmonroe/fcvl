@@ -985,13 +985,14 @@ class PopulateTable(QueryHC):
         return move_ins, move_outs
 
     def insert_move_ins(self, move_ins=None, date=None, filename=None):
-        print('move in list', date, move_ins, filename)
         for name, unit, move_in_date in move_ins:
             print('move-ins:', name, unit, move_in_date)
             try:
                 with db.atomic():
                     nt = Tenant.create(
-                        tenant_name=name, active='true', move_in_date=move_in_date, unit=unit)
+                        tenant_name=name, active='true', 
+                        move_in_date=move_in_date, 
+                        unit=unit)
             except PIE as e:
                 print(e, 'new Tenant already entered into table', name)
                 return Tenant.get(Tenant.tenant_name == name)
@@ -1008,13 +1009,14 @@ class PopulateTable(QueryHC):
                     unt = Unit.get(unit_name=unit)
             except PIE as e:
                 print(e, 'UNIT already modified in Unit table', name)
-                return Unit.get(unit_name == unit)
+                return Unit.get(Unit.unit_name == unit)
 
             unt.status = 'occupied'
             unt.last_occupied = move_in_date
             unt.tenant = name
             print(
-                f'Move-In: updating Unit, MoveIn, and Tenant tables for {unt.tenant} for {unt.last_occupied}')
+                'Move-In: updating Unit, MoveIn, and Tenant tables for',
+                f'{unt.tenant} for {unt.last_occupied}')
 
             try:
                 nt.save()
@@ -1123,14 +1125,20 @@ class PopulateTable(QueryHC):
 class AfterInitLoad(PopulateTable):
 
     def __init__(self, rentrolls, deposits):
+        print('\n afterinitload')
         self.fill_item = '0'
         self.rentrolls = rentrolls
         self.deposits = deposits
         self._loop_over_rentrolls()
+        self._loop_over_deposits()
 
-    # for date1, path in self.proc_dates_and_paths:
-    #     grand_total, ntp, tenant_payment_df = self.populate.payment_load_full(
-    #         filename=path)
+    def _loop_over_deposits(self):
+        # for date1, path in self.proc_dates_and_paths:
+        #     grand_total, ntp, tenant_payment_df = 
+        #       self.populate.payment_load_full(
+        #         filename=path)
+        pass
+    
     def _loop_over_rentrolls(self):
         for date, filename in self.rentrolls:
             (self.first_dt,
@@ -1148,7 +1156,12 @@ class AfterInitLoad(PopulateTable):
                                        on=Tenant.tenant_name == Unit.tenant).
                                   namedtuples()]
 
-            self.df = pd.read_excel(filename, header=16)
+            if filename[-1] == 'x':
+                self.df = pd.read_excel(filename, header=16)
+            else:
+                filename = xlrd.open_workbook(filename,
+                                              logfile=open(os.devnull, 'w'))
+                self.df = pd.read_excel(filename, header=16)
             self.df = self.df.fillna(self.fill_item)
 
             (self.nt_list_w_vacants,
