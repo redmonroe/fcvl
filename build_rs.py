@@ -1,7 +1,7 @@
 import time
 
 from auth_work import oauth
-from backend import (Damages, InitLoad, Findexer, PopulateTable,
+from backend import (Damages, Findexer, InitLoad, PopulateTable,
                      ProcessingLayer, db)
 from config import Config
 from file_indexer import FileIndexer
@@ -212,6 +212,19 @@ class BuildRS(MonthSheet):
          contract_rents) = initial.return_init_results()
 
         breakpoint()
+        DBUtils.peewee_fast_write(init_ten, cls=Tenant)
+        
+        
+        query = Tenant.insert_many(ten_insert_many)
+        query.execute()
+        query = TenantRent.insert_many(rent_insert_many)
+        query.execute()
+        query = Unit.insert_many(units_insert_many)
+        query.execute()
+        query = Subsidy.insert_many(subs_insert_many)
+        query.execute()
+        query = ContractRent.insert_many(krent_insert_many)
+        query.execute()
         # nt_list, total_tenant_charges, explicit_move_outs =
 
         # load tenant balances at 01012022

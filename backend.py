@@ -22,6 +22,7 @@ from recordtype import \
     recordtype  # i edit the source code here, so requirements won't work if this is ever published, after 3.10, collection.abc change
 
 from config import Config
+from db_utils import DBUtils
 from letters import Letters
 from reconciler import Reconciler
 from records import record
@@ -759,7 +760,12 @@ class UrQuery(QueryHC):
     def __init__(self, **kwargs):
         print('urquery')
 
-    def ur_query(self, model_str=None, query_dict=None, query_tup=None, operators_list=None, **kwargs):
+    def ur_query(self,
+                 model_str=None,
+                 query_dict=None,
+                 query_tup=None,
+                 operators_list=None,
+                 **kwargs):
         import operator
         model = getattr(sys.modules[__name__], model_str)
 
@@ -795,59 +801,6 @@ class UrQuery(QueryHC):
 
 
 class PopulateTable(QueryHC):
-
-    # def init_load_ten_unit_ten_rent(self, filename=None, date=None):
-    #     """loads initial tenant accounts from spreadsheet"""
-
-    #     fill_item = '0'
-    #     df = pd.read_excel(filename, header=16)
-    #     df = df.fillna(fill_item)
-    #     nt_list_w_vacants, explicit_move_outs = self.nt_from_df(
-    #         df=df, date=date, fill_item=fill_item)
-
-    #     first_dt, last_dt = self.make_first_and_last_dates(date_str=date)
-
-    #     total_tenant_charges = float(
-    #         ((nt_list_w_vacants.pop(-1)).rent).replace(',', ''))
-
-    #     nt_list = self.return_nt_list_with_no_vacants(
-    #         keyword='vacant', nt_list=nt_list_w_vacants)
-
-    #     ten_insert_many = [{'tenant_name': row.name, 'move_in_date': datetime.strptime(
-    #         row.mi_date, '%m/%d/%Y'), 'unit': row.unit} for row in nt_list]
-
-    #     units_insert_many = []
-    #     for row in nt_list_w_vacants:
-    #         if row.name == 'vacant':
-    #             dict1 = {'unit_name': row.unit, 'status': 'vacant'}
-    #         else:
-    #             dict1 = {'unit_name': row.unit,
-    #                      'tenant': row.name, 'last_occupied': last_dt}
-    #         units_insert_many.append(dict1)
-
-    #     # should include write to move-in even though no move'in in jan
-
-    #     rent_insert_many = [{'t_name': row.name, 'unit': row.unit, 'rent_amount': row.rent.replace(
-    #         ',', ''), 'rent_date': row.date} for row in nt_list if row.name != 'vacant']
-
-    #     subs_insert_many = [{'tenant': row.name, 'sub_amount': row.subsidy.replace(
-    #         ',', ''), 'date_posted': row.date} for row in nt_list if row.name != 'vacant']
-
-    #     krent_insert_many = [{'tenant': row.name, 'sub_amount': row.contract.replace(
-    #         ',', ''), 'date_posted': row.date} for row in nt_list if row.name != 'vacant']
-
-    #     query = Tenant.insert_many(ten_insert_many)
-    #     query.execute()
-    #     query = TenantRent.insert_many(rent_insert_many)
-    #     query.execute()
-    #     query = Unit.insert_many(units_insert_many)
-    #     query.execute()
-    #     query = Subsidy.insert_many(subs_insert_many)
-    #     query.execute()
-    #     query = ContractRent.insert_many(krent_insert_many)
-    #     query.execute()
-
-    #     return nt_list, total_tenant_charges, explicit_move_outs
 
     def after_jan_load(self, filename=None, date=None, *args, **kwargs):
         ''' order matters'''
@@ -1283,20 +1236,36 @@ class InitLoad(PopulateTable):
                                  ',', ''),
                                 'date_posted': row.date}
                                for row in self.nt_list if row.name != 'vacant']
+        
+        self._write_init_vals(self.init_tenants, cls='Tenant')
+        self._write_init_vals(self.units, cls='Unit')
+        self._write_init_vals(self.rents, cls='TenantRent')
+        self._write_init_vals(self.subsidies, cls='Subsidy')
+        self._write_init_vals(self.contract_rents, cls='ContractRent')
 
     def _total_tenant_charges(self):
         return float(
                 ((self.nt_list_w_vacants.pop(-1)).rent).replace(',', ''))
 
     def _update_units(self):
-        units_insert_many = []
+        units = []
         for row in self.nt_list_w_vacants:
             if row.name == 'vacant':
                 dict1 = {'unit_name': row.unit, 'status': 'vacant'}
             else:
                 dict1 = {'unit_name': row.unit,
                          'tenant': row.name, 'last_occupied': self.last_dt}
-            units_insert_many.append(dict1)
+            units.append(dict1)
+        return units
+
+    def _write_init_vals(self, data, cls=None):
+        model = getattr(sys.modules[__name__], cls)
+        query = model.insert_many(data)
+        try:
+            query.execute()
+        except TypeError as e:
+            print(e)
+            print('issue is with query write execution in InitLoad')
 
     def return_init_results(self):
         return (self.nt_list,
@@ -1307,50 +1276,6 @@ class InitLoad(PopulateTable):
                 self.rents,
                 self.subsidies,
                 self.contract_rents)
-
-    def init_load_ten_unit_ten_rent(self, filename=None, date=None):
-
-        # fill_item = '0'
-        # df = pd.read_excel(filename, header=16)
-        # df = df.fillna(fill_item)
-        # nt_list_w_vacants, explicit_move_outs = self.nt_from_df(
-        #     df=self.df, date=date, fill_item='0')
-
-        # first_dt, last_dt = self.make_first_and_last_dates(date_str=date)
-
-        # total_tenant_charges = float(
-        #     ((nt_list_w_vacants.pop(-1)).rent).replace(',', ''))
-
-        # nt_list = self.return_nt_list_with_no_vacants(
-        #     keyword='vacant', nt_list=nt_list_w_vacants)
-
-        # ten_insert_many = [{'tenant_name': row.name, 'move_in_date': datetime.strptime(
-        #     row.mi_date, '%m/%d/%Y'), 'unit': row.unit} for row in nt_list]
-
-
-        # should include write to move-in even though no move'in in jan
-
-        # rent_insert_many = [{'t_name': row.name, 'unit': row.unit, 'rent_amount': row.rent.replace(
-        #     ',', ''), 'rent_date': row.date} for row in nt_list if row.name != 'vacant']
-
-        # subs_insert_many = [{'tenant': row.name, 'sub_amount': row.subsidy.replace(
-        #     ',', ''), 'date_posted': row.date} for row in nt_list if row.name != 'vacant']
-
-        # krent_insert_many = [{'tenant': row.name, 'sub_amount': row.contract.replace(
-        #     ',', ''), 'date_posted': row.date} for row in nt_list if row.name != 'vacant']
-
-        query = Tenant.insert_many(ten_insert_many)
-        query.execute()
-        query = TenantRent.insert_many(rent_insert_many)
-        query.execute()
-        query = Unit.insert_many(units_insert_many)
-        query.execute()
-        query = Subsidy.insert_many(subs_insert_many)
-        query.execute()
-        query = ContractRent.insert_many(krent_insert_many)
-        query.execute()
-
-        return nt_list, total_tenant_charges, explicit_move_outs
 
 
 class ProcessingLayer(StatusRS):

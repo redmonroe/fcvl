@@ -9,6 +9,7 @@ from config import Config
 
 class DBUtils:
 
+
     @staticmethod
     def pw_connect_to_db(db=None, tables_list=None):
         if db.is_closed() is True:
