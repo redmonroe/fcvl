@@ -1,7 +1,7 @@
 import time
 
 from auth_work import oauth
-from backend import (Damages, Findexer, PopulateTable,
+from backend import (Damages, InitLoad, Findexer, PopulateTable,
                      ProcessingLayer, db)
 from config import Config
 from file_indexer import FileIndexer
@@ -190,7 +190,7 @@ class BuildRS(MonthSheet):
     def load_initial_tenants_and_balances(self):
         print('loading initial tenant balances')
         # load tenants as 01-01-2022
-        populate = PopulateTable()
+        # populate = PopulateTable()
         records = [(item.fn, item.period, item.path) for item in Findexer().
                    select().
                    where(Findexer.doc_type == 'rent').
@@ -198,9 +198,21 @@ class BuildRS(MonthSheet):
                    where(Findexer.period == '2022-01').
                    namedtuples()]
 
-        # business logic to load inital tenants; cutoff '2022-01'
-        nt_list, total_tenant_charges, explicit_move_outs = populate.init_load_ten_unit_ten_rent(
+        # business logic to load inital tenants; cutoff '2022-01's
+        initial = InitLoad(
             filename=records[0][2], date=records[0][1])
+
+        (tenant_rows,
+         tot_ten_ch,
+         ex_moveouts,
+         init_ten,
+         units,
+         rents,
+         subsidies,
+         contract_rents) = initial.return_init_results()
+
+        breakpoint()
+        # nt_list, total_tenant_charges, explicit_move_outs =
 
         # load tenant balances at 01012022
         _ = [item.name for item in self.path.iterdir()]
