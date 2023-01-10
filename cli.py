@@ -35,6 +35,7 @@ def where_are_we(most_recent_good):
                        build=build, service=service, ms=ms)
 
     # TODO
+    # TODO: NEED TO FIX MONTH CHOICE WHEN WE ARE DEALING WITH YEAR OVERLAPS
     if most_recent_good:
         where.select_month(date=True)
     else:
@@ -70,11 +71,15 @@ def reset_db_prod():
 
 
 @click.command()
-def load_db_test():
+@click.option('-l', type=str, help='pass an explicit final month to db builder (ie "2022-12")')
+def load_db_test(l):
     click.echo('TEST: loading all available files in path to db')
     figure = Figuration(method='not_iter')
     path, full_sheet, build, service, ms = figure.return_configuration()
-    build.build_db_from_scratch()
+    if l:
+        build.build_db_from_scratch(last_range_month=l)
+    else:
+        build.build_db_from_scratch()
 
 
 @click.command()

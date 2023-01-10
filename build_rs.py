@@ -11,7 +11,7 @@ from setup_month import MonthSheet
 
 class BuildRS(MonthSheet):
     def __init__(self, sleep=None, full_sheet=None, path=None,
-                 mode=None, test_service=None, pytest=None):
+                 mode=None, test_service=None, pytest=None, **kw):
 
         self.main_db = db  # connects backend.db to Config
         if mode == 'testing':
@@ -64,7 +64,6 @@ class BuildRS(MonthSheet):
         print('loading initial tenant balances')
         init_load_time = time.time()
         initial = InitLoad(
-            # date=records[0][1],
             path=self.path,
             custom_load_file=self.target_bal_load_file)
 
@@ -80,17 +79,24 @@ class BuildRS(MonthSheet):
         print(f'InitLoad time: {time.time() - init_load_time}')
 
         # TODO: can't we just pass a list of months
+        after_init_load_time = time.time()
         after_initial = AfterInitLoad(rentrolls=self.proc_rentrolls,
                                       deposits=self.proc_dates_and_paths)
-        breakpoint()
+        
+        print(f'AfterInitLoad time: {time.time() - after_init_load_time}')
+        
         Damages.load_damages()
-        # PROCESSED OPCASHES MOVED INTO DB
+
         self.populate.transfer_opcash_from_findex_to_opcash_and_detail()
 
         '''BUILD ADDRESSES HERE; MOVE IT OUT OF LETTERS'''
 
-        all_months_ytd, report_list, most_recent_status = player.write_to_statusrs_wrapper()
+        if kw.get('last_range_month') == True:
+            all_months_ytd, report_list, most_recent_status = player.write_to_statusrs_wrapper(last_range_month=last_range_month)            
+        else:
+            all_months_ytd, report_list, most_recent_status = player.write_to_statusrs_wrapper()
 
+        breakpoint()
         """this is the critical control function"""
         player.reconcile_and_inscribe_state(
             month_list=all_months_ytd,

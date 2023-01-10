@@ -98,6 +98,7 @@ class Damages(BaseModel):
 
     @staticmethod
     def load_damages():
+        print('\napplying all historical damages from Config')
         damages_2022 = Config.damages_2022
         for item in damages_2022:
             for name, packet in item.items():
@@ -1111,8 +1112,12 @@ class PopulateTable(QueryHC):
         for item in file_list:
             try:
                 with db.atomic():
-                    oc = OpCash.create(stmt_key=item[0], date=datetime.strptime(
-                        item[1], '%Y-%m'), rr=item[4], hap=item[3], dep_sum=item[5], corr_sum=item[7])
+                    oc = OpCash.create(stmt_key=item[0], 
+                                       date=datetime.strptime(item[1], '%Y-%m'), 
+                                       rr=item[4], 
+                                       hap=item[3], 
+                                       dep_sum=item[5], 
+                                       corr_sum=item[7])
                     oc.save()
             except IntegrityError as e:
                 print('already created this record')
@@ -1378,14 +1383,18 @@ class ProcessingLayer(StatusRS):
         manentry = ManualEntry(db=db)
         manentry.apply_persisted_changes()
 
-    def write_to_statusrs_wrapper(self):
+    def write_to_statusrs_wrapper(self, **kwargs):
         populate = PopulateTable()
         self.set_current_date()
         most_recent_status = self.get_most_recent_status()
-        all_months_ytd = Utils.months_in_ytd(Config.current_year)
+        
+        if kwargs['last_range_month']:
+            all_months_ytd = Utils.months_in_ytd(Config.current_year, last_range_month=kwargs['last_range_month'])
+        else:
+            all_months_ytd = Utils.months_in_ytd(Config.current_year)
+        
         report_list = populate.get_processed_by_month(
             month_list=all_months_ytd)
-
         return all_months_ytd, report_list, most_recent_status
 
     def display_most_recent_status(self, mr_status=None, months_ytd=None):

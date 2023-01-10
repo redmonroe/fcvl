@@ -35,12 +35,16 @@ class Utils:
                       style=None,
                       show_choices=None,
                       last_range_month=None):
+        
         if last_range_month:
-            breakpoint()
+            current_year = int(last_range_month.split('-')[0])
+            range_month = int(last_range_month.split('-')[1])
         else:
             range_month = datetime.now().strftime('%m')
-        date_info = monthrange(int(current_year), int(range_month))
+        
+        date_info = monthrange(current_year, range_month)
         last_day = date_info[1]
+        breakpoint()
 
         month_list = pd.date_range(f'{current_year}-01-01',
                                    f'{current_year}-{range_month}-{last_day}',
