@@ -9,8 +9,6 @@ from sqlite3 import IntegrityError
 
 import pandas as pd
 import xlrd
-from dateutil.relativedelta import relativedelta
-from numpy import nan
 from peewee import *
 from peewee import (JOIN, AutoField, BooleanField, CharField, DateField,
                     DecimalField)
@@ -19,13 +17,15 @@ from peewee import ForeignKeyField, IntegerField
 from peewee import IntegrityError as PIE
 from peewee import Model, SqliteDatabase, fn
 from recordtype import \
-    recordtype  # i edit the source code here, so requirements won't work if this is ever published, after 3.10, collection.abc change
+    recordtype
+
+# i edit the source code here,
+# so requirements won't work if this is ever published,
+# after 3.10, collection.abc change
 
 from config import Config
-from db_utils import DBUtils
 from letters import Letters
 from reconciler import Reconciler
-from records import record
 from utils import Utils
 
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -253,6 +253,19 @@ class QueryHC(Reconciler):
                 MoveIn,
                 WorkOrder]
 
+    def get_start_tenants(self, date):
+        return [(name.tenant_name, name.unit_name,
+                datetime(name.move_in_date.year,
+                 name.move_in_date.month,
+                 name.move_in_date.day)) for name in
+                Tenant.select(Tenant.tenant_name,
+                              Tenant.move_in_date,
+                              Unit.unit_name).where(
+            Tenant.move_in_date <=
+            datetime.strptime(date, '%Y-%m')).
+            join(Unit, on=Tenant.tenant_name == Unit.tenant).
+            namedtuples()]
+
     def make_first_and_last_dates(self, date_str=None):
         dt_obj = datetime.strptime(date_str, '%Y-%m')
         dt_obj_first = dt_obj.replace(day=1)
@@ -274,7 +287,9 @@ class QueryHC(Reconciler):
             Findexer.doc_type == type1).namedtuples()]
         return rows
 
-    def get_rent_roll_by_month_at_first_of_month(self, first_dt=None, last_dt=None):
+    def get_rent_roll_by_month_at_first_of_month(self, 
+                                                 first_dt=None, 
+                                                 last_dt=None):
         '''lots of work in this func'''
         tenants_mi_on_or_before_first = [(rec.tenant_name,
                                          rec.unit) for rec in Tenant().
@@ -282,7 +297,7 @@ class QueryHC(Reconciler):
                                          join(Unit, JOIN.LEFT_OUTER,
                                          on=(
                                              Tenant.tenant_name == Unit.tenant
-                                             )).
+                                         )).
                                          where(
             (Tenant.move_in_date <= first_dt) &
             ((Tenant.move_out_date == '0') |
@@ -299,14 +314,17 @@ class QueryHC(Reconciler):
             tenants_mi_on_or_before_first.append(tup)
 
         vacants = [
-            item for item in tenants_mi_on_or_before_first if item[0] == 'vacant']
+            item 
+            for item in tenants_mi_on_or_before_first if item[0] == 'vacant']
         tenants = [item[0]
-                   for item in tenants_mi_on_or_before_first if item[0] != 'vacant']
+                   for item in tenants_mi_on_or_before_first 
+                   if item[0] != 'vacant']
 
         return tenants_mi_on_or_before_first, vacants, tenants
 
     def get_beg_bal_by_tenant(self):
-        return [(row.tenant_name, float(row.beg_bal_amount)) for row in Tenant.select(Tenant.tenant_name, Tenant.beg_bal_amount).
+        return [(row.tenant_name, float(row.beg_bal_amount)) for row in Tenant.
+                select(Tenant.tenant_name, Tenant.beg_bal_amount).
                 namedtuples()]
 
     def get_mentries_by_month(self, first_dt=None, last_dt=None, type1=None):
@@ -317,7 +335,9 @@ class QueryHC(Reconciler):
                     namedtuples()]
 
         if type1 == 'delete' and mentries != []:
-            return [float(item.replace("'", "").split(',')[3].split('=')[1]) for item in mentries][0]
+            return [float(item.replace("'", "").
+                    split(',')[3].
+                    split('=')[1]) for item in mentries][0]
 
         return mentries
 
@@ -804,7 +824,7 @@ class PopulateTable(QueryHC):
 
     def _total_tenant_charges(self):
         return float(
-                ((self.nt_list_w_vacants.pop(-1)).rent).replace(',', ''))
+            ((self.nt_list_w_vacants.pop(-1)).rent).replace(',', ''))
 
     def _write_vals(self, data, cls=None):
         model = getattr(sys.modules[__name__], cls)
@@ -990,8 +1010,8 @@ class PopulateTable(QueryHC):
             try:
                 with db.atomic():
                     nt = Tenant.create(
-                        tenant_name=name, active='true', 
-                        move_in_date=move_in_date, 
+                        tenant_name=name, active='true',
+                        move_in_date=move_in_date,
                         unit=unit)
             except PIE as e:
                 print(e, 'new Tenant already entered into table', name)
@@ -1133,28 +1153,15 @@ class AfterInitLoad(PopulateTable):
         self._loop_over_deposits()
 
     def _loop_over_deposits(self):
-        # for date1, path in self.proc_dates_and_paths:
-        #     grand_total, ntp, tenant_payment_df = 
-        #       self.populate.payment_load_full(
-        #         filename=path)
-        pass
-    
+        for date, path in self.deposits:
+            grand_total, ntp, tenant_payment_df = self.payment_load_full(
+                filename=path)
+
     def _loop_over_rentrolls(self):
         for date, filename in self.rentrolls:
             (self.first_dt,
              self.last_dt) = self.make_first_and_last_dates(date_str=date)
-            self.start_tenants = [(name.tenant_name, name.unit_name,
-                                  datetime(name.move_in_date.year,
-                                   name.move_in_date.month,
-                                   name.move_in_date.day)) for name in
-                                  Tenant.select(Tenant.tenant_name,
-                                                Tenant.move_in_date,
-                                                Unit.unit_name).where(
-                                  Tenant.move_in_date <=
-                                  datetime.strptime(date, '%Y-%m')).
-                                  join(Unit,
-                                       on=Tenant.tenant_name == Unit.tenant).
-                                  namedtuples()]
+            self.start_tenants = self.get_start_tenants(date)
 
             if filename[-1] == 'x':
                 self.df = pd.read_excel(filename, header=16)
@@ -1162,6 +1169,7 @@ class AfterInitLoad(PopulateTable):
                 filename = xlrd.open_workbook(filename,
                                               logfile=open(os.devnull, 'w'))
                 self.df = pd.read_excel(filename, header=16)
+
             self.df = self.df.fillna(self.fill_item)
 
             (self.nt_list_w_vacants,
@@ -1194,14 +1202,14 @@ class AfterInitLoad(PopulateTable):
                 and may again fetched this updated record
             '''
             self.cleaned_nt_list = [
-                            row for row in self.return_nt_list_with_no_vacants(
-                             keyword='vacant', nt_list=self.nt_list_w_vacants)
-                            ]
+                row for row in self.return_nt_list_with_no_vacants(
+                    keyword='vacant', nt_list=self.nt_list_w_vacants)
+            ]
 
             self.rents = [{'t_name': row.name,
                            'unit': row.unit,
                            'rent_amount': row.rent.replace(
-                            ',', ''),
+                               ',', ''),
                            'rent_date': row.date}
                           for row in self.cleaned_nt_list]
 
@@ -1209,7 +1217,7 @@ class AfterInitLoad(PopulateTable):
 
             self.subsidies = [{'tenant': row.name,
                                'sub_amount': row.subsidy.replace(
-                                ',', ''),
+                                   ',', ''),
                                'date_posted': row.date}
                               for row in self.cleaned_nt_list if row.name
                               != 'vacant']
@@ -1263,7 +1271,7 @@ class InitLoad(PopulateTable):
                         where(Findexer.period == '2022-01').
                         namedtuples()]
         self.first_dt, self.last_dt = self.make_first_and_last_dates(
-                                        date_str=self.records[0][1])
+            date_str=self.records[0][1])
         self.wb = xlrd.open_workbook(self.records[0][2],
                                      logfile=open(os.devnull, 'w'))
         self.df = pd.read_excel(self.wb, header=16)
@@ -1275,7 +1283,7 @@ class InitLoad(PopulateTable):
             keyword='vacant', nt_list=self.nt_list_w_vacants)
         self.init_tenants = [{'tenant_name': row.name,
                               'move_in_date': datetime.strptime(
-                               row.mi_date, '%m/%d/%Y'),
+                                  row.mi_date, '%m/%d/%Y'),
                               'unit': row.unit} for row in self.nt_list]
         self.units = self._update_units()
 
@@ -1287,13 +1295,13 @@ class InitLoad(PopulateTable):
 
         self.subsidies = [{'tenant': row.name,
                            'sub_amount': row.subsidy.replace(
-                            ',', ''),
+                               ',', ''),
                            'date_posted': row.date}
                           for row in self.nt_list if row.name != 'vacant']
 
         self.contract_rents = [{'tenant': row.name,
                                 'sub_amount': row.contract.replace(
-                                 ',', ''),
+                                    ',', ''),
                                 'date_posted': row.date}
                                for row in self.nt_list if row.name != 'vacant']
 

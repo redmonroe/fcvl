@@ -9,7 +9,6 @@ from config import Config
 
 class DBUtils:
 
-
     @staticmethod
     def pw_connect_to_db(db=None, tables_list=None):
         if db.is_closed() is True:
@@ -22,7 +21,9 @@ class DBUtils:
         backup_time = dt.now()
         db_name = path_to_existing_db.split('/')[-1]
         db_name = db_name.split('.')[0]
-        filename = db_name + '_' + str(backup_time.year) + str(backup_time.month) + str(backup_time.day) + '.sql'
+        filename = db_name + '_' + \
+            str(backup_time.year) + str(backup_time.month) + \
+            str(backup_time.day) + '.sql'
         write_path = path_to_backup + '/' + filename
 
         con = sqlite3.connect(path_to_existing_db)
@@ -33,12 +34,14 @@ class DBUtils:
     @staticmethod
     def find_sqlite(path_to_existing_db=None, path_to_backup=None):
         path_to_backup = Path(path_to_backup)
-        dir_contents = [item for item in path_to_backup.iterdir() if item.suffix != '.ini'] 
+        dir_contents = [item for item in path_to_backup.iterdir()
+                        if item.suffix != '.ini']
 
         backup_time = dt.now()
         db_name = path_to_existing_db.split('/')[-1]
         db_name = db_name.split('.')[0]
-        target_file_name = db_name + '_' + str(backup_time.year) + str(backup_time.month) + str(backup_time.day)
+        target_file_name = db_name + '_' + \
+            str(backup_time.year) + str(backup_time.month) + str(backup_time.day)
         fn_list = [filename.stem for filename in dir_contents]
 
         if target_file_name in fn_list:
@@ -78,22 +81,24 @@ class DBUtils:
     def pg_dump_one():
         bu_time = dt.now()
         print(bu_time)
-        os.system(f'pg_dump --dbname={Config.PG_DUMPS_URI} > "{Config.DB_BACKUPS}\loaderdump{bu_time.month}{bu_time.day}{bu_time.year}{bu_time.hour}.sql"')
+        os.system(
+            f'pg_dump --dbname={Config.PG_DUMPS_URI} > "{Config.DB_BACKUPS}\loaderdump{bu_time.month}{bu_time.day}{bu_time.year}{bu_time.hour}.sql"')
 
     def pg_restore_one(infile, testing=True):
         print('infile name:', infile)
-        os.system(f'psql -d fcvfin_tables -U postgres -f "{infile}') #just need the relative path, should be in working directory of fcvfin here
+        # just need the relative path, should be in working directory of fcvfin here
+        os.system(f'psql -d fcvfin_tables -U postgres -f "{infile}')
 
     def pg_get_sql_as_csv(table, dbname=None, username=None):
         """Gets a postgres table and outputs it to a .csv file
-        
+
         :param table: The name of the postgresql table that you will be selecting all from
         :type table: str
         :param dbname: The postgres database name.
         :type table: str
         :param username: The username of the postgresql database in question
         :returns: nothing, but generates .csv in working dir       
-        
+
         """
         conn = psycopg2.connect(f"dbname={dbname} user={username}")
         query = f'SELECT * from {table}'
