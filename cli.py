@@ -71,13 +71,14 @@ def reset_db_prod():
 
 
 @click.command()
-@click.option('-l', type=str, help='pass an explicit final month to db builder (ie "2022-12")')
-def load_db_test(l):
+@click.option('-l', '--last_month', type=str, help='pass an explicit final month to db builder (ie "2022-12")')
+def load_db_test(last_month=None):
     click.echo('TEST: loading all available files in path to db')
     figure = Figuration(method='not_iter')
     path, full_sheet, build, service, ms = figure.return_configuration()
-    if l:
-        build.build_db_from_scratch(last_range_month=l)
+    if last_month:
+        print(last_month)
+        build.build_db_from_scratch(last_range_month=last_month)
     else:
         build.build_db_from_scratch()
 

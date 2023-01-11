@@ -91,8 +91,8 @@ class BuildRS(MonthSheet):
 
         '''BUILD ADDRESSES HERE; MOVE IT OUT OF LETTERS'''
 
-        if kw.get('last_range_month') == True:
-            all_months_ytd, report_list, most_recent_status = player.write_to_statusrs_wrapper(last_range_month=last_range_month)            
+        if kw.get('last_range_month') is not None:
+            all_months_ytd, report_list, most_recent_status = player.write_to_statusrs_wrapper(last_range_month=kw['last_range_month'])            
         else:
             all_months_ytd, report_list, most_recent_status = player.write_to_statusrs_wrapper()
 

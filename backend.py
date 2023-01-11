@@ -1387,10 +1387,10 @@ class ProcessingLayer(StatusRS):
         populate = PopulateTable()
         self.set_current_date()
         most_recent_status = self.get_most_recent_status()
-        
-        if kwargs['last_range_month']:
+        if kwargs.get('last_range_month'):
             all_months_ytd = Utils.months_in_ytd(Config.current_year, last_range_month=kwargs['last_range_month'])
         else:
+            breakpoint()
             all_months_ytd = Utils.months_in_ytd(Config.current_year)
         
         report_list = populate.get_processed_by_month(
