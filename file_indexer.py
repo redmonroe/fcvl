@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from backend import Findexer, PopulateTable, Reconciler, StatusObject
+from backend import Findexer, PopulateTable, Reconciler, StatusObject, DryRunRentRoll
 from config import Config
 from pdf import StructDataExtract
 from persistent import Persistent
@@ -252,6 +252,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
                     dict1 = {name: (values[0], values[1], values[2])}
                     damages.append(dict1)
 
+        df = pd.DataFrame()
         for entry in kwargs['currently_availables']:
             for genus, path in entry.items():
                 if genus == 'scrape' and path[0] is True:
@@ -263,7 +264,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
                     df = df.groupby(df['dep_type']).sum(numeric_only=True)
                     df = df.to_dict('dict')
                 if genus == 'opcash' and path[0] is True:
-                    self.op_cash_list.append(path[1])
+                    self.op_cash_list.append(path[1][0])
                     opcash_dry_run = self.rename_by_content_pdf(
                         bypass_write_to_db=True)
                 else:
@@ -387,7 +388,8 @@ class FileIndexer(Utils, Scrape, Reconciler):
             (Findexer.file_ext == kw['mode'][1][0]) |
             (Findexer.file_ext == kw['mode'][1][1])).namedtuples()]
 
-    def survey_deposits_report_for_dry_run(self, path, *args, **kwargs):
+    def get_df_from_path_list(self, path):
+        # TODO: THIS SHOULD BE COMBINED INTO CLASS IN BACKEND
         import xlrd
         for possible_path in path:
             try:
@@ -396,17 +398,18 @@ class FileIndexer(Utils, Scrape, Reconciler):
                 print(e)
                 print(f'{possible_path.suffix} does not exist, trying other extension type')
             df = pd.read_excel(wb)
-            deposits = self.deposit_report_unpacker(df=df)
+        return df
+
+    def survey_deposits_report_for_dry_run(self, path, *args, **kwargs):
+        df = self.get_df_from_path_list(path)
+        deposits = self.deposit_report_unpacker(df=df)
         
         return deposits
 
     def survey_rent_report_for_dry_run(self, path, *args, **kwargs):
-        populate = PopulateTable()
-        dirty_nt_list, total_tenant_charges, cleaned_mos, computed_mis = populate.after_jan_load(
-            filename=path, date=kwargs['target_month'], dry_run=True)
-        # TODO: NEED TO DO SOMETHING TO DIRTY_NT_LIST
-
-        return {'tenant_charges': total_tenant_charges, 'mos': cleaned_mos, 'mis': computed_mis}
+        sample = DryRunRentRoll(path=path, date=kwargs['target_month'])
+        dirty_nt_list, total_tenant_charges, cleaned_mos, computed_mis = sample.return_rentroll_data()
+        return {'tenant_charges': total_tenant_charges, 'mos': cleaned_mos, 'mis': computed_mis, 'dirty_tenant_list': dirty_nt_list}
 
     def find_by_content(self, style, target_string=None, **kw):
         for path, doc_id in self.indexed_list:

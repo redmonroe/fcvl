@@ -1,6 +1,6 @@
 import sys
 
-from backend import PopulateTable, ProcessingLayer, StatusObject, UrQuery
+from backend import PopulateTable, ProcessingLayer, StatusObject, UrQuery, DryRunRentRoll
 from config import Config
 from errors import Errors
 from iter_rs import IterRS
@@ -151,6 +151,7 @@ class WhereAreWe(ProcessingLayer):
             breakpoint()
             sys.exit(0)
 
+        breakpoint()
         print('*' * 45)
         print(f'DRY RUN FOR {target_month}.')
         print('*' * 45)

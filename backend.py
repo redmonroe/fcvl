@@ -5,6 +5,7 @@ import sys
 from collections import namedtuple
 from datetime import datetime, timedelta
 from functools import reduce
+from pathlib import Path
 from sqlite3 import IntegrityError
 
 import pandas as pd
@@ -1161,42 +1162,55 @@ class AfterInitLoad(PopulateTable):
         for date, path in self.deposits:
             grand_total, ntp, tenant_payment_df = self.payment_load_full(
                 filename=path)
+            
+    def _rent_roll_loop_internals(self, date, filename):
+        (self.first_dt,
+            self.last_dt) = self.make_first_and_last_dates(date_str=date)
+        self.start_tenants = self.get_start_tenants(date)
+
+        filename = Path(filename)
+        # if filename[-1] == 'x':
+        if filename.suffix == '.xlsx':
+            self.df = pd.read_excel(filename, header=16)
+        else:
+            filename = xlrd.open_workbook(filename,
+                                            logfile=open(os.devnull, 'w'))
+            self.df = pd.read_excel(filename, header=16)
+
+        self.df = self.df.fillna(self.fill_item)
+
+        (self.nt_list_w_vacants,
+            self.explicit_move_outs) = self.nt_from_df(
+            df=self.df, date=date, fill_item=self.fill_item)
+
+        self.total_tenant_charges = self._total_tenant_charges()
+        self.end_tenants = [(row.name, row.unit,
+                            datetime.strptime(row.mi_date,
+                                                '%m/%d/%Y'))
+                            for row in self.return_nt_list_with_no_vacants(
+                                keyword='vacant',
+                                nt_list=self.nt_list_w_vacants)]
+
+        self.computed_mis, self.computed_mos = self.compare_rentroll_chng(
+            start_set=set(self.start_tenants),
+            end_set=set(self.end_tenants))
+
+        self.cleaned_mos = self.merge_move_outs(
+            explicit_move_outs=self.explicit_move_outs,
+            computed_mos=self.computed_mos,
+            date=date)
+        
+        return (self.nt_list_w_vacants,
+             self.total_tenant_charges,
+             self.cleaned_mos,
+             self.computed_mis)
 
     def _loop_over_rentrolls(self):
         for date, filename in self.rentrolls:
-            (self.first_dt,
-             self.last_dt) = self.make_first_and_last_dates(date_str=date)
-            self.start_tenants = self.get_start_tenants(date)
-
-            if filename[-1] == 'x':
-                self.df = pd.read_excel(filename, header=16)
-            else:
-                filename = xlrd.open_workbook(filename,
-                                              logfile=open(os.devnull, 'w'))
-                self.df = pd.read_excel(filename, header=16)
-
-            self.df = self.df.fillna(self.fill_item)
-
             (self.nt_list_w_vacants,
-             self.explicit_move_outs) = self.nt_from_df(
-                df=self.df, date=date, fill_item=self.fill_item)
-
-            self.total_tenant_charges = self._total_tenant_charges()
-            self.end_tenants = [(row.name, row.unit,
-                                datetime.strptime(row.mi_date,
-                                                  '%m/%d/%Y'))
-                                for row in self.return_nt_list_with_no_vacants(
-                                    keyword='vacant',
-                                    nt_list=self.nt_list_w_vacants)]
-
-            self.computed_mis, self.computed_mos = self.compare_rentroll_chng(
-                start_set=set(self.start_tenants),
-                end_set=set(self.end_tenants))
-
-            self.cleaned_mos = self.merge_move_outs(
-                explicit_move_outs=self.explicit_move_outs,
-                computed_mos=self.computed_mos,
-                date=date)
+             self.total_tenant_charges,
+             self.cleaned_mos,
+             self.computed_mis) = self._rent_roll_loop_internals(date, filename)
 
             self.insert_move_ins(move_ins=self.computed_mis,
                                  date=date, filename=filename)
@@ -1260,6 +1274,30 @@ class AfterInitLoad(PopulateTable):
                 self.computed_mis)
 
 
+class DryRunRentRoll(AfterInitLoad):
+
+    def __init__(self, path, date):
+        print('\n Sampleload')
+        self.fill_item = '0'
+        self.path = self._pick_correct_file(path)
+        self.date = date   
+        (self.nt_list_w_vacants,
+         self.total_tenant_charges,
+         self.cleaned_mos,
+         self.computed_mis) = self._rent_roll_loop_internals(self.date, self.path)
+    
+    def _pick_correct_file(self, path=None):
+        for possible_path in path:
+            try:
+                wb = xlrd.open_workbook(possible_path, logfile=open(os.devnull, 'w'))
+                return possible_path
+            except FileNotFoundError as e:
+                print(e)
+                print(f'{possible_path.suffix} does not exist, trying other extension type')
+            path = path[1]
+        return path
+    
+    
 class InitLoad(PopulateTable):
 
     def __init__(self, path=None, **kwargs):
@@ -1357,6 +1395,8 @@ class InitLoad(PopulateTable):
                 self.rents,
                 self.subsidies,
                 self.contract_rents)
+        
+        
 
 
 class ProcessingLayer(StatusRS):
