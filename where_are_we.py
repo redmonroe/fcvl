@@ -18,6 +18,7 @@ class WhereAreWe(ProcessingLayer):
         self.db = self.build.main_db
         self.populate = PopulateTable()
         self.player = ProcessingLayer()
+        self.query = UrQuery()
         self.testing = True
         self.times = 0
         self.iter = IterRS(full_sheet=self.full_sheet, path=self.path,
@@ -25,14 +26,12 @@ class WhereAreWe(ProcessingLayer):
         self.most_recent_good_month, self.good_months = self.player.get_mr_good_month()
         self.ur_query = UrQuery()
         self.support_doc_types_list = ['deposits', 'opcash', 'rent', 'scrape']
+        self.first_incomplete_month = Utils.get_next_month(
+            target_month=self.most_recent_good_month)
 
     def select_month(self, date=None):
         """could set explicit range if wanted"""
-        query = UrQuery()
-
-        first_incomplete_month = Utils.get_next_month(
-            target_month=self.most_recent_good_month)
-
+        # query = UrQuery()
         if date:
             date = self.most_recent_good_month
         else:
@@ -47,45 +46,45 @@ class WhereAreWe(ProcessingLayer):
             first_dt=first_dt, last_dt=last_dt)
 
         # opcash
-        opcash = [row.dep_sum for row in query.ur_query(model_str='OpCash', query_tup=[(
+        opcash = [row.dep_sum for row in self.query.ur_query(model_str='OpCash', query_tup=[(
             'date', first_dt), ('date', last_dt)], operators_list=['>=', '<=']).namedtuples()]
 
         # did opcash reconcile to deposits
-        did_opcash_or_scrape_reconcile_with_deposit_report = [row for row in query.ur_query(
+        did_opcash_or_scrape_reconcile_with_deposit_report = [row for row in self.query.ur_query(
             model_str='StatusObject').namedtuples() if row.month == date]
 
         # replacement reserve
-        replacement_reserve = [row.rr for row in query.ur_query(model_str='Findexer', query_tup=[(
+        replacement_reserve = [row.rr for row in self.query.ur_query(model_str='Findexer', query_tup=[(
             'period', date)], operators_list=['==']).namedtuples() if row.doc_type == 'scrape']
 
         if replacement_reserve == []:
-            replacement_reserve = [row.rr for row in query.ur_query(model_str='Findexer', query_tup=[(
+            replacement_reserve = [row.rr for row in self.query.ur_query(model_str='Findexer', query_tup=[(
                 'period', date)], operators_list=['==']).namedtuples() if row.doc_type == 'opcash']
 
         # hap
-        hap = [row.hap for row in query.ur_query(model_str='Findexer', query_tup=[(
+        hap = [row.hap for row in self.query.ur_query(model_str='Findexer', query_tup=[(
             'period', date)], operators_list=['==']).namedtuples() if row.doc_type == 'scrape']
 
         if hap == []:
-            hap = [row.hap for row in query.ur_query(model_str='Findexer', query_tup=[(
+            hap = [row.hap for row in self.query.ur_query(model_str='Findexer', query_tup=[(
                 'period', date)], operators_list=['==']).namedtuples() if row.doc_type == 'opcash']
 
         # damages
-        if [row for row in query.ur_query(model_str='Damages', query_tup=[('dam_date', first_dt), ('dam_date', last_dt)], operators_list=['>=', '<=']).namedtuples()] == []:
+        if [row for row in self.query.ur_query(model_str='Damages', query_tup=[('dam_date', first_dt), ('dam_date', last_dt)], operators_list=['>=', '<=']).namedtuples()] == []:
             damage_sum = 0
             dam_types = []
         else:
-            damages = [row for row in query.ur_query(model_str='Damages', query_tup=[(
+            damages = [row for row in self.query.ur_query(model_str='Damages', query_tup=[(
                 'dam_date', first_dt), ('dam_date', last_dt)], operators_list=['>=', '<=']).namedtuples()]
             damage_sum = sum([float(row.dam_amount) for row in damages])
             dam_types = [row.dam_type for row in damages]
 
         #laundry, ntp, other
-        if [row for row in query.ur_query(model_str='NTPayment', query_tup=[('date_posted', first_dt), ('date_posted', last_dt)], operators_list=['>=', '<=']).namedtuples()] == []:
+        if [row for row in self.query.ur_query(model_str='NTPayment', query_tup=[('date_posted', first_dt), ('date_posted', last_dt)], operators_list=['>=', '<=']).namedtuples()] == []:
             laundry_sum = 0
             other_sum = 0
         else:
-            laundry = [row for row in query.ur_query(model_str='NTPayment', query_tup=[(
+            laundry = [row for row in self.query.ur_query(model_str='NTPayment', query_tup=[(
                 'date_posted', first_dt), ('date_posted', last_dt)], operators_list=['>=', '<=']).namedtuples()]
 
             laundry_sum = sum([float(row.amount)
@@ -96,14 +95,14 @@ class WhereAreWe(ProcessingLayer):
 
         # MIs
         mi_payments = []
-        if [row for row in query.ur_query(model_str='MoveIn', query_tup=[('mi_date', first_dt), ('mi_date', last_dt)], operators_list=['>=', '<=']).namedtuples()] == []:
+        if [row for row in self.query.ur_query(model_str='MoveIn', query_tup=[('mi_date', first_dt), ('mi_date', last_dt)], operators_list=['>=', '<=']).namedtuples()] == []:
             mis = {'none': 'none'}
         else:
-            mis = [{row.name: str(row.mi_date)} for row in query.ur_query(model_str='MoveIn', query_tup=[
+            mis = [{row.name: str(row.mi_date)} for row in self.query.ur_query(model_str='MoveIn', query_tup=[
                 ('mi_date', first_dt), ('mi_date', last_dt)], operators_list=['>=', '<=']).namedtuples()]
 
             for name, _ in [(k, v) for rec in mis for (k, v) in rec.items()]:
-                mi_tp = query.get_single_ten_pay_by_period(
+                mi_tp = self.query.get_single_ten_pay_by_period(
                     first_dt=first_dt, last_dt=last_dt, name=name)
                 mi_payments.append(mi_tp)
 
@@ -123,7 +122,7 @@ class WhereAreWe(ProcessingLayer):
         )
 
         target_month, currently_availables, first_pw_incomplete_month = self.what_do_we_have(
-            first_incomplete_month=first_incomplete_month, allow_print=False)
+            first_incomplete_month=self.first_incomplete_month, allow_print=False)
 
         count = 0
         print('*' * 45)
