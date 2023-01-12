@@ -253,6 +253,8 @@ class FileIndexer(Utils, Scrape, Reconciler):
                     damages.append(dict1)
 
         df = pd.DataFrame()
+        opcash_dry_run = {
+            'dep': 0, 'hap': 0, 'rr': 0, 'corr_sum': 0}
         for entry in kwargs['currently_availables']:
             for genus, path in entry.items():
                 if genus == 'scrape' and path[0] is True:
@@ -267,9 +269,6 @@ class FileIndexer(Utils, Scrape, Reconciler):
                     self.op_cash_list.append(path[1][0])
                     opcash_dry_run = self.rename_by_content_pdf(
                         bypass_write_to_db=True)
-                else:
-                    opcash_dry_run = {
-                        'dep': 0, 'hap': 0, 'rr': 0, 'corr_sum': 0}
                 if genus == 'deposits' and path[0] is True:
                     deposits_dry_run = self.survey_deposits_report_for_dry_run(
                         path[1])

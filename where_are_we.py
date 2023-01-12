@@ -128,7 +128,7 @@ class WhereAreWe(ProcessingLayer):
         count = 0
         print('*' * 45)
         print(
-            f'\nfor target month: {target_month}, the following items are ready.')
+            f'\nfor target month: {target_month}, the following items are ready:')
         print('*' * 45)
         print(
             f'target month {target_month} is over? {first_pw_incomplete_month}.')
@@ -150,34 +150,36 @@ class WhereAreWe(ProcessingLayer):
             print('you dont have enough files to do a dry run')
             breakpoint()
             sys.exit(0)
+            
+        report_deposits = dry_run_iter["deposits"]
 
-        breakpoint()
         print('*' * 45)
-        print(f'DRY RUN FOR {target_month}.')
-        print('*' * 45)
-        print(f'rent roll {target_month}.')
+        print(f'DRY RUN FOR {target_month}: rent roll')
         print('*' * 45)
         print(f'\tmove outs {target_month}: {dry_run_iter["rent"]["mos"]}')
         print(f'\tmove-ins {target_month}: {dry_run_iter["rent"]["mis"]}')
         print(
-            f'\ttenant chages {target_month}: {dry_run_iter["rent"]["tenant_charges"]}')
+            f'\ttenant charges {target_month}: {dry_run_iter["rent"]["tenant_charges"]}')
         # still want beginning vacancy and ending vacancy actuals not just from subtractions and additions
         print('*' * 45)
-        print(f'\tdeposits for {target_month}: {dry_run_iter["deposits"]}')
-        print('*' * 45)
-        print('*' * 45)
+        print(f'\tdeposits for {target_month}: {report_deposits}')
         print(
-            f'damage charges/credits for {target_month}: {dry_run_iter["damages"]} ')
+            f'\tdamage charges/credits for {target_month}: {dry_run_iter["damages"]} ')
+        print(f'DRY RUN FOR {target_month}: opcash/scrape from ban')
         print('*' * 45)
-
         if first_pw_incomplete_month:
             print(f'deposits report for {target_month} via opcash.')
-            self.opcash_printer(target_month=target_month,
+            bank_deposits = self.opcash_printer(target_month=target_month,
                                 dry_run_iter=dry_run_iter)
+            deposits_discrepancy = bank_deposits - round(float(report_deposits), 2)
         else:
             print(f'deposits report for {target_month} via scrape.')
             for item in dry_run_iter['scrape']['amount'].items():
                 print(f'\t{item[0]}: {item[1]}')
+                
+        print('*' * 45)
+        print(f'DEPOSITS DISCREPANCY = ${deposits_discrepancy}')
+        print('negative number means bank shows higher amount than report')
 
         # TODO
         # what can we reconcile?
@@ -188,8 +190,7 @@ class WhereAreWe(ProcessingLayer):
         # adjustments
 
     def opcash_printer(self, target_month=None, dry_run_iter=None):
-        # this would be better as dateframe type thing coming out of findexer
-        print('*' * 45)
+        print('\n')
         print(f'opcash summary for {target_month}.')
         print('*' * 45)
         print(f'\tdeposits {target_month}: {dry_run_iter["opcash"]["dep"]}')
@@ -198,6 +199,7 @@ class WhereAreWe(ProcessingLayer):
         print(
             f'\tdeposit corrections on opcash side: {dry_run_iter["opcash"]["corr_sum"]}')
         print('*' * 45)
+        return dry_run_iter["opcash"]["dep"]
 
     def print_rows(self, date=None, **kwargs):
         print(f'selected month: {date}\n')
