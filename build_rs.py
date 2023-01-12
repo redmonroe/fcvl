@@ -96,7 +96,6 @@ class BuildRS(MonthSheet):
         else:
             all_months_ytd, report_list, most_recent_status = player.write_to_statusrs_wrapper()
 
-        breakpoint()
         """this is the critical control function"""
         player.reconcile_and_inscribe_state(
             month_list=all_months_ytd,
@@ -107,6 +106,7 @@ class BuildRS(MonthSheet):
 
         player.display_most_recent_status(
             mr_status=most_recent_status, months_ytd=all_months_ytd)
+        breakpoint()
 
         writeable_months = player.final_check_writeable_months(
             month_list=all_months_ytd)

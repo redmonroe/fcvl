@@ -161,7 +161,6 @@ class Scrape:
 
 class FileIndexer(Utils, Scrape, Reconciler):
 
-    '''move to config.json'''
     query_mode = Utils.dotdict({'xls': ('raw', ('.xls', '.xlsx')), 'pdf': (
         'raw', ('.pdf', '.pdf')), 'csv': ('raw', ('.csv', '.csv'))})
     rent_format = {'get_col': 0, 'split_col': 11,
@@ -273,7 +272,6 @@ class FileIndexer(Utils, Scrape, Reconciler):
                 if genus == 'deposits' and path[0] is True:
                     deposits_dry_run = self.survey_deposits_report_for_dry_run(
                         path[1])
-                    breakpoint()
                 if genus == 'rent' and path[0] is True:
                     rent_dry_run = self.survey_rent_report_for_dry_run(
                         path[1], target_month=target_month)
@@ -391,12 +389,16 @@ class FileIndexer(Utils, Scrape, Reconciler):
 
     def survey_deposits_report_for_dry_run(self, path, *args, **kwargs):
         import xlrd
-        wb = xlrd.open_workbook(path, logfile=open(os.devnull, 'w'))
-        df = pd.read_excel(wb)
-        deposits = self.deposit_report_unpacker(df=df)
-        breakpoint()
-        # breakpoint()\
-        # TODO: THIS GOES NOWHERE
+        for possible_path in path:
+            try:
+                wb = xlrd.open_workbook(possible_path, logfile=open(os.devnull, 'w'))
+            except FileNotFoundError as e:
+                print(e)
+                print(f'{possible_path.suffix} does not exist, trying other extension type')
+            df = pd.read_excel(wb)
+            deposits = self.deposit_report_unpacker(df=df)
+        
+        return deposits
 
     def survey_rent_report_for_dry_run(self, path, *args, **kwargs):
         populate = PopulateTable()

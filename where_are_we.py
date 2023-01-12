@@ -280,8 +280,12 @@ class WhereAreWe(ProcessingLayer):
             print('try to manually download {} for {} to {}'.format(
                 doc_type, kwargs['first_incomplete_month'], self.path))
             self.user_input_outer_loop()
-            is_available = self.iter.is_new_file_available(
-                genus=doc_type, filename=filename)
+            try:
+                is_available = self.iter.is_new_file_available(
+                    genus=doc_type, filename=filename)
+            except ValueError as e:
+                print(e)
+                is_available = {doc_type: (False, 'scrape is not available.')}
 
         try:
             return is_available
