@@ -31,7 +31,6 @@ class WhereAreWe(ProcessingLayer):
 
     def select_month(self, date=None):
         """could set explicit range if wanted"""
-        # query = UrQuery()
         if date:
             date = self.most_recent_good_month
         else:
@@ -123,24 +122,9 @@ class WhereAreWe(ProcessingLayer):
 
         target_month, currently_availables, first_pw_incomplete_month = self.what_do_we_have(
             first_incomplete_month=self.first_incomplete_month, allow_print=False)
-
-        count = 0
-        print('*' * 45)
-        print(
-            f'\nfor target month: {target_month}, the following items are ready:')
-        print('*' * 45)
-        print(
-            f'target month {target_month} is over? {first_pw_incomplete_month}.')
-        print('*' * 45)
-        for item in currently_availables:
-            for genus, available in item.items():
-                print(f'\t{genus}: {available[0]} |  path: {available[1]}')
-                if available[0] == True:
-                    count += 1
-        print('*' * 45)
-        print(f'ready to dry run? {target_month}.')
-        print('*' * 45)
-
+        
+        count = self.print_helper_for_availables(target_month=target_month, first_pw_incomplete_month=first_pw_incomplete_month, currently_availables=currently_availables)
+        
         if count == 3:
             print(self.path)
             dry_run_iter = self.iter.dry_run(
@@ -235,6 +219,29 @@ class WhereAreWe(ProcessingLayer):
         print('*' * 45)
         print(f'last reconciled month: {kwargs["last_reconciled_month"]}')
 
+    def print_helper_for_availables(self, **kwargs):
+        count = 0
+        print('*' * 45)
+        print(
+            f'\nfor target month: {kwargs["target_month"]}, the following items are ready:')
+        print('*' * 45)
+        print(
+            f'target month {kwargs["target_month"]} is over? {kwargs["first_pw_incomplete_month"]}.')
+        print('*' * 45)
+        for item in kwargs["currently_availables"]:
+            for genus, available in item.items():
+                if available[0] is False:
+                    path = 'no item available'
+                else:
+                    path = str(available[1][0]).split("/")[-1]
+                print(f'\t{genus}: {available[0]} |  path: {path}')
+                if available[0] == True:
+                    count += 1
+        print('*' * 45)
+        print(f'ready to dry run? {kwargs["target_month"]}.')
+        print('*' * 45)
+        return count
+    
     def user_input_loop(self):
         try:
             return int(input("Press 1 to continue or 2 to exit..."))
