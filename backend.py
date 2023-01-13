@@ -780,8 +780,8 @@ class QueryHC(Reconciler):
 class UrQuery(QueryHC):
 
     def __init__(self, **kwargs):
-        print('urquery')
-
+        pass
+    
     def ur_query(self,
                  model_str=None,
                  query_dict=None,
@@ -1634,7 +1634,6 @@ class ProcessingLayer(StatusRS):
                 #     breakpoint()
 
                 result = Reconciler.backend_processing_layer_assert_bank_deposits_tenant_deposits(bank_deposits=bank_deposits, sum_from_payments_report=sum_from_payments, period=month, genus='opcash', source=kwargs['source'])
-                breakpoint()
                 
                 if result:
                     """critical reconciliation logic for statusObject"""

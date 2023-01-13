@@ -116,7 +116,9 @@ def write_all_test():
 @click.command()
 def manentry():
     click.echo('delete or modify rows of the database')
-    manentry = ManualEntry(db=db)
+    figure = Figuration()
+    path, full_sheet, build, service, ms = figure.return_configuration()
+    manentry = ManualEntry(db=build.main_db)
     manentry.main()
 
 
