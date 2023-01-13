@@ -34,6 +34,8 @@ class BuildRS(MonthSheet):
         self.ms = MonthSheet(full_sheet=self.full_sheet, path=self.path)
         self.findex = FileIndexer(path=self.path, db=self.main_db)
         self.populate = self._setup_tables(mode='drop_and_create')
+        self.start = time.time()
+        self.findexer_time = time.time()
         self._run_raw_findexer()
         self.rr_list = [(item.fn, item.period, item.path)
                         for item in Findexer().select().
@@ -50,6 +52,7 @@ class BuildRS(MonthSheet):
                                for item in self.rr_list]
         self.proc_dates_and_paths = [(item[1], item[2])
                                      for item in self.file_list]
+        self.findexer_time = time.time() - self.findexer_time
 
     def __repr__(self):
         return f'{self.__class__.__name__} | {self.path} | {self.full_sheet}'
@@ -59,7 +62,7 @@ class BuildRS(MonthSheet):
         player = ProcessingLayer(service=self.service,
                                  full_sheet=self.full_sheet, ms=self.ms)
 
-        start = time.time()
+     
 
         print('loading initial tenant balances')
         init_load_time = time.time()
@@ -76,16 +79,16 @@ class BuildRS(MonthSheet):
          subsidies,
          contract_rents) = initial.return_init_results()
         
-        # init_load_time = time.time() -
-
-        print(f'InitLoad time: {time.time() - init_load_time}')
+        init_load_time = time.time() - init_load_time
 
         # TODO: can't we just pass a list of months
         after_init_load_time = time.time()
         after_initial = AfterInitLoad(rentrolls=self.proc_rentrolls,
                                       deposits=self.proc_dates_and_paths)
         
-        print(f'AfterInitLoad time: {time.time() - after_init_load_time}')
+        after_init_load_time = time.time() - after_init_load_time
+        
+        damages_txn_status_rstime1 = time.time()
         
         Damages.load_damages()
 
@@ -97,16 +100,22 @@ class BuildRS(MonthSheet):
             all_months_ytd, report_list, most_recent_status = player.write_to_statusrs_wrapper(last_range_month=kw['last_range_month'])            
         else:
             all_months_ytd, report_list, most_recent_status = player.write_to_statusrs_wrapper()
+        
+        damages_txn_status_rstime1 = time.time() - damages_txn_status_rstime1 
 
 
+        mentry_time = time.time()
         """this MUST GO FIRST DAMMMIT!!!"""
         player.write_manual_entries_from_config()
+        mentry_time = time.time() - mentry_time
         
+        reconcile_time = time.time()
         """this is the critical control function"""
         player.reconcile_and_inscribe_state(
             month_list=all_months_ytd,
             ref_rec=most_recent_status,
             source='build')
+        reconcile_time = time.time() - reconcile_time
 
 
         player.display_most_recent_status(
@@ -127,7 +136,13 @@ class BuildRS(MonthSheet):
                   'spreadsheet enable "write" flag')
 
         self.main_db.close()
-        print(f'Time: {time.time() - start}')
+        print(f'full time: {time.time() - self.start}')
+        print(f'findexer: {self.findexer_time}')
+        print('init:', init_load_time)
+        print('after_init:', after_init_load_time)
+        print('misc:', damages_txn_status_rstime1)
+        print('manual entry:', mentry_time)
+        print('reconcile:', reconcile_time)
 
     def _run_raw_findexer(self):
         findexer_time = time.time()
