@@ -10,6 +10,7 @@ from db_utils import DBUtils
 class ManualEntry:
 
     def __init__(self, db=None):
+        self.persisted_changes = Config.persisted_changes
         self.populate = PopulateTable()
         self.tables_list = self.populate.return_tables_list()
         self.db = db
@@ -158,18 +159,27 @@ class ManualEntry:
             selected_item), txn_date=txn_date, change_time=dt.now())
         mentry.save()
 
+    def _print_persisted_item(self, item=None):
+        try:
+            print(
+                f"\n{item['action']} {item['obj_type']} for {item['col_name1'][1]} for ${item['col_name2'][1]} on {item['col_name3'][1]} to ${item['col_name4'][1]}.")
+        except KeyError as e:
+            print(
+                f"\n{item['action']} {item['obj_type']} for {item['col_name1'][1]} for ${item['col_name2'][1]} on {item['col_name3'][1]}.")
+        return item
+
+    def _get_model_name(self, item=None):
+        obj_str = item['obj_type']
+        model_name = self.get_name_from_obj(obj_type=obj_str)
+        return obj_str, model_name
+
     def find_persisted_changes_from_config(self):
-        for item in Config.persisted_changes:
-            try:
-                print(
-                    f"\n{item['action']} {item['obj_type']} for {item['col_name1'][1]} for ${item['col_name2'][1]} on {item['col_name3'][1]} to ${item['col_name4'][1]}.")
-            except KeyError as e:
-                print(
-                    f"\n{item['action']} {item['obj_type']} for {item['col_name1'][1]} for ${item['col_name2'][1]} on {item['col_name3'][1]}.")
+        for item in self.persisted_changes:
+            item = self._print_persisted_item(item=item)
+           
+            obj_str, model_name = self._get_model_name(item=item)
 
-            obj_str = item['obj_type']
-            model_name = self.get_name_from_obj(obj_type=obj_str)
-
+            # do multiple unpacking here, faster better cheaper stronger
             col_name1 = item['col_name1'][0]
             col_value1 = item['col_name1'][1]
             col_name2 = item['col_name2'][0]
@@ -182,12 +192,26 @@ class ManualEntry:
                 updated_amount = item['col_name4'][1]
             except KeyError as e:
                 pass
+            
+            if obj_str == 'Findexer':
+                new_data = {col_name2: 
+                            col_value2,
+                            }
+                
+                query = model_name.update(**new_data).where(Findexer.doc_id == col_value1)
+                query.execute()
+                self.record_entry_to_manentry(obj_type=obj_str, action=item[
+                    'action'], selected_item=str(col_value1), txn_date=item['col_name3'][1])
+                # do I need to propagate changes to opcash or another table?
+                
+            else:
+                #TODO: can this all be an UrQuery item
+                result = [rec for rec in model_name.select().
+                        where(attrgetter(col_name1)(model_name) == col_value1).
+                        where(attrgetter(col_name2)(model_name) == col_value2).
+                        where(attrgetter(col_name3)(model_name) == col_value3).
+                        namedtuples()]
 
-            result = [rec for rec in model_name.select().
-                      where(attrgetter(col_name1)(model_name) == col_value1).
-                      where(attrgetter(col_name2)(model_name) == col_value2).
-                      where(attrgetter(col_name3)(model_name) == col_value3).
-                      namedtuples()]
 
             try:
                 result = result[0]
