@@ -33,7 +33,7 @@ class Persistent:
         # {'obj_type': 'Subsidy', 'action': 'update_amount', 'col_name1': ('tenant_id', 'greiner, richard'), 'col_name2': ('sub_amount', '-3'), 'col_name3': ('date_posted', '2022-10-01'), 'col_name4': ('new_amount', '224.00')},
         
         {'obj_type': 'Payment', 'action': 'update_amount', 'col_name1': ('tenant_id', 'hawkins, norland'), 'col_name2': ('amount', '314.00'), 'col_name3': ('date_posted', '2022-11-11'), 'col_name4': ('new_amount', '204.00')},
-        ]
+    ]
 
     units = ['CD-A','CD-B','CD-101', 'CD-102', 'CD-104', 'CD-105', 'CD-106', 'CD-107', 'CD-108',
             'CD-109', 'CD-110', 'CD-111', 'CD-112','CD-114', 'CD-115', 'CD-201', 'CD-202',

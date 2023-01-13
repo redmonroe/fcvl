@@ -31,18 +31,13 @@ def where_are_we(most_recent_good):
     click.echo('TEST: where_are_we')
     figure = Figuration()
     path, full_sheet, build, service, ms = figure.return_configuration()
-    where = WhereAreWe(path=path, full_sheet=full_sheet,
-                       build=build, service=service, ms=ms)
-
-    # TODO
     # TODO: NEED TO FIX MONTH CHOICE WHEN WE ARE DEALING WITH YEAR OVERLAPS
     if most_recent_good:
-        where.select_month(date=True)
+        where = WhereAreWe(date=True, path=path, full_sheet=full_sheet,
+                           build=build, service=service, ms=ms)
     else:
-        where.select_month()
-
-    # where.query_practice()
-    # where.load_canon()
+        where = WhereAreWe(path=path, full_sheet=full_sheet,
+                           build=build, service=service, ms=ms)
 
 
 @click.command()

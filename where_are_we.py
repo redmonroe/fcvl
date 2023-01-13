@@ -10,7 +10,7 @@ from utils import Utils
 
 class WhereAreWe(ProcessingLayer):
 
-    def __init__(self, **kwargs):
+    def __init__(self, date=None, **kwargs):
         self.build = kwargs['build']
         self.path = kwargs['path']
         self.full_sheet = kwargs['full_sheet']
@@ -28,85 +28,88 @@ class WhereAreWe(ProcessingLayer):
         self.support_doc_types_list = ['deposits', 'opcash', 'rent', 'scrape']
         self.first_incomplete_month = Utils.get_next_month(
             target_month=self.most_recent_good_month)
-
-    def select_month(self, date=None):
+        self.date = self._select_month(date=date)
+        self.first_dt, self.last_dt = self.populate.make_first_and_last_dates(
+            date_str=self.date)
+        self._recipe_to_be_renamed()
+    
+    def _select_month(self, date=None):
         """could set explicit range if wanted"""
         if date:
             date = self.most_recent_good_month
         else:
             date, _ = Utils.enumerate_choices_for_user_input(
                 chlist=self.good_months)
-
-        first_dt, last_dt = self.populate.make_first_and_last_dates(
-            date_str=date)
+        return date
+            
+    def _recipe_to_be_renamed(self):
 
         # beginning month rent roll and vacancy
         tenants_at_1, vacants, tenants_at_2 = self.populate.get_rent_roll_by_month_at_first_of_month(
-            first_dt=first_dt, last_dt=last_dt)
+            first_dt=self.first_dt, last_dt=self.last_dt)
 
         # opcash
         opcash = [row.dep_sum for row in self.query.ur_query(model_str='OpCash', query_tup=[(
-            'date', first_dt), ('date', last_dt)], operators_list=['>=', '<=']).namedtuples()]
+            'date', self.first_dt), ('date', self.last_dt)], operators_list=['>=', '<=']).namedtuples()]
 
         # did opcash reconcile to deposits
         did_opcash_or_scrape_reconcile_with_deposit_report = [row for row in self.query.ur_query(
-            model_str='StatusObject').namedtuples() if row.month == date]
+            model_str='StatusObject').namedtuples() if row.month == self.date]
 
         # replacement reserve
         replacement_reserve = [row.rr for row in self.query.ur_query(model_str='Findexer', query_tup=[(
-            'period', date)], operators_list=['==']).namedtuples() if row.doc_type == 'scrape']
+            'period', self.date)], operators_list=['==']).namedtuples() if row.doc_type == 'scrape']
 
         if replacement_reserve == []:
             replacement_reserve = [row.rr for row in self.query.ur_query(model_str='Findexer', query_tup=[(
-                'period', date)], operators_list=['==']).namedtuples() if row.doc_type == 'opcash']
+                'period', self.date)], operators_list=['==']).namedtuples() if row.doc_type == 'opcash']
 
         # hap
         hap = [row.hap for row in self.query.ur_query(model_str='Findexer', query_tup=[(
-            'period', date)], operators_list=['==']).namedtuples() if row.doc_type == 'scrape']
+            'period', self.date)], operators_list=['==']).namedtuples() if row.doc_type == 'scrape']
 
         if hap == []:
             hap = [row.hap for row in self.query.ur_query(model_str='Findexer', query_tup=[(
-                'period', date)], operators_list=['==']).namedtuples() if row.doc_type == 'opcash']
+                'period', self.date)], operators_list=['==']).namedtuples() if row.doc_type == 'opcash']
 
         # damages
-        if [row for row in self.query.ur_query(model_str='Damages', query_tup=[('dam_date', first_dt), ('dam_date', last_dt)], operators_list=['>=', '<=']).namedtuples()] == []:
+        if [row for row in self.query.ur_query(model_str='Damages', query_tup=[('dam_date', self.first_dt), ('dam_date', self.last_dt)], operators_list=['>=', '<=']).namedtuples()] == []:
             damage_sum = 0
             dam_types = []
         else:
             damages = [row for row in self.query.ur_query(model_str='Damages', query_tup=[(
-                'dam_date', first_dt), ('dam_date', last_dt)], operators_list=['>=', '<=']).namedtuples()]
+                'dam_date', self.first_dt), ('dam_date', self.last_dt)], operators_list=['>=', '<=']).namedtuples()]
             damage_sum = sum([float(row.dam_amount) for row in damages])
             dam_types = [row.dam_type for row in damages]
 
         #laundry, ntp, other
-        if [row for row in self.query.ur_query(model_str='NTPayment', query_tup=[('date_posted', first_dt), ('date_posted', last_dt)], operators_list=['>=', '<=']).namedtuples()] == []:
+        if [row for row in self.query.ur_query(model_str='NTPayment', query_tup=[('date_posted', self.first_dt), ('date_posted', self.last_dt)], operators_list=['>=', '<=']).namedtuples()] == []:
             laundry_sum = 0
             other_sum = 0
         else:
             laundry = [row for row in self.query.ur_query(model_str='NTPayment', query_tup=[(
-                'date_posted', first_dt), ('date_posted', last_dt)], operators_list=['>=', '<=']).namedtuples()]
+                'date_posted', self.first_dt), ('date_posted', self.last_dt)], operators_list=['>=', '<=']).namedtuples()]
 
             laundry_sum = sum([float(row.amount)
                               for row in laundry if row.genus == 'laundry'])
 
             other_sum = sum([float(row.amount)
                             for row in laundry if row.genus == 'other'])
-
         # MIs
         mi_payments = []
-        if [row for row in self.query.ur_query(model_str='MoveIn', query_tup=[('mi_date', first_dt), ('mi_date', last_dt)], operators_list=['>=', '<=']).namedtuples()] == []:
+        if [row for row in self.query.ur_query(model_str='MoveIn', query_tup=[('mi_date', self.first_dt), ('mi_date', self.last_dt)], operators_list=['>=', '<=']).namedtuples()] == []:
             mis = {'none': 'none'}
         else:
             mis = [{row.name: str(row.mi_date)} for row in self.query.ur_query(model_str='MoveIn', query_tup=[
-                ('mi_date', first_dt), ('mi_date', last_dt)], operators_list=['>=', '<=']).namedtuples()]
+                ('mi_date', self.first_dt), ('mi_date', self.last_dt)], operators_list=['>=', '<=']).namedtuples()]
 
             for name, _ in [(k, v) for rec in mis for (k, v) in rec.items()]:
                 mi_tp = self.query.get_single_ten_pay_by_period(
-                    first_dt=first_dt, last_dt=last_dt, name=name)
+                    first_dt=self.first_dt, last_dt=self.last_dt, name=name)
                 mi_payments.append(mi_tp)
 
         self.print_rows(
-            date=date,
+            date=self.date,
             beg_tenants=tenants_at_1,
             opcash=opcash, reconcile_status=did_opcash_or_scrape_reconcile_with_deposit_report,
             replacement_reserve=replacement_reserve,
@@ -122,9 +125,10 @@ class WhereAreWe(ProcessingLayer):
 
         target_month, currently_availables, first_pw_incomplete_month = self.what_do_we_have(
             first_incomplete_month=self.first_incomplete_month, allow_print=False)
-        
-        count = self.print_helper_for_availables(target_month=target_month, first_pw_incomplete_month=first_pw_incomplete_month, currently_availables=currently_availables)
-        
+
+        count = self.print_helper_for_availables(
+            target_month=target_month, first_pw_incomplete_month=first_pw_incomplete_month, currently_availables=currently_availables)
+
         if count == 3:
             print(self.path)
             dry_run_iter = self.iter.dry_run(
@@ -133,10 +137,11 @@ class WhereAreWe(ProcessingLayer):
             print('you dont have enough files to do a dry run')
             breakpoint()
             sys.exit(0)
-            
+
         report_deposits = dry_run_iter["deposits"]
 
         print('*' * 45)
+        print('\n')
         print(f'DRY RUN FOR {target_month}: rent roll')
         print('*' * 45)
         print(f'\tmove outs {target_month}: {dry_run_iter["rent"]["mos"]}')
@@ -153,13 +158,15 @@ class WhereAreWe(ProcessingLayer):
         if first_pw_incomplete_month:
             print(f'deposits report for {target_month} via opcash.')
             bank_deposits = self.opcash_printer(target_month=target_month,
-                                dry_run_iter=dry_run_iter)
-            deposits_discrepancy = bank_deposits - round(float(report_deposits), 2)
+                                                dry_run_iter=dry_run_iter)
+            deposits_discrepancy = bank_deposits - \
+                round(float(report_deposits), 2)
         else:
             print(f'deposits report for {target_month} via scrape.')
             for item in dry_run_iter['scrape']['amount'].items():
                 print(f'\t{item[0]}: {item[1]}')
-                
+            print('no discrepancy finder supported for scrapes')
+
         print('*' * 45)
         print(f'DEPOSITS DISCREPANCY = ${deposits_discrepancy}')
         print('negative number means bank shows higher amount than report')
@@ -241,7 +248,7 @@ class WhereAreWe(ProcessingLayer):
         print(f'ready to dry run? {kwargs["target_month"]}.')
         print('*' * 45)
         return count
-    
+
     def user_input_loop(self):
         try:
             return int(input("Press 1 to continue or 2 to exit..."))
