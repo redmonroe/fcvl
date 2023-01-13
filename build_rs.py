@@ -75,6 +75,8 @@ class BuildRS(MonthSheet):
          rents,
          subsidies,
          contract_rents) = initial.return_init_results()
+        
+        # init_load_time = time.time() -
 
         print(f'InitLoad time: {time.time() - init_load_time}')
 
@@ -98,19 +100,19 @@ class BuildRS(MonthSheet):
 
 
         """this MUST GO FIRST DAMMMIT!!!"""
+        player.write_manual_entries_from_config()
         
         """this is the critical control function"""
-        # player.reconcile_and_inscribe_state(
-        #     month_list=all_months_ytd,
-        #     ref_rec=most_recent_status,
-        #     source='build')
+        player.reconcile_and_inscribe_state(
+            month_list=all_months_ytd,
+            ref_rec=most_recent_status,
+            source='build')
 
-        player.write_manual_entries_from_config()
-        breakpoint()
 
         player.display_most_recent_status(
             mr_status=most_recent_status, months_ytd=all_months_ytd)
 
+        # breakpoint()
         writeable_months = player.final_check_writeable_months(
             month_list=all_months_ytd)
 

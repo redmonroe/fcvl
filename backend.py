@@ -289,8 +289,8 @@ class QueryHC(Reconciler):
             Findexer.doc_type == type1).namedtuples()]
         return rows
 
-    def get_rent_roll_by_month_at_first_of_month(self, 
-                                                 first_dt=None, 
+    def get_rent_roll_by_month_at_first_of_month(self,
+                                                 first_dt=None,
                                                  last_dt=None):
         '''lots of work in this func'''
         tenants_mi_on_or_before_first = [(rec.tenant_name,
@@ -316,10 +316,10 @@ class QueryHC(Reconciler):
             tenants_mi_on_or_before_first.append(tup)
 
         vacants = [
-            item 
+            item
             for item in tenants_mi_on_or_before_first if item[0] == 'vacant']
         tenants = [item[0]
-                   for item in tenants_mi_on_or_before_first 
+                   for item in tenants_mi_on_or_before_first
                    if item[0] != 'vacant']
 
         return tenants_mi_on_or_before_first, vacants, tenants
@@ -781,7 +781,7 @@ class UrQuery(QueryHC):
 
     def __init__(self, **kwargs):
         pass
-    
+
     def ur_query(self,
                  model_str=None,
                  query_dict=None,
@@ -1113,11 +1113,12 @@ class PopulateTable(QueryHC):
         for item in file_list:
             try:
                 with db.atomic():
-                    oc = OpCash.create(stmt_key=item[0], 
-                                       date=datetime.strptime(item[1], '%Y-%m'), 
-                                       rr=item[4], 
-                                       hap=item[3], 
-                                       dep_sum=item[5], 
+                    oc = OpCash.create(stmt_key=item[0],
+                                       date=datetime.strptime(
+                                           item[1], '%Y-%m'),
+                                       rr=item[4],
+                                       hap=item[3],
+                                       dep_sum=item[5],
                                        corr_sum=item[7])
                     oc.save()
             except IntegrityError as e:
@@ -1162,7 +1163,7 @@ class AfterInitLoad(PopulateTable):
         for date, path in self.deposits:
             grand_total, ntp, tenant_payment_df = self.payment_load_full(
                 filename=path)
-            
+
     def _rent_roll_loop_internals(self, date, filename):
         (self.first_dt,
             self.last_dt) = self.make_first_and_last_dates(date_str=date)
@@ -1174,7 +1175,7 @@ class AfterInitLoad(PopulateTable):
             self.df = pd.read_excel(filename, header=16)
         else:
             filename = xlrd.open_workbook(filename,
-                                            logfile=open(os.devnull, 'w'))
+                                          logfile=open(os.devnull, 'w'))
             self.df = pd.read_excel(filename, header=16)
 
         self.df = self.df.fillna(self.fill_item)
@@ -1186,7 +1187,7 @@ class AfterInitLoad(PopulateTable):
         self.total_tenant_charges = self._total_tenant_charges()
         self.end_tenants = [(row.name, row.unit,
                             datetime.strptime(row.mi_date,
-                                                '%m/%d/%Y'))
+                                              '%m/%d/%Y'))
                             for row in self.return_nt_list_with_no_vacants(
                                 keyword='vacant',
                                 nt_list=self.nt_list_w_vacants)]
@@ -1199,11 +1200,11 @@ class AfterInitLoad(PopulateTable):
             explicit_move_outs=self.explicit_move_outs,
             computed_mos=self.computed_mos,
             date=date)
-        
+
         return (self.nt_list_w_vacants,
-             self.total_tenant_charges,
-             self.cleaned_mos,
-             self.computed_mis)
+                self.total_tenant_charges,
+                self.cleaned_mos,
+                self.computed_mis)
 
     def _loop_over_rentrolls(self):
         for date, filename in self.rentrolls:
@@ -1280,24 +1281,26 @@ class DryRunRentRoll(AfterInitLoad):
         print('\n Sampleload')
         self.fill_item = '0'
         self.path = self._pick_correct_file(path)
-        self.date = date   
+        self.date = date
         (self.nt_list_w_vacants,
          self.total_tenant_charges,
          self.cleaned_mos,
          self.computed_mis) = self._rent_roll_loop_internals(self.date, self.path)
-    
+
     def _pick_correct_file(self, path=None):
         for possible_path in path:
             try:
-                wb = xlrd.open_workbook(possible_path, logfile=open(os.devnull, 'w'))
+                wb = xlrd.open_workbook(
+                    possible_path, logfile=open(os.devnull, 'w'))
                 return possible_path
             except FileNotFoundError as e:
                 print(e)
-                print(f'{possible_path.suffix} does not exist, trying other extension type')
+                print(
+                    f'{possible_path.suffix} does not exist, trying other extension type')
             path = path[1]
         return path
-    
-    
+
+
 class InitLoad(PopulateTable):
 
     def __init__(self, path=None, **kwargs):
@@ -1395,8 +1398,6 @@ class InitLoad(PopulateTable):
                 self.rents,
                 self.subsidies,
                 self.contract_rents)
-        
-        
 
 
 class ProcessingLayer(StatusRS):
@@ -1428,11 +1429,11 @@ class ProcessingLayer(StatusRS):
         self.set_current_date()
         most_recent_status = self.get_most_recent_status()
         if kwargs.get('last_range_month'):
-            all_months_ytd = Utils.months_in_ytd(Config.current_year, last_range_month=kwargs['last_range_month'])
+            all_months_ytd = Utils.months_in_ytd(
+                Config.current_year, last_range_month=kwargs['last_range_month'])
         else:
-            breakpoint()
             all_months_ytd = Utils.months_in_ytd(Config.current_year)
-        
+
         report_list = populate.get_processed_by_month(
             month_list=all_months_ytd)
         return all_months_ytd, report_list, most_recent_status
@@ -1624,17 +1625,16 @@ class ProcessingLayer(StatusRS):
                 bank_deposits = float(opcash[0][4])
                 deposit_corrections = float(opcash[0][5])
 
-                if kwargs['source'] == 'iter':
-                    bank_deposits = Reconciler.adjust_bank_deposits(
-                        bank_deposits=bank_deposits, deposit_corrections=deposit_corrections)
+                # if kwargs['source'] == 'iter':
+                bank_deposits = Reconciler.adjust_bank_deposits(
+                    bank_deposits=bank_deposits, deposit_corrections=deposit_corrections)
 
                 # if kwargs['source'] == 'iter' and month == '2022-02':
                 #     breakpoint()
-                # if kwargs['source'] == 'build' and month == '2022-02':
-                #     breakpoint()
 
-                result = Reconciler.backend_processing_layer_assert_bank_deposits_tenant_deposits(bank_deposits=bank_deposits, sum_from_payments_report=sum_from_payments, period=month, genus='opcash', source=kwargs['source'])
-                
+                result = Reconciler.backend_processing_layer_assert_bank_deposits_tenant_deposits(
+                    bank_deposits=bank_deposits, sum_from_payments_report=sum_from_payments, period=month, genus='opcash', source=kwargs['source'])
+
                 if result:
                     """critical reconciliation logic for statusObject"""
                     mr_status = StatusRS().get(StatusRS.status_id == ref_rec.status_id)
