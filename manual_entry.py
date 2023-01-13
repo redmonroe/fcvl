@@ -215,7 +215,7 @@ class ManualEntry:
                     'action'], selected_item=str(col_value1), txn_date=item['col_name3'][1])
                 # do I need to propagate changes to opcash or another table?
             elif item['action'] == 'create':
-                breakpoint()
+                # breakpoint()
                 self._handle_create_entry(model_name=model_name,
                                           obj_str=obj_str,
                                           payee=col_value1, 
@@ -223,9 +223,9 @@ class ManualEntry:
                                           date_posted=col_value3, 
                                           date_code=col_value3.split('-')[1], 
                                           genus=updated_amount)
-                mentry = Mentry.create(obj_type=model_name, 
+                mentry = Mentry.create(obj_type=obj_str, 
                                        ch_type=item['action'], 
-                                       original_item=None, 
+                                       original_item=str(None), 
                                        txn_date=col_name3[1], 
                                        change_time=dt.now())
                 mentry.save()
@@ -250,7 +250,7 @@ class ManualEntry:
                                                obj_str=obj_str, 
                                                updated_amount=updated_amount, )
                     
-            except IndexError as e:
+            except (IndexError, TypeError) as e:
                 print('You probably already deleted the transaction OR transaction "has not happened" yet in program time.  Check mentry db for further information.')
                 print(e)
 
