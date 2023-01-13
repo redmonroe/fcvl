@@ -1,8 +1,10 @@
+import random
 import sys
 from datetime import datetime as dt
 from operator import attrgetter
 
-from backend import Mentry, Payment, PopulateTable, db, Subsidy, TenantRent, Findexer
+from backend import (Findexer, Mentry, NTPayment, Payment, PopulateTable,
+                     Subsidy, TenantRent, db)
 from config import Config
 from db_utils import DBUtils
 
@@ -172,6 +174,16 @@ class ManualEntry:
         obj_str = item['obj_type']
         model_name = self.get_name_from_obj(obj_type=obj_str)
         return obj_str, model_name
+    
+    def _handle_create_entry(self, **kwargs):
+        new_model_row = kwargs['model_name'].create(payee=kwargs['payee'],
+                                                    amount=kwargs['amount'],
+                                                    date_posted=kwargs['date_posted'],
+                                                    date_code=kwargs['date_code'],
+                                                    deposit_id=random.randint(0, 10000), 
+                                                    genus=kwargs['genus'],)
+        new_model_row.save()
+        
 
     def find_persisted_changes_from_config(self):
         for item in self.persisted_changes:
@@ -179,7 +191,6 @@ class ManualEntry:
            
             obj_str, model_name = self._get_model_name(item=item)
 
-            # do multiple unpacking here, faster better cheaper stronger
             col_name1 = item['col_name1'][0]
             col_value1 = item['col_name1'][1]
             col_name2 = item['col_name2'][0]
@@ -203,7 +214,21 @@ class ManualEntry:
                 self.record_entry_to_manentry(obj_type=obj_str, action=item[
                     'action'], selected_item=str(col_value1), txn_date=item['col_name3'][1])
                 # do I need to propagate changes to opcash or another table?
-                
+            elif item['action'] == 'create':
+                breakpoint()
+                self._handle_create_entry(model_name=model_name,
+                                          obj_str=obj_str,
+                                          payee=col_value1, 
+                                          amount=col_value2, 
+                                          date_posted=col_value3, 
+                                          date_code=col_value3.split('-')[1], 
+                                          genus=updated_amount)
+                mentry = Mentry.create(obj_type=model_name, 
+                                       ch_type=item['action'], 
+                                       original_item=None, 
+                                       txn_date=col_name3[1], 
+                                       change_time=dt.now())
+                mentry.save()
             else:
                 #TODO: can this all be an UrQuery item
                 result = [rec for rec in model_name.select().
@@ -219,10 +244,12 @@ class ManualEntry:
                     self.delete_ui_dynamic(
                         obj_type=model_name, obj_str=obj_str, selected_item=result)
                 elif item['action'] == 'update_amount':
-                    self.update_amount_dynamic(target_attribute=col_name2, obj_type=model_name,
-                                               obj_str=obj_str, updated_amount=updated_amount, selected_item=result)
-                elif item['action'] == 'update_findexer':
-                    print('update findexer')
+                    self.update_amount_dynamic(target_attribute=col_name2, 
+                                               selected_item=result, 
+                                               obj_type=model_name,
+                                               obj_str=obj_str, 
+                                               updated_amount=updated_amount, )
+                    
             except IndexError as e:
                 print('You probably already deleted the transaction OR transaction "has not happened" yet in program time.  Check mentry db for further information.')
                 print(e)

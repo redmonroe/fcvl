@@ -61,6 +61,14 @@ class Persistent:
                 'col_name3': ('eff_date', '2022-12-02'),
                 },
                
+               {'obj_type': 'NTPayment',
+                'action': 'create',
+                'col_name1': ('payee', 'other'), 
+                'col_name2': ('amount', '414.56'), 
+                'col_name3': ('date_posted', '2022-12-02'), 
+                'col_name4': ('genus', 'other')
+                },
+               
                ]
     """Interface can handle 3 or 4 columns for constructing the query"""    
 
