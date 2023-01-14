@@ -85,6 +85,122 @@ class MoveIn(BaseModel):
     name = CharField(default='move_in_name')
 
 
+class MoveOut(BaseModel):
+    mo_date = DateField('0')
+    name = CharField(default='move_out_name')
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.greeting = kwargs.get('greeting')
+        
+    @classmethod
+    def classify_move_outs(self, explicit_move_outs=None, implied_move_outs=None, date=None):
+        # remove vacants from explicit move-outs
+        self.explicit_move_outs = [(row[0], row[1], 'explicit_mo')
+                              for row in explicit_move_outs if row[0] != 'vacant']
+
+        # remove unit column fromimplied_move_outs 
+        if implied_move_outs != []:
+            self.implied_move_outs = [(item[0], item[2], 'implied_mo') for item in implied_move_outs]
+        else:
+            self.implied_move_outs = []
+        
+        self.function_to_watch_move_outs(self, date=date)
+        
+        
+        
+        
+        # cleaned_mos = []
+        # if explicit_move_outs != []:
+            # cleaned_mos = explicit_move_outs + implied_move_outs 
+        
+        # print('cleanedmos', 'date', '| ', cleaned_mos)
+        # breakpoint()
+        return self.explicit_move_outs, self.implied_move_outs
+    
+    def function_to_watch_move_outs(self, date=None):
+        print('classifying move outs for date:', date)
+        if self.implied_move_outs != []:
+            breakpoint()
+        if self.explicit_move_outs != []:
+            breakpoint()
+            
+        for item in self.explicit_move_outs:
+            print('explicit move out:', item)
+            
+        for item in self.implied_move_outs:
+            print('implied move out:', item)
+            
+    def deactivate_unit(self, name=None):
+        try:
+            unit = Unit.get(Unit.tenant == name)
+        except Exception as e:
+            print(f'error deactivating unit for {name}')
+        unit.status = 'vacant'
+        unit.tenant = 'vacant'
+        unit.save()
+        return unit
+
+    def deactivate_tenant(self, name=None, date1=None):
+        print('deactivating:',  name, date1)
+        tenant = Tenant.get(Tenant.tenant_name == name)
+        tenant.active = False
+        tenant.move_out_date = date1
+        return tenant
+    
+    def store_move_out(self, name=None, date1=None):
+        move_out = MoveOut.create(name=name, mo_date=date1)
+        move_out.save()
+
+    def deactivate_move_outs(self, date, move_outs=None):
+        # JAN: no move outs
+        # FEB: betsy smith: she isn't in the tenant list but there is a date in the move
+        # MARCH: 
+            # type 1 move-out: move-out occurs in same month that report covers and 
+            # date included in move-out column in rent roll 
+            # name in 'Name' is the tenant name
+        # APRIL:
+            # possible problem is vacant in name col, and date, but this has not presented in move-outs
+        # MAY: no relevant cases
+        # JUNE: no relevant cases
+        # JULY: no relevant cases
+        # AUG: # two type #1 cases, mabra and kelly on 8/31/2022
+        # SEPT: ONE TYPE 1, mosely 09/02/2022
+        # OCT: no relevant cases
+        # NOV: type 2: luke white 10/31/2022, prior month move-out date
+            # type 3: patrick mack is on the rent roll in october, move-out date 10/27/2022  
+        # type 1:  
+        # DEC: minnie pullins, type 2, move-out date 11/30/2022
+        
+        # types of move-outs and how they perform currently:
+            # for mack and cleveland, 
+                # move-out date should be imputed to last day of month prior to when they were no longer in unit
+                # we should set up a type system in the db to show what type of move-out it is, ie explicit or imputed
+                # 
+        
+        
+        
+        first_dt, last_dt = self.make_first_and_last_dates(date_str=date)
+
+        if len(move_outs) <= 1:
+            for name, date1, in move_outs:
+                tenant = self.deactivate_tenant(name=name, date1=date1)
+                tenant.save()
+                unit = self.deactivate_unit(name=name)
+                unit.save()
+                self.store_move_out(name=name, date1=date1)
+
+        else:
+            for item in move_outs:
+                name, date1, type1 = item[0], item[1], item[2]
+                tenant = self.deactivate_tenant(name=name, date1=date1)
+                tenant = Tenant.get(Tenant.tenant_name == name)
+                unit = self.deactivate_unit(name=name)
+                unit.save()
+                self.store_move_out(name=name, date1=date1)
+        
+ 
+
 class IncomeMonth(BaseModel):
     year = CharField()
     month = CharField()
@@ -253,6 +369,7 @@ class QueryHC(Reconciler):
                 Findexer,
                 ScrapeDetail,
                 MoveIn,
+                MoveOut,
                 WorkOrder]
 
     def get_start_tenants(self, date):
@@ -837,19 +954,6 @@ class PopulateTable(QueryHC):
             print(e)
             print('issue is with query write execution in InitLoad')
 
-    def merge_move_outs(self, explicit_move_outs=None, computed_mos=None, date=None):
-        # remove vacants from explicit move-outs
-        explicit_move_outs = [(row[0], row[1])
-                              for row in explicit_move_outs if row[0] != 'vacant']
-        
-        # remove unit column from computed_mos
-        if computed_mos != []:  
-            computed_mos = [(item[0], item[2]) for item in computed_mos]
-        cleaned_mos = []
-        if explicit_move_outs != []:
-            cleaned_mos = explicit_move_outs + computed_mos
-        return cleaned_mos
-
     def payment_load_full(self, filename):
         df = self.read_excel_payments(path=filename)
         df = self.remove_nan_lines(df=df)
@@ -954,7 +1058,8 @@ class PopulateTable(QueryHC):
                     explicit_move_outs.append(
                         (rec['Name'].lower(), datetime.strptime(rec['Move out'], '%m/%d/%Y')))
             except TypeError as e:
-                print(e)
+                print(e, rec['Move out'],
+                      'izzue converting datetime in nt_from_df')
                 print(
                     'adjusting move-out date for manual adjustment to move out on rent roll')
                 explicit_move_outs.append(
@@ -996,7 +1101,7 @@ class PopulateTable(QueryHC):
         df = df.fillna(0)
         return df
 
-    def compare_rentroll_chng(self, start_set=None, end_set=None):
+    def compare_rentroll_chng(self, date=None, start_set=None, end_set=None):
         '''compares list of tenants at start of month to those at end'''
         '''explicit move-outs from excel have been removed from end of month rent_roll_dict
         and should initiated a discrepancy in the following code by making end list diverge from start list'''
@@ -1056,47 +1161,7 @@ class PopulateTable(QueryHC):
             except PIE as e:
                 print(e, 'issue with unit creation', unt.tenant)
 
-    def deactivate_move_outs(self, date, move_outs=None):
-        first_dt, last_dt = self.make_first_and_last_dates(date_str=date)
-        # breakpoint()
-        # print(move_outs)
-        for move_out in move_outs:
-            print(len(move_outs))
-            
-        '''
-        if len(move_outs) <= 1:
-            for name, date in move_outs:
-                print('deactivating:',  name, date)
-                tenant = Tenant.get(Tenant.tenant_name == name)
-                tenant.active = False
-                tenant.move_out_date = date
-                tenant.save()
-
-                unit = Unit.get(Unit.tenant == name)
-                unit.status = 'vacant'
-                unit.tenant = 'vacant'
-                unit.save()
-        else:
-            for item in move_outs:
-                try:
-                    name = item[0]
-                    date = item[1]
-                    print('move outs:',  name, date)
-                    tenant = Tenant.get(Tenant.tenant_name == name)
-                    tenant.active = False
-                    tenant.move_out_date = date
-                    tenant.save()
-                except (ValueError, IndexError, DNE) as e:
-                    breakpoint()
-
-                try:
-                    unit = Unit.get(Unit.tenant == name)
-                    unit.status = 'vacant'
-                    unit.tenant = 'vacant'
-                    unit.save()
-                except (ValueError, IndexError, DNE) as e:
-                    print(f'error deactivating unit for {name}')
-        ''';
+    
 
     def transfer_opcash_from_findex_to_opcash_and_detail(self):
         """this function is repsonsible for moving information unpacked into findexer table into OpCash and OpCashDetail tables"""
@@ -1178,7 +1243,6 @@ class AfterInitLoad(PopulateTable):
         self.start_tenants = self.get_start_tenants(date)
 
         filename = Path(filename)
-        # if filename[-1] == 'x':
         if filename.suffix == '.xlsx':
             self.df = pd.read_excel(filename, header=16)
         else:
@@ -1201,13 +1265,16 @@ class AfterInitLoad(PopulateTable):
                                 nt_list=self.nt_list_w_vacants)]
 
         self.computed_mis, self.computed_mos = self.compare_rentroll_chng(
+            date=date,
             start_set=set(self.start_tenants),
             end_set=set(self.end_tenants))
+        
+     
+        self.cleaned_mos = MoveOut.classify_move_outs(explicit_move_outs=self.explicit_move_outs,
+                                  implied_move_outs=self.computed_mos,
+                                  date=date)
 
-        self.cleaned_mos = self.merge_move_outs(
-            explicit_move_outs=self.explicit_move_outs,
-            computed_mos=self.computed_mos,
-            date=date)
+        # breakpoint()
 
         return (self.nt_list_w_vacants,
                 self.total_tenant_charges,
@@ -1220,6 +1287,8 @@ class AfterInitLoad(PopulateTable):
              self.total_tenant_charges,
              self.cleaned_mos,
              self.computed_mis) = self._rent_roll_loop_internals(date, filename)
+
+            print(self.cleaned_mos)
 
             self.insert_move_ins(move_ins=self.computed_mis,
                                  date=date, filename=filename)
@@ -1241,7 +1310,7 @@ class AfterInitLoad(PopulateTable):
                            'rent_date': row.date}
                           for row in self.cleaned_nt_list]
 
-            self._update_unit_table()
+            self._update_unit_table(date=date)
 
             self.subsidies = [{'tenant': row.name,
                                'sub_amount': row.subsidy.replace(
@@ -1264,7 +1333,7 @@ class AfterInitLoad(PopulateTable):
         if self.cleaned_mos != []:
             self.deactivate_move_outs(date, move_outs=self.cleaned_mos)
 
-    def _update_unit_table(self):
+    def _update_unit_table(self, date=None):
         '''update last_occupied for occupied: SLOW, Don't like'''
         for row in self.cleaned_nt_list:
             try:
