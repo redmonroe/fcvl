@@ -67,12 +67,15 @@ class MonthSheet(YearSheet):
             self.remove_base_sheet()
             status_list = self.to_google_sheets(month_list=month_list)
         elif mode == 'single_sheet':
+            # TODO last_range_month needs explicit option in cli.py
+            # TODO THIS ONLY FORMATS? DOESN'T RUN?
             month_list = Utils.months_in_ytd(
-                Config.current_year, show_choices=True)
+                Config.current_year, last_range_month='2022-12', show_choices=True)
             print(
                 f'MAKE SINGLE RENT SHEET FOR {month_list} | DO NOT RESET SHEET.')
             titles_dict = self.make_single_sheet(single_month_list=month_list)
             self.formatting_runner(title_dict=titles_dict)
+            status_list = self.to_google_sheets(month_list=month_list)
             status_list = []
         elif mode == 'to_excel':
             status_list = self.to_excel(month_list=month_list)
@@ -128,7 +131,6 @@ class MonthSheet(YearSheet):
             try:
                 laundry = ntp[0][0]
             except IndexError as e:
-                breakpoint()
                 print(e)
                 laundry = 0
 
@@ -189,6 +191,12 @@ class MonthSheet(YearSheet):
             ntp = self.get_ntp_wrapper(date)
             sum_laundry, other_list = self.split_ntp(ntp)
             sum_mi_payments = self.get_move_ins(date)
+            
+            ### WHAT MAKES GASKIN SO DIFFERENT???
+            
+            
+            if date == '2022-12':
+                breakpoint()
             self.write_move_in_box(date)
             self.write_ntp(date, [sum_laundry], start_row=71)
             self.write_ntp(date, other_list, start_row=72)

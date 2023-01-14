@@ -288,12 +288,14 @@ class Utils:
             if selection == k:
                 return v, selection
 
-    def show_files_as_choices(list, interactive=True):
+    @staticmethod
+    def show_files_as_choices(list1, interactive=True):
         choice = []
         files = []
         choice_file = {}
 
-        for count, (k, v) in enumerate(list.items(), 1):
+        for count, (k, v) in enumerate(list1.items(), 1):
+            print(count, "****", k, '****', v)
             choice.append(count)
             files.append(k)
 

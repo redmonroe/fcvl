@@ -3,6 +3,7 @@ import json
 import os
 import sys
 from collections import namedtuple
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from functools import reduce
 from pathlib import Path
@@ -17,17 +18,17 @@ from peewee import DoesNotExist as DNE
 from peewee import ForeignKeyField, IntegerField
 from peewee import IntegrityError as PIE
 from peewee import Model, SqliteDatabase, fn
-from recordtype import \
-    recordtype
-
-# i edit the source code here,
-# so requirements won't work if this is ever published,
-# after 3.10, collection.abc change
+from recordtype import recordtype
 
 from config import Config
 from letters import Letters
 from reconciler import Reconciler
 from utils import Utils
+
+# i edit the source code here,
+# so requirements won't work if this is ever published,
+# after 3.10, collection.abc change
+
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 db = SqliteDatabase(None)
@@ -88,49 +89,61 @@ class MoveIn(BaseModel):
 class MoveOut(BaseModel):
     mo_date = DateField('0')
     name = CharField(default='move_out_name')
-    
-    def __init__(self, **kwargs):
+    type1 = CharField(default='None')
+
+    def __init__(self, mo_date=None, name=None, type1=None, **kwargs):
         super().__init__(**kwargs)
         self.greeting = kwargs.get('greeting')
-        
+        self.mo_date = mo_date
+        self.name = name
+        self.type1 = type1
+        self.combined_move_outs = []
+
     @classmethod
     def classify_move_outs(self, explicit_move_outs=None, implied_move_outs=None, date=None):
         # remove vacants from explicit move-outs
-        self.explicit_move_outs = [(row[0], row[1], 'explicit_mo')
-                              for row in explicit_move_outs if row[0] != 'vacant']
+        self.explicit_move_outs = [MoveOut(name=row[0], mo_date=row[1], type1='explicit')
+                                   for row in explicit_move_outs if row[0] != 'vacant']
 
-        # remove unit column fromimplied_move_outs 
+        # remove unit column fromimplied_move_outs
         if implied_move_outs != []:
-            self.implied_move_outs = [(item[0], item[2], 'implied_mo') for item in implied_move_outs]
+            self.implied_move_outs = [MoveOut(
+                name=row[0], mo_date=row[2], type1='implied') for row in implied_move_outs]
         else:
             self.implied_move_outs = []
-        
-        self.function_to_watch_move_outs(self, date=date)
-        
-        
-        
-        
-        # cleaned_mos = []
-        # if explicit_move_outs != []:
-            # cleaned_mos = explicit_move_outs + implied_move_outs 
-        
-        # print('cleanedmos', 'date', '| ', cleaned_mos)
-        # breakpoint()
-        return self.explicit_move_outs, self.implied_move_outs
-    
-    def function_to_watch_move_outs(self, date=None):
-        print('classifying move outs for date:', date)
-        if self.implied_move_outs != []:
-            breakpoint()
+
         if self.explicit_move_outs != []:
-            breakpoint()
+            self.combined_move_outs = self.explicit_move_outs + self.implied_move_outs
+        else:
+            self.combined_move_outs = self.implied_move_outs
+
+        return self.combined_move_outs
+
+    @classmethod
+    def deactivate_move_outs(self, date, move_outs=None):
+        # TODO manual interface for implied move outs
+        last_dt_of_prior_month = self.make_last_date_of_last_month(
+            self, date_str=date)
+
+        for move_out in self.combined_move_outs:
+            if move_out.type1 == 'explicit':
+                tenant = self.deactivate_tenant(
+                    self, name=move_out.name, date1=date)
+            elif move_out.type1 == 'implied':
+                move_out.mo_date = last_dt_of_prior_month
+                tenant = self.deactivate_tenant(
+                    self, name=move_out.name, date1=last_dt_of_prior_month)
+            move_out.save()
+            tenant.save()
+            unit = self.deactivate_unit(self, name=move_out.name)
+            unit.save()
             
-        for item in self.explicit_move_outs:
-            print('explicit move out:', item)
-            
-        for item in self.implied_move_outs:
-            print('implied move out:', item)
-            
+    def make_last_date_of_last_month(self, date_str=None):
+        dt_obj = datetime.strptime(date_str, '%Y-%m')
+        first = dt_obj.replace(day=1)
+        last_dt_of_last_month = first - timedelta(days=1)
+        return last_dt_of_last_month.strftime("%Y-%m-%d")
+
     def deactivate_unit(self, name=None):
         try:
             unit = Unit.get(Unit.tenant == name)
@@ -147,59 +160,7 @@ class MoveOut(BaseModel):
         tenant.active = False
         tenant.move_out_date = date1
         return tenant
-    
-    def store_move_out(self, name=None, date1=None):
-        move_out = MoveOut.create(name=name, mo_date=date1)
-        move_out.save()
 
-    def deactivate_move_outs(self, date, move_outs=None):
-        # JAN: no move outs
-        # FEB: betsy smith: she isn't in the tenant list but there is a date in the move
-        # MARCH: 
-            # type 1 move-out: move-out occurs in same month that report covers and 
-            # date included in move-out column in rent roll 
-            # name in 'Name' is the tenant name
-        # APRIL:
-            # possible problem is vacant in name col, and date, but this has not presented in move-outs
-        # MAY: no relevant cases
-        # JUNE: no relevant cases
-        # JULY: no relevant cases
-        # AUG: # two type #1 cases, mabra and kelly on 8/31/2022
-        # SEPT: ONE TYPE 1, mosely 09/02/2022
-        # OCT: no relevant cases
-        # NOV: type 2: luke white 10/31/2022, prior month move-out date
-            # type 3: patrick mack is on the rent roll in october, move-out date 10/27/2022  
-        # type 1:  
-        # DEC: minnie pullins, type 2, move-out date 11/30/2022
-        
-        # types of move-outs and how they perform currently:
-            # for mack and cleveland, 
-                # move-out date should be imputed to last day of month prior to when they were no longer in unit
-                # we should set up a type system in the db to show what type of move-out it is, ie explicit or imputed
-                # 
-        
-        
-        
-        first_dt, last_dt = self.make_first_and_last_dates(date_str=date)
-
-        if len(move_outs) <= 1:
-            for name, date1, in move_outs:
-                tenant = self.deactivate_tenant(name=name, date1=date1)
-                tenant.save()
-                unit = self.deactivate_unit(name=name)
-                unit.save()
-                self.store_move_out(name=name, date1=date1)
-
-        else:
-            for item in move_outs:
-                name, date1, type1 = item[0], item[1], item[2]
-                tenant = self.deactivate_tenant(name=name, date1=date1)
-                tenant = Tenant.get(Tenant.tenant_name == name)
-                unit = self.deactivate_unit(name=name)
-                unit.save()
-                self.store_move_out(name=name, date1=date1)
-        
- 
 
 class IncomeMonth(BaseModel):
     year = CharField()
@@ -1161,8 +1122,6 @@ class PopulateTable(QueryHC):
             except PIE as e:
                 print(e, 'issue with unit creation', unt.tenant)
 
-    
-
     def transfer_opcash_from_findex_to_opcash_and_detail(self):
         """this function is repsonsible for moving information unpacked into findexer table into OpCash and OpCashDetail tables"""
 
@@ -1268,13 +1227,11 @@ class AfterInitLoad(PopulateTable):
             date=date,
             start_set=set(self.start_tenants),
             end_set=set(self.end_tenants))
-        
-     
-        self.cleaned_mos = MoveOut.classify_move_outs(explicit_move_outs=self.explicit_move_outs,
-                                  implied_move_outs=self.computed_mos,
-                                  date=date)
 
-        # breakpoint()
+        self.cleaned_mos = MoveOut.classify_move_outs(explicit_move_outs=self.explicit_move_outs,
+                                                      implied_move_outs=self.computed_mos,
+                                                      date=date)
+
 
         return (self.nt_list_w_vacants,
                 self.total_tenant_charges,
@@ -1288,15 +1245,15 @@ class AfterInitLoad(PopulateTable):
              self.cleaned_mos,
              self.computed_mis) = self._rent_roll_loop_internals(date, filename)
 
-            print(self.cleaned_mos)
-
             self.insert_move_ins(move_ins=self.computed_mis,
                                  date=date, filename=filename)
 
-            self._deactivate_move_outs(date)
+            MoveOut.deactivate_move_outs(date, move_outs=self.cleaned_mos)
 
             ''' now we have an updated list of active tenants
                 and may again fetched this updated record
+                
+                THIS IS PROBABLY AN EXPENSIVE STEP HERE
             '''
             self.cleaned_nt_list = [
                 row for row in self.return_nt_list_with_no_vacants(
@@ -1328,10 +1285,6 @@ class AfterInitLoad(PopulateTable):
             self._write_vals(self.rents, cls='TenantRent')
             self._write_vals(self.subsidies, cls='Subsidy')
             self._write_vals(self.contract_rents, cls='ContractRent')
-
-    def _deactivate_move_outs(self, date):
-        if self.cleaned_mos != []:
-            self.deactivate_move_outs(date, move_outs=self.cleaned_mos)
 
     def _update_unit_table(self, date=None):
         '''update last_occupied for occupied: SLOW, Don't like'''
