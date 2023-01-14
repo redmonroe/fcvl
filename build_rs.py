@@ -34,9 +34,17 @@ class BuildRS(MonthSheet):
         self.ms = MonthSheet(full_sheet=self.full_sheet, path=self.path)
         self.findex = FileIndexer(path=self.path, db=self.main_db)
         self.populate = self._setup_tables(mode='drop_and_create')
+
+    def __repr__(self):
+        return f'{self.__class__.__name__} | {self.path} | {self.full_sheet}'
+
+    def build_db_from_scratch(self, **kw):
+        print('building db from scratch')
+        player = ProcessingLayer(service=self.service,
+                                 full_sheet=self.full_sheet, ms=self.ms)
         self.start = time.time()
         self.findexer_time = time.time()
-        self._run_raw_findexer()
+        self.findex.build_index_runner()
         self.rr_list = [(item.fn, item.period, item.path)
                         for item in Findexer().select().
                         where(Findexer.doc_type == 'rent').
@@ -53,16 +61,6 @@ class BuildRS(MonthSheet):
         self.proc_dates_and_paths = [(item[1], item[2])
                                      for item in self.file_list]
         self.findexer_time = time.time() - self.findexer_time
-
-    def __repr__(self):
-        return f'{self.__class__.__name__} | {self.path} | {self.full_sheet}'
-
-    def build_db_from_scratch(self, **kw):
-        print('building db from scratch')
-        player = ProcessingLayer(service=self.service,
-                                 full_sheet=self.full_sheet, ms=self.ms)
-
-     
 
         print('loading initial tenant balances')
         init_load_time = time.time()
@@ -103,9 +101,7 @@ class BuildRS(MonthSheet):
         
         damages_txn_status_rstime1 = time.time() - damages_txn_status_rstime1 
 
-
         mentry_time = time.time()
-        """this MUST GO FIRST DAMMMIT!!!"""
         player.write_manual_entries_from_config()
         mentry_time = time.time() - mentry_time
         
@@ -117,11 +113,9 @@ class BuildRS(MonthSheet):
             source='build')
         reconcile_time = time.time() - reconcile_time
 
-
         player.display_most_recent_status(
             mr_status=most_recent_status, months_ytd=all_months_ytd)
 
-        # breakpoint()
         writeable_months = player.final_check_writeable_months(
             month_list=all_months_ytd)
 
@@ -143,11 +137,6 @@ class BuildRS(MonthSheet):
         print('misc:', damages_txn_status_rstime1)
         print('manual entry:', mentry_time)
         print('reconcile:', reconcile_time)
-
-    def _run_raw_findexer(self):
-        findexer_time = time.time()
-        self.findex.build_index_runner()  # 3 sec in november
-        print(f'findexer time: {time.time() - findexer_time}')
 
     def _setup_tables(self, mode=None):
         populate = PopulateTable()
