@@ -838,15 +838,16 @@ class PopulateTable(QueryHC):
             print('issue is with query write execution in InitLoad')
 
     def merge_move_outs(self, explicit_move_outs=None, computed_mos=None, date=None):
-
-        if computed_mos != []:  # remove unit column from computed_mos
-            computed_mos1 = [(item[0], item[2]) for item in computed_mos]
+        # remove vacants from explicit move-outs
         explicit_move_outs = [(row[0], row[1])
                               for row in explicit_move_outs if row[0] != 'vacant']
+        
+        # remove unit column from computed_mos
+        if computed_mos != []:  
+            computed_mos = [(item[0], item[2]) for item in computed_mos]
         cleaned_mos = []
         if explicit_move_outs != []:
             cleaned_mos = explicit_move_outs + computed_mos
-
         return cleaned_mos
 
     def payment_load_full(self, filename):
@@ -1057,6 +1058,12 @@ class PopulateTable(QueryHC):
 
     def deactivate_move_outs(self, date, move_outs=None):
         first_dt, last_dt = self.make_first_and_last_dates(date_str=date)
+        # breakpoint()
+        # print(move_outs)
+        for move_out in move_outs:
+            print(len(move_outs))
+            
+        '''
         if len(move_outs) <= 1:
             for name, date in move_outs:
                 print('deactivating:',  name, date)
@@ -1089,6 +1096,7 @@ class PopulateTable(QueryHC):
                     unit.save()
                 except (ValueError, IndexError, DNE) as e:
                     print(f'error deactivating unit for {name}')
+        ''';
 
     def transfer_opcash_from_findex_to_opcash_and_detail(self):
         """this function is repsonsible for moving information unpacked into findexer table into OpCash and OpCashDetail tables"""
