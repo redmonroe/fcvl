@@ -279,17 +279,18 @@ class FileIndexer(Utils, Scrape, Reconciler):
         return {'opcash': opcash_dry_run, 'deposits': deposits_dry_run, 'rent': rent_dry_run, 'damages': damages, 'scrape': df}
 
     def build_index_runner(self):
-        self.connect_to_db()
         self.index_dict = self.articulate_directory()
         self.load_what_is_in_dir_as_indexed(dict1=self.index_dict)
         self.make_a_list_of_indexed(mode=self.query_mode.pdf)
         self.find_opcashes()
         self.type_opcashes()
         self.rename_by_content_pdf()
+        df_list = []
         for stmt_path in self.op_cash_list:
             target_list = ['Incoming Wire', 'QUADEL', 'Deposit', 'Correction', 'Chargeback']
-            df = self.pdf.nbofi_pdf_extract(stmt_path, target_list=target_list)
-            print(df)
+            df_list.append(self.pdf.nbofi_pdf_extract(stmt_path, target_list=target_list))
+            df = pd.concat(df_list)
+        print(df)
             # r4r = self.pdf.nbofi_pdf_extract(stmt_path, target_str='Incoming Wire')
             # hap = self.pdf.nbofi_pdf_extract(stmt_path, target_str='QUADEL')
             # dep = self.pdf.nbofi_pdf_extract(stmt_path, target_str='Deposit')
@@ -298,6 +299,30 @@ class FileIndexer(Utils, Scrape, Reconciler):
             # depdet = self.pdf.nbofi_pdf_extract(stmt_path, target_str=target_str)
         # elif style == self.style_term.corrections:
             # depdet = self.pdf.nbofi_pdf_extract(path, target_str=target_str)
+        '''
+        return_list = []
+        kdict = {}
+        if style == self.style_term.r4r:
+            date, amount = self.pdf.nbofi_pdf_extract_rr(
+                path, target_str=target_str)
+        elif style == self.style_term.hap:
+            date, amount = self.pdf.nbofi_pdf_extract_hap(
+                path, target_str=target_str)
+        elif style == self.style_term.dep:
+            date, amount = self.pdf.nbofi_pdf_extract_deposit(
+                path, target_str=target_str)
+        elif style == self.style_term.dep_detail:
+            depdet_list = self.pdf.nbofi_pdf_extract_deposit(
+                path, style=style, target_str=target_str)
+            return depdet_list
+        elif style == self.style_term.corrections:
+            date, amount = self.pdf.nbofi_pdf_extract_corrections(
+                path, style=style, target_str=target_str, target_str2=target_str2, date=date)
+
+        kdict[str(date)] = [amount, path, style]
+        return_list.append(kdict)
+        return return_list, date
+        '''
 
         breakpoint()
     

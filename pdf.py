@@ -241,6 +241,8 @@ class StructDataExtract:
         file1 = self.open_pdf_and_return_one_str(path)
         dfs = []
         index = [(count, line) for count, line in enumerate(file1)]
+        stmt_date = self.get_stmt_date(index)
+        stmt_year = stmt_date[-4:]
         for target_str in target_list:
             lines = [line for count, line in index if target_str in line]
             if target_str == 'Deposit':
@@ -249,12 +251,12 @@ class StructDataExtract:
             linex = []
             for list1 in lines:
                 list1 = [item for item in list1 if item != '']
+                list1[0] = list1[0] + '/' + stmt_year
                 if list1[1] == 'Incoming':
                     list1 = [list1[0], 'rr', list1[3]]
                 if list1[1] == 'CONS':
                     list1 = [list1[0], 'hap', list1[5]]
                 if list1[1] == 'Chargeback' and list1[2] != 'Fee':
-                    # breakpoint()
                     list1 = [list1[0], 'chargeback', list1[3]]
                 if list1[2] == 'Correction':
                     list1 = [list1[0], 'correction', list1[4]]
@@ -265,9 +267,10 @@ class StructDataExtract:
         df = pd.concat(dfs)
         df = df[df[1].str.contains('Deposits/Credits|Vault')==False]
         df = df[df[2].str.contains('Fee')==False]
-        df[2] = df[2].str.replace(r'\n', '')
+        df[2] = df[2].str.replace(r'\n', '', regex=True)
         df[2] = df[2].str.replace(',', '')
         df[2] = df[2].str.replace('-', '')
+        df[0] = pd.to_datetime(df[0], format='%m/%d/%Y')
         df[2] = df[2].astype('float64') 
         return df
 
