@@ -191,10 +191,9 @@ class MonthSheet(YearSheet):
             ntp = self.get_ntp_wrapper(date)
             sum_laundry, other_list = self.split_ntp(ntp)
             sum_mi_payments = self.get_move_ins(date)
-            
-            ### WHAT MAKES GASKIN SO DIFFERENT???
-            
-            
+
+            # WHAT MAKES GASKIN SO DIFFERENT???
+
             if date == '2022-12':
                 breakpoint()
             self.write_move_in_box(date)
