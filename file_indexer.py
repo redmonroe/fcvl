@@ -279,6 +279,29 @@ class FileIndexer(Utils, Scrape, Reconciler):
         return {'opcash': opcash_dry_run, 'deposits': deposits_dry_run, 'rent': rent_dry_run, 'damages': damages, 'scrape': df}
 
     def build_index_runner(self):
+        self.connect_to_db()
+        self.index_dict = self.articulate_directory()
+        self.load_what_is_in_dir_as_indexed(dict1=self.index_dict)
+        self.make_a_list_of_indexed(mode=self.query_mode.pdf)
+        self.find_opcashes()
+        self.type_opcashes()
+        self.rename_by_content_pdf()
+        for stmt_path in self.op_cash_list:
+            target_list = ['Incoming Wire', 'QUADEL', 'Deposit', 'Correction', 'Chargeback']
+            df = self.pdf.nbofi_pdf_extract(stmt_path, target_list=target_list)
+            print(df)
+            # r4r = self.pdf.nbofi_pdf_extract(stmt_path, target_str='Incoming Wire')
+            # hap = self.pdf.nbofi_pdf_extract(stmt_path, target_str='QUADEL')
+            # dep = self.pdf.nbofi_pdf_extract(stmt_path, target_str='Deposit')
+            # correction = self.pdf.nbofi_pdf_extract(stmt_path, target_str='Correction')
+            # chargeback = self.pdf.nbofi_pdf_extract(stmt_path, target_str='Chargeback')
+            # depdet = self.pdf.nbofi_pdf_extract(stmt_path, target_str=target_str)
+        # elif style == self.style_term.corrections:
+            # depdet = self.pdf.nbofi_pdf_extract(path, target_str=target_str)
+
+        breakpoint()
+    
+    def build_index_runner2(self):
         """this function is just a list of the funcs one would run to create the index from a fresh start"""
         self.connect_to_db()
         self.index_dict = self.articulate_directory()
@@ -503,7 +526,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
             else:
                 self.write_deplist_to_db(hap_iter_one_month, rr_iter_one_month, dep_iter_one_month,
                                          deposit_and_date_iter_one_month, corrections_sum, stmt_date)
-
+    
     def extract_deposits_by_type(self, path, style=None, target_str=None, target_str2=None, date=None):
         return_list = []
         kdict = {}

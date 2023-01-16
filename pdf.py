@@ -237,50 +237,39 @@ class StructDataExtract:
 
         return date
     
-    def nbofi_pdf_extract_deposit_new(self, path, style=None, target_str=None):
-        from collections import OrderedDict
+    def nbofi_pdf_extract(self, path, style=None, target_list=None):
         file1 = self.open_pdf_and_return_one_str(path)
-        index = [line for count, line in enumerate(file1)]
-        target_str = 'Deposit'
-        df = pd.DataFrame(index, columns=['data'])
-        df = df[df['data'].str.contains(target_str)]
-        print(df)
-        breakpoint()
-        
-
-        # records = []
-        # for count, line in enumerate(file1):
-        #     records.append(OrderedDict())
-        #     records[-1][count] = next(file1)
-
-                # records[-1][line] = val
-        
-
-        line_list = []
-        date_list = []
-        breakpoint()
-        line = [(count, line) for count, line in index if target_str in line]
-        line = [line for count, line in line]
-        deposit_lines = [line.split(' ') for line in line]
-        deposit_lines = [
-            line for line in deposit_lines if 'Correction' not in line]
-        for hap_line in deposit_lines:
-            stmt_date = self.get_stmt_date(index)
-            stmt_year = stmt_date[-4:]
-            target = self.get_cleaned_target_line(hap_line, path=path)
-            target_date = self.get_date_from_line(hap_line)
-            target_date = target_date + '/' + stmt_year
-            date_list.append(target_date)
-            line_list.append(target[0])
-
-        line_list.pop(0)
-        date_list.pop(0)
-        combined_list = list(zip(date_list, line_list))
-        if style == 'dep_detail':
-            self.deposits_list = []
-            self.deposits_list.append({stmt_date: combined_list})
-            return self.deposits_list
-        return stmt_date, sum(line_list)
+        dfs = []
+        index = [(count, line) for count, line in enumerate(file1)]
+        for target_str in target_list:
+            lines = [line for count, line in index if target_str in line]
+            if target_str == 'Deposit':
+                lines = [line for line in lines if 'Correction' not in line]
+            lines = [line.split(' ') for line in lines]
+            linex = []
+            for list1 in lines:
+                list1 = [item for item in list1 if item != '']
+                if list1[1] == 'Incoming':
+                    list1 = [list1[0], 'rr', list1[3]]
+                if list1[1] == 'CONS':
+                    list1 = [list1[0], 'hap', list1[5]]
+                if list1[1] == 'Chargeback' and list1[2] != 'Fee':
+                    # breakpoint()
+                    list1 = [list1[0], 'chargeback', list1[3]]
+                if list1[2] == 'Correction':
+                    list1 = [list1[0], 'correction', list1[4]]
+                    
+                linex.append(list1)
+            df = pd.DataFrame(linex)
+            dfs.append(df)
+        df = pd.concat(dfs)
+        df = df[df[1].str.contains('Deposits/Credits|Vault')==False]
+        df = df[df[2].str.contains('Fee')==False]
+        df[2] = df[2].str.replace(r'\n', '')
+        df[2] = df[2].str.replace(',', '')
+        df[2] = df[2].str.replace('-', '')
+        df[2] = df[2].astype('float64') 
+        return df
 
     def nbofi_pdf_extract_deposit(self, path, style=None, target_str=None):
         txtfile = os.path.abspath(os.path.join(
