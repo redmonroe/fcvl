@@ -376,10 +376,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
         if self.indexed_list:
             self.xls_wrapper()
 
-        # self.start = time.time()
         self.make_a_list_of_indexed(mode=self.query_mode.pdf)
-        # print(f'full time: {time.time() - self.start}')
-        # breakpoint()
         if self.indexed_list:
             self.pdf_wrapper()
 

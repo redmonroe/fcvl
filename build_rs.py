@@ -76,18 +76,18 @@ class BuildRS(MonthSheet):
          rents,
          subsidies,
          contract_rents) = initial.return_init_results()
-        
+
         init_load_time = time.time() - init_load_time
 
         # TODO: can't we just pass a list of months
         after_init_load_time = time.time()
         after_initial = AfterInitLoad(rentrolls=self.proc_rentrolls,
                                       deposits=self.proc_dates_and_paths)
-        
+
         after_init_load_time = time.time() - after_init_load_time
-        
+
         damages_txn_status_rstime1 = time.time()
-        
+
         Damages.load_damages()
 
         self.populate.transfer_opcash_from_findex_to_opcash_and_detail()
@@ -95,16 +95,17 @@ class BuildRS(MonthSheet):
         '''BUILD ADDRESSES HERE; MOVE IT OUT OF LETTERS'''
 
         if kw.get('last_range_month') is not None:
-            all_months_ytd, report_list, most_recent_status = player.write_to_statusrs_wrapper(last_range_month=kw['last_range_month'])            
+            all_months_ytd, report_list, most_recent_status = player.write_to_statusrs_wrapper(
+                last_range_month=kw['last_range_month'])
         else:
             all_months_ytd, report_list, most_recent_status = player.write_to_statusrs_wrapper()
-        
-        damages_txn_status_rstime1 = time.time() - damages_txn_status_rstime1 
+
+        damages_txn_status_rstime1 = time.time() - damages_txn_status_rstime1
 
         mentry_time = time.time()
         player.write_manual_entries_from_config()
         mentry_time = time.time() - mentry_time
-        
+
         reconcile_time = time.time()
         """this is the critical control function"""
         player.reconcile_and_inscribe_state(
@@ -202,5 +203,3 @@ class BuildRS(MonthSheet):
                     month = data[0]
 
                     return True, month
-
-

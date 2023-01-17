@@ -101,7 +101,6 @@ class MoveIn(BaseModel):
                                          unit=row[1],
                                          mi_date=row[2],)
                                   for row in move_ins]
-
         return self.combined_move_ins
 
     @classmethod
@@ -200,14 +199,10 @@ class MoveOut(BaseModel):
         return last_dt_of_last_month.strftime("%Y-%m-%d")
 
     def deactivate_unit(self, name=None):
-        # try:
         unit = Unit.get(Unit.tenant == name)
-        # except Exception as e:
-        # print(f'error deactivating unit for {name}')
         unit.status = 'vacant'
         unit.tenant = 'vacant'
 
-        # breakpoint()
         return unit
 
     def deactivate_tenant(self, name=None, date1=None):
@@ -852,7 +847,6 @@ class QueryHC(Reconciler):
                       ).
                       namedtuples()]
             print(record)
-            # breakpoint()
         else:
             print('no beginning balance available yet')
             record = [row for row in Tenant.
@@ -913,7 +907,6 @@ class QueryHC(Reconciler):
         # if first period get_beg_bal from Tenant table
         # else
 
-        breakpoint()
 
 
 class UrQuery(QueryHC):
@@ -1015,7 +1008,6 @@ class PopulateTable(QueryHC):
             - other
             '''
         '''oddly named descriptions are getting pushed out bc they are not in ntp_cases'''
-        # breakpoint()
 
         insert_iter = []
         for (deposit_id, genus, name, date_posted, amount, date_code, description) in ntp_df.values:

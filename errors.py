@@ -4,8 +4,8 @@ from functools import wraps
 from googleapiclient.errors import HttpError
 from playwright._impl._api_types import TimeoutError as PlaywrightTimeoutError
 
-
 # interesting link: https://stackoverflow.com/questions/50246304/using-python-decorators-to-retry-request
+
 
 def retry_google_api(times, sleep1, exceptions):
     """
@@ -26,23 +26,25 @@ def retry_google_api(times, sleep1, exceptions):
                     return func(*args, **kwargs)
                 except HttpError as e:
                     if e.resp.status == exceptions:
-                        print(f'\nException on {func}, attempt {attempt} of {times} | sleep={sleep1} | code={exceptions}\n')
+                        print(
+                            f'\nException on {func}, attempt {attempt} of {times} | sleep={sleep1} | code={exceptions}\n')
                         time.sleep(sleep1)
                     attempt += 1
             return func(*args, **kwargs)
         return newfn
     return decorator
 
+
 class Errors:
-    
+
     @staticmethod
     def xlsx_permission_error(path, pandas_object):
         try:
             return pandas_object.ExcelWriter(path, engine='xlsxwriter')
         except PermissionError as e:
             decision = input('Exception caught in workbook.close(): %s\n'
-                        "Please close the file if it is open in Excel.\n"
-                        "Try to write file again? [Y/n]: " % e)
+                             "Please close the file if it is open in Excel.\n"
+                             "Try to write file again? [Y/n]: " % e)
             if decision != 'n':
                 return pandas_object.ExcelWriter(path, engine='xlsxwriter')
             else:
@@ -60,7 +62,8 @@ class Errors:
                     return 'success downloading insert type and date'
                 except PlaywrightTimeoutError as e:
                     attempt += 1
-                    print('playwright aint succeeded in downloading file.  Please try manually downloading.')
+                    print(
+                        'playwright aint succeeded in downloading file.  Please try manually downloading.')
                     time.sleep(3)
                     print(f'attempt no {attempt} of {times}')
             return 'playwright scraping error'

@@ -35,22 +35,25 @@ class Figuration:
             self.method = BuildRS
 
         if self.mode == 'testing':
-            self.build = self.method(path=self.path, full_sheet=self.full_sheet, mode=self.mode, pytest=self.pytest)
+            self.build = self.method(
+                path=self.path, full_sheet=self.full_sheet, mode=self.mode, pytest=self.pytest)
             self.service = oauth(Config.my_scopes, 'sheet', mode=self.mode)
-            self.ms = MonthSheet(full_sheet=self.full_sheet, path=self.path, mode=self.mode, test_service=self.service)
+            self.ms = MonthSheet(full_sheet=self.full_sheet, path=self.path,
+                                 mode=self.mode, test_service=self.service)
         if self.mode == 'production':
             self.path = Config.PROD_PATH
             self.full_sheet = Config.PROD_RS
-            self.build = self.method(path=self.path, full_sheet=self.full_sheet)
+            self.build = self.method(
+                path=self.path, full_sheet=self.full_sheet)
             self.service = oauth(Config.my_scopes, 'sheet')
             self.ms = MonthSheet(full_sheet=self.full_sheet, path=self.path)
-    
+
     def annfin_test_configuration(self):
         return Config.TEST_ANNFIN_PATH, Config.TEST_ANNFIN_OUTPUT, Config.TEST_DB
 
     def return_configuration(self):
         return self.path, self.full_sheet, self.build, self.service, self.ms
-    
+
     def reset_db(self):
         populate = PopulateTable()
         create_tables_list1 = populate.return_tables_list()

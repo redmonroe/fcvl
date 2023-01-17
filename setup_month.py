@@ -115,7 +115,6 @@ class MonthSheet(YearSheet):
             damages = ([row for row in self.uq.ur_query(model_str='Damages', query_tup=[
                        ('dam_date', first_dt), ('dam_date', last_dt)], operators_list=['>=', '<=']).namedtuples()])
 
-            # breakpoint()
 
             # adjustments = self.query.get_mentries_by_month(first_dt=first_dt, last_dt=last_dt)
 

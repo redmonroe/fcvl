@@ -79,8 +79,6 @@ class IterRS(BuildRS):
             dir_cont = [(item, item.name) for item in self.path.iterdir() if item.name not in self.findex.excluded_file_names]
         
         try:
-            # if genus == 'scrape':
-            #     breakpoint()
             record = [{genus: (True, entry[0])} for entry in dir_cont if entry[1] in filename][0]
             return record
         except IndexError:

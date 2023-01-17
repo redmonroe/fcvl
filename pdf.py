@@ -145,7 +145,6 @@ class StructDataExtract:
         print(result.head(1))
         abs_file_path = os.path.join(
             output_path, f'escrow/{start_string}.xlsx')
-        # breakpoint()
 
         result.to_excel(abs_file_path)
         

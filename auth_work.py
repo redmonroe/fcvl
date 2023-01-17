@@ -4,13 +4,15 @@ import pickle
 from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
+
 from config import Config
+
 
 def oauth(SCOPES, type, mode=None):
     creds = None
 
     if mode == 'testing':
-        ## dealing with pathing issues from running tests from subdir; tricky business
+        # dealing with pathing issues from running tests from subdir; tricky business
         if os.path.exists(Config.testing_my_token):
             with open(Config.testing_my_token, 'rb') as token:
                 creds = pickle.load(token)
@@ -45,10 +47,9 @@ def oauth(SCOPES, type, mode=None):
     elif type == 'calendar':
         service = build('calendar', 'v3', credentials=creds)
     elif type == 'drive':
-        service= build('drive', 'v3', credentials=creds)
+        service = build('drive', 'v3', credentials=creds)
     elif type == 'script':
         service = build('script', 'v1', credentials=creds)
     else:
         "service not found."
     return service
-

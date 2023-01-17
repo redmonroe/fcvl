@@ -6,13 +6,14 @@ import pandas as pd
 import requests
 
 from auth_work import oauth
-from backend import Findexer, PopulateTable, StatusObject, IncomeMonth
+from backend import Findexer, IncomeMonth, PopulateTable, StatusObject
 from config import Config
 from errors import Errors
 from file_indexer import FileIndexer
 from utils import Utils
 
-class AnnFin:   
+
+class AnnFin:
 
     service = oauth(Config.my_scopes, 'sheet')
     sheet_id = Config.rec_act_2021
@@ -28,19 +29,19 @@ class AnnFin:
     SEC_DEP_RANGE_FROM_RS = '!N73:N73'
     CURRENT_YEAR_RS = Config.RS_2022
     month_match_dict = {
-        'jan': 1, 
-        'feb': 2, 
-        'mar': 3, 
-        'apr': 4, 
-        'may': 5, 
-        'june': 6, 
-        'july': 7, 
-        'aug': 8, 
-        'sep': 9, 
-        'oct': 10, 
-        'nov': 11, 
-        'dec': 12, 
-        }
+        'jan': 1,
+        'feb': 2,
+        'mar': 3,
+        'apr': 4,
+        'may': 5,
+        'june': 6,
+        'july': 7,
+        'aug': 8,
+        'sep': 9,
+        'oct': 10,
+        'nov': 11,
+        'dec': 12,
+    }
 
     def __init__(self, db=None):
         populate = PopulateTable()
@@ -66,7 +67,8 @@ class AnnFin:
         try:
             df = pd.read_excel(path, engine='openpyxl', header=4)
         except OSError as e:
-            df = pd.read_excel(path, engine='xlrd', sheet_name='Trial Balance', header=4)
+            df = pd.read_excel(path, engine='xlrd',
+                               sheet_name='Trial Balance', header=4)
 
         df = df.fillna(0)
         df.set_index('Unnamed: 0', inplace=True)
@@ -88,9 +90,8 @@ class AnnFin:
         # set out divisions
         # set number formatting
 
-        currency_format = workbook.add_format({'num_format': '[$$-409]#,##0.00'})
-
-
+        currency_format = workbook.add_format(
+            {'num_format': '[$$-409]#,##0.00'})
 
         worksheet.set_column('A:A', 35)
         worksheet.set_column('B:B', 20)
@@ -100,22 +101,22 @@ class AnnFin:
 
         workbook.close()
 
-    
     def df_formatting_insert_row(self, df=None, target=None, index=None):
         i = df.index.get_loc(target)
         new_row = pd.DataFrame(index=[index])
         index_position = i + 1
-        final = pd.concat([df.iloc[:index_position], new_row, df.iloc[index_position:]])
+        final = pd.concat(
+            [df.iloc[:index_position], new_row, df.iloc[index_position:]])
         return final
 
     def trial_balance_portal(self):
         import io
-        from xlwt import Workbook
-        filename = Config.TEST_ANNFIN_PATH / self.trial_balance_2022_ye   
-        with open(filename, 'rb') as f:
-            lines = [x.decode('utf8').strip() for x in f.readlines()]    
-            print(lines) 
 
+        from xlwt import Workbook
+        filename = Config.TEST_ANNFIN_PATH / self.trial_balance_2022_ye
+        with open(filename, 'rb') as f:
+            lines = [x.decode('utf8').strip() for x in f.readlines()]
+            print(lines)
 
         breakpoint()
         file1 = io.open(filename, "r")
@@ -136,7 +137,7 @@ class AnnFin:
             # Getting the values after splitting using '\t'
             for j, val in enumerate(row.replace('\n', '').split('\t')):
                 sheet.write(i, j, val)
-            
+
         # Saving the file as an excel file
         output_path = Config.TEST_ANNFIN_OUTPUT / 'myexcel.xlsx'
         xldoc.save(output_path)
@@ -149,22 +150,24 @@ class AnnFin:
         final = pd.merge(base, new, on='Unnamed: 0', how='outer')
         final.fillna(0)
 
-        final = self.df_formatting_insert_row(df=final, target='3900 Retained Earnings', index='INCOME')
-        final = self.df_formatting_insert_row(df=final, target='5940 Other Revenue:Forf Ten Security Deposits', index='ADMIN & OFFICE')
-        final = self.df_formatting_insert_row(df=final, target='Operating & Maintainance:Other:Equipment Rental', index='JOURNAL ENTRIES & OTHER')
+        final = self.df_formatting_insert_row(
+            df=final, target='3900 Retained Earnings', index='INCOME')
+        final = self.df_formatting_insert_row(
+            df=final, target='5940 Other Revenue:Forf Ten Security Deposits', index='ADMIN & OFFICE')
+        final = self.df_formatting_insert_row(
+            df=final, target='Operating & Maintainance:Other:Equipment Rental', index='JOURNAL ENTRIES & OTHER')
 
-        final['variance'] =  (round(final[self.this_year] / final[self.last_year] * 100)) - 100
+        final['variance'] = (
+            round(final[self.this_year] / final[self.last_year] * 100)) - 100
         # print(final.loc['6700 Taxes & Insurance'])\
 
+        # what do I want to do?
+        # conditional formatting
 
+        writer = Errors.xlsx_permission_error(
+            self.output_path, pandas_object=pd)
 
-        # what do I want to do? 
-            # conditional formatting
-
-
-        writer = Errors.xlsx_permission_error(self.output_path, pandas_object=pd)
-
-        final.to_excel(writer, sheet_name='merged_tb') 
+        final.to_excel(writer, sheet_name='merged_tb')
 
         workbook = writer.book
         # Get Sheet1
@@ -183,8 +186,8 @@ class AnnFin:
         # breakpoint()
 
         # self.add_xlsxwriter_formatting(output_path=self.output_path)
-    
-    def receivables_actual(self):    
+
+    def receivables_actual(self):
         '''notes on canonical amounts:'''
         '''01/22: 501.71 laundry'''
         '''01/22: 15 nationwide: fixed'''
@@ -198,40 +201,44 @@ class AnnFin:
         self.connect_to_db()
         path = Config.TEST_ANNFIN_PATH
         directory_contents = [item for item in path.iterdir()]
-        path_to_pl = [path for path in directory_contents if path.name != 'desktop.ini']
-        
-        closed_month_list = [dt.strptime(rec.month, '%Y-%m') for rec in StatusObject().select().where(StatusObject.tenant_reconciled==1).namedtuples()]
+        path_to_pl = [
+            path for path in directory_contents if path.name != 'desktop.ini']
+
+        closed_month_list = [dt.strptime(rec.month, '%Y-%m') for rec in StatusObject(
+        ).select().where(StatusObject.tenant_reconciled == 1).namedtuples()]
 
         hap = self.qb_extract_pl_line(keyword=self.hap_code, path=path_to_pl)
 
-        laundry = self.qb_extract_pl_line(keyword=self.laundry_code, path=path_to_pl)
-
+        laundry = self.qb_extract_pl_line(
+            keyword=self.laundry_code, path=path_to_pl)
 
         for month in closed_month_list:
             for date, hap_amount in hap.items():
                 if month == date:
-                    hap_db = IncomeMonth(year=Config.current_year, month=month, hap=hap_amount)
-    
+                    hap_db = IncomeMonth(
+                        year=Config.current_year, month=month, hap=hap_amount)
+
     def match_hap(self):
         print('attempt to match hap, send to db, and write')
         # findex = FileIndexer(path=self.path, db=self.main_db)
 
-        op_cash_hap = [(row.hap, row.period) for row in Findexer.select().where(Findexer.hap != '0').namedtuples()]
+        op_cash_hap = [(row.hap, row.period) for row in Findexer.select().where(
+            Findexer.hap != '0').namedtuples()]
 
     def qb_extract_pl_line(self, keyword=None, path=None):
-        '''limits: cells with formulas will not be extracted properly; however, the workaround is to put an x in a cell and save and close.  we need a no-touch way to do this'''        
+        '''limits: cells with formulas will not be extracted properly; however, the workaround is to put an x in a cell and save and close.  we need a no-touch way to do this'''
         path = path[0]
         df = pd.read_excel(path)
-        
-        extract = df.loc[df['Fall Creek Village I'].str.contains(keyword, 
-        na=False
-        )]
+
+        extract = df.loc[df['Fall Creek Village I'].str.contains(keyword,
+                                                                 na=False
+                                                                 )]
         breakpoint()
         extract = extract.values[0]
         line_items = [item for item in extract if type(item) != str]
-        line_items = self.qbo_cleanup_line(path=path, dirty_list=line_items) 
+        line_items = self.qbo_cleanup_line(path=path, dirty_list=line_items)
 
-        return line_items 
+        return line_items
 
     def qbo_cleanup_line(self, path=None, dirty_list=None):
 
@@ -239,39 +246,45 @@ class AnnFin:
         date = list(df.columns)
         date = date[1:]
         target_date_dict = dict(zip(date, dirty_list))
-        
-        line_items = {k: v for (k, v) in target_date_dict.items() if 'Total' not in k}
 
-        line_items = {k: v for (k, v) in line_items.items() if math.isnan(v) == False}
+        line_items = {
+            k: v for (k, v) in target_date_dict.items() if 'Total' not in k}
 
-        line_items = {dt.strptime(k, '%b %Y'): v for (k, v) in line_items.items() if '-' not in k}
+        line_items = {k: v for (k, v) in line_items.items()
+                      if math.isnan(v) == False}
+
+        line_items = {dt.strptime(k, '%b %Y'): v for (
+            k, v) in line_items.items() if '-' not in k}
 
         return line_items
-    
+
     def remainder_code(self):
         '''remainder code'''
-        
+
         total = {k: v for (k, v) in target_date_dict.items() if 'Total' in k}
 
-        dict_wo_total_and_mtd = {k:v for (k, v) in dict_wo_total.items() if '-' not in k}
-
+        dict_wo_total_and_mtd = {
+            k: v for (k, v) in dict_wo_total.items() if '-' not in k}
 
         '''model date YYYY-MM'''
-        fixed_target_date_dict = {k.strftime('%Y-%M'): v for (k, v) in fixed_target_date_dict.items()}
-        fixed_target_date_dict = {dateq: (0 if math.isnan(amount) else amount) for (dateq, amount) in fixed_target_date_dict.items() }
-    
+        fixed_target_date_dict = {k.strftime(
+            '%Y-%M'): v for (k, v) in fixed_target_date_dict.items()}
+        fixed_target_date_dict = {dateq: (0 if math.isnan(amount) else amount) for (
+            dateq, amount) in fixed_target_date_dict.items()}
+
         return fixed_target_date_dict
 
     def qb_extract_security_deposit(self, filename, path=None):
 
         abs_file_path = os.path.join(path, filename)
-        
-        df = pd.read_excel(abs_file_path)    
-        
+
+        df = pd.read_excel(abs_file_path)
+
         df = df.loc[df['Unnamed: 2'].str.contains('Deposit', na=False)]
         dates_list = list(df['Unnamed: 1'])
         amount_list = list(df['Unnamed: 8'])
-        tup_list = [(dt.strptime(dateq,  '%m/%d/%Y'), amount) for dateq, amount in zip(dates_list, amount_list)]
+        tup_list = [(dt.strptime(dateq,  '%m/%d/%Y'), amount)
+                    for dateq, amount in zip(dates_list, amount_list)]
         tup_list = [(item[0].strftime('%m %Y'), item[1]) for item in tup_list]
         sum_dict = defaultdict(float)
         for datet, amount in tup_list:
@@ -285,8 +298,7 @@ class AnnFin:
         df = pd.read_excel(abs_file_path)
         df = df.loc[df['Unnamed: 2'].str.contains('Deposit', na=False)]
         # df.sum('Unammed: 8')
-        
-        
+
         '''
         dates_list = list(df['Unnamed: 1'])
         amount_list = list(df['Unnamed: 8'])
@@ -295,26 +307,27 @@ class AnnFin:
         for dateq, amount in zip(dates_list, amount_list):
             target_date_dict[dateq].append(amount)
         '''
-        print(df.head(10)) 
- 
+        print(df.head(10))
+
     def pick_bank_statements(choice=None, list_of_statements=None):
 
         for item in bank_statements_ytd:
             item2 = item.split('.')
-            item2 = item2[0] 
+            item2 = item2[0]
             item2 = item2.split(' ')
             join_item = ' '.join(item2[2:4])
             if choice == join_item:
-                stmt_list.append(item) 
+                stmt_list.append(item)
                 # print(item)
         return stmt_list
 
     def extraction_wrapper_for_transaction_detail(choice, func=None, path=None, keyword=None):
 
-        path, files = path_to_statements(path=path, keyword=keyword)    
+        path, files = path_to_statements(path=path, keyword=keyword)
         #date_dict_groupby_m = qb_extract_security_deposit(files[0], path=path)
         date_dict_groupby_m = func(files[0], path=path)
-        result = {amount for (dateq, amount) in date_dict_groupby_m.items() if dateq == choice}
+        result = {amount for (dateq, amount)
+                  in date_dict_groupby_m.items() if dateq == choice}
         is_empty_set = (len(result) == 0)
         if is_empty_set:
             data = [0]
@@ -329,7 +342,7 @@ class AnnFin:
     def start_here2(self):
 
         choice = str(input('enter target month (mm/yyyy): '))
-        choice = '01 2022' #need to reup December qbo, right now still showing 1-29 of december
+        choice = '01 2022'  # need to reup December qbo, right now still showing 1-29 of december
         print('you picked:', choice)
         year_choice = choice.split(' ')
         month_choice = year_choice[0]
@@ -337,16 +350,18 @@ class AnnFin:
 
         if year_choice == '2022':
             bank_stmts = Config.TEST_ANNFIN_PATH
-            p_and_l = Config.TEST_ANNFIN_PATH 
-            path_security_deposit = Config.TEST_ANNFIN_PATH 
-    
-        three_letter_month = [str(month_str) for month_str, month_int in self.month_match_dict.items() if int(month_choice) == month_int]
+            p_and_l = Config.TEST_ANNFIN_PATH
+            path_security_deposit = Config.TEST_ANNFIN_PATH
 
-        titles_dict = Utils.get_existing_sheets(self.service, Config.CURRENT_YEAR_RS)
-        target_sheet = {sheet_name for (sheet_name, sheet_id) in titles_dict.items() if three_letter_month[0] in sheet_name}
+        three_letter_month = [str(month_str) for month_str, month_int in self.month_match_dict.items(
+        ) if int(month_choice) == month_int]
+
+        titles_dict = Utils.get_existing_sheets(
+            self.service, Config.CURRENT_YEAR_RS)
+        target_sheet = {sheet_name for (sheet_name, sheet_id) in titles_dict.items(
+        ) if three_letter_month[0] in sheet_name}
         target_sheet = min(target_sheet)
         print(target_sheet)
-
 
     '''
     sh_col = Liltilities.get_letter_by_choice(int(month_choice), 0)
