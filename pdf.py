@@ -1,4 +1,5 @@
 import csv
+import io
 import itertools
 import math
 import os
@@ -149,7 +150,6 @@ class StructDataExtract:
         result.to_excel(abs_file_path)
         
     def open_pdf_and_return_one_str(self, path):
-        import io
         with open(path, "rb") as f:
             pdf = pdftotext.PDF(f)   
             
@@ -184,17 +184,6 @@ class StructDataExtract:
                 type_test = True
                 return path
 
-    def get_indexed_lines_from_txtfile(self, txtfile, target_str):
-        index = [(count, line) for count, line in enumerate(txtfile)]
-
-        hap_line = [(count, line)
-                    for count, line in index if target_str in line]
-        hap_line = [line for count, line in hap_line]
-        hap_line = [line.split(' ') for line in hap_line]
-        target_line = hap_line.pop()
-
-        return target_line, index
-
     def get_stmt_date(self, indexed_lines, path=None):
 
         date_line = [
@@ -207,35 +196,6 @@ class StructDataExtract:
         stmt_date = date2.strftime("%m %Y")
 
         return stmt_date
-
-    def get_cleaned_target_line(self, target_line, path=None, no_pop=None):
-        hap_line = [line for line in target_line if type(line) == str]
-        hap_line = [line for line in hap_line if line.isalnum() == False]
-        hap_line = [line for line in hap_line if '.' in line]
-        hap_line = [line.strip() for line in hap_line]
-        hap_line = [line.replace('-', '') for line in hap_line]
-        hap_line = [line.replace(',', '') for line in hap_line]
-        try:
-            target = [float(line) for line in hap_line]
-        except ValueError as e:
-            print(e)
-            print(f'path: {path}')
-            target = 0
-            breakpoint()
-        if no_pop:
-            target = target.pop()
-
-        return target
-
-    def get_date_from_line(self, target_line):
-        hap_line = [line for line in target_line if type(line) == str]
-        hap_line = [line for line in hap_line if line.isalnum() == False]
-        hap_line = [line for line in hap_line if '/' in line]
-        hap_line = [line.strip() for line in hap_line]
-        date = [line.replace(',', '') for line in hap_line]
-        date = date.pop()
-
-        return date
     
     def nbofi_pdf_extract(self, path, style=None, target_list=None):
         dfs = []
@@ -281,100 +241,4 @@ class StructDataExtract:
         df = df.rename({0: 'date', 1: 'type', 2: 'amount', 3: 'period'}, axis='columns')
         return df, stmt_year + '-' + stmt_month
 
-    def nbofi_pdf_extract_deposit(self, path, style=None, target_str=None):
-        txtfile = os.path.abspath(os.path.join(
-            os.path.dirname(__file__), '..', 'temp_output.txt'))
-        file1 = self.open_pdf_and_output_txt(path, txtfile=txtfile)
-
-        line_list = []
-        date_list = []
-        index = [(count, line) for count, line in enumerate(file1)]
-        line = [(count, line) for count, line in index if target_str in line]
-        line = [line for count, line in line]
-        deposit_lines = [line.split(' ') for line in line]
-        deposit_lines = [
-            line for line in deposit_lines if 'Correction' not in line]
-        for hap_line in deposit_lines:
-            stmt_date = self.get_stmt_date(index)
-            stmt_year = stmt_date[-4:]
-            target = self.get_cleaned_target_line(hap_line, path=path)
-            target_date = self.get_date_from_line(hap_line)
-            target_date = target_date + '/' + stmt_year
-            date_list.append(target_date)
-            line_list.append(target[0])
-
-        line_list.pop(0)
-        date_list.pop(0)
-        combined_list = list(zip(date_list, line_list))
-        if style == 'dep_detail':
-            self.deposits_list = []
-            self.deposits_list.append({stmt_date: combined_list})
-            return self.deposits_list
-        return stmt_date, sum(line_list)
-
-    def nbofi_pdf_extract_hap(self, path, style=None, target_str=None):
-        file1 = self.open_pdf_and_output_txt(path, txtfile='temp_output.txt')
-        hap_line, index = self.get_indexed_lines_from_txtfile(
-            file1, target_str)
-        target = self.get_cleaned_target_line(hap_line)
-
-        date2 = self.get_stmt_date(index, path=path)
-
-        return date2, target[0]
-
-    def nbofi_pdf_extract_rr(self, path, style=None, target_str=None):
-        file1 = self.open_pdf_and_output_txt(path, txtfile='temp_output.txt')
-        line_list = []
-        index = [(count, line) for count, line in enumerate(file1)]
-        stmt_date = self.get_stmt_date(index)
-        line = [(count, line) for count, line in index if target_str in line]
-        line = [line for count, line in line]
-        lines = [line.split(' ') for line in line]
-        if line == []:
-            return stmt_date, 0
-        line = line.pop()
-        for hap_line in lines:
-            target = self.get_cleaned_target_line(hap_line)
-            line_list.append(target[0])
-
-        return stmt_date, sum(line_list)
-
-    def corrections_helper(self, list1=None, target_str1=None, stmt_date=None):
-
-        lines = [line.split(' ') for line in list1]
-        lines = [line for line in lines if target_str1 not in line][0]
-        lines = [line.rstrip() for line in lines if line != '']
-        lines = [line for line in lines if line.endswith('-')]
-        sum_corr = sum([float(line.replace('-', '')) for line in lines])
-        return sum_corr
-
-    def corrections_helper2(self, list1=None):
-        lines = [line.split(' ') for line in list1]
-        lines = [' '.join(line).split() for line in lines]
-        lines = sum(lines, [])
-        lines = [line for line in lines if line.endswith('-')]
-        return sum([float(line.replace('-', '')) for line in lines])
-
-    def nbofi_pdf_extract_corrections(self, path, style=None, target_str=None, target_str2=None, date=None):
-        file1 = self.open_pdf_and_output_txt(path, txtfile='temp_output.txt')
-        index = [(count, line) for count, line in enumerate(file1)]
-        stmt_date = self.get_stmt_date(index)
-        corrections = [line for count, line in index if target_str in line]
-        chargebacks = [line for count, line in index if target_str2 in line]
-
-        if chargebacks != []:
-            sum_chargebacks = self.corrections_helper(
-                list1=chargebacks, target_str1='Fee', stmt_date=stmt_date)
-        else:
-            sum_chargebacks = 0
-
-        if corrections != []:
-            sum_corrections = self.corrections_helper2(list1=corrections)
-        else:
-            sum_corrections = 0
-
-        total_corrections = sum_corrections + sum_chargebacks
-        print('Extracting corrections & chargebacks from opcash:',
-              date, 'total:', total_corrections)
-
-        return stmt_date, total_corrections
+ 

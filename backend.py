@@ -84,6 +84,61 @@ class TenantRent(BaseModel):
 class MoveIn(BaseModel):
     mi_date = DateField('0')
     name = CharField(default='move_in_name')
+    unit = CharField(default='none')
+
+    def __init__(self, mi_date=None, name=None, unit=None, **kwargs):
+        super().__init__(**kwargs)
+        self.greeting = kwargs.get('greeting')
+        self.mi_date = mi_date
+        self.name = name
+        self.unit = unit
+        self.combined_move_ins = []
+
+    @classmethod
+    def load_move_ins(self, move_ins=None):
+        self.combined_move_ins = []
+        self.combined_move_ins = [MoveIn(name=row[0],
+                                         unit=row[1],
+                                         mi_date=row[2],)
+                                  for row in move_ins]
+
+        return self.combined_move_ins
+
+    @classmethod
+    def insert_move_ins(self, move_ins=None, date=None, filename=None):
+        for mi in move_ins:
+            print(f'move-in on {mi.mi_date}:', mi.name, mi.unit)
+            try:
+                with db.atomic():
+                    mi.save()
+            except PIE as e:
+                print(e, 'Move IN already entered into MI table', mi.name)
+                return MoveIn.get(MoveIn.name == mi.name)
+            try:
+                with db.atomic():
+                    nt = Tenant.create(
+                        tenant_name=mi.name, active='True',
+                        move_in_date=mi.mi_date,
+                        unit=mi.unit)
+                    nt.save()
+            except PIE as e:
+                print(e, 'new Tenant already entered into table', mi.name)
+                return Tenant.get(Tenant.tenant_name == mi.name)
+
+            try:
+                with db.atomic():
+                    unt = Unit.get(unit_name=mi.unit)
+                    unt.status = 'occupied'
+                    unt.last_occupied = mi.mi_date
+                    unt.tenant = mi.name
+                    unt.save()
+            except PIE as e:
+                print(e, 'UNIT already modified in Unit table', mi.name)
+                return Unit.get(Unit.unit_name == mi.unit)
+
+            print(
+                'Move-In: updating Unit, MoveIn, and Tenant tables for',
+                f'{unt.tenant} for {unt.last_occupied}')
 
 
 class MoveOut(BaseModel):
@@ -137,7 +192,7 @@ class MoveOut(BaseModel):
             tenant.save()
             unit = self.deactivate_unit(self, name=move_out.name)
             unit.save()
-            
+
     def make_last_date_of_last_month(self, date_str=None):
         dt_obj = datetime.strptime(date_str, '%Y-%m')
         first = dt_obj.replace(day=1)
@@ -145,13 +200,14 @@ class MoveOut(BaseModel):
         return last_dt_of_last_month.strftime("%Y-%m-%d")
 
     def deactivate_unit(self, name=None):
-        try:
-            unit = Unit.get(Unit.tenant == name)
-        except Exception as e:
-            print(f'error deactivating unit for {name}')
+        # try:
+        unit = Unit.get(Unit.tenant == name)
+        # except Exception as e:
+        # print(f'error deactivating unit for {name}')
         unit.status = 'vacant'
         unit.tenant = 'vacant'
-        unit.save()
+
+        # breakpoint()
         return unit
 
     def deactivate_tenant(self, name=None, date1=None):
@@ -989,7 +1045,9 @@ class PopulateTable(QueryHC):
 
     def read_excel_payments(self, path):
         df = pd.read_excel(path, header=9)
+        import time
 
+        self.start = time.time()
         columns = ['deposit_id', 'unit', 'name', 'date_posted',
                    'amount', 'date_code', 'description']
 
@@ -1005,6 +1063,10 @@ class PopulateTable(QueryHC):
 
         zipped = zip(bde, unit, name, date, pay, dt_code, description)
         self.df = pd.DataFrame(zipped, columns=columns)
+
+        # try a dataclass here and stay in pandas as much as I can
+        # can I just keep the columns I have instead of .to_list()ing them?
+        print(f'payments guts time: {time.time() - self.start}')
 
         return self.df
 
@@ -1051,12 +1113,6 @@ class PopulateTable(QueryHC):
         df = df.drop(drop_col, axis=1)
         return df, ntp_item
 
-    def group_df(self, df, just_return_total=False):
-        df = df.groupby(['name', 'unit']).sum()
-        if just_return_total:
-            df = df[0]
-        return df
-
     def remove_nan_lines(self, df=None):
         df = df.dropna(thresh=2)
         df = df.fillna(0)
@@ -1070,60 +1126,10 @@ class PopulateTable(QueryHC):
 
         move_ins = list(end_set - start_set)  # catches move in
         move_outs = list(start_set - end_set)  # catches move out
-
         return move_ins, move_outs
 
-    def insert_move_ins(self, move_ins=None, date=None, filename=None):
-        for name, unit, move_in_date in move_ins:
-            print('move-ins:', name, unit, move_in_date)
-            try:
-                with db.atomic():
-                    nt = Tenant.create(
-                        tenant_name=name, active='true',
-                        move_in_date=move_in_date,
-                        unit=unit)
-            except PIE as e:
-                print(e, 'new Tenant already entered into table', name)
-                return Tenant.get(Tenant.tenant_name == name)
-
-            try:
-                with db.atomic():
-                    mi = MoveIn.create(mi_date=move_in_date, name=name)
-            except PIE as e:
-                print(e, 'Move IN already entered into MI table', name)
-                return MoveIn.get(MoveIn.name == name)
-
-            try:
-                with db.atomic():
-                    unt = Unit.get(unit_name=unit)
-            except PIE as e:
-                print(e, 'UNIT already modified in Unit table', name)
-                return Unit.get(Unit.unit_name == unit)
-
-            unt.status = 'occupied'
-            unt.last_occupied = move_in_date
-            unt.tenant = name
-            print(
-                'Move-In: updating Unit, MoveIn, and Tenant tables for',
-                f'{unt.tenant} for {unt.last_occupied}')
-
-            try:
-                nt.save()
-            except PIE as e:
-                print(e, 'issue with new tenant creation', unt.tenant)
-
-            try:
-                mi.save()
-            except PIE as e:
-                print(e, 'issue with move in creation', unt.tenant)
-
-            try:
-                unt.save()
-            except PIE as e:
-                print(e, 'issue with unit creation', unt.tenant)
-
     def transfer_opcash_from_findex_to_opcash_and_detail(self):
-        """this function is repsonsible for moving information unpacked into findexer table into OpCash and OpCashDetail tables"""
+        """this function is responsible for moving information unpacked into findexer table into OpCash and OpCashDetail tables"""
 
         """
         SO HERE!!
@@ -1200,15 +1206,7 @@ class AfterInitLoad(PopulateTable):
         (self.first_dt,
             self.last_dt) = self.make_first_and_last_dates(date_str=date)
         self.start_tenants = self.get_start_tenants(date)
-
-        filename = Path(filename)
-        if filename.suffix == '.xlsx':
-            self.df = pd.read_excel(filename, header=16)
-        else:
-            filename = xlrd.open_workbook(filename,
-                                          logfile=open(os.devnull, 'w'))
-            self.df = pd.read_excel(filename, header=16)
-
+        self.df = Utils.handle_excel_formats(path=filename, header=16)
         self.df = self.df.fillna(self.fill_item)
 
         (self.nt_list_w_vacants,
@@ -1228,10 +1226,11 @@ class AfterInitLoad(PopulateTable):
             start_set=set(self.start_tenants),
             end_set=set(self.end_tenants))
 
+        self.computed_mis = MoveIn.load_move_ins(move_ins=self.computed_mis)
+
         self.cleaned_mos = MoveOut.classify_move_outs(explicit_move_outs=self.explicit_move_outs,
                                                       implied_move_outs=self.computed_mos,
                                                       date=date)
-
 
         return (self.nt_list_w_vacants,
                 self.total_tenant_charges,
@@ -1245,8 +1244,8 @@ class AfterInitLoad(PopulateTable):
              self.cleaned_mos,
              self.computed_mis) = self._rent_roll_loop_internals(date, filename)
 
-            self.insert_move_ins(move_ins=self.computed_mis,
-                                 date=date, filename=filename)
+            MoveIn.insert_move_ins(move_ins=self.computed_mis,
+                                   date=date, filename=filename)
 
             MoveOut.deactivate_move_outs(date, move_outs=self.cleaned_mos)
 
@@ -1289,14 +1288,16 @@ class AfterInitLoad(PopulateTable):
     def _update_unit_table(self, date=None):
         '''update last_occupied for occupied: SLOW, Don't like'''
         for row in self.cleaned_nt_list:
-            try:
-                unit = Unit.get(Unit.tenant == row.name)
-                unit.last_occupied = self.last_dt
-            except Exception as e:
-                print(e, 'using Exception to do too much coding')
-                unit = Unit.get(Unit.unit_name == row.unit)
-                unit.last_occupied = '0'
-            unit.save()
+            with db.atomic():
+                try:
+                    unit = Unit.get(Unit.tenant == row.name)
+                    unit.last_occupied = self.last_dt
+                    unit.save()
+                except Exception as e:
+                    print(e, f'{row.name} moved out in prior period')
+                    unit = Unit.get(Unit.unit_name == row.unit)
+                    unit.last_occupied = '0'
+                    unit.save()
 
     def return_rentroll_data(self):
         return (self.nt_list_w_vacants,
@@ -1348,6 +1349,7 @@ class InitLoad(PopulateTable):
                         namedtuples()]
         self.first_dt, self.last_dt = self.make_first_and_last_dates(
             date_str=self.records[0][1])
+        # TODO us Utils here
         self.wb = xlrd.open_workbook(self.records[0][2],
                                      logfile=open(os.devnull, 'w'))
         self.df = pd.read_excel(self.wb, header=16)
@@ -1520,32 +1522,6 @@ class ProcessingLayer(StatusRS):
             ).select().where(StatusObject.month == month)][0]
             status_object.rs_reconciled = 1
             status_object.save()
-
-    def make_rent_receipts(self, first_incomplete_month=None):
-        choice1 = input(
-            f'\nWould you like to make rent receipts for period between {first_incomplete_month} ? Y/n ')
-        if choice1 == 'Y':
-            write_rr_letters = True
-        else:
-            write_rr_letters = False
-        return write_rr_letters
-
-    def make_balance_letters(self, first_incomplete_month=None):
-        choice2 = input(
-            f'\nWould you like to make balance letters for period between {first_incomplete_month} ? Y/n ')
-        if choice2 == 'Y':
-            write_bal_letters = True
-        else:
-            write_bal_letters = False
-        return write_bal_letters
-
-    def bal_letter_wrapper(self):
-        print('generating balance letters')
-        balance_letter_list, mr_good_month = self.generate_balance_letter_list_mr_reconciled()
-
-        if balance_letter_list:
-            print(
-                f'balance letter list for {mr_good_month}: {balance_letter_list}')
 
     def rent_receipts_wrapper_version2(self):
         print('generating rent receipts')
