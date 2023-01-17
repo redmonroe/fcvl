@@ -2,7 +2,8 @@
 import os.path
 from calendar import monthrange
 from datetime import datetime
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import ROUND_HALF_UP, Decimal
+from pathlib import Path
 
 import pandas as pd
 
@@ -35,7 +36,7 @@ class Utils:
                       style=None,
                       show_choices=None,
                       last_range_month=None):
-        
+
         if last_range_month:
             current_year = int(last_range_month.split('-')[0])
             range_month = int(last_range_month.split('-')[1])
@@ -43,7 +44,7 @@ class Utils:
             range_month = int(range_month)
         else:
             range_month = datetime.now().strftime('%m')
-        
+
         date_info = monthrange(current_year, range_month)
         last_day = date_info[1]
 
@@ -62,6 +63,19 @@ class Utils:
                       if list(month.keys())[0] == selection]
             return month1
         return month_list
+
+    @staticmethod
+    def handle_excel_formats(path, header=None):
+        import xlrd
+        filename = Path(path)
+        if filename.suffix == '.xlsx':
+            df = pd.read_excel(filename, header=header)
+        else:
+            filename = xlrd.open_workbook(filename,
+                                          logfile=open(os.devnull, 'w'))
+            df = pd.read_excel(filename, header=header)
+            
+        return df
 
     @staticmethod
     def autoconvert_xls_to_xlsx(path):

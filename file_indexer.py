@@ -1,11 +1,14 @@
 import json
 import os
+import time
 from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
+import xlrd
 
-from backend import Findexer, PopulateTable, Reconciler, StatusObject, DryRunRentRoll
+from backend import (DryRunRentRoll, Findexer, PopulateTable, Reconciler,
+                     StatusObject)
 from config import Config
 from pdf import StructDataExtract
 from persistent import Persistent
@@ -278,88 +281,91 @@ class FileIndexer(Utils, Scrape, Reconciler):
 
         return {'opcash': opcash_dry_run, 'deposits': deposits_dry_run, 'rent': rent_dry_run, 'damages': damages, 'scrape': df}
 
-    def build_index_runner(self):
-        self.index_dict = self.articulate_directory()
-        self.load_what_is_in_dir_as_indexed(dict1=self.index_dict)
-        self.make_a_list_of_indexed(mode=self.query_mode.pdf)
-        self.find_opcashes()
-        self.type_opcashes()
-        
-        target_list = ['Incoming Wire', 'QUADEL', 'Deposit', 'Correction', 'Chargeback']
+    def pdf_to_df_to_db(self):
+        target_list = ['Incoming Wire', 'QUADEL',
+                       'Deposit', 'Correction', 'Chargeback']
         for path in self.op_cash_list:
-            df, stmt_date = self.pdf.nbofi_pdf_extract(path=path, target_list=target_list)
-        
+            df, stmt_date = self.pdf.nbofi_pdf_extract(
+                path=path, target_list=target_list)
+
             correction = df[df['type'].str.contains('correction')]
-            correction = correction.groupby(correction['period']).sum(numeric_only=True)
-            
+            correction = correction.groupby(
+                correction['period']).sum(numeric_only=True)
+
             chargeback = df[df['type'].str.contains('chargeback')]
-            chargeback = chargeback.groupby(chargeback['period']).sum(numeric_only=True)
-            
+            chargeback = chargeback.groupby(
+                chargeback['period']).sum(numeric_only=True)
+
             hap = df[df['type'].str.contains('hap')]
             hap = hap.groupby(hap['period']).sum(numeric_only=True)
-            
+
             deposits = df[df['type'].str.contains('Deposit')]
-            depsum = deposits.groupby(deposits['period']).sum(numeric_only=True)
-            deplist = pd.Series(deposits.amount.values, index=deposits.date.astype(str)).to_dict()   
-            deplist = [{time: amount} for time, amount in deplist.items()]     
-            
+            depsum = deposits.groupby(
+                deposits['period']).sum(numeric_only=True)
+            deplist = pd.Series(deposits.amount.values,
+                                index=deposits.date.astype(str)).to_dict()
+            deplist = [{time: amount} for time, amount in deplist.items()]
+
             r4r = df[df['type'].str.contains('rr')]
             r4r = r4r.groupby(r4r['period']).sum(numeric_only=True)
-            
+
             opcash_records = [(item.fn, item.doc_id) for item in Findexer().
-                                select().
-                                where(Findexer.path == path).
-                                namedtuples()]
-            
+                              select().
+                              where(Findexer.path == path).
+                              namedtuples()]
+
             find_change = Findexer.get(Findexer.doc_id == opcash_records[0][1])
-        
+
             find_change.status = self.status_str.processed
             find_change.period = stmt_date
-            
+
             # TODO fix corr_sum & chargeback logic
-            
+            # TODO could do a faster query insert here
+
             if depsum.empty:
                 depsum = '0'
             else:
                 depsum = str(depsum.iloc[0].values[0])
             find_change.depsum = depsum
-            
+
             if r4r.empty:
                 r4r = '0'
             else:
                 r4r = str(r4r.iloc[0].values[0])
-            find_change.rr = r4r 
-            
+            find_change.rr = r4r
+
             if hap.empty:
                 hap = '0'
             else:
                 hap = str(hap.iloc[0].values[0])
-            find_change.hap = hap 
-            
-            if correction.empty:
-                corr_sum = '0'
-            else:
-                corr_sum = str(correction.iloc[0].values[0]) 
-            find_change.corr_sum = corr_sum
-            
+            find_change.hap = hap
+
             if chargeback.empty:
                 chargeback = '0'
             else:
                 chargeback = str(chargeback.iloc[0].values[0])
-            find_change.chargeback = chargeback 
+            find_change.chargeback = chargeback
             
+            if correction.empty:
+                corr_sum = '0'
+            else:
+                corr_sum = str(correction.iloc[0].values[0])
+                
+            # chargeback is currently added to corr_sum!!                
+            corr_sum = float(corr_sum) + float(chargeback)            
+            find_change.corr_sum = str(round(corr_sum, 2)) 
+
             if deplist:
                 find_change.deplist = json.dumps(deplist)
             else:
-                find_change.deplist = '0' 
-                
+                find_change.deplist = '0'
+
             find_change.save()
-    
+
     def build_index_runner(self):
         """this function is just a list of the funcs one would run to create the index from a fresh start"""
         self.connect_to_db()
         self.index_dict = self.articulate_directory()
-        breakpoint()
         self.load_what_is_in_dir_as_indexed(dict1=self.index_dict)
         self.runner_internals()
         self.load_scrape_data_historical()
@@ -370,9 +376,12 @@ class FileIndexer(Utils, Scrape, Reconciler):
         if self.indexed_list:
             self.xls_wrapper()
 
+        # self.start = time.time()
         self.make_a_list_of_indexed(mode=self.query_mode.pdf)
+        # print(f'full time: {time.time() - self.start}')
+        # breakpoint()
         if self.indexed_list:
-            self.pdf_wrapper()
+            self.pdf_wrapper2()
 
         self.make_a_list_of_indexed(mode=self.query_mode.csv)
         if self.indexed_list:
@@ -383,6 +392,12 @@ class FileIndexer(Utils, Scrape, Reconciler):
                              target_string=self.target_string.affordable, format=self.rent_format)
         self.find_by_content(style=self.style_term.deposits,
                              target_string=self.target_string.bank, format=self.deposits_format)
+
+    def pdf_wrapper2(self):
+        # speed improvements here
+        self.find_opcashes()
+        self.type_opcashes()
+        self.pdf_to_df_to_db()
 
     def pdf_wrapper(self):
         self.find_opcashes()
@@ -470,17 +485,19 @@ class FileIndexer(Utils, Scrape, Reconciler):
         import xlrd
         for possible_path in path:
             try:
-                wb = xlrd.open_workbook(possible_path, logfile=open(os.devnull, 'w'))
+                wb = xlrd.open_workbook(
+                    possible_path, logfile=open(os.devnull, 'w'))
             except FileNotFoundError as e:
                 print(e)
-                print(f'{possible_path.suffix} does not exist, trying other extension type')
+                print(
+                    f'{possible_path.suffix} does not exist, trying other extension type')
             df = pd.read_excel(wb)
         return df
 
     def survey_deposits_report_for_dry_run(self, path, *args, **kwargs):
         df = self.get_df_from_path_list(path)
         deposits = self.deposit_report_unpacker(df=df)
-        
+
         return deposits
 
     def survey_rent_report_for_dry_run(self, path, *args, **kwargs):
@@ -492,7 +509,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
         for path, doc_id in self.indexed_list:
             part_list = ((Path(path).stem)).split('_')
             if style in part_list:
-                df1 = pd.read_excel(path)
+                df1 = Utils.handle_excel_formats(path)
                 df2 = df1.iloc[:, 0].to_list()
 
                 if target_string in df2:  # rent roll piece
@@ -522,7 +539,12 @@ class FileIndexer(Utils, Scrape, Reconciler):
 
     def df_date_wrapper(self, path, **kw):
         split_col = kw['kw']['split_col']
-        df_date = pd.read_excel(path)
+        if path[-1] == 'x':
+            df_date = pd.read_excel(path)
+        else:
+            filename = xlrd.open_workbook(path,
+                                          logfile=open(os.devnull, 'w'))
+            df_date = pd.read_excel(filename)
         df_date = df_date.iloc[:, kw['kw']['get_col']].to_list()
         try:
             df_date = df_date[split_col].split(kw['kw']['split_type'])
@@ -581,7 +603,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
             else:
                 self.write_deplist_to_db(hap_iter_one_month, rr_iter_one_month, dep_iter_one_month,
                                          deposit_and_date_iter_one_month, corrections_sum, stmt_date)
-    
+
     def extract_deposits_by_type(self, path, style=None, target_str=None, target_str2=None, date=None):
         return_list = []
         kdict = {}

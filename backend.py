@@ -1661,7 +1661,6 @@ class ProcessingLayer(StatusRS):
 
                 # if kwargs['source'] == 'iter' and month == '2022-02':
                 #     breakpoint()
-
                 result = Reconciler.backend_processing_layer_assert_bank_deposits_tenant_deposits(
                     bank_deposits=bank_deposits, sum_from_payments_report=sum_from_payments, period=month, genus='opcash', source=kwargs['source'])
 

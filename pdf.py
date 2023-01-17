@@ -260,6 +260,8 @@ class StructDataExtract:
                     list1 = [list1[0], 'chargeback', list1[3]]
                 if list1[2] == 'Correction':
                     list1 = [list1[0], 'correction', list1[4]]
+                if list1[1] == 'Vault':
+                    list1 = [list1[0], 'Deposit', list1[4]]
                     
                 list1.append(stmt_year + ' ' + stmt_month)
                     
@@ -268,7 +270,7 @@ class StructDataExtract:
             dfs.append(df)
                 
         df = pd.concat(dfs)
-        df = df[df[1].str.contains('Deposits/Credits|Vault')==False]
+        df = df[df[1].str.contains('Deposits/Credits')==False]
         df = df[df[2].str.contains('Fee')==False]
         df[2] = df[2].str.replace(r'\n', '', regex=True)
         df[2] = df[2].str.replace(',', '')
