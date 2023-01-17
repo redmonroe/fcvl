@@ -284,52 +284,82 @@ class FileIndexer(Utils, Scrape, Reconciler):
         self.make_a_list_of_indexed(mode=self.query_mode.pdf)
         self.find_opcashes()
         self.type_opcashes()
-        self.rename_by_content_pdf()
-        df_list = []
-        for stmt_path in self.op_cash_list:
-            target_list = ['Incoming Wire', 'QUADEL', 'Deposit', 'Correction', 'Chargeback']
-            df_list.append(self.pdf.nbofi_pdf_extract(stmt_path, target_list=target_list))
-            df = pd.concat(df_list)
-        print(df)
-            # r4r = self.pdf.nbofi_pdf_extract(stmt_path, target_str='Incoming Wire')
-            # hap = self.pdf.nbofi_pdf_extract(stmt_path, target_str='QUADEL')
-            # dep = self.pdf.nbofi_pdf_extract(stmt_path, target_str='Deposit')
-            # correction = self.pdf.nbofi_pdf_extract(stmt_path, target_str='Correction')
-            # chargeback = self.pdf.nbofi_pdf_extract(stmt_path, target_str='Chargeback')
-            # depdet = self.pdf.nbofi_pdf_extract(stmt_path, target_str=target_str)
-        # elif style == self.style_term.corrections:
-            # depdet = self.pdf.nbofi_pdf_extract(path, target_str=target_str)
-        '''
-        return_list = []
-        kdict = {}
-        if style == self.style_term.r4r:
-            date, amount = self.pdf.nbofi_pdf_extract_rr(
-                path, target_str=target_str)
-        elif style == self.style_term.hap:
-            date, amount = self.pdf.nbofi_pdf_extract_hap(
-                path, target_str=target_str)
-        elif style == self.style_term.dep:
-            date, amount = self.pdf.nbofi_pdf_extract_deposit(
-                path, target_str=target_str)
-        elif style == self.style_term.dep_detail:
-            depdet_list = self.pdf.nbofi_pdf_extract_deposit(
-                path, style=style, target_str=target_str)
-            return depdet_list
-        elif style == self.style_term.corrections:
-            date, amount = self.pdf.nbofi_pdf_extract_corrections(
-                path, style=style, target_str=target_str, target_str2=target_str2, date=date)
-
-        kdict[str(date)] = [amount, path, style]
-        return_list.append(kdict)
-        return return_list, date
-        '''
-
-        breakpoint()
+        
+        target_list = ['Incoming Wire', 'QUADEL', 'Deposit', 'Correction', 'Chargeback']
+        for path in self.op_cash_list:
+            df, stmt_date = self.pdf.nbofi_pdf_extract(path=path, target_list=target_list)
+        
+            correction = df[df['type'].str.contains('correction')]
+            correction = correction.groupby(correction['period']).sum(numeric_only=True)
+            
+            chargeback = df[df['type'].str.contains('chargeback')]
+            chargeback = chargeback.groupby(chargeback['period']).sum(numeric_only=True)
+            
+            hap = df[df['type'].str.contains('hap')]
+            hap = hap.groupby(hap['period']).sum(numeric_only=True)
+            
+            deposits = df[df['type'].str.contains('Deposit')]
+            depsum = deposits.groupby(deposits['period']).sum(numeric_only=True)
+            deplist = pd.Series(deposits.amount.values, index=deposits.date.astype(str)).to_dict()   
+            deplist = [{time: amount} for time, amount in deplist.items()]     
+            
+            r4r = df[df['type'].str.contains('rr')]
+            r4r = r4r.groupby(r4r['period']).sum(numeric_only=True)
+            
+            opcash_records = [(item.fn, item.doc_id) for item in Findexer().
+                                select().
+                                where(Findexer.path == path).
+                                namedtuples()]
+            
+            find_change = Findexer.get(Findexer.doc_id == opcash_records[0][1])
+        
+            find_change.status = self.status_str.processed
+            find_change.period = stmt_date
+            
+            # TODO fix corr_sum & chargeback logic
+            
+            if depsum.empty:
+                depsum = '0'
+            else:
+                depsum = str(depsum.iloc[0].values[0])
+            find_change.depsum = depsum
+            
+            if r4r.empty:
+                r4r = '0'
+            else:
+                r4r = str(r4r.iloc[0].values[0])
+            find_change.rr = r4r 
+            
+            if hap.empty:
+                hap = '0'
+            else:
+                hap = str(hap.iloc[0].values[0])
+            find_change.hap = hap 
+            
+            if correction.empty:
+                corr_sum = '0'
+            else:
+                corr_sum = str(correction.iloc[0].values[0]) 
+            find_change.corr_sum = corr_sum
+            
+            if chargeback.empty:
+                chargeback = '0'
+            else:
+                chargeback = str(chargeback.iloc[0].values[0])
+            find_change.chargeback = chargeback 
+            
+            if deplist:
+                find_change.deplist = json.dumps(deplist)
+            else:
+                find_change.deplist = '0' 
+                
+            find_change.save()
     
-    def build_index_runner2(self):
+    def build_index_runner(self):
         """this function is just a list of the funcs one would run to create the index from a fresh start"""
         self.connect_to_db()
         self.index_dict = self.articulate_directory()
+        breakpoint()
         self.load_what_is_in_dir_as_indexed(dict1=self.index_dict)
         self.runner_internals()
         self.load_scrape_data_historical()

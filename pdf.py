@@ -175,7 +175,7 @@ class StructDataExtract:
         return file1
 
     def select_stmt_by_str(self, path, target_str):
-        file1 = self.open_pdf_and_output_txt(path, txtfile='temp_output.txt')
+        file1 = self.open_pdf_and_return_one_str(path)
 
         index = [(count, line) for count, line in enumerate(file1)]
         type_test = False
@@ -238,11 +238,11 @@ class StructDataExtract:
         return date
     
     def nbofi_pdf_extract(self, path, style=None, target_list=None):
-        file1 = self.open_pdf_and_return_one_str(path)
         dfs = []
+        file1 = self.open_pdf_and_return_one_str(path)
         index = [(count, line) for count, line in enumerate(file1)]
         stmt_date = self.get_stmt_date(index)
-        stmt_year = stmt_date[-4:]
+        stmt_year, stmt_month = stmt_date[-4:], stmt_date[:2]
         for target_str in target_list:
             lines = [line for count, line in index if target_str in line]
             if target_str == 'Deposit':
@@ -261,9 +261,12 @@ class StructDataExtract:
                 if list1[2] == 'Correction':
                     list1 = [list1[0], 'correction', list1[4]]
                     
+                list1.append(stmt_year + ' ' + stmt_month)
+                    
                 linex.append(list1)
             df = pd.DataFrame(linex)
             dfs.append(df)
+                
         df = pd.concat(dfs)
         df = df[df[1].str.contains('Deposits/Credits|Vault')==False]
         df = df[df[2].str.contains('Fee')==False]
@@ -272,7 +275,9 @@ class StructDataExtract:
         df[2] = df[2].str.replace('-', '')
         df[0] = pd.to_datetime(df[0], format='%m/%d/%Y')
         df[2] = df[2].astype('float64') 
-        return df
+        df = df.drop(df.columns[[4, 5, 6]], axis=1)
+        df = df.rename({0: 'date', 1: 'type', 2: 'amount', 3: 'period'}, axis='columns')
+        return df, stmt_year + '-' + stmt_month
 
     def nbofi_pdf_extract_deposit(self, path, style=None, target_str=None):
         txtfile = os.path.abspath(os.path.join(
