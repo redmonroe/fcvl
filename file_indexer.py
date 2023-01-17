@@ -381,7 +381,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
         # print(f'full time: {time.time() - self.start}')
         # breakpoint()
         if self.indexed_list:
-            self.pdf_wrapper2()
+            self.pdf_wrapper()
 
         self.make_a_list_of_indexed(mode=self.query_mode.csv)
         if self.indexed_list:
@@ -393,16 +393,11 @@ class FileIndexer(Utils, Scrape, Reconciler):
         self.find_by_content(style=self.style_term.deposits,
                              target_string=self.target_string.bank, format=self.deposits_format)
 
-    def pdf_wrapper2(self):
+    def pdf_wrapper(self):
         # speed improvements here
         self.find_opcashes()
         self.type_opcashes()
         self.pdf_to_df_to_db()
-
-    def pdf_wrapper(self):
-        self.find_opcashes()
-        self.type_opcashes()
-        self.rename_by_content_pdf()
 
     def test_for_unfinalized_months(self):
         months_ytd = Utils.months_in_ytd(Config.current_year)
@@ -576,84 +571,6 @@ class FileIndexer(Utils, Scrape, Reconciler):
             find_change.doc_type = self.style_term.opcash
             find_change.save()
 
-    def rename_by_content_pdf(self, **kwargs):
-        for op_cash_stmt_path in self.op_cash_list:
-            hap_iter_one_month, stmt_date = self.extract_deposits_by_type(
-                op_cash_stmt_path, style=self.style_term.hap, target_str=self.target_string.quadel)
-            date = stmt_date
-            rr_iter_one_month, stmt_date1 = self.extract_deposits_by_type(
-                op_cash_stmt_path, style=self.style_term.r4r, target_str=self.target_string.r4r)
-            dep_iter_one_month, stmt_date2 = self.extract_deposits_by_type(
-                op_cash_stmt_path, style=self.style_term.dep, target_str=self.target_string.oc_deposit)
-            deposit_and_date_iter_one_month = self.extract_deposits_by_type(
-                op_cash_stmt_path, style=self.style_term.dep_detail, target_str=self.target_string.oc_deposit)
-            corrections_sum = self.extract_deposits_by_type(op_cash_stmt_path, style=self.style_term.corrections,
-                                                            target_str=self.target_string.corrections, target_str2=self.target_string.chargebacks, date=date)
-            Reconciler.findexer_assert_stmt_dates_match(
-                stmt1_date=stmt_date, stmt2_date=stmt_date1)
-
-            if kwargs.get('bypass_write_to_db'):
-                return {'date': date,
-                        'hap': Utils.unpacking_list_of_dicts(hap_iter_one_month),
-                        'rr': Utils.unpacking_list_of_dicts(rr_iter_one_month),
-                        'corr_sum': Utils.unpacking_list_of_dicts(corrections_sum[0]),
-                        'dep': Utils.unpacking_list_of_dicts(dep_iter_one_month),
-                        'dep_and_date': list(deposit_and_date_iter_one_month[0].values())[0]}
-
-            else:
-                self.write_deplist_to_db(hap_iter_one_month, rr_iter_one_month, dep_iter_one_month,
-                                         deposit_and_date_iter_one_month, corrections_sum, stmt_date)
-
-    def extract_deposits_by_type(self, path, style=None, target_str=None, target_str2=None, date=None):
-        return_list = []
-        kdict = {}
-        if style == self.style_term.r4r:
-            date, amount = self.pdf.nbofi_pdf_extract_rr(
-                path, target_str=target_str)
-        elif style == self.style_term.hap:
-            date, amount = self.pdf.nbofi_pdf_extract_hap(
-                path, target_str=target_str)
-        elif style == self.style_term.dep:
-            date, amount = self.pdf.nbofi_pdf_extract_deposit(
-                path, target_str=target_str)
-        elif style == self.style_term.dep_detail:
-            depdet_list = self.pdf.nbofi_pdf_extract_deposit(
-                path, style=style, target_str=target_str)
-            return depdet_list
-        elif style == self.style_term.corrections:
-            date, amount = self.pdf.nbofi_pdf_extract_corrections(
-                path, style=style, target_str=target_str, target_str2=target_str2, date=date)
-
-        kdict[str(date)] = [amount, path, style]
-        return_list.append(kdict)
-        return return_list, date
-
-    def write_deplist_to_db(self, hap_iter, rr_iter, depsum_iter, deposit_iter, corrections_iter, stmt_date):
-        opcash_records = [(item.fn, item.doc_id) for item in Findexer().
-                          select().
-                          where(Findexer.doc_type == self.style_term.opcash).
-                          namedtuples()]
-
-        for name, doc_id in opcash_records:
-            if self.get_date_from_opcash_name(name) == [*deposit_iter[0]][0]:
-                proc_date = stmt_date
-                rr = [*rr_iter[0].values()][0][0]
-                hap = [*hap_iter[0].values()][0][0]
-                depsum = [*depsum_iter[0].values()][0][0]
-                deplist = json.dumps([{self.adjust_deposit_date(item[0]): item[1]} for item in [
-                                     *deposit_iter[0].values()][0]])
-                corr_sum = [*corrections_iter[0][0].values()][0][0]
-
-                find_change = Findexer.get(Findexer.doc_id == doc_id)
-                find_change.status = self.status_str.processed
-                find_change.period = Utils.helper_fix_date(proc_date)
-                find_change.hap = hap
-                find_change.rr = rr
-                find_change.depsum = depsum
-                find_change.deplist = deplist
-                find_change.corr_sum = corr_sum
-                find_change.save()
-
     def get_report_type_from_xls_name(self, records=None):
         records1 = []
         for path, name in records.items():
@@ -684,12 +601,6 @@ class FileIndexer(Utils, Scrape, Reconciler):
                 dict1 = {typ: (date_str, data[0])}
                 records1.append(dict1)
         return records1
-
-    def get_date_from_opcash_name(self, record):
-        date_list = record.split('.')[0].split('_')[2:]
-        date_list.reverse()
-        date_list = ' '.join(date_list)
-        return date_list
 
     def drop_findex_table(self):
         self.db.drop_tables(models=self.create_findex_list)
