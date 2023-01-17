@@ -109,7 +109,7 @@ class MonthSheet(YearSheet):
             ntp = self.get_ntp_wrapper(date)
             sum_mi_payments = self.get_move_ins(date)
 
-            move_in_row = self.query.get_move_ins_by_period(
+            move_in_row = self.query.get_move_ins_by_period_less_first_day(
                 first_dt=first_dt, last_dt=last_dt)
 
             damages = ([row for row in self.uq.ur_query(model_str='Damages', query_tup=[
@@ -191,11 +191,6 @@ class MonthSheet(YearSheet):
             ntp = self.get_ntp_wrapper(date)
             sum_laundry, other_list = self.split_ntp(ntp)
             sum_mi_payments = self.get_move_ins(date)
-
-            # WHAT MAKES GASKIN SO DIFFERENT???
-
-            if date == '2022-12':
-                breakpoint()
             self.write_move_in_box(date)
             self.write_ntp(date, [sum_laundry], start_row=71)
             self.write_ntp(date, other_list, start_row=72)
@@ -444,9 +439,10 @@ class MonthSheet(YearSheet):
         return df
 
     def get_move_ins(self, date):
+        #
         query = QueryHC()
         first_dt, last_dt = query.make_first_and_last_dates(date_str=date)
-        move_ins = query.get_move_ins_by_period(
+        move_ins = query.get_move_ins_by_period_less_first_day(
             first_dt=first_dt, last_dt=last_dt)
 
         move_in_names = [name[1] for name in move_ins]

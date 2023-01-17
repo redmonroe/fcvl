@@ -489,6 +489,11 @@ class QueryHC(Reconciler):
         recs = [(row.mi_date, row.name) for row in MoveIn.select().where(MoveIn.mi_date >= first_dt).
                 where(MoveIn.mi_date <= last_dt).namedtuples()]
         return recs
+    
+    def get_move_ins_by_period_less_first_day(self, first_dt=None, last_dt=None):
+        recs = [(row.mi_date, row.name) for row in MoveIn.select().where(MoveIn.mi_date > first_dt).
+                where(MoveIn.mi_date <= last_dt).namedtuples()]
+        return recs
 
     def get_scrape_detail_by_month_deposit(self, first_dt=None, last_dt=None):
         recs = [row for row in ScrapeDetail.select().where(ScrapeDetail.scrape_dep_date >= first_dt).

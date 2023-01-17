@@ -282,6 +282,8 @@ class FileIndexer(Utils, Scrape, Reconciler):
         return {'opcash': opcash_dry_run, 'deposits': deposits_dry_run, 'rent': rent_dry_run, 'damages': damages, 'scrape': df}
 
     def pdf_to_df_to_db(self):
+        # TODO fix corr_sum & chargeback logic
+        # TODO could do a faster query insert here
         target_list = ['Incoming Wire', 'QUADEL',
                        'Deposit', 'Correction', 'Chargeback']
         for path in self.op_cash_list:
@@ -303,7 +305,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
             depsum = deposits.groupby(
                 deposits['period']).sum(numeric_only=True)
             deplist = pd.Series(deposits.amount.values,
-                                index=deposits.date.astype(str)).to_dict()
+                                index=deposits.date.astype(str))
             deplist = [{time: amount} for time, amount in deplist.items()]
 
             r4r = df[df['type'].str.contains('rr')]
@@ -319,8 +321,6 @@ class FileIndexer(Utils, Scrape, Reconciler):
             find_change.status = self.status_str.processed
             find_change.period = stmt_date
 
-            # TODO fix corr_sum & chargeback logic
-            # TODO could do a faster query insert here
 
             if depsum.empty:
                 depsum = '0'
