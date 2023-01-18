@@ -3,7 +3,7 @@ import json
 import os
 import sys
 from collections import namedtuple
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from functools import reduce
 from pathlib import Path
@@ -679,6 +679,7 @@ class QueryHC(Reconciler):
 
         rr, vacants, tenants = self.get_rent_roll_by_month_at_first_of_month(
             first_dt=first_dt, last_dt=last_dt)
+        
         position_list1 = [Position(
             name=item[0], start_date=first_dt, end_date=last_dt, unit=item[1]) for item in rr]
 
@@ -746,6 +747,7 @@ class QueryHC(Reconciler):
 
         rr, vacants, tenants = self.get_rent_roll_by_month_at_first_of_month(
             first_dt=first_dt, last_dt=last_dt)
+        
         position_list1 = [Position(
             name=item[0], start_date=first_dt, end_date=last_dt, unit=item[1]) for item in rr]
 
@@ -791,7 +793,7 @@ class QueryHC(Reconciler):
 
         return position_list1, cumsum
 
-    def all_available_by_fk_by_period(self, target=None, first_dt=None, last_dt=None):
+    def all_available_by_fk_by_period2(self, target=None, first_dt=None, last_dt=None):
         record_cut_off_date = datetime(2022, 1, 1, 0, 0)
 
         damages_predicate = ((Damages.dam_date.between(
@@ -896,18 +898,99 @@ class QueryHC(Reconciler):
                           (TenantRent.rent_date.between(first_dt, last_dt))
                       ).
                       namedtuples()]
-            print(record)
+        return record
 
         # TODO
         """
         This is building the final stage of the db, this will write and be a final record of a month, that would be closed, we can drop some of the other tables at this point; we can also, use earlier stages as A STAGING AREA
         """
+        
+    def all_available_by_fk_by_period(self, target=None, first_dt=None, last_dt=None):
         # period_startbal + tenant_rent - tenantpayments + damages + adjustments = period_end_bal
 
         # if first period get_beg_bal from Tenant table
         # else
+        # damages_predicate = ((Damages.dam_date.between(
+        #     first_dt, last_dt) & (Damages.tenant_id == target)))
+        
+        records = [row for row in Tenant.
+                  select(Tenant.tenant_name, Tenant.unit, Payment.date_posted,
+                  fn.SUM(Payment.amount).over(partition_by=[
+                        Tenant.tenant_name]).alias('payments'),
+                        ).
+                    join(Payment, JOIN.LEFT_OUTER).
+                    switch(Tenant).
+                    join(ContractRent, JOIN.LEFT_OUTER).
+                    switch(Tenant).
+                    join(Subsidy, JOIN.LEFT_OUTER).
+                    switch(Tenant).
+                    join(TenantRent, JOIN.LEFT_OUTER).
+                    switch(Tenant).
+                    # join_from(Damages, Tenant).
+                    # join(Damages, JOIN.LEFT_OUTER, on=damages_predicate).
 
+                    where(
+                        (Tenant.tenant_name == target)
+                        &
+                        (Payment.date_posted.between(first_dt, last_dt))
+                        &
+                        (ContractRent.date_posted.between(first_dt, last_dt))
+                        &
+                        (Subsidy.date_posted.between(first_dt, last_dt))
+                        &
+                        (TenantRent.rent_date.between(first_dt, last_dt))
+                    ).
+                    namedtuples()]
+        
+        return records
 
+@dataclass
+class Position(QueryHC):
+    name: str = 'empty'
+    unit: str = 'empty'
+    alltime_beg:  float = 0.0 
+    lp_endbal: float = 0.0 
+    payment_total: float = 0.0 
+    charges_total: float = 0.0 
+    damages_total: float = 0.0 
+    end_bal: float = 0.0 
+    start_date: float = 0.0 
+    end_date: float = 0.0 
+    subsidy: float = 0.0 
+    contract_rent: float = 0.0
+    
+    @staticmethod
+    def wrap_position_list():
+        return Position.create_position_list(Position)
+
+    def create_position_list(self):
+        date = '2022-12'
+        first_dt, last_dt = self.make_first_and_last_dates(self, date_str=date)
+        _, _, tenants = self.get_rent_roll_by_month_at_first_of_month(self, 
+            first_dt=first_dt, last_dt=last_dt)
+        positions = []
+        records = []
+        for tenant_id in tenants:
+            record = self.all_available_by_fk_by_period(self, target=tenant_id, first_dt=first_dt, last_dt=last_dt)
+            records.append(record)
+            
+        for record in records:
+            if record != []:
+                position = Position(name=record[0].tenant_name, 
+                                start_date=first_dt, 
+                                end_date=last_dt, 
+                                unit=record[0].unit, 
+                                payment_total=record[0].payments,)
+                positions.append(position)
+        
+        return PositionList(positions)
+
+@dataclass
+class PositionList:
+    from typing import List
+    # breakpoint()
+    month_list: List[Position] = field(default_factory=Position.wrap_position_list)
+    
 
 class UrQuery(QueryHC):
 
@@ -940,14 +1023,14 @@ class UrQuery(QueryHC):
         clauses = []
         if query_dict:
             for key, value in query_dict.items():
-                field = model._meta.fields[key]
-                clauses.append(field == value)
+                field1 = model._meta.fields[key]
+                clauses.append(field1 == value)
             expr = reduce(operator.and_, clauses)
             return model.select().where(expr)
         elif query_tup:
             for item, op in zip(query_tup, operators):
-                field = model._meta.fields[item[0]]
-                clauses.append(op(field, item[1]))
+                field1 = model._meta.fields[item[0]]
+                clauses.append(op(field1, item[1]))
             expr = reduce(operator.and_, clauses)
             return model.select().where(expr)
         else:

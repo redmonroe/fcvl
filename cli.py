@@ -156,18 +156,9 @@ def balanceletters():
     click.echo('balance letters')
     figure = Figuration()
     path, full_sheet, build, service, ms = figure.return_configuration()
-    letters = Letters(db=build.main_db)
-    letters.balance_letters()
-
-
-@click.command()
-def receipts_sixm():
-    click.echo(
-        'receipts with 6 month balance; ',
-        'this is an attempt to make a google app; currently unfinished')
-    player = ProcessingLayer()
-    player.rent_receipts_wrapper_version2()
-
+    docx = DocxWriter(db=build.main_db, service=service)
+    docx.export_history_to_docx()
+    
 
 @click.command()
 @click.option('-d', '--drop_table',
@@ -328,7 +319,6 @@ def test_various(select):
 
 
 cli.add_command(escrow)
-cli.add_command(receipts_sixm)
 cli.add_command(status_findexer_test)
 cli.add_command(where_are_we)
 cli.add_command(reset_db_test)
@@ -340,6 +330,7 @@ cli.add_command(load_db_test)
 cli.add_command(load_db_prod)
 cli.add_command(sqlite_dump)
 cli.add_command(docx_letters)
+cli.add_command(balanceletters)
 cli.add_command(addresses)
 cli.add_command(workorders_to_db)
 cli.add_command(export_workorders_docx)
