@@ -50,19 +50,20 @@ def status_findexer_test():
 
 
 @click.command()
-def reset_db_test():
-    click.echo('TEST: dropping test db . . .')
-    figure = Figuration()
-    path, full_sheet, build, service, ms = figure.return_configuration()
-    figure.reset_db()
-
-
-@click.command()
-def reset_db_prod():
-    click.echo('dropping PRODUCTION db . . .')
-    figure = Figuration(mode='production')
-    path, full_sheet, build, service, ms = figure.return_configuration()
-    figure.reset_db()
+@click.option('-p', '--production',
+              default=False, help='reset db?')
+def reset_db(production=False):
+    '''resets db, default=test db'''
+    if production:
+        click.echo('dropping PRODUCTION db . . .')
+        figure = Figuration(mode='production')
+        path, full_sheet, build, service, ms = figure.return_configuration()
+        figure.reset_db()
+    else:
+        click.echo('TEST: dropping test db . . .')
+        figure = Figuration()
+        path, full_sheet, build, service, ms = figure.return_configuration()
+        figure.reset_db()
 
 
 @click.command()
@@ -321,8 +322,7 @@ def test_various(select):
 cli.add_command(escrow)
 cli.add_command(status_findexer_test)
 cli.add_command(where_are_we)
-cli.add_command(reset_db_test)
-cli.add_command(reset_db_prod)
+cli.add_command(reset_db)
 cli.add_command(write_all_test)
 cli.add_command(write_monthrange_test)
 cli.add_command(write_all_prod)
