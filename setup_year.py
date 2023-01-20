@@ -72,8 +72,8 @@ class YearSheet:
                 self.service, self.full_sheet, source_id=self.source_id, insert_index=insert_index, title=name)
 
     def formatting_runner(self, title_dict=None):
-        for sheet, sheet_id in title_dict.items():
-            '''writes the sum formulas in a row'''
+        '''writes the sum formulas in a row'''
+        for sheet, sheet_id in title_dict.items():            
             self.calls.write_formula_column(
                 self.service, self.full_sheet, self.G_SUM_KRENT, f'{sheet}!E69:E69')
             self.calls.write_formula_column(

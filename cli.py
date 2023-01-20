@@ -67,32 +67,40 @@ def reset_db(production=False):
 
 
 @click.command()
+@click.option('-p', '--production',
+              default=False, help='reset db?')
 @click.option('-l', '--last_month', type=str, help='pass an explicit final month to db builder (ie "2022-12")')
-def load_db_test(last_month=None):
-    click.echo('TEST: loading all available files in path to db')
-    figure = Figuration(method='not_iter')
-    path, full_sheet, build, service, ms = figure.return_configuration()
-    if last_month:
-        print(last_month)
-        build.build_db_from_scratch(last_range_month=last_month)
+def load_db(production=False, last_month=None):
+    if production:
+        # TODO: last month no supported in this branche
+        click.echo('PRODUCTION: loading all available files in path to db')
+        figure = Figuration(mode='production')
+        path, full_sheet, build, service, ms = figure.return_configuration()
+        ms.auto_control(source='cli.py', mode='clean_build')
     else:
-        build.build_db_from_scratch()
+        click.echo('TEST: loading all available files in path to db')
+        figure = Figuration(method='not_iter')
+        path, full_sheet, build, service, ms = figure.return_configuration()
+        if last_month:
+            print(last_month)
+            build.build_db_from_scratch(last_range_month=last_month)
+        else:
+            build.build_db_from_scratch()
 
 
 @click.command()
-def load_db_prod():
-    click.echo('PRODUCTION: loading all available files in path to db')
-    figure = Figuration(mode='production')
-    path, full_sheet, build, service, ms = figure.return_configuration()
-    build.build_db_from_scratch()
-
-
-@click.command()
-def write_all_prod():
-    click.echo('PRODUCTION: write all db contents to rs . . .')
-    figure = Figuration(mode='production')
-    path, full_sheet, build, service, ms = figure.return_configuration()
-    ms.auto_control(source='cli.py', mode='clean_build')
+@click.option('-p', '--production',
+              default=False, help='reset db?')
+def write(production=False):
+    if production:
+        click.echo('PRODUCTION: write all db contents to rs . . .')
+        figure = Figuration(mode='production')
+        path, full_sheet, build, service, ms = figure.return_configuration()
+    else:
+        click.echo('TEST: write all db contents to rs . . .')
+        figure = Figuration()
+        path, full_sheet, build, service, ms = figure.return_configuration()
+        ms.auto_control(source='cli.py', mode='clean_build')
 
 
 @click.command()
@@ -100,18 +108,11 @@ def write_monthrange_test():
     click.echo('TEST: write all db contents to rs: EXPRESS MONTHRANGE . . .')
     figure = Figuration()
     path, full_sheet, build, service, ms = figure.return_configuration()
-    month_list = ['2022-01', '2022-02', '2022-03', '2022-04', '2022-05',
-                  '2022-06', '2022-07', '2022-08', '2022-09', '2022-10',
-                  '2022-11', '2022-12']
+    # month_list = ['2022-01', '2022-02', '2022-03', '2022-04', '2022-05',
+                #   '2022-06', '2022-07', '2022-08', '2022-09', '2022-10',
+                #   '2022-11', '2022-12']
+    month_list = ['2022-01', '2022-02', '2022-03']
     ms.auto_control(source='cli.py', mode='clean_build', month_list=month_list)
-
-
-@click.command()
-def write_all_test():
-    click.echo('TEST: write all db contents to rs . . .')
-    figure = Figuration()
-    path, full_sheet, build, service, ms = figure.return_configuration()
-    ms.auto_control(source='cli.py', mode='clean_build')
 
 
 @click.command()
@@ -159,7 +160,7 @@ def balanceletters():
     path, full_sheet, build, service, ms = figure.return_configuration()
     docx = DocxWriter(db=build.main_db, service=service)
     docx.export_history_to_docx()
-    
+
 
 @click.command()
 @click.option('-d', '--drop_table',
@@ -323,11 +324,12 @@ cli.add_command(escrow)
 cli.add_command(status_findexer_test)
 cli.add_command(where_are_we)
 cli.add_command(reset_db)
-cli.add_command(write_all_test)
+cli.add_command(write)
+cli.add_command(load_db)
+cli.add_command(delete_one_sheet)
+cli.add_command(make_one_sheet)
+cli.add_command(db_to_excel)
 cli.add_command(write_monthrange_test)
-cli.add_command(write_all_prod)
-cli.add_command(load_db_test)
-cli.add_command(load_db_prod)
 cli.add_command(sqlite_dump)
 cli.add_command(docx_letters)
 cli.add_command(balanceletters)
@@ -336,9 +338,6 @@ cli.add_command(workorders_to_db)
 cli.add_command(export_workorders_docx)
 cli.add_command(recvactuals)
 cli.add_command(manentry)
-cli.add_command(delete_one_sheet)
-cli.add_command(make_one_sheet)
-cli.add_command(db_to_excel)
 """ANNUAL FINANCIALS"""
 cli.add_command(annfin)
 """TESTING COMMANDS"""
