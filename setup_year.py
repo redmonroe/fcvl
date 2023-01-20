@@ -24,6 +24,7 @@ class YearSheet:
     G_PAYMENT_MADE = ["=sum(K2:K68)"]
     G_CURBAL = ["=sum(L2:L68)"]
     G_SUM_CHARGES = ["=sum(J2:J68)"]
+    G_SUM_BALANCES = ['=IF(K79=D90, "balances", "does not balance")']
 
     HEADER_NAMES = ['Unit', 'Tenant Name', 'Notes', 'Balance Start', 'Contract Rent', 'Actual Subsidy',
                     'Hap received', 'Tenant Rent', 'Charge Type', 'Charge Amount', 'Payment Made', 'Balance Current', 'Payment Plan/Action']
@@ -100,6 +101,8 @@ class YearSheet:
             self.calls.format_row(self.service, self.full_sheet,
                                   f'{sheet}!K85:K85', 'ROWS', self.G_SHEETS_TENANT_COLLECTED)
 
+            self.calls.write_formula_column(
+                self.service, self.full_sheet, self.G_SUM_BALANCES, f'{sheet}!E90:E90')
             self.calls.format_row(
                 self.service, self.full_sheet, f'{sheet}!J70:J90', 'COLUMNS', self.csc)
 

@@ -446,17 +446,13 @@ class MonthSheet(YearSheet):
             self.service, self.full_sheet, f'{date}!D90:D90')
 
         status_list = []
+        status_object_row = [(row.id, row.month) for row in StatusObject.select().where(
+            StatusObject.month == date).namedtuples()][0]
+        status_object = StatusObject.get(status_object_row[0])
+        
         if Reconciler.month_sheet_final_check(onesite_total=onesite_total, nbofi_total=nbofi_total, period=date, genus='rent sheet'):
             message = [f'balances at {str(dt.today().date())}']
-            status_object_row = [(row.id, row.month) for row in StatusObject.select().where(
-                StatusObject.month == date).namedtuples()][0]
-            status_object = StatusObject.get(status_object_row[0])
             status_object.rs_reconciled = True
-            status_object.save()
-            self.gc.update(self.service, self.full_sheet, message,
-                           f'{date}' + self.wrange_reconciled)
-            dict1 = {date: message}
-            status_list.append(dict1)
         else:
             message = ['does not balance']
             self.gc.update(self.service, self.full_sheet, message,
@@ -465,9 +461,10 @@ class MonthSheet(YearSheet):
                 StatusObject.month == date).namedtuples()][0]
             status_object = StatusObject.get(status_object_row[0])
             status_object.rs_reconciled = False
-            status_object.save()
-            dict1 = {date: message}
-            status_list.append(dict1)
+            
+        dict1 = {date: message}
+        status_list.append(dict1)
+        status_object.save()
 
         return status_list
 
