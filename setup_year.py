@@ -23,6 +23,7 @@ class YearSheet:
     G_SUM_ACTRENT = ["=sum(H2:H68)"]
     G_PAYMENT_MADE = ["=sum(K2:K68)"]
     G_CURBAL = ["=sum(L2:L68)"]
+    G_SUM_CHARGES = ["=sum(J2:J68)"]
 
     HEADER_NAMES = ['Unit', 'Tenant Name', 'Notes', 'Balance Start', 'Contract Rent', 'Actual Subsidy',
                     'Hap received', 'Tenant Rent', 'Charge Type', 'Charge Amount', 'Payment Made', 'Balance Current', 'Payment Plan/Action']
@@ -87,6 +88,8 @@ class YearSheet:
 
             self.calls.write_formula_column(
                 self.service, self.full_sheet, self.G_SUM_STARTBAL, f'{sheet}!D69:D69')
+            self.calls.write_formula_column(
+                self.service, self.full_sheet, self.G_SUM_CHARGES, f'{sheet}!J69:D69')
             self.calls.write_formula_column(
                 self.service, self.full_sheet, self.MF_SUM_FORMULA, f'{sheet}!K86:K86')
             self.calls.write_formula_column(

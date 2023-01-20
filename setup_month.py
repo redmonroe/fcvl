@@ -290,7 +290,7 @@ class MonthSheet(YearSheet):
             self.calls.format_row(self.service, self.full_sheet,
                                     f'{date}!D2:D68', 'COLUMNS', self.BEG_BAL)
         
-        self.END_BAL = [f"=sum(D{num}, H{num}, J{num}, -K{num})" for num in range(2, 68)]
+        self.END_BAL = [f"=sum(D{num}, H{num}, J{num}, -K{num})" for num in range(2, 69)]
         self.calls.format_row(self.service, self.full_sheet,
                                 f'{date}!L2:L68', 'COLUMNS', self.END_BAL)
         self.gc.update_int(self.service, self.full_sheet,
@@ -299,7 +299,6 @@ class MonthSheet(YearSheet):
                            kwargs.get('pay_month'), f'{date}' + self.pay_month, value_input_option='USER_ENTERED')
         self.gc.update_int(self.service, self.full_sheet,
                            kwargs.get('dam_month'), f'{date}' + self.dam_month, value_input_option='USER_ENTERED')
-        # breakpoint()
         return date
     
     def write_rs_col(self, date, *args):

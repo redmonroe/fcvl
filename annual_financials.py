@@ -4,6 +4,7 @@ from datetime import datetime as dt
 import numpy as np
 import pandas as pd
 import requests
+from dataclasses import dataclass
 
 from auth_work import oauth
 from backend import Findexer, IncomeMonth, PopulateTable, StatusObject
@@ -12,6 +13,11 @@ from errors import Errors
 from file_indexer import FileIndexer
 from utils import Utils
 
+@dataclass
+class Deposit:
+    month: str = 'empty'
+    amount: str = 'empty'
+    account: str = 'empty'
 
 class AnnFin:
 
