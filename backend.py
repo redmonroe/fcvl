@@ -453,7 +453,7 @@ class QueryHC(Reconciler):
 
         return tenants_mi_on_or_before_first, vacants, tenants
 
-    def get_beg_bal_by_tenant(self):
+    def  get_beg_bal_by_tenant(self):
         return [(row.tenant_name, float(row.beg_bal_amount)) for row in Tenant.
                 select(Tenant.tenant_name, Tenant.beg_bal_amount).
                 namedtuples()]
@@ -900,7 +900,6 @@ class QueryHC(Reconciler):
                       namedtuples()]
         return record
 
-        # TODO
         """
         This is building the final stage of the db, this will write and be a final record of a month, that would be closed, we can drop some of the other tables at this point; we can also, use earlier stages as A STAGING AREA
         """
@@ -910,11 +909,17 @@ class QueryHC(Reconciler):
 
         # if first period get_beg_bal from Tenant table
         # else
-        # damages_predicate = ((Damages.dam_date.between(
-        #     first_dt, last_dt) & (Damages.tenant_id == target)))
+        damages_predicate = ((Damages.dam_date.between(
+            first_dt, last_dt) & (Damages.tenant_id == target)))
         
         records = [row for row in Tenant.
-                  select(Tenant.tenant_name, Tenant.unit, Payment.date_posted,
+                  select(Tenant.tenant_name, Tenant.beg_bal_amount, Tenant.unit, 
+                         Payment.date_posted,  
+                         ContractRent.sub_amount.alias('subsidy'),
+                         Subsidy.sub_amount, 
+                         TenantRent.rent_amount,
+                         LP_EndBal.sub_amount.alias('lp_endbal'),
+                         Damages.dam_amount.alias('damages'),
                   fn.SUM(Payment.amount).over(partition_by=[
                         Tenant.tenant_name]).alias('payments'),
                         ).
@@ -926,8 +931,11 @@ class QueryHC(Reconciler):
                     switch(Tenant).
                     join(TenantRent, JOIN.LEFT_OUTER).
                     switch(Tenant).
-                    # join_from(Damages, Tenant).
-                    # join(Damages, JOIN.LEFT_OUTER, on=damages_predicate).
+                    join(LP_EndBal, JOIN.LEFT_OUTER).
+                    switch(Tenant).
+                    # join(Charges, JOIN.LEFT_OUTER).                    
+                    join_from(Damages, Tenant).
+                    join(Damages, JOIN.LEFT_OUTER, on=damages_predicate).
 
                     where(
                         (Tenant.tenant_name == target)
@@ -939,8 +947,12 @@ class QueryHC(Reconciler):
                         (Subsidy.date_posted.between(first_dt, last_dt))
                         &
                         (TenantRent.rent_date.between(first_dt, last_dt))
+                        &
+                        (LP_EndBal.date_posted.between(first_dt, last_dt))
+                        
                     ).
                     namedtuples()]
+        # breakpoint()
         
         return records
 
@@ -969,26 +981,30 @@ class Position(QueryHC):
         _, _, tenants = self.get_rent_roll_by_month_at_first_of_month(self, 
             first_dt=first_dt, last_dt=last_dt)
         positions = []
-        records = []
         for tenant_id in tenants:
             record = self.all_available_by_fk_by_period(self, target=tenant_id, first_dt=first_dt, last_dt=last_dt)
-            records.append(record)
-            
-        for record in records:
             if record != []:
                 position = Position(name=record[0].tenant_name, 
+                                unit=record[0].unit, 
+                                alltime_beg=record[0].beg_bal_amount,
+                                lp_endbal=record[0].lp_endbal,
+                                payment_total=record[0].payments,
+                                charges_total=record[0].rent_amount,
+                                damages_total=record[0].damages,
                                 start_date=first_dt, 
                                 end_date=last_dt, 
-                                unit=record[0].unit, 
-                                payment_total=record[0].payments,)
+                                contract_rent=float(record[0].sub_amount),
+                                subsidy=float(record[0].subsidy),
+                                )
+                
                 positions.append(position)
         
-        return PositionList(positions)
+        return positions
 
 @dataclass
 class PositionList:
     from typing import List
-    # breakpoint()
+    
     month_list: List[Position] = field(default_factory=Position.wrap_position_list)
     
 

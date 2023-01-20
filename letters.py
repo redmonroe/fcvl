@@ -576,7 +576,8 @@ class DocxWriter(Letters):
         print('export balance history to docx')
         from backend import PositionList
         position_list = PositionList()
-        print(position_list)
+        breakpoint()
+        print(position_list.month_list[0])
     
     
 

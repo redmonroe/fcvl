@@ -174,21 +174,21 @@ class ManualEntry:
         obj_str = item['obj_type']
         model_name = self.get_name_from_obj(obj_type=obj_str)
         return obj_str, model_name
-    
+
     def _handle_create_entry(self, **kwargs):
         new_model_row = kwargs['model_name'].create(payee=kwargs['payee'],
                                                     amount=kwargs['amount'],
                                                     date_posted=kwargs['date_posted'],
                                                     date_code=kwargs['date_code'],
-                                                    deposit_id=random.randint(0, 10000), 
+                                                    deposit_id=random.randint(
+                                                        0, 10000),
                                                     genus=kwargs['genus'],)
         new_model_row.save()
-        
 
     def find_persisted_changes_from_config(self):
         for item in self.persisted_changes:
             item = self._print_persisted_item(item=item)
-           
+
             obj_str, model_name = self._get_model_name(item=item)
 
             col_name1 = item['col_name1'][0]
@@ -203,13 +203,14 @@ class ManualEntry:
                 updated_amount = item['col_name4'][1]
             except KeyError as e:
                 pass
-            
+
             if obj_str == 'Findexer':
-                new_data = {col_name2: 
+                new_data = {col_name2:
                             col_value2,
                             }
-                
-                query = model_name.update(**new_data).where(Findexer.doc_id == col_value1)
+
+                query = model_name.update(
+                    **new_data).where(Findexer.doc_id == col_value1)
                 query.execute()
                 self.record_entry_to_manentry(obj_type=obj_str, action=item[
                     'action'], selected_item=str(col_value1), txn_date=item['col_name3'][1])
@@ -218,25 +219,24 @@ class ManualEntry:
                 # breakpoint()
                 self._handle_create_entry(model_name=model_name,
                                           obj_str=obj_str,
-                                          payee=col_value1, 
-                                          amount=col_value2, 
-                                          date_posted=col_value3, 
-                                          date_code=col_value3.split('-')[1], 
+                                          payee=col_value1,
+                                          amount=col_value2,
+                                          date_posted=col_value3,
+                                          date_code=col_value3.split('-')[1],
                                           genus=updated_amount)
-                mentry = Mentry.create(obj_type=obj_str, 
-                                       ch_type=item['action'], 
-                                       original_item=str(None), 
-                                       txn_date=col_name3[1], 
+                mentry = Mentry.create(obj_type=obj_str,
+                                       ch_type=item['action'],
+                                       original_item=str(None),
+                                       txn_date=col_name3[1],
                                        change_time=dt.now())
                 mentry.save()
             else:
-                #TODO: can this all be an UrQuery item
+                # TODO: can this all be an UrQuery item
                 result = [rec for rec in model_name.select().
-                        where(attrgetter(col_name1)(model_name) == col_value1).
-                        where(attrgetter(col_name2)(model_name) == col_value2).
-                        where(attrgetter(col_name3)(model_name) == col_value3).
-                        namedtuples()]
-
+                          where(attrgetter(col_name1)(model_name) == col_value1).
+                          where(attrgetter(col_name2)(model_name) == col_value2).
+                          where(attrgetter(col_name3)(model_name) == col_value3).
+                          namedtuples()]
 
             try:
                 result = result[0]
@@ -244,12 +244,12 @@ class ManualEntry:
                     self.delete_ui_dynamic(
                         obj_type=model_name, obj_str=obj_str, selected_item=result)
                 elif item['action'] == 'update_amount':
-                    self.update_amount_dynamic(target_attribute=col_name2, 
-                                               selected_item=result, 
+                    self.update_amount_dynamic(target_attribute=col_name2,
+                                               selected_item=result,
                                                obj_type=model_name,
-                                               obj_str=obj_str, 
+                                               obj_str=obj_str,
                                                updated_amount=updated_amount, )
-                    
+
             except (IndexError, TypeError) as e:
                 print('You probably already deleted the transaction OR transaction "has not happened" yet in program time.  Check mentry db for further information.')
                 print(e)
