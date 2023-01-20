@@ -50,15 +50,16 @@ class AnnFin:
     }
 
     def __init__(self, db=None):
-        populate = PopulateTable()
-        self.tables = populate.return_tables_list()
+        self.populate = PopulateTable()
+        self.tables = self.populate.return_tables_list()
         self.hap_code = '5121'
+        self.rent_collected = '5120'
         self.laundry_code = '5910'
         self.db = db
-        self.trial_balance_2021_ye = 'trial_balance_ye_2021.xlsx'
+        # self.trial_balance_2021_ye = 'trial_balance_ye_2021.xlsx'
         # self.trial_balance_2022_ye = 'Fall+Creek+Village+I_Trial+Balance.xls'
-        self.trial_balance_2022_ye = 'Fall+Creek+Village+I_Trial+Balance.xlsx'
-        self.output_path = Config.TEST_ANNFIN_OUTPUT / 'merged_trial_balance.xlsx'
+        # self.trial_balance_2022_ye = 'Fall+Creek+Village+I_Trial+Balance.xlsx'
+        # self.output_path = Config.TEST_ANNFIN_OUTPUT / 'merged_trial_balance.xlsx'
         self.last_year = '2021'
         self.this_year = '2022'
 
@@ -68,131 +69,7 @@ class AnnFin:
         if mode == 'autodrop':
             self.db.drop_tables(models=self.tables)
         self.db.create_tables(models=self.tables)
-
-    def prep_trial_balance_dataframe(self, path=None, year=None):
-        try:
-            df = pd.read_excel(path, engine='openpyxl', header=4)
-        except OSError as e:
-            df = pd.read_excel(path, engine='xlrd',
-                               sheet_name='Trial Balance', header=4)
-
-        df = df.fillna(0)
-        df.set_index('Unnamed: 0', inplace=True)
-        # breakpoint()
-
-        df[year] = df['Debit'] + df['Credit']
-        df.drop('Debit', inplace=True, axis=1)
-        df.drop('Credit', inplace=True, axis=1)
-        return df
-
-    def add_xlsxwriter_formatting(self, output_path=None):
-        import xlsxwriter
-
-        workbook = xlsxwriter.Workbook(output_path)
-        worksheet = workbook.add_worksheet()
-
-        # set column width
-        # set conditional formatting
-        # set out divisions
-        # set number formatting
-
-        currency_format = workbook.add_format(
-            {'num_format': '[$$-409]#,##0.00'})
-
-        worksheet.set_column('A:A', 35)
-        worksheet.set_column('B:B', 20)
-        worksheet.set_column('C:C', 20)
-        worksheet.set_column('D:D', 20)
-        # worksheet.write('A1', 1234.56, currency_format)
-
-        workbook.close()
-
-    def df_formatting_insert_row(self, df=None, target=None, index=None):
-        i = df.index.get_loc(target)
-        new_row = pd.DataFrame(index=[index])
-        index_position = i + 1
-        final = pd.concat(
-            [df.iloc[:index_position], new_row, df.iloc[index_position:]])
-        return final
-
-    def trial_balance_portal(self):
-        import io
-
-        from xlwt import Workbook
-        filename = Config.TEST_ANNFIN_PATH / self.trial_balance_2022_ye
-        with open(filename, 'rb') as f:
-            lines = [x.decode('utf8').strip() for x in f.readlines()]
-            print(lines)
-
-        breakpoint()
-        file1 = io.open(filename, "r")
-
-        for line in file1:
-            print(line)
-        # data = file1.readlines()
-
-        # Creating a workbook object
-        xldoc = Workbook()
-        # Adding a sheet to the workbook object
-        sheet = xldoc.add_sheet("Sheet1", cell_overwrite_ok=True)
-        # Iterating and saving the data to sheet
-        for i, row in enumerate(data):
-            print(row)
-            # Two things are done here
-            # Removeing the '\n' which comes while reading the file using io.open
-            # Getting the values after splitting using '\t'
-            for j, val in enumerate(row.replace('\n', '').split('\t')):
-                sheet.write(i, j, val)
-
-        # Saving the file as an excel file
-        output_path = Config.TEST_ANNFIN_OUTPUT / 'myexcel.xlsx'
-        xldoc.save(output_path)
-        breakpoint()
-        path = Config.TEST_ANNFIN_PATH / self.trial_balance_2021_ye
-        base = self.prep_trial_balance_dataframe(path, year=self.last_year)
-        path2 = Config.TEST_ANNFIN_PATH / self.trial_balance_2022_ye
-        new = self.prep_trial_balance_dataframe(path2, year=self.this_year)
-
-        final = pd.merge(base, new, on='Unnamed: 0', how='outer')
-        final.fillna(0)
-
-        final = self.df_formatting_insert_row(
-            df=final, target='3900 Retained Earnings', index='INCOME')
-        final = self.df_formatting_insert_row(
-            df=final, target='5940 Other Revenue:Forf Ten Security Deposits', index='ADMIN & OFFICE')
-        final = self.df_formatting_insert_row(
-            df=final, target='Operating & Maintainance:Other:Equipment Rental', index='JOURNAL ENTRIES & OTHER')
-
-        final['variance'] = (
-            round(final[self.this_year] / final[self.last_year] * 100)) - 100
-        # print(final.loc['6700 Taxes & Insurance'])\
-
-        # what do I want to do?
-        # conditional formatting
-
-        writer = Errors.xlsx_permission_error(
-            self.output_path, pandas_object=pd)
-
-        final.to_excel(writer, sheet_name='merged_tb')
-
-        workbook = writer.book
-        # Get Sheet1
-        writer.close()
-        worksheet = writer.sheets['merged_tb']
-
-        cell_format = workbook.add_format()
-        cell_format.set_bold()
-        # cell_format.set_font_color('blue')
-
-        worksheet.set_column('A:A', 35, cell_format)
-        worksheet.set_column('B:B', 20, cell_format)
-        worksheet.set_column('C:C', 20, cell_format)
-        worksheet.set_column('D:D', 20, cell_format)
-
-        # breakpoint()
-
-        # self.add_xlsxwriter_formatting(output_path=self.output_path)
-
+       
     def receivables_actual(self):
         '''notes on canonical amounts:'''
         '''01/22: 501.71 laundry'''
@@ -205,24 +82,29 @@ class AnnFin:
         '''04/22: 92.96 laundry'''
         '''04/22: 322.26 laundry'''
         self.connect_to_db()
-        path = Config.TEST_ANNFIN_PATH
-        directory_contents = [item for item in path.iterdir()]
-        path_to_pl = [
-            path for path in directory_contents if path.name != 'desktop.ini']
+        path = Config.TEST_ANNFIN_PATH / 'fcv_pl_2022.xlsx'
+        # directory_contents = [item for item in path.iterdir()]
+        # path_to_pl = [
+            # path for path in directory_contents if path.name != 'desktop.ini']
 
         closed_month_list = [dt.strptime(rec.month, '%Y-%m') for rec in StatusObject(
         ).select().where(StatusObject.tenant_reconciled == 1).namedtuples()]
 
-        hap = self.qb_extract_pl_line(keyword=self.hap_code, path=path_to_pl)
+        df = pd.read_excel(path)
+        df = df.fillna('0')
+        hap = self.qb_extract_pl_line(df=df, keyword=self.hap_code)
+        rent_collected = self.qb_extract_pl_line(df=df, keyword=self.rent_collected)
+        # laundry = self.qb_extract_pl_line(df=df, keyword=self.laundry_code)
+        breakpoint()
 
-        laundry = self.qb_extract_pl_line(
-            keyword=self.laundry_code, path=path_to_pl)
+        # laundry = self.qb_extract_pl_line(
+        #     keyword=self.laundry_code, path=path_to_pl)
 
-        for month in closed_month_list:
-            for date, hap_amount in hap.items():
-                if month == date:
-                    hap_db = IncomeMonth(
-                        year=Config.current_year, month=month, hap=hap_amount)
+        # for month in closed_month_list:
+        #     for date, hap_amount in hap.items():
+        #         if month == date:
+        #             hap_db = IncomeMonth(
+        #                 year=Config.current_year, month=month, hap=hap_amount)
 
     def match_hap(self):
         print('attempt to match hap, send to db, and write')
@@ -231,18 +113,18 @@ class AnnFin:
         op_cash_hap = [(row.hap, row.period) for row in Findexer.select().where(
             Findexer.hap != '0').namedtuples()]
 
-    def qb_extract_pl_line(self, keyword=None, path=None):
+    def qb_extract_pl_line(self, df=None, keyword=None):
         '''limits: cells with formulas will not be extracted properly; however, the workaround is to put an x in a cell and save and close.  we need a no-touch way to do this'''
-        path = path[0]
-        df = pd.read_excel(path)
 
+        date_extract = df.iloc[3]
         extract = df.loc[df['Fall Creek Village I'].str.contains(keyword,
                                                                  na=False
                                                                  )]
-        breakpoint()
-        extract = extract.values[0]
-        line_items = [item for item in extract if type(item) != str]
-        line_items = self.qbo_cleanup_line(path=path, dirty_list=line_items)
+        extract = [item for item in list(extract.values[0]) if type(item) != str]
+        date_extract = [item for item in date_extract.to_list() if isinstance(item, str) == True]
+        date_extract = [item for item in date_extract if item != '0']
+        
+        line_items = dict(zip(date_extract, extract))
 
         return line_items
 
@@ -368,6 +250,136 @@ class AnnFin:
         ) if three_letter_month[0] in sheet_name}
         target_sheet = min(target_sheet)
         print(target_sheet)
+
+ 
+    '''
+
+    def prep_trial_balance_dataframe(self, path=None, year=None):
+        try:
+            df = pd.read_excel(path, engine='openpyxl', header=4)
+        except OSError as e:
+            df = pd.read_excel(path, engine='xlrd',
+                               sheet_name='Trial Balance', header=4)
+
+        df = df.fillna(0)
+        df.set_index('Unnamed: 0', inplace=True)
+        # breakpoint()
+
+        df[year] = df['Debit'] + df['Credit']
+        df.drop('Debit', inplace=True, axis=1)
+        df.drop('Credit', inplace=True, axis=1)
+        return df
+
+    def add_xlsxwriter_formatting(self, output_path=None):
+        import xlsxwriter
+
+        workbook = xlsxwriter.Workbook(output_path)
+        worksheet = workbook.add_worksheet()
+
+        # set column width
+        # set conditional formatting
+        # set out divisions
+        # set number formatting
+
+        currency_format = workbook.add_format(
+            {'num_format': '[$$-409]#,##0.00'})
+
+        worksheet.set_column('A:A', 35)
+        worksheet.set_column('B:B', 20)
+        worksheet.set_column('C:C', 20)
+        worksheet.set_column('D:D', 20)
+        # worksheet.write('A1', 1234.56, currency_format)
+
+        workbook.close()
+
+    def df_formatting_insert_row(self, df=None, target=None, index=None):
+        i = df.index.get_loc(target)
+        new_row = pd.DataFrame(index=[index])
+        index_position = i + 1
+        final = pd.concat(
+            [df.iloc[:index_position], new_row, df.iloc[index_position:]])
+        return final
+
+    def trial_balance_portal(self):
+        import io
+
+        from xlwt import Workbook
+        filename = Config.TEST_ANNFIN_PATH / self.trial_balance_2022_ye
+        breakpoint()
+        with open(filename, 'rb') as f:
+            lines = [x.decode('utf8').strip() for x in f.readlines()]
+            print(lines)
+
+        file1 = io.open(filename, "r")
+
+        for line in file1:
+            print(line)
+        # data = file1.readlines()
+
+        # Creating a workbook object
+        xldoc = Workbook()
+        # Adding a sheet to the workbook object
+        sheet = xldoc.add_sheet("Sheet1", cell_overwrite_ok=True)
+        # Iterating and saving the data to sheet
+        for i, row in enumerate(data):
+            print(row)
+            # Two things are done here
+            # Removeing the '\n' which comes while reading the file using io.open
+            # Getting the values after splitting using '\t'
+            for j, val in enumerate(row.replace('\n', '').split('\t')):
+                sheet.write(i, j, val)
+
+        # Saving the file as an excel file
+        output_path = Config.TEST_ANNFIN_OUTPUT / 'myexcel.xlsx'
+        xldoc.save(output_path)
+        breakpoint()
+        path = Config.TEST_ANNFIN_PATH / self.trial_balance_2021_ye
+        base = self.prep_trial_balance_dataframe(path, year=self.last_year)
+        path2 = Config.TEST_ANNFIN_PATH / self.trial_balance_2022_ye
+        new = self.prep_trial_balance_dataframe(path2, year=self.this_year)
+
+        final = pd.merge(base, new, on='Unnamed: 0', how='outer')
+        final.fillna(0)
+
+        final = self.df_formatting_insert_row(
+            df=final, target='3900 Retained Earnings', index='INCOME')
+        final = self.df_formatting_insert_row(
+            df=final, target='5940 Other Revenue:Forf Ten Security Deposits', index='ADMIN & OFFICE')
+        final = self.df_formatting_insert_row(
+            df=final, target='Operating & Maintainance:Other:Equipment Rental', index='JOURNAL ENTRIES & OTHER')
+
+        final['variance'] = (
+            round(final[self.this_year] / final[self.last_year] * 100)) - 100
+        # print(final.loc['6700 Taxes & Insurance'])\
+
+        # what do I want to do?
+        # conditional formatting
+
+        writer = Errors.xlsx_permission_error(
+            self.output_path, pandas_object=pd)
+
+        final.to_excel(writer, sheet_name='merged_tb')
+
+        workbook = writer.book
+        # Get Sheet1
+        writer.close()
+        worksheet = writer.sheets['merged_tb']
+
+        cell_format = workbook.add_format()
+        cell_format.set_bold()
+        # cell_format.set_font_color('blue')
+
+        worksheet.set_column('A:A', 35, cell_format)
+        worksheet.set_column('B:B', 20, cell_format)
+        worksheet.set_column('C:C', 20, cell_format)
+        worksheet.set_column('D:D', 20, cell_format)
+
+        # breakpoint()
+
+        # self.add_xlsxwriter_formatting(output_path=self.output_path)
+    '''
+
+
 
     '''
     sh_col = Liltilities.get_letter_by_choice(int(month_choice), 0)
