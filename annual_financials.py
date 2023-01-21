@@ -41,30 +41,15 @@ class ReconcileItem:
                                  discrepancy=str(0), 
                                  reconciled=True) for report in set(qb_side_iter) & set(db_side_iter)]
         
-        differences = set([ReconcileItem(account=report.account, 
+        # TODO: I WANT DISCREPANCY TO SHOW UP HERE
+        differences = list(set([ReconcileItem(account=report.account, 
                                      month=report.month, 
                                      amount='0', 
-                                     discrepancy=str(abs(float(report.amount) - float(report.amount))), 
+                                     discrepancy=str(abs(float(report.amount) - float(record.amount))), 
                                      reconciled=False) 
-                                     for report in set(qb_side_iter) ^ set(db_side_iter)])
+                                     for report, record in zip(set(qb_side_iter) ^ set(db_side_iter), qb_side_iter)]))
         
-        breakpoint()
-        # reconcileds = []
-        # for report in qb_side_iter:
-        #     for record in db_side_iter:
-        #         if report.month == record.month:
-        #             if report.amount != record.amount:
-        #                 discrepancy = str(
-        #                     abs(float(report.amount) - float(record.amount)))
-        #                 rec = ReconcileItem(
-        #                     account=report.account, month=report.month, discrepancy=discrepancy, reconciled=False)
-        #                 reconcileds.append(rec)
-        #             else:
-        #                 rec = ReconcileItem(
-        #                     account=report.account, month=report.month, discrepancy=str(0), reconciled=True)
-        #                 reconcileds.append(rec)
-        # return reconcileds
-
+        return matches + differences
 
 class AnnFin:
 
@@ -166,7 +151,7 @@ class AnnFin:
 
         # database, rs, and docs side
         supported_list = ['hap', 'laundry', 'collected_rent']
-        rents_db = []
+        results = []
         for name in supported_list:
             # if name == 'collected_rent':
             #     for month in closed_month_list:
@@ -176,19 +161,18 @@ class AnnFin:
             if name == 'hap':
                 hap_db = [RecordItem(account=name, month=row.period, amount=float(row.hap)) for row in Findexer.select().
                           where(attrgetter(name)(Findexer) != '0')]
-                reconciliations = self.reconciler.reconcile_hap(
-                    qb_side_iter=hap_qb, db_side_iter=hap_db)
+                results.append((name, self.reconciler.reconcile_hap(
+                    qb_side_iter=hap_qb, db_side_iter=hap_db)))
 
             if name == 'laundry':
                 laundry_db = [RecordItem(account=name, month=dt.strftime(row.date_posted, '%Y-%m'), amount=float(row.amount)) for row in NTPayment.select(
                         fn.SUM(NTPayment.amount), NTPayment.date_posted).
                         group_by(fn.strftime('%Y-%m', NTPayment.date_posted)).
                         where(attrgetter('payee')(NTPayment) == 'laundry')]
-                reconciliations = self.reconciler.reconcile_hap(
-                    qb_side_iter=laundry_qb, db_side_iter=laundry_db)
+                results.append((name, self.reconciler.reconcile_hap(
+                    qb_side_iter=laundry_qb, db_side_iter=laundry_db)))
 
-        breakpoint()
-        self.to_stdout(list_of_dicts1=[result])
+        self.to_stdout(list_of_tup=results)
         # for month in closed_month_list:
         #     for date, hap_amount in hap.items():
         #         if month == date:
@@ -199,8 +183,14 @@ class AnnFin:
         return self.reconciler.reconcile_hap(
             qb_side_iter=qb_side_iter, db_side_iter=db_side_iter)
 
-    def to_stdout(self, list_of_dicts1=None):
+    def to_stdout(self,  list_of_tup=None):
         print('\n')
+        for item in list_of_tup: 
+            print(f'{item[0]} month reconciled discrepancy')
+            for reconciled in item[1]:
+                print('\t', reconciled.month, reconciled.reconciled, reconciled.discrepancy)
+                print('\n'.join([''.join(['{:9}'.format(x) for x in r]) for r in table]))
+            # breakpoint()
         # for thang in list_of_dicts1:
         #     for name, bol in thang.items():
         #         print(name, 'reconciled:', bol)
