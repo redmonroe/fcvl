@@ -81,20 +81,39 @@ class AnnFin:
         '''04/22: 115.17 nationwide refund: should be other'''
         '''04/22: 92.96 laundry'''
         '''04/22: 322.26 laundry'''
+        
+        
+        '''
+        download this report: https://app.qbo.intuit.com/app/reportv2?token=PANDL&show_logo=false&date_macro=lastyear&low_date=01/01/2022&high_date=12/31/2022&column=monthly&showrows=active&showcols=active&subcol_pp=&subcol_pp_chg=&subcol_pp_pct_chg=&subcol_py=&subcol_py_chg=&subcol_py_pct_chg=&subcol_py_ytd=&subcol_ytd=&subcol_pct_ytd=&subcol_pct_row=&subcol_pct_col=&subcol_pct_inc=false&subcol_pct_exp=false&cash_basis=no&collapsed_rows=&edited_sections=false&divideby1000=false&hidecents=false&exceptzeros=true&negativenums=1&negativered=false&show_header_title=true&show_header_range=true&show_footer_custom_message=true&show_footer_date=true&show_footer_time=true&show_footer_basis=true&header_alignment=Center&footer_alignment=Center&show_header_company=true&company_name=Fall%20Creek%20Village%20I&collapse_subs=false&title=Profit%20and%20Loss&footer_custom_message=
+        
+        vanilla profit and loss, by month
+        
+        save as: fcv_pl_YYYY.xlsx AND resave to .xls
+        
+        supported reconciliations:
+            -  hap
+        
+        
+        '''
         self.connect_to_db()
-        path = Config.TEST_ANNFIN_PATH / 'fcv_pl_2022.xlsx'
-        # directory_contents = [item for item in path.iterdir()]
-        # path_to_pl = [
-            # path for path in directory_contents if path.name != 'desktop.ini']
+        path = Config.TEST_ANNFIN_PATH / 'fcv_pl_2022.xls'
 
         closed_month_list = [dt.strptime(rec.month, '%Y-%m') for rec in StatusObject(
         ).select().where(StatusObject.tenant_reconciled == 1).namedtuples()]
 
         df = pd.read_excel(path)
         df = df.fillna('0')
-        hap = self.qb_extract_pl_line(df=df, keyword=self.hap_code)
-        rent_collected = self.qb_extract_pl_line(df=df, keyword=self.rent_collected)
-        # laundry = self.qb_extract_pl_line(df=df, keyword=self.laundry_code)
+        
+        # p and l side from QUICKBOOKS
+        # def unpack_pnl(self):
+        hap_qb = self.qb_extract_pl_line(df=df, keyword=self.hap_code)
+        rent_collected_qb = self.qb_extract_pl_line(df=df, keyword=self.rent_collected)
+            # laundry = self.qb_extract_pl_line(df=df, keyword=self.laundry_code)
+        
+        
+        # database, rs, and docs side
+        hap_db = {row.period: float(row.hap)for row in Findexer.select().where(
+            Findexer.hap != '0')}
         breakpoint()
 
         # laundry = self.qb_extract_pl_line(
@@ -106,12 +125,6 @@ class AnnFin:
         #             hap_db = IncomeMonth(
         #                 year=Config.current_year, month=month, hap=hap_amount)
 
-    def match_hap(self):
-        print('attempt to match hap, send to db, and write')
-        # findex = FileIndexer(path=self.path, db=self.main_db)
-
-        op_cash_hap = [(row.hap, row.period) for row in Findexer.select().where(
-            Findexer.hap != '0').namedtuples()]
 
     def qb_extract_pl_line(self, df=None, keyword=None):
         '''limits: cells with formulas will not be extracted properly; however, the workaround is to put an x in a cell and save and close.  we need a no-touch way to do this'''
@@ -122,11 +135,9 @@ class AnnFin:
                                                                  )]
         extract = [item for item in list(extract.values[0]) if type(item) != str]
         date_extract = [item for item in date_extract.to_list() if isinstance(item, str) == True]
-        date_extract = [item for item in date_extract if item != '0']
+        date_extract = [Utils.helper_fix_date_str4(item) for item in date_extract if item != '0']
         
-        line_items = dict(zip(date_extract, extract))
-
-        return line_items
+        return dict(zip(date_extract, extract))
 
     def qbo_cleanup_line(self, path=None, dirty_list=None):
 

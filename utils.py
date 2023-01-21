@@ -95,6 +95,14 @@ class Utils:
                 xls_name.append(file_name_no_ext)
 
         print(xls_list)
+        
+    @staticmethod
+    def convert_xlsx_to_xls(path):
+        new_file_ext = '.xls'
+        if path.suffix == '.xlsx':
+            new_path = path.with_suffix('')
+            new_path = new_path.with_suffix(new_file_ext)
+        path.replace(new_path)
 
     def find_last_modified(dir):
         time, file_path = max((file.stat().st_mtime, file)
@@ -205,6 +213,16 @@ class Utils:
     @staticmethod
     def helper_fix_date_str3(date_str):
         f_date = datetime.strptime(date_str, '%Y-%m-%d')
+        f_date = f_date.strftime('%Y-%m')
+        return f_date
+    
+    @staticmethod
+    def helper_fix_date_str4(date_str):
+        try:
+            f_date = datetime.strptime(date_str, '%b %Y')
+        except ValueError as e:
+            print(e, 'we are using try/except to handle Total column in annfin dataframe')
+            return date_str
         f_date = f_date.strftime('%Y-%m')
         return f_date
 
