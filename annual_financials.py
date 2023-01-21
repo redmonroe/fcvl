@@ -28,6 +28,35 @@ class ReportItem:
     account: str = 'empty'
     month: str = 'empty'
     amount: str = 'empty'
+    
+    
+@dataclass
+class ReconcileItem:
+    account: str = 'empty'
+    month: str = 'empty'
+    discrepancy: str = 'empty'
+    reconciled: bool = False
+    
+    def __init__(self, account=None, month=None, discrepancy=None, reconciled=None):
+        self.account = account
+        self.month = month
+        self.discrepancy = discrepancy
+        self.reconciled = reconciled
+        
+    def reconcile_hap(self, qb_side_iter=None, db_side_iter=None):
+        reconcileds = []
+        for report in qb_side_iter:
+            for record in db_side_iter:
+                if report.month == record.month:
+                    if report.amount != record.amount:
+                        discrepancy = str(abs(float(report.amount) - float(record.amount)))
+                        rec = ReconcileItem(account=report.account, month=report.month, discrepancy=discrepancy, reconciled=False)
+                        reconcileds.append(rec)
+                    else:
+                        rec = ReconcileItem(account=report.account, month=report.month, discrepancy=str(0), reconciled=True)
+                        reconcileds.append(rec)
+        breakpoint()
+                # print(ReconcileItem.discrepancy)
 
 
 class AnnFin:
@@ -63,6 +92,7 @@ class AnnFin:
     def __init__(self, db=None, full_sheet=None, mode=None, test_service=None):
         self.populate = PopulateTable()
         self.tables = self.populate.return_tables_list()
+        self.reconciler = ReconcileItem()
         self.gc = GoogleApiCalls()
         self.hap_code = '5121'
         self.rent_collected = '5120'
@@ -122,29 +152,30 @@ class AnnFin:
         
         # p and l side from QUICKBOOKS
         hap_qb = self.qb_extract_pl_line(name='hap', df=df, keyword=self.hap_code)
-        rent_collected_qb = self.qb_extract_pl_line(name='collected_rent', df=df, keyword=self.rent_collected)
-        laundry = self.qb_extract_pl_line(name='laundry', df=df, keyword=self.laundry_code)
+        # rent_collected_qb = self.qb_extract_pl_line(name='collected_rent', df=df, keyword=self.rent_collected)
+        # laundry_qb = self.qb_extract_pl_line(name='laundry', df=df, keyword=self.laundry_code)
         
         # database, rs, and docs side
         supported_list = ['hap', 'laundry', 'collected_rent']
-        rents = []
+        rents_db = []
         for name in supported_list:
-            if name == 'collected_rent':
-                for month in closed_month_list:
-                    rent_collected = self.gc.broad_get(self.service, self.full_sheet, f'{month}!K69') 
-                    rents.append(RecordItem(account=name, month=month, amount=rent_collected[0][0]))
+            # if name == 'collected_rent':
+            #     for month in closed_month_list:
+            #         rent_collected = self.gc.broad_get(self.service, self.full_sheet, f'{month}!K69') 
+            #         rents_db.append(RecordItem(account=name, month=month, amount=rent_collected[0][0]))
+            #     result = self.compare(name=name, qb_side_iter=rent_collected_qb, db_side_iter=rents_db)
             if name == 'hap':
                 hap_db = [RecordItem(account=name, month=row.period, amount=float(row.hap)) for row in Findexer.select().
                                                     where(attrgetter(name)(Findexer) != '0')]
+                reconciliations = self.compare(name=name, qb_side_iter=hap_qb, db_side_iter=hap_db)
             
-                result = self.compare(name=name, qb_side_iter=hap_qb, db_side_iter=hap_db)
                 
-            if name == 'laundry':
-                # do func sum here
-                laundry_db = [RecordItem(account=name, month=dt.strftime(row.date_posted, '%Y-%m'), amount=float(row.amount)) for row in NTPayment.select(
-                        fn.SUM(NTPayment.amount), NTPayment.date_posted).
-                        group_by(fn.strftime('%Y-%m', NTPayment.date_posted)).
-                        where(attrgetter('payee')(NTPayment) == 'laundry')]
+            # if name == 'laundry':
+            #     # do func sum here
+            #     laundry_db = [RecordItem(account=name, month=dt.strftime(row.date_posted, '%Y-%m'), amount=float(row.amount)) for row in NTPayment.select(
+            #             fn.SUM(NTPayment.amount), NTPayment.date_posted).
+            #             group_by(fn.strftime('%Y-%m', NTPayment.date_posted)).
+            #             where(attrgetter('payee')(NTPayment) == 'laundry')]
                         
                 
         breakpoint()
@@ -157,9 +188,10 @@ class AnnFin:
 
     def compare(self, name=None, qb_side_iter=None, db_side_iter=None):
         try:
-            assert qb_side_iter == db_side_iter
+            self.reconciler.reconcile_hap(qb_side_iter=qb_side_iter, db_side_iter=db_side_iter)
         except AssertionError as e:
-            print('iters did not equate')
+            print(f'iters did not equate in {name}.')
+            breakpoint()
             return False
         return True
     
@@ -188,7 +220,7 @@ class AnnFin:
             item) for item in date_extract if item != '0']
         date_extract = [item for item in date_extract if item != 'Total']
         group = dict(zip(date_extract, extract))
-        report_item = [ReportItem(account=name, month=date, amount=str(amount)) for date, amount in group.items()]
+        report_item = [ReportItem(account=name, month=date, amount=float(amount)) for date, amount in group.items()]
         return report_item
 
     def qbo_cleanup_line(self, path=None, dirty_list=None):
