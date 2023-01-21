@@ -17,46 +17,53 @@ from peewee import fn
 from utils import Utils
 from google_api_calls_abstract import GoogleApiCalls
 
-@dataclass
+
+@dataclass(frozen=True, eq=True)
 class RecordItem:
     account: str = 'empty'
     month: str = 'empty'
     amount: str = 'empty'
-    
-@dataclass
-class ReportItem:
-    account: str = 'empty'
-    month: str = 'empty'
-    amount: str = 'empty'
-    
-    
-@dataclass
+
+@dataclass(frozen=True, eq=True)
 class ReconcileItem:
     account: str = 'empty'
     month: str = 'empty'
+    amount: str = 'empty'
     discrepancy: str = 'empty'
     reconciled: bool = False
     
-    def __init__(self, account=None, month=None, discrepancy=None, reconciled=None):
-        self.account = account
-        self.month = month
-        self.discrepancy = discrepancy
-        self.reconciled = reconciled
-        
+
+
     def reconcile_hap(self, qb_side_iter=None, db_side_iter=None):
-        reconcileds = []
-        for report in qb_side_iter:
-            for record in db_side_iter:
-                if report.month == record.month:
-                    if report.amount != record.amount:
-                        discrepancy = str(abs(float(report.amount) - float(record.amount)))
-                        rec = ReconcileItem(account=report.account, month=report.month, discrepancy=discrepancy, reconciled=False)
-                        reconcileds.append(rec)
-                    else:
-                        rec = ReconcileItem(account=report.account, month=report.month, discrepancy=str(0), reconciled=True)
-                        reconcileds.append(rec)
+        matches = [ReconcileItem(account=report.account, 
+                                 month=report.month, 
+                                 amount=report.amount, 
+                                 discrepancy=str(0), 
+                                 reconciled=True) for report in set(qb_side_iter) & set(db_side_iter)]
+        
+        differences = set([ReconcileItem(account=report.account, 
+                                     month=report.month, 
+                                     amount='0', 
+                                     discrepancy=str(abs(float(report.amount) - float(report.amount))), 
+                                     reconciled=False) 
+                                     for report in set(qb_side_iter) ^ set(db_side_iter)])
+        
         breakpoint()
-                # print(ReconcileItem.discrepancy)
+        # reconcileds = []
+        # for report in qb_side_iter:
+        #     for record in db_side_iter:
+        #         if report.month == record.month:
+        #             if report.amount != record.amount:
+        #                 discrepancy = str(
+        #                     abs(float(report.amount) - float(record.amount)))
+        #                 rec = ReconcileItem(
+        #                     account=report.account, month=report.month, discrepancy=discrepancy, reconciled=False)
+        #                 reconcileds.append(rec)
+        #             else:
+        #                 rec = ReconcileItem(
+        #                     account=report.account, month=report.month, discrepancy=str(0), reconciled=True)
+        #                 reconcileds.append(rec)
+        # return reconcileds
 
 
 class AnnFin:
@@ -149,35 +156,37 @@ class AnnFin:
 
         df = pd.read_excel(path)
         df = df.fillna('0')
-        
+
         # p and l side from QUICKBOOKS
-        hap_qb = self.qb_extract_pl_line(name='hap', df=df, keyword=self.hap_code)
+        hap_qb = self.qb_extract_pl_line(
+            name='hap', df=df, keyword=self.hap_code)
         # rent_collected_qb = self.qb_extract_pl_line(name='collected_rent', df=df, keyword=self.rent_collected)
-        # laundry_qb = self.qb_extract_pl_line(name='laundry', df=df, keyword=self.laundry_code)
-        
+        laundry_qb = self.qb_extract_pl_line(
+            name='laundry', df=df, keyword=self.laundry_code)
+
         # database, rs, and docs side
         supported_list = ['hap', 'laundry', 'collected_rent']
         rents_db = []
         for name in supported_list:
             # if name == 'collected_rent':
             #     for month in closed_month_list:
-            #         rent_collected = self.gc.broad_get(self.service, self.full_sheet, f'{month}!K69') 
+            #         rent_collected = self.gc.broad_get(self.service, self.full_sheet, f'{month}!K69')
             #         rents_db.append(RecordItem(account=name, month=month, amount=rent_collected[0][0]))
             #     result = self.compare(name=name, qb_side_iter=rent_collected_qb, db_side_iter=rents_db)
             if name == 'hap':
                 hap_db = [RecordItem(account=name, month=row.period, amount=float(row.hap)) for row in Findexer.select().
-                                                    where(attrgetter(name)(Findexer) != '0')]
-                reconciliations = self.compare(name=name, qb_side_iter=hap_qb, db_side_iter=hap_db)
-            
-                
-            # if name == 'laundry':
-            #     # do func sum here
-            #     laundry_db = [RecordItem(account=name, month=dt.strftime(row.date_posted, '%Y-%m'), amount=float(row.amount)) for row in NTPayment.select(
-            #             fn.SUM(NTPayment.amount), NTPayment.date_posted).
-            #             group_by(fn.strftime('%Y-%m', NTPayment.date_posted)).
-            #             where(attrgetter('payee')(NTPayment) == 'laundry')]
-                        
-                
+                          where(attrgetter(name)(Findexer) != '0')]
+                reconciliations = self.reconciler.reconcile_hap(
+                    qb_side_iter=hap_qb, db_side_iter=hap_db)
+
+            if name == 'laundry':
+                laundry_db = [RecordItem(account=name, month=dt.strftime(row.date_posted, '%Y-%m'), amount=float(row.amount)) for row in NTPayment.select(
+                        fn.SUM(NTPayment.amount), NTPayment.date_posted).
+                        group_by(fn.strftime('%Y-%m', NTPayment.date_posted)).
+                        where(attrgetter('payee')(NTPayment) == 'laundry')]
+                reconciliations = self.reconciler.reconcile_hap(
+                    qb_side_iter=laundry_qb, db_side_iter=laundry_db)
+
         breakpoint()
         self.to_stdout(list_of_dicts1=[result])
         # for month in closed_month_list:
@@ -186,42 +195,41 @@ class AnnFin:
         #             hap_db = IncomeMonth(
         #                 year=Config.current_year, month=month, hap=hap_amount)
 
-    def compare(self, name=None, qb_side_iter=None, db_side_iter=None):
-        try:
-            self.reconciler.reconcile_hap(qb_side_iter=qb_side_iter, db_side_iter=db_side_iter)
-        except AssertionError as e:
-            print(f'iters did not equate in {name}.')
-            breakpoint()
-            return False
-        return True
-    
+    def reconciler(self, name=None, qb_side_iter=None, db_side_iter=None):
+        return self.reconciler.reconcile_hap(
+            qb_side_iter=qb_side_iter, db_side_iter=db_side_iter)
+
     def to_stdout(self, list_of_dicts1=None):
         print('\n')
         # for thang in list_of_dicts1:
         #     for name, bol in thang.items():
         #         print(name, 'reconciled:', bol)
-            
-    def qb_extract_pl_line(self, name=None, df=None, keyword=None):
-        '''limits: cells with formulas will not be extracted properly; however, the workaround is to put an x in a cell and save and close.  we need a no-touch way to do this'''
 
-        extract = df.loc[df['Fall Creek Village I'].str.contains(keyword, na=False)]
+    def qb_extract_pl_line(self, name=None, df=None, keyword=None):
+        '''limits: cells with formulas will not be extracted properly;
+        however, the workaround is to put an x in a cell and save and close.  
+        we need a no-touch way to do this'''
+
+        date_extract = [Utils.helper_fix_date_str4(
+            item) for item in df.iloc[3] if item != '0']
+        date_extract = [item for item in date_extract if item != 'Total']
+
+        extract = df.loc[df['Fall Creek Village I'].str.contains(
+            keyword, na=False)]
         try:
             extract = [item for item in list(
-                    extract.values[0]) if type(item) != str]
+                extract.values[0]) if type(item) != str]
         except IndexError as e:
             print(f'{e}, no info found for account: {name}')
-            return []
+            report_items = [RecordItem(
+                account=name, month=date, amount='0') for date in date_extract]
+            return report_items
 
-        date_extract = df.iloc[3]
         extract = [item for item in extract if item != 'Total']
-        date_extract = [item for item in date_extract.to_list()
-                        if isinstance(item, str) == True]
-        date_extract = [Utils.helper_fix_date_str4(
-            item) for item in date_extract if item != '0']
-        date_extract = [item for item in date_extract if item != 'Total']
         group = dict(zip(date_extract, extract))
-        report_item = [ReportItem(account=name, month=date, amount=float(amount)) for date, amount in group.items()]
-        return report_item
+        report_items = [RecordItem(account=name, month=date, amount=float(
+            amount)) for date, amount in group.items()]
+        return report_items
 
     def qbo_cleanup_line(self, path=None, dirty_list=None):
 
