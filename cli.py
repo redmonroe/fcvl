@@ -238,10 +238,10 @@ def escrow():
 def recvactuals():
     click.echo('receivable actuals')
     figure = Figuration()
-    path, output_path, db = figure.annfin_test_configuration()
+    path, output_path, db, service, full_sheet = figure.annfin_test_configuration()
     
     # setup database and configuration
-    annfin = AnnFin(db=Config.TEST_DB)
+    annfin = AnnFin(db=Config.TEST_DB, full_sheet=full_sheet)
     annfin.start_here()
 
 

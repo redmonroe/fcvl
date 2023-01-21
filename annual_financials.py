@@ -1,23 +1,34 @@
 import math
+from dataclasses import dataclass
 from datetime import datetime as dt
+from operator import attrgetter
 
 import numpy as np
 import pandas as pd
 import requests
-from dataclasses import dataclass
 
 from auth_work import oauth
-from backend import Findexer, IncomeMonth, PopulateTable, StatusObject
+from backend import (Findexer, IncomeMonth, NTPayment, PopulateTable,
+                     StatusObject)
 from config import Config
 from errors import Errors
 from file_indexer import FileIndexer
+from peewee import fn
 from utils import Utils
+from google_api_calls_abstract import GoogleApiCalls
 
 @dataclass
-class Deposit:
+class RecordItem:
+    account: str = 'empty'
     month: str = 'empty'
     amount: str = 'empty'
+    
+@dataclass
+class ReportItem:
     account: str = 'empty'
+    month: str = 'empty'
+    amount: str = 'empty'
+
 
 class AnnFin:
 
@@ -49,13 +60,19 @@ class AnnFin:
         'dec': 12,
     }
 
-    def __init__(self, db=None):
+    def __init__(self, db=None, full_sheet=None, mode=None, test_service=None):
         self.populate = PopulateTable()
         self.tables = self.populate.return_tables_list()
+        self.gc = GoogleApiCalls()
         self.hap_code = '5121'
         self.rent_collected = '5120'
         self.laundry_code = '5910'
         self.db = db
+        self.full_sheet = full_sheet
+        if mode == 'testing':
+            self.service = test_service
+        else:
+            self.service = oauth(Config.my_scopes, 'sheet')
         # self.trial_balance_2021_ye = 'trial_balance_ye_2021.xlsx'
         # self.trial_balance_2022_ye = 'Fall+Creek+Village+I_Trial+Balance.xls'
         # self.trial_balance_2022_ye = 'Fall+Creek+Village+I_Trial+Balance.xlsx'
@@ -69,7 +86,7 @@ class AnnFin:
         if mode == 'autodrop':
             self.db.drop_tables(models=self.tables)
         self.db.create_tables(models=self.tables)
-       
+
     def receivables_actual(self):
         '''notes on canonical amounts:'''
         '''01/22: 501.71 laundry'''
@@ -81,8 +98,7 @@ class AnnFin:
         '''04/22: 115.17 nationwide refund: should be other'''
         '''04/22: 92.96 laundry'''
         '''04/22: 322.26 laundry'''
-        
-        
+
         '''
         download this report: https://app.qbo.intuit.com/app/reportv2?token=PANDL&show_logo=false&date_macro=lastyear&low_date=01/01/2022&high_date=12/31/2022&column=monthly&showrows=active&showcols=active&subcol_pp=&subcol_pp_chg=&subcol_pp_pct_chg=&subcol_py=&subcol_py_chg=&subcol_py_pct_chg=&subcol_py_ytd=&subcol_ytd=&subcol_pct_ytd=&subcol_pct_row=&subcol_pct_col=&subcol_pct_inc=false&subcol_pct_exp=false&cash_basis=no&collapsed_rows=&edited_sections=false&divideby1000=false&hidecents=false&exceptzeros=true&negativenums=1&negativered=false&show_header_title=true&show_header_range=true&show_footer_custom_message=true&show_footer_date=true&show_footer_time=true&show_footer_basis=true&header_alignment=Center&footer_alignment=Center&show_header_company=true&company_name=Fall%20Creek%20Village%20I&collapse_subs=false&title=Profit%20and%20Loss&footer_custom_message=
         
@@ -98,46 +114,82 @@ class AnnFin:
         self.connect_to_db()
         path = Config.TEST_ANNFIN_PATH / 'fcv_pl_2022.xls'
 
-        closed_month_list = [dt.strptime(rec.month, '%Y-%m') for rec in StatusObject(
+        closed_month_list = [str(rec.month) for rec in StatusObject(
         ).select().where(StatusObject.tenant_reconciled == 1).namedtuples()]
 
         df = pd.read_excel(path)
         df = df.fillna('0')
         
         # p and l side from QUICKBOOKS
-        # def unpack_pnl(self):
-        hap_qb = self.qb_extract_pl_line(df=df, keyword=self.hap_code)
-        rent_collected_qb = self.qb_extract_pl_line(df=df, keyword=self.rent_collected)
-            # laundry = self.qb_extract_pl_line(df=df, keyword=self.laundry_code)
-        
+        hap_qb = self.qb_extract_pl_line(name='hap', df=df, keyword=self.hap_code)
+        rent_collected_qb = self.qb_extract_pl_line(name='collected_rent', df=df, keyword=self.rent_collected)
+        laundry = self.qb_extract_pl_line(name='laundry', df=df, keyword=self.laundry_code)
         
         # database, rs, and docs side
-        hap_db = {row.period: float(row.hap)for row in Findexer.select().where(
-            Findexer.hap != '0')}
+        supported_list = ['hap', 'laundry', 'collected_rent']
+        rents = []
+        for name in supported_list:
+            if name == 'collected_rent':
+                for month in closed_month_list:
+                    rent_collected = self.gc.broad_get(self.service, self.full_sheet, f'{month}!K69') 
+                    rents.append(RecordItem(account=name, month=month, amount=rent_collected[0][0]))
+            if name == 'hap':
+                hap_db = [RecordItem(account=name, month=row.period, amount=float(row.hap)) for row in Findexer.select().
+                                                    where(attrgetter(name)(Findexer) != '0')]
+            
+                result = self.compare(name=name, qb_side_iter=hap_qb, db_side_iter=hap_db)
+                
+            if name == 'laundry':
+                # do func sum here
+                laundry_db = [RecordItem(account=name, month=dt.strftime(row.date_posted, '%Y-%m'), amount=float(row.amount)) for row in NTPayment.select(
+                        fn.SUM(NTPayment.amount), NTPayment.date_posted).
+                        group_by(fn.strftime('%Y-%m', NTPayment.date_posted)).
+                        where(attrgetter('payee')(NTPayment) == 'laundry')]
+                        
+                
         breakpoint()
-
-        # laundry = self.qb_extract_pl_line(
-        #     keyword=self.laundry_code, path=path_to_pl)
-
+        self.to_stdout(list_of_dicts1=[result])
         # for month in closed_month_list:
         #     for date, hap_amount in hap.items():
         #         if month == date:
         #             hap_db = IncomeMonth(
         #                 year=Config.current_year, month=month, hap=hap_amount)
 
-
-    def qb_extract_pl_line(self, df=None, keyword=None):
+    def compare(self, name=None, qb_side_iter=None, db_side_iter=None):
+        try:
+            assert qb_side_iter == db_side_iter
+        except AssertionError as e:
+            print('iters did not equate')
+            return False
+        return True
+    
+    def to_stdout(self, list_of_dicts1=None):
+        print('\n')
+        # for thang in list_of_dicts1:
+        #     for name, bol in thang.items():
+        #         print(name, 'reconciled:', bol)
+            
+    def qb_extract_pl_line(self, name=None, df=None, keyword=None):
         '''limits: cells with formulas will not be extracted properly; however, the workaround is to put an x in a cell and save and close.  we need a no-touch way to do this'''
 
+        extract = df.loc[df['Fall Creek Village I'].str.contains(keyword, na=False)]
+        try:
+            extract = [item for item in list(
+                    extract.values[0]) if type(item) != str]
+        except IndexError as e:
+            print(f'{e}, no info found for account: {name}')
+            return []
+
         date_extract = df.iloc[3]
-        extract = df.loc[df['Fall Creek Village I'].str.contains(keyword,
-                                                                 na=False
-                                                                 )]
-        extract = [item for item in list(extract.values[0]) if type(item) != str]
-        date_extract = [item for item in date_extract.to_list() if isinstance(item, str) == True]
-        date_extract = [Utils.helper_fix_date_str4(item) for item in date_extract if item != '0']
-        
-        return dict(zip(date_extract, extract))
+        extract = [item for item in extract if item != 'Total']
+        date_extract = [item for item in date_extract.to_list()
+                        if isinstance(item, str) == True]
+        date_extract = [Utils.helper_fix_date_str4(
+            item) for item in date_extract if item != '0']
+        date_extract = [item for item in date_extract if item != 'Total']
+        group = dict(zip(date_extract, extract))
+        report_item = [ReportItem(account=name, month=date, amount=str(amount)) for date, amount in group.items()]
+        return report_item
 
     def qbo_cleanup_line(self, path=None, dirty_list=None):
 
@@ -262,7 +314,6 @@ class AnnFin:
         target_sheet = min(target_sheet)
         print(target_sheet)
 
- 
     '''
 
     def prep_trial_balance_dataframe(self, path=None, year=None):
@@ -389,8 +440,6 @@ class AnnFin:
 
         # self.add_xlsxwriter_formatting(output_path=self.output_path)
     '''
-
-
 
     '''
     sh_col = Liltilities.get_letter_by_choice(int(month_choice), 0)

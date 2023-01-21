@@ -49,7 +49,7 @@ class Figuration:
             self.ms = MonthSheet(full_sheet=self.full_sheet, path=self.path)
 
     def annfin_test_configuration(self):
-        return Config.TEST_ANNFIN_PATH, Config.TEST_ANNFIN_OUTPUT, Config.TEST_DB
+        return Config.TEST_ANNFIN_PATH, Config.TEST_ANNFIN_OUTPUT, Config.TEST_DB, self.service, self.full_sheet
 
     def return_configuration(self):
         return self.path, self.full_sheet, self.build, self.service, self.ms
