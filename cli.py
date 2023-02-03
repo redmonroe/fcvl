@@ -101,6 +101,26 @@ def write(production=False):
         figure = Figuration()
         path, full_sheet, build, service, ms = figure.return_configuration()
         ms.auto_control(source='cli.py', mode='clean_build')
+        
+@click.command()
+@click.option('-p', '--production',
+              default=False, help='reset db?')
+def close_sheet(production=False):
+    if production:
+        click.echo('PRODUCTION: close_sheet')
+        figure = Figuration(mode='production')
+        print('no production branch of close_sheet')
+        # path, full_sheet, build, service, ms = figure.return_configuration()
+    else:
+        click.echo('TEST: close_sheet')
+        figure = Figuration()
+        path, full_sheet, build, service, ms = figure.return_configuration()
+        ms.close_one_month(service, full_sheet, db=build)
+        # pick a sheet
+        # get it in a dataframe
+        
+        
+        # ms.auto_control(source='cli.py', mode='clean_build')
 
 
 @click.command()
@@ -329,6 +349,7 @@ cli.add_command(status_findexer_test)
 cli.add_command(where_are_we)
 cli.add_command(reset_db)
 cli.add_command(write)
+cli.add_command(close_sheet)
 cli.add_command(load_db)
 cli.add_command(delete_one_sheet)
 cli.add_command(make_one_sheet)

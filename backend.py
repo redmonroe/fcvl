@@ -358,6 +358,21 @@ class WorkOrder(BaseModel):
     date_completed = DateField(null=True)
     assigned_to = CharField(default='ron/bob')
 
+class FinalMonth(BaseModel):
+    month = DateField(null=True)
+    unit = CharField()
+    name = CharField()
+    notes = CharField()
+    start_bal = CharField()
+    c_rent = CharField()
+    subsidy = CharField()
+    hap_received = CharField()
+    t_rent = CharField()
+    ch_type = CharField()
+    ch_amount = CharField()
+    payment = CharField()
+    end_bal = CharField()
+
 
 class QueryHC(Reconciler):
 
@@ -382,7 +397,9 @@ class QueryHC(Reconciler):
                 ScrapeDetail,
                 MoveIn,
                 MoveOut,
-                WorkOrder]
+                WorkOrder, 
+                FinalMonth
+                ]
 
     def get_start_tenants(self, date):
         return [(name.tenant_name, name.unit_name,

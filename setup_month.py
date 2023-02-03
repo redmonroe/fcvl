@@ -8,7 +8,7 @@ from peewee import JOIN, fn
 from auth_work import oauth
 from backend import (Damages, Findexer, NTPayment, OpCash, OpCashDetail,
                      Payment, PopulateTable, QueryHC, StatusObject, StatusRS,
-                     Tenant, TenantRent, Unit, UrQuery, db)
+                     Tenant, TenantRent, Unit, UrQuery, db, FinalMonth)
 from config import Config
 from db_utils import DBUtils
 from errors import Errors
@@ -27,7 +27,7 @@ class MonthSheet(YearSheet):
     wrange_ntp = '!K71:K71'
     wrange_sum_mi_payments = '!K76:K76'
 
-    def __init__(self, full_sheet, path, mode=None, test_service=None):
+    def __init__(self, full_sheet, path, mode=None, test_service=None, db=None):
         self.full_sheet = full_sheet
         self.file_input_path = path
         if mode == 'testing':
@@ -47,6 +47,7 @@ class MonthSheet(YearSheet):
         self.charge_month = '!H2:H68'
         self.pay_month = '!K2:K68'
         self.dam_month = '!J2:J68'
+        self.db = db
 
     def auto_control(self, source=None, mode='clean_build', month_list=None):
 
@@ -520,7 +521,40 @@ class MonthSheet(YearSheet):
         titles_dict = {name: id2 for name,
                        id2 in titles_dict.items() if name != 'intake'}
         path = Utils.show_files_as_choices(titles_dict, interactive=True)
-        gc = GoogleApiCalls()
         for name, id2 in titles_dict.items():
             if path[0] == name:
                 gc.del_one_sheet(args[0], args[1], id2)
+                
+    def close_one_month(self, *args, **kwargs):
+        gc = GoogleApiCalls()
+        titles_dict = Utils.get_existing_sheets(args[0], args[1])
+        titles_dict = {name: id2 for name,
+                       id2 in titles_dict.items() if name != 'intake'}
+        path = Utils.show_files_as_choices(titles_dict, interactive=True)
+        values = gc.broad_get(service=self.service, spreadsheet_id=args[1], range=f'{path[0]}!A2:L68')
+        months = [path[0] for n in enumerate(values)]
+        
+        
+        # convert month list to date 
+        # insert months to df as a column
+        df = pd.DataFrame(values, columns=['unit', 
+                                           'name', 
+                                           'notes', 
+                                           'start_bal', 
+                                           'c_rent', 
+                                           'subsidy', 
+                                           'hap_received', 
+                                           't_rent', 
+                                           'ch_type', 
+                                           'ch_amount', 
+                                           'payment', 
+                                           'end_bal', 
+                                           ])
+        df = df.to_dict('records')
+        breakpoint()
+        db.drop_tables([FinalMonth])
+        db.create_tables([FinalMonth])
+        FinalMonth.insert_many(df).execute()
+        # df = pd.read_csv(url, sheet_name=sheet_name)
+
+

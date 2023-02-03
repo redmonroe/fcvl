@@ -3,7 +3,6 @@ from dataclasses import dataclass
 from datetime import datetime as dt
 from operator import attrgetter
 
-import numpy as np
 import pandas as pd
 import requests
 
@@ -24,32 +23,40 @@ class RecordItem:
     month: str = 'empty'
     amount: str = 'empty'
 
-@dataclass(frozen=True, eq=True)
+
+@dataclass(frozen=True, eq=True, order=True)
 class ReconcileItem:
     account: str = 'empty'
     month: str = 'empty'
     amount: str = 'empty'
     discrepancy: str = 'empty'
     reconciled: bool = False
-    
-
 
     def reconcile_hap(self, qb_side_iter=None, db_side_iter=None):
-        matches = [ReconcileItem(account=report.account, 
-                                 month=report.month, 
-                                 amount=report.amount, 
-                                 discrepancy=str(0), 
+        qb_side_iter = [RecordItem(account='laundry', month='2022-01', amount=501.71), RecordItem(account='laundry', month='2022-02', amount='0')]
+        db_side_iter = [RecordItem(account='laundry', month='2022-01', amount=501.71), RecordItem(account='laundry', month='2022-02', amount=26.3),]
+        
+        matches = [ReconcileItem(account=report.account,
+                                 month=report.month,
+                                 amount=str(report.amount),
+                                 discrepancy=str(0),
                                  reconciled=True) for report in set(qb_side_iter) & set(db_side_iter)]
         
-        # TODO: I WANT DISCREPANCY TO SHOW UP HERE
-        differences = list(set([ReconcileItem(account=report.account, 
-                                     month=report.month, 
-                                     amount='0', 
-                                     discrepancy=str(abs(float(report.amount) - float(record.amount))), 
-                                     reconciled=False) 
-                                     for report, record in zip(set(qb_side_iter) ^ set(db_side_iter), qb_side_iter)]))
+        differences = set(qb_side_iter) - set(db_side_iter)
         
+        
+
+        # differences = list(set([ReconcileItem(account=report.account,
+        #                                       month=report.month,
+        #                                       amount='0',
+        #                                       discrepancy=str(
+        #                                           round(abs(float(report.amount) - float(record.amount)), 2)),
+        #                                       reconciled=False)
+        #                         for report, record in zip(db_side_iter, qb_side_iter)]))
+        # differences = [record for record in differences if record.discrepancy != '0.0']
+        breakpoint()
         return matches + differences
+
 
 class AnnFin:
 
@@ -166,9 +173,9 @@ class AnnFin:
 
             if name == 'laundry':
                 laundry_db = [RecordItem(account=name, month=dt.strftime(row.date_posted, '%Y-%m'), amount=float(row.amount)) for row in NTPayment.select(
-                        fn.SUM(NTPayment.amount), NTPayment.date_posted).
-                        group_by(fn.strftime('%Y-%m', NTPayment.date_posted)).
-                        where(attrgetter('payee')(NTPayment) == 'laundry')]
+                    fn.SUM(NTPayment.amount), NTPayment.date_posted).
+                    group_by(fn.strftime('%Y-%m', NTPayment.date_posted)).
+                    where(attrgetter('payee')(NTPayment) == 'laundry')]
                 results.append((name, self.reconciler.reconcile_hap(
                     qb_side_iter=laundry_qb, db_side_iter=laundry_db)))
 
@@ -185,15 +192,14 @@ class AnnFin:
 
     def to_stdout(self,  list_of_tup=None):
         print('\n')
-        for item in list_of_tup: 
-            print(f'{item[0]} month reconciled discrepancy')
-            for reconciled in item[1]:
-                print('\t', reconciled.month, reconciled.reconciled, reconciled.discrepancy)
-                print('\n'.join([''.join(['{:9}'.format(x) for x in r]) for r in table]))
-            # breakpoint()
-        # for thang in list_of_dicts1:
-        #     for name, bol in thang.items():
-        #         print(name, 'reconciled:', bol)
+        for item in list_of_tup:
+            print(f'{item[0]}')
+            print('month:     ',  f'\n'.join(
+                [''.join(['{:9}'.format(str(reconciled.month)) for reconciled in sorted(item[1])])]))
+            print('reconciled?:',f'\n'.join(
+                [''.join(['{:9}'.format(str(reconciled.reconciled)) for reconciled in sorted(item[1])])]))
+            print('discrepancy?:',f'\n'.join(
+                [''.join(['{:8}'.format(str(reconciled.discrepancy)) for reconciled in sorted(item[1])])]))
 
     def qb_extract_pl_line(self, name=None, df=None, keyword=None):
         '''limits: cells with formulas will not be extracted properly;

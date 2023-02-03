@@ -25,7 +25,7 @@ class StructDataExtract:
     @staticmethod
     def merchants_pdf_extract(output_path=None):
         dir1 = Config.TEST_FCVL_BASE
-        rel_path = 'escrow/escrow_history_05_2022.pdf'
+        rel_path = 'escrow_22/escrow_history_2022.pdf'
         abs_file_path = os.path.join(dir1, rel_path)
 
         with open(abs_file_path, "rb") as f:
@@ -37,7 +37,7 @@ class StructDataExtract:
 
         report_dict = {
             'Insurance': 'Ending',
-            'MIP': 'Replacement',
+            # 'MIP': 'Replacement',
             'Replacement': None,
         }
 
@@ -55,6 +55,7 @@ class StructDataExtract:
 
         start_index = [count for (count, line)
                        in index if start_string in line]
+        breakpoint()
         start_index = start_index[start_idx] + 1
         if end_string != None:
             end_index = [count for (count, line)
@@ -83,6 +84,7 @@ class StructDataExtract:
         start_balance = [float(item) for item in start_balance]
 
         start_row = [str(0) for item in range(6)]
+        breakpoint()
         start_row[5] = start_balance.pop()
 
         start_transform = [0 for item in insurance_lines]
