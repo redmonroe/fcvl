@@ -116,11 +116,6 @@ def close_sheet(production=False):
         figure = Figuration()
         path, full_sheet, build, service, ms = figure.return_configuration()
         ms.close_one_month(service, full_sheet, db=build)
-        # pick a sheet
-        # get it in a dataframe
-        
-        
-        # ms.auto_control(source='cli.py', mode='clean_build')
 
 
 @click.command()

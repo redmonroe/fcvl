@@ -532,11 +532,7 @@ class MonthSheet(YearSheet):
                        id2 in titles_dict.items() if name != 'intake'}
         path = Utils.show_files_as_choices(titles_dict, interactive=True)
         values = gc.broad_get(service=self.service, spreadsheet_id=args[1], range=f'{path[0]}!A2:L68')
-        months = [path[0] for n in enumerate(values)]
-        
-        
-        # convert month list to date 
-        # insert months to df as a column
+        months = [dt.strptime(path[0], '%Y-%m') for n in enumerate(values)]
         df = pd.DataFrame(values, columns=['unit', 
                                            'name', 
                                            'notes', 
@@ -550,11 +546,10 @@ class MonthSheet(YearSheet):
                                            'payment', 
                                            'end_bal', 
                                            ])
+        df['month'] = months
         df = df.to_dict('records')
-        breakpoint()
         db.drop_tables([FinalMonth])
         db.create_tables([FinalMonth])
         FinalMonth.insert_many(df).execute()
-        # df = pd.read_csv(url, sheet_name=sheet_name)
 
 
