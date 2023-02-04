@@ -820,16 +820,22 @@ class QueryHC(Reconciler):
 class Position(QueryHC):
     name: str = 'empty'
     unit: str = 'empty'
+    date: str = 'empty'
+    start_bal: str = '0'
+    t_rent: str = '0'
+    ch_amount: str = '0'
+    payment:str = '0'
+    end_bal: str = '0'
+    '''
     alltime_beg:  float = 0.0 
     lp_endbal: float = 0.0 
     payment_total: float = 0.0 
     charges_total: float = 0.0 
     damages_total: float = 0.0 
-    end_bal: float = 0.0 
-    start_date: float = 0.0 
     end_date: float = 0.0 
     subsidy: float = 0.0 
     contract_rent: float = 0.0
+    '''
     
     @staticmethod
     def wrap_position_list(lookback=None):
@@ -846,32 +852,25 @@ class Position(QueryHC):
         
         df = df.sort_values(['name', 'month'])
         
-        breakpoint()
-        '''
-        _, _, tenants = self.get_rent_roll_by_month_at_first_of_month(self, 
-            first_dt=first_dt, last_dt=last_dt)
         positions = []
-        for tenant_id in tenants:
-            record = self.all_available_by_fk_by_period(self, target=tenant_id, first_dt=first_dt, last_dt=last_dt)
-            if record != []:
-                position = Position(name=record[0].tenant_name, 
-                                unit=record[0].unit, 
-                                alltime_beg=record[0].beg_bal_amount,
-                                lp_endbal=record[0].lp_endbal,
-                                payment_total=record[0].payments,
-                                charges_total=record[0].rent_amount,
-                                damages_total=record[0].damages,
-                                start_date=first_dt, 
-                                end_date=last_dt, 
-                                contract_rent=float(record[0].sub_amount),
-                                subsidy=float(record[0].subsidy),
+        for row in df.to_dict('records'):
+            position = Position(name=row['name'],
+                                unit=row['unit'],
+                                date=row['month'],
+                                start_bal=row['start_bal'],
+                                t_rent=row['t_rent'],
+                                ch_amount=row['ch_amount'],
+                                payment=row['payment'],
+                                end_bal=row['end_bal'],
                                 )
+            positions.append(position)
+            
+        
+        breakpoint()
                 
-                positions.append(position)
         
         return positions
 
-        '''
 @dataclass
 class PositionList:
     
