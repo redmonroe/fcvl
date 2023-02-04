@@ -580,6 +580,7 @@ class DocxWriter(Letters):
             lb_tup = ('2022-01', '2022-06')
             positions = Position()
             post_list = positions.create_list(lookback=lb_tup)        
+            # post_list = positions.adjust_signs_for_public(positions=post_list)
             tenant_balances = positions.group_by_tenant_name(positions=post_list)
             
         parameters = {'current_date': datetime.now().strftime('%m-%d-%Y')}
@@ -592,6 +593,8 @@ class DocxWriter(Letters):
         save_name = 'tenantbals_' + parameters['current_date'] + '.docx'
         save_path = self.tenbal_save_path / Path(save_name)
         document.save(save_path)
+        print(f'look for output in {save_path}')
+
         return document, save_path
 
     def format_balance_letters(self, document=None, parameters=None, records=None):
@@ -599,7 +602,7 @@ class DocxWriter(Letters):
         # need to switch signs or use 'credit' language
         # addresses
         # add boiler plate
-        
+        # read doc from command line
         
         
         for record in records:

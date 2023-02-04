@@ -844,11 +844,11 @@ class Position(QueryHC):
             position = Position(name=row['name'],
                                 unit=row['unit'],
                                 date=datetime.strftime(row['month'], '%Y-%m'),
-                                start_bal=row['start_bal'],
+                                start_bal=str(float(row['start_bal']) * -1),
                                 t_rent=row['t_rent'],
                                 ch_amount=row['ch_amount'],
                                 payment=row['payment'],
-                                end_bal=row['end_bal'],
+                                end_bal=str(float(row['end_bal']) * -1),
                                 )
             positions.append(position)
         return positions
@@ -868,6 +868,12 @@ class Position(QueryHC):
                 seen.append(item[0])
                 
         return bal_letter_list_by_tenant
+    
+    # def adjust_signs_for_public(self, positions=None):
+    #     for p in positions:
+    #         p.start_bal = str(float(p.start_bal) * -1)
+    #         p.end_bal = str(float(p.end_bal) * -1)
+    #     return positions
 
 
 class UrQuery(QueryHC):
