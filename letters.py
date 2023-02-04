@@ -390,6 +390,7 @@ class DocxWriter(Letters):
     testing_save_name = 'testing.docx'
     workorders_save_name = 'workorders.docx'
     workorders_save_path = Config.WORKORDER_OUTPUT
+    tenbal_save_path = Config.TENBAL_OUTPUT
 
     def __init__(self, db=None, service=None):
         self.main_db = db
@@ -574,12 +575,104 @@ class DocxWriter(Letters):
     
     def export_history_to_docx(self, lookback=None):
         print('export balance history to docx')
-        from backend import PositionList
+        from backend import Position
         if lookback == 'testing_lookback':
             lb_tup = ('2022-01', '2022-06')
-            position_list = PositionList(lookback=lb_tup)
-        breakpoint()
-        print(position_list.month_list[0])
-    
+            positions = Position()
+            post_list = positions.create_list(lookback=lb_tup)        
+            tenant_balances = positions.group_by_tenant_name(positions=post_list)
+            
+        parameters = {'current_date': datetime.now().strftime('%m-%d-%Y')}
+        document = Document()
+        records = []
+        for tb in tenant_balances:
+            records.append(tb)
+        document = self.format_balance_letters(
+            document=document, parameters=parameters, records=records)
+        save_name = 'tenantbals_' + parameters['current_date'] + '.docx'
+        save_path = self.tenbal_save_path / Path(save_name)
+        document.save(save_path)
+        return document, save_path
+
+    def format_balance_letters(self, document=None, parameters=None, records=None):
+        
+        # need to switch signs or use 'credit' language
+        # addresses
+        # add boiler plate
+        
+        
+        
+        for record in records:
+            self.insert_header(document)
+            paragraph = document.add_paragraph(' ', style='No Spacing')
+            paragraph = document.add_paragraph(
+                f'Tenant Name: {record[0]}', style='No Spacing')
+            print(record[0])
+            
+            if records[0][0] == record[0]:
+                print(record[0], records[0][0])
+            else:
+                print(record[0], current_record)
+            table = document.add_table(1, 6)
+            table.style = 'TableGrid'
+
+            heading_cells = table.rows[0].cells
+            heading_cells[0].text = 'Date'
+            heading_cells[1].text = 'Start'
+            heading_cells[2].text = 'Rent'
+            heading_cells[3].text = 'Other Charges'
+            heading_cells[4].text = 'Payment'
+            heading_cells[5].text = 'Ending'
+            
+            for item in record[1]:
+                print(item.date, item.start_bal, item.t_rent, item.ch_amount, item.payment, item.end_bal)
+                cells = table.add_row().cells
+                cells[0].text = item.date
+                cells[1].text = item.start_bal
+                cells[2].text = item.t_rent
+                cells[3].text = item.ch_amount
+                cells[4].text = item.payment
+                cells[5].text = item.end_bal
+            
+            current_record = item.name
+            paragraph = document.add_paragraph(
+                'Generated: ' + parameters['current_date'], style='No Spacing')
+            document.add_page_break()
+            
+            '''
+            paragraph = document.add_paragraph(
+                f'Date: {record[0]}', style='No Spacing')
+            paragraph = document.add_paragraph(' ', style='No Spacing')
+            paragraph = document.add_paragraph(
+                f'Location: {record[2]}', style='No Spacing')
+            paragraph = document.add_paragraph(
+                f'Work Requested: {record[3]}', style='No Spacing')
+            paragraph = document.add_paragraph(' ', style='No Spacing')
+            paragraph = document.add_paragraph(' ', style='No Spacing')
+            paragraph = document.add_paragraph(
+                f'Work Status: {record[5]}', style='No Spacing')
+            paragraph = document.add_paragraph(' ', style='No Spacing')
+            paragraph = document.add_paragraph(
+                f'Notes: {record[4]}', style='No Spacing')
+            paragraph = document.add_paragraph(
+                f'Assigned to/Completed by: {record[7]}', style='No Spacing')
+            paragraph = document.add_paragraph(' ', style='No Spacing')
+            paragraph = document.add_paragraph(' ', style='No Spacing')
+            paragraph = document.add_paragraph(' ', style='No Spacing')
+            paragraph = document.add_paragraph(' ', style='No Spacing')
+            paragraph = document.add_paragraph(' ', style='No Spacing')
+            paragraph = document.add_paragraph(' ', style='No Spacing')
+            paragraph = document.add_paragraph(' ', style='No Spacing')
+            paragraph = document.add_paragraph(
+                f'Date Completed: {record[6]}', style='No Spacing')
+            paragraph = document.add_paragraph(
+                'Verified by: JW', style='No Spacing')
+            paragraph = document.add_picture(
+                Config.image_path, width=Inches(.75), height=Inches(.5))
+            paragraph = document.add_paragraph(
+                '_______________________________', style='No Spacing')
+
+            '''
+        return document
     
 

@@ -180,6 +180,8 @@ def balanceletters():
     path, full_sheet, build, service, ms = figure.return_configuration()
     docx = DocxWriter(db=build.main_db, service=service)
     docx.export_history_to_docx(lookback='testing_lookback')
+    
+    # in addition to lookback, maybe make a threshold function ie if endbal > 100
 
 
 @click.command()

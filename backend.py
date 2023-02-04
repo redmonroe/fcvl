@@ -358,6 +358,7 @@ class WorkOrder(BaseModel):
     date_completed = DateField(null=True)
     assigned_to = CharField(default='ron/bob')
 
+
 class FinalMonth(BaseModel):
     month = DateField(null=True)
     unit = CharField()
@@ -372,7 +373,8 @@ class FinalMonth(BaseModel):
     ch_amount = CharField()
     payment = CharField()
     end_bal = CharField()
-    
+
+
 class FinalMonthLog(BaseModel):
     month = DateField(null=True)
 
@@ -400,8 +402,8 @@ class QueryHC(Reconciler):
                 ScrapeDetail,
                 MoveIn,
                 MoveOut,
-                WorkOrder, 
-                FinalMonth, 
+                WorkOrder,
+                FinalMonth,
                 FinalMonthLog
                 ]
 
@@ -474,7 +476,7 @@ class QueryHC(Reconciler):
 
         return tenants_mi_on_or_before_first, vacants, tenants
 
-    def  get_beg_bal_by_tenant(self):
+    def get_beg_bal_by_tenant(self):
         return [(row.tenant_name, float(row.beg_bal_amount)) for row in Tenant.
                 select(Tenant.tenant_name, Tenant.beg_bal_amount).
                 namedtuples()]
@@ -505,7 +507,7 @@ class QueryHC(Reconciler):
         recs = [(row.mi_date, row.name) for row in MoveIn.select().where(MoveIn.mi_date >= first_dt).
                 where(MoveIn.mi_date <= last_dt).namedtuples()]
         return recs
-    
+
     def get_move_ins_by_period_less_first_day(self, first_dt=None, last_dt=None):
         recs = [(row.mi_date, row.name) for row in MoveIn.select().where(MoveIn.mi_date > first_dt).
                 where(MoveIn.mi_date <= last_dt).namedtuples()]
@@ -700,7 +702,7 @@ class QueryHC(Reconciler):
 
         rr, vacants, tenants = self.get_rent_roll_by_month_at_first_of_month(
             first_dt=first_dt, last_dt=last_dt)
-        
+
         position_list1 = [Position(
             name=item[0], start_date=first_dt, end_date=last_dt, unit=item[1]) for item in rr]
 
@@ -768,7 +770,7 @@ class QueryHC(Reconciler):
 
         rr, vacants, tenants = self.get_rent_roll_by_month_at_first_of_month(
             first_dt=first_dt, last_dt=last_dt)
-        
+
         position_list1 = [Position(
             name=item[0], start_date=first_dt, end_date=last_dt, unit=item[1]) for item in rr]
 
@@ -814,9 +816,8 @@ class QueryHC(Reconciler):
 
         return position_list1, cumsum
 
-  
 
-@dataclass
+@dataclass(frozen=True)
 class Position(QueryHC):
     name: str = 'empty'
     unit: str = 'empty'
@@ -824,39 +825,25 @@ class Position(QueryHC):
     start_bal: str = '0'
     t_rent: str = '0'
     ch_amount: str = '0'
-    payment:str = '0'
+    payment: str = '0'
     end_bal: str = '0'
-    '''
-    alltime_beg:  float = 0.0 
-    lp_endbal: float = 0.0 
-    payment_total: float = 0.0 
-    charges_total: float = 0.0 
-    damages_total: float = 0.0 
-    end_date: float = 0.0 
-    subsidy: float = 0.0 
-    contract_rent: float = 0.0
-    '''
-    
-    @staticmethod
-    def wrap_position_list(lookback=None):
-        return Position.create_position_list(Position, lookback=lookback)
 
-    def create_position_list(self, lookback=None):
-        first_dt, _ = self.make_first_and_last_dates(self, date_str=lookback[0])
-        _ , last_dt = self.make_first_and_last_dates(self, date_str=lookback[1])
+    def create_list(self, lookback=None):
+        first_dt, _ = self.make_first_and_last_dates(date_str=lookback[0])
+        _, last_dt = self.make_first_and_last_dates(date_str=lookback[1])
 
         df = pd.DataFrame([row for row in FinalMonth.select().
-                    where(FinalMonth.month >= first_dt).
-                    where(FinalMonth.month <= last_dt).namedtuples()
-                    ])
-        
+                           where(FinalMonth.month >= first_dt).
+                           where(FinalMonth.month <= last_dt).namedtuples()
+                           ])
+
         df = df.sort_values(['name', 'month'])
-        
+
         positions = []
         for row in df.to_dict('records'):
             position = Position(name=row['name'],
                                 unit=row['unit'],
-                                date=row['month'],
+                                date=datetime.strftime(row['month'], '%Y-%m'),
                                 start_bal=row['start_bal'],
                                 t_rent=row['t_rent'],
                                 ch_amount=row['ch_amount'],
@@ -864,21 +851,24 @@ class Position(QueryHC):
                                 end_bal=row['end_bal'],
                                 )
             positions.append(position)
-            
-        
-        breakpoint()
-                
-        
         return positions
 
-@dataclass
-class PositionList:
-    
-    def __init__(self, lookback=None):  
-        from typing import List
-        self.lookback = lookback
-        month_list: List[Position] = field(default_factory=Position.wrap_position_list(lookback=self.lookback))
-    
+    def group_by_tenant_name(self, positions=None):
+        temp_bal_letter_list_by_tenant = []
+        bal_letter_list_by_tenant = []
+        for row in positions:
+            target_name = row.name
+            temp_bal_letter_list_by_tenant.append(
+                (row.name, [row for row in positions if row.name == target_name]))
+            
+        seen = []
+        for item in temp_bal_letter_list_by_tenant:
+            if item[0] not in seen:
+                bal_letter_list_by_tenant.append(item)
+                seen.append(item[0])
+                
+        return bal_letter_list_by_tenant
+
 
 class UrQuery(QueryHC):
 
