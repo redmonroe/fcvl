@@ -8,7 +8,7 @@ from peewee import JOIN, fn
 from auth_work import oauth
 from backend import (Damages, Findexer, NTPayment, OpCash, OpCashDetail,
                      Payment, PopulateTable, QueryHC, StatusObject, StatusRS,
-                     Tenant, TenantRent, Unit, UrQuery, db, FinalMonth)
+                     Tenant, TenantRent, Unit, UrQuery, db, FinalMonth, FinalMonthLog)
 from config import Config
 from db_utils import DBUtils
 from errors import Errors
@@ -527,12 +527,19 @@ class MonthSheet(YearSheet):
                 
     def close_one_month(self, *args, **kwargs):
         gc = GoogleApiCalls()
-        titles_dict = Utils.get_existing_sheets(args[0], args[1])
         titles_dict = {name: id2 for name,
-                       id2 in titles_dict.items() if name != 'intake'}
-        path = Utils.show_files_as_choices(titles_dict, interactive=True)
-        values = gc.broad_get(service=self.service, spreadsheet_id=args[1], range=f'{path[0]}!A2:L68')
-        months = [dt.strptime(path[0], '%Y-%m') for n in enumerate(values)]
+                       id2 in Utils.get_existing_sheets(args[0], args[1]).items() if name != 'intake'}
+        
+        closed_dates = [date.month for date in FinalMonthLog.select()]
+        for dates in closed_dates:
+            closed_titles = titles_dict.pop(dates)
+        
+        path = Utils.show_files_as_choices(titles_dict, 
+                                           interactive=True, 
+                                           start=len(closed_dates)+1)
+        values = gc.broad_get(service=self.service, 
+                              spreadsheet_id=args[1], 
+                              range=f'{path[0]}!A2:L68')
         df = pd.DataFrame(values, columns=['unit', 
                                            'name', 
                                            'notes', 
@@ -546,10 +553,12 @@ class MonthSheet(YearSheet):
                                            'payment', 
                                            'end_bal', 
                                            ])
-        df['month'] = months
+        df['month'] = [dt.strptime(path[0], '%Y-%m') for n in enumerate(values)]
         df = df.to_dict('records')
-        db.drop_tables([FinalMonth])
-        db.create_tables([FinalMonth])
+      
+        db.create_tables([FinalMonth, FinalMonthLog])
         FinalMonth.insert_many(df).execute()
+        fml = FinalMonthLog(month=path[0])
+        fml.save()
 
 

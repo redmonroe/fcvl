@@ -116,6 +116,11 @@ def close_sheet(production=False):
         figure = Figuration()
         path, full_sheet, build, service, ms = figure.return_configuration()
         ms.close_one_month(service, full_sheet, db=build)
+        
+        # implement a drop functionality 
+        # db.drop_tables([FinalMonth])
+        
+        # implement a way to finalize a series of months
 
 
 @click.command()

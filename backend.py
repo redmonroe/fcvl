@@ -372,6 +372,9 @@ class FinalMonth(BaseModel):
     ch_amount = CharField()
     payment = CharField()
     end_bal = CharField()
+    
+class FinalMonthLog(BaseModel):
+    month = DateField(null=True)
 
 
 class QueryHC(Reconciler):
@@ -398,7 +401,8 @@ class QueryHC(Reconciler):
                 MoveIn,
                 MoveOut,
                 WorkOrder, 
-                FinalMonth
+                FinalMonth, 
+                FinalMonthLog
                 ]
 
     def get_start_tenants(self, date):
