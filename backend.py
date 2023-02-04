@@ -832,8 +832,20 @@ class Position(QueryHC):
         return Position.create_position_list(Position)
 
     def create_position_list(self):
-        date = '2022-12'
+        date = '2022-01'
+        
+        
+        # set look back here; this will be used to select months
+        # in close month, remove any closed months from ui list
+
         first_dt, last_dt = self.make_first_and_last_dates(self, date_str=date)
+        all_rows = [row for row in FinalMonth.select()
+                    # where(FinalMonth.month >= first_dt).
+                    # where(FinalMonth.month <= last_dt).namedtuples()
+                    ]
+        breakpoint()
+        
+        '''
         _, _, tenants = self.get_rent_roll_by_month_at_first_of_month(self, 
             first_dt=first_dt, last_dt=last_dt)
         positions = []
@@ -857,6 +869,7 @@ class Position(QueryHC):
         
         return positions
 
+        '''
 @dataclass
 class PositionList:
     from typing import List
