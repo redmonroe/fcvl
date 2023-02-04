@@ -179,7 +179,7 @@ def balanceletters():
     figure = Figuration()
     path, full_sheet, build, service, ms = figure.return_configuration()
     docx = DocxWriter(db=build.main_db, service=service)
-    docx.export_history_to_docx()
+    docx.export_history_to_docx(lookback='testing_lookback')
 
 
 @click.command()

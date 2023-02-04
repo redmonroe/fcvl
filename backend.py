@@ -832,23 +832,19 @@ class Position(QueryHC):
     contract_rent: float = 0.0
     
     @staticmethod
-    def wrap_position_list():
-        return Position.create_position_list(Position)
+    def wrap_position_list(lookback=None):
+        return Position.create_position_list(Position, lookback=lookback)
 
-    def create_position_list(self):
-        date = '2022-01'
-        
-        
-        # set look back here; this will be used to select months
-        # in close month, remove any closed months from ui list
+    def create_position_list(self, lookback=None):
+        first_dt, _ = self.make_first_and_last_dates(self, date_str=lookback[0])
+        _ , last_dt = self.make_first_and_last_dates(self, date_str=lookback[1])
 
-        first_dt, last_dt = self.make_first_and_last_dates(self, date_str=date)
-        all_rows = [row for row in FinalMonth.select()
-                    # where(FinalMonth.month >= first_dt).
-                    # where(FinalMonth.month <= last_dt).namedtuples()
+        all_rows = [row for row in FinalMonth.select().
+                    where(FinalMonth.month >= first_dt).
+                    where(FinalMonth.month <= last_dt).namedtuples()
                     ]
-        breakpoint()
         
+        breakpoint()
         '''
         _, _, tenants = self.get_rent_roll_by_month_at_first_of_month(self, 
             first_dt=first_dt, last_dt=last_dt)
@@ -876,9 +872,11 @@ class Position(QueryHC):
         '''
 @dataclass
 class PositionList:
-    from typing import List
     
-    month_list: List[Position] = field(default_factory=Position.wrap_position_list)
+    def __init__(self, lookback=None):  
+        from typing import List
+        self.lookback = lookback
+        month_list: List[Position] = field(default_factory=Position.wrap_position_list(lookback=self.lookback))
     
 
 class UrQuery(QueryHC):

@@ -572,10 +572,12 @@ class DocxWriter(Letters):
 
         return document, save_path, sum_for_test
     
-    def export_history_to_docx(self):
+    def export_history_to_docx(self, lookback=None):
         print('export balance history to docx')
         from backend import PositionList
-        position_list = PositionList()
+        if lookback == 'testing_lookback':
+            lb_tup = ('2022-01', '2022-06')
+            position_list = PositionList(lookback=lb_tup)
         breakpoint()
         print(position_list.month_list[0])
     
