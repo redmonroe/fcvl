@@ -839,10 +839,12 @@ class Position(QueryHC):
         first_dt, _ = self.make_first_and_last_dates(self, date_str=lookback[0])
         _ , last_dt = self.make_first_and_last_dates(self, date_str=lookback[1])
 
-        all_rows = [row for row in FinalMonth.select().
+        df = pd.DataFrame([row for row in FinalMonth.select().
                     where(FinalMonth.month >= first_dt).
                     where(FinalMonth.month <= last_dt).namedtuples()
-                    ]
+                    ])
+        
+        df = df.sort_values(['name', 'month'])
         
         breakpoint()
         '''
