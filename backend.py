@@ -870,15 +870,9 @@ class Position(QueryHC):
         if threshold:
             threshold_list = []
             for name in bal_letter_list_by_tenant:
-                threshold = threshold * -1
-                print(float(name[1][-1].end_bal))
-                print(float(threshold))
-                # breakpoint()
-                print(len(bal_letter_list_by_tenant))
                 if abs(float(name[1][-1].end_bal)) > abs(float(threshold)):
                     threshold_list.append(name)
                     print(name[0], name[1][-1].end_bal)
-                    breakpoint()
             return threshold_list      
         else:
             return bal_letter_list_by_tenant

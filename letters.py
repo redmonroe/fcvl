@@ -50,10 +50,9 @@ class Letters():
         name = [n.rstrip().lstrip().capitalize() for n in name]
         return (' ').join(name[::-1])
     
-    def fix_name3(self, name, unit, address_bp=None):
-        name = name.split(',')
+    def fix_name3(self, unit, address_bp=None):
         unit_wo_prefix = unit.split('-')[1]
-        return [(' ').join(name[::-1]), address_bp[0], f'Unit #{unit_wo_prefix}', address_bp[1], address_bp[2]]
+        return (' ').join([address_bp[0] , f'Unit #{unit_wo_prefix}', address_bp[1], address_bp[2]])
 
     def get_addresses(self):
         from backend import Unit  # import error work around
@@ -528,7 +527,6 @@ class DocxWriter(Letters):
         parameters = {'current_date': datetime.now().strftime('%m-%d-%Y')}
         document = Document()
         for workorder in self.get_workorders(first_dt=first_dt, last_dt=last_dt):
-            # breakpoint()
             records.append([workorder.init_date, workorder.name, workorder.location, workorder.work_req,
                            workorder.notes, workorder.status, workorder.date_completed, workorder.assigned_to])
 
@@ -603,25 +601,28 @@ class DocxWriter(Letters):
         
         # add boiler plate
         # read doc from command line
-        # add threshold
-        # reformat addresses
         # move closed month to rent_sheet_fs
+        # use prior month closed month bal in end_bal for production of next month staging!!!!
+        #THIS IS THE FUCKING ANSWER
         
         
         for record in records: 
             self.insert_header(document)
             paragraph = document.add_paragraph(' ', style='No Spacing')
+            paragraph = document.add_paragraph(' ', style='No Spacing')
             paragraph = document.add_paragraph(
-                f'Tenant Name: {record[0]}', style='No Spacing')
+                f'Name: {record[0]}', style='No Spacing')
             
             unit = record[1][0].unit
             if unit.split('-')[0] == 'CD':
-                unit = self.fix_name3(record[1][0].name, unit, address_bp=Config.ADDRESS_CD)
+                unit = self.fix_name3(unit, address_bp=Config.ADDRESS_CD)
             elif unit.split('-')[0] == 'PT':
-                unit = self.fix_name3(record[1][0].name, unit, address_bp=Config.ADDRESS_PT)
+                unit = self.fix_name3(unit, address_bp=Config.ADDRESS_PT)
             paragraph = document.add_paragraph(
-                f'Date: {unit}', style='No Spacing')
+                f'Address: {unit}', style='No Spacing')
             
+            paragraph = document.add_paragraph(' ', style='No Spacing')
+            paragraph = document.add_paragraph(' ', style='No Spacing')
             table = document.add_table(1, 6)
             table.style = 'TableGrid'
 
@@ -632,7 +633,7 @@ class DocxWriter(Letters):
             heading_cells[3].text = 'Other Charges'
             heading_cells[4].text = 'Payment'
             heading_cells[5].text = 'Ending'
-            
+            print(record[0])
             for item in record[1]:
                 print(item.date, item.start_bal, item.t_rent, item.ch_amount, item.payment, item.end_bal)
                 cells = table.add_row().cells
@@ -656,7 +657,6 @@ class DocxWriter(Letters):
                 f'Location: {record[2]}', style='No Spacing')
             paragraph = document.add_paragraph(
                 f'Work Requested: {record[3]}', style='No Spacing')
-            paragraph = document.add_paragraph(' ', style='No Spacing')
             paragraph = document.add_paragraph(' ', style='No Spacing')
             paragraph = document.add_paragraph(
                 f'Work Status: {record[5]}', style='No Spacing')
