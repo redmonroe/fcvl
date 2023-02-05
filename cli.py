@@ -101,7 +101,8 @@ def write(production=False):
         figure = Figuration()
         path, full_sheet, build, service, ms = figure.return_configuration()
         ms.auto_control(source='cli.py', mode='clean_build')
-        
+
+
 @click.command()
 @click.option('-p', '--production',
               default=False, help='reset db?')
@@ -116,10 +117,10 @@ def close_sheet(production=False):
         figure = Figuration()
         path, full_sheet, build, service, ms = figure.return_configuration()
         ms.close_one_month(service, full_sheet, db=build)
-        
-        # implement a drop functionality 
+
+        # implement a drop functionality
         # db.drop_tables([FinalMonth])
-        
+
         # implement a way to finalize a series of months
 
 
@@ -129,8 +130,8 @@ def write_monthrange_test():
     figure = Figuration()
     path, full_sheet, build, service, ms = figure.return_configuration()
     # month_list = ['2022-01', '2022-02', '2022-03', '2022-04', '2022-05',
-                #   '2022-06', '2022-07', '2022-08', '2022-09', '2022-10',
-                #   '2022-11', '2022-12']
+    #   '2022-06', '2022-07', '2022-08', '2022-09', '2022-10',
+    #   '2022-11', '2022-12']
     month_list = ['2022-01', '2022-02', '2022-03']
     ms.auto_control(source='cli.py', mode='clean_build', month_list=month_list)
 
@@ -179,9 +180,16 @@ def balanceletters():
     figure = Figuration()
     path, full_sheet, build, service, ms = figure.return_configuration()
     docx = DocxWriter(db=build.main_db, service=service)
-    docx.export_history_to_docx(threshold=100, startm='2022-02', endm='2022-04')
-    
-    # make a threshold function ie if endbal > 100
+    docx.export_history_to_docx(
+        threshold=100, startm='2022-02', endm='2022-04')
+
+    import subprocess
+    subprocess.run('''
+    # This for loop syntax is Bash only
+    pandoc -f docx -t asciidoc /mnt/c/Users/joewa/Google\ Drive/fall\ creek\ village\ I/fcvl/tenbal_output/tenantbals_02-04-2023.docx
+    ''',
+                   shell=True, check=True,
+                   executable='/bin/bash')
 
 
 @click.command()
@@ -261,7 +269,7 @@ def recvactuals():
     click.echo('receivable actuals')
     figure = Figuration()
     path, output_path, db, service, full_sheet = figure.annfin_test_configuration()
-    
+
     # setup database and configuration
     annfin = AnnFin(db=Config.TEST_DB, full_sheet=full_sheet)
     annfin.start_here()
