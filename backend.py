@@ -860,20 +860,14 @@ class Position(QueryHC):
             target_name = row.name
             temp_bal_letter_list_by_tenant.append(
                 (row.name, [row for row in positions if row.name == target_name]))
-            
+
         seen = []
         for item in temp_bal_letter_list_by_tenant:
             if item[0] not in seen:
                 bal_letter_list_by_tenant.append(item)
                 seen.append(item[0])
-                
+
         return bal_letter_list_by_tenant
-    
-    # def adjust_signs_for_public(self, positions=None):
-    #     for p in positions:
-    #         p.start_bal = str(float(p.start_bal) * -1)
-    #         p.end_bal = str(float(p.end_bal) * -1)
-    #     return positions
 
 
 class UrQuery(QueryHC):

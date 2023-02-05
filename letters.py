@@ -49,6 +49,11 @@ class Letters():
         name = name.split(',')
         name = [n.rstrip().lstrip().capitalize() for n in name]
         return (' ').join(name[::-1])
+    
+    def fix_name3(self, name, unit, address_bp=None):
+        name = name.split(',')
+        unit_wo_prefix = unit.split('-')[1]
+        return [(' ').join(name[::-1]), address_bp[0], f'Unit #{unit_wo_prefix}', address_bp[1], address_bp[2]]
 
     def get_addresses(self):
         from backend import Unit  # import error work around
@@ -580,7 +585,6 @@ class DocxWriter(Letters):
             lb_tup = ('2022-01', '2022-06')
             positions = Position()
             post_list = positions.create_list(lookback=lb_tup)        
-            # post_list = positions.adjust_signs_for_public(positions=post_list)
             tenant_balances = positions.group_by_tenant_name(positions=post_list)
             
         parameters = {'current_date': datetime.now().strftime('%m-%d-%Y')}
@@ -599,10 +603,12 @@ class DocxWriter(Letters):
 
     def format_balance_letters(self, document=None, parameters=None, records=None):
         
-        # need to switch signs or use 'credit' language
-        # addresses
         # add boiler plate
         # read doc from command line
+        # add lookback
+        # add threshold
+        # reformat addresses
+        # move closed month to rent_sheet_fs
         
         
         for record in records:
@@ -610,7 +616,14 @@ class DocxWriter(Letters):
             paragraph = document.add_paragraph(' ', style='No Spacing')
             paragraph = document.add_paragraph(
                 f'Tenant Name: {record[0]}', style='No Spacing')
-            print(record[0])
+            
+            unit = record[1][0].unit
+            if unit.split('-')[0] == 'CD':
+                unit = self.fix_name3(record[1][0].name, unit, address_bp=Config.ADDRESS_CD)
+            elif unit.split('-')[0] == 'PT':
+                unit = self.fix_name3(record[1][0].name, unit, address_bp=Config.ADDRESS_PT)
+            paragraph = document.add_paragraph(
+                f'Date: {unit}', style='No Spacing')
             
             if records[0][0] == record[0]:
                 print(record[0], records[0][0])
