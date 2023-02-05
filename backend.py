@@ -853,7 +853,7 @@ class Position(QueryHC):
             positions.append(position)
         return positions
 
-    def group_by_tenant_name(self, positions=None):
+    def group_by_tenant_name(self, positions=None, threshold=None):
         temp_bal_letter_list_by_tenant = []
         bal_letter_list_by_tenant = []
         for row in positions:
@@ -866,8 +866,22 @@ class Position(QueryHC):
             if item[0] not in seen:
                 bal_letter_list_by_tenant.append(item)
                 seen.append(item[0])
-
-        return bal_letter_list_by_tenant
+                
+        if threshold:
+            threshold_list = []
+            for name in bal_letter_list_by_tenant:
+                threshold = threshold * -1
+                print(float(name[1][-1].end_bal))
+                print(float(threshold))
+                # breakpoint()
+                print(len(bal_letter_list_by_tenant))
+                if abs(float(name[1][-1].end_bal)) > abs(float(threshold)):
+                    threshold_list.append(name)
+                    print(name[0], name[1][-1].end_bal)
+                    breakpoint()
+            return threshold_list      
+        else:
+            return bal_letter_list_by_tenant
 
 
 class UrQuery(QueryHC):

@@ -578,40 +578,37 @@ class DocxWriter(Letters):
 
         return document, save_path, sum_for_test
     
-    def export_history_to_docx(self, lookback=None):
+    def export_history_to_docx(self, lookback=None, threshold=None, startm=None, endm=None):
         print('export balance history to docx')
         from backend import Position
         if lookback == 'testing_lookback':
             lb_tup = ('2022-01', '2022-06')
-            positions = Position()
-            post_list = positions.create_list(lookback=lb_tup)        
-            tenant_balances = positions.group_by_tenant_name(positions=post_list)
+        else:
+            lb_tup = (startm, endm)
             
-        parameters = {'current_date': datetime.now().strftime('%m-%d-%Y')}
-        document = Document()
-        records = []
-        for tb in tenant_balances:
-            records.append(tb)
+        positions = Position()
+        post_list = positions.create_list(lookback=lb_tup)     
+        
         document = self.format_balance_letters(
-            document=document, parameters=parameters, records=records)
-        save_name = 'tenantbals_' + parameters['current_date'] + '.docx'
-        save_path = self.tenbal_save_path / Path(save_name)
+            document=Document(), 
+            parameters={'current_date': datetime.now().strftime('%m-%d-%Y')}, 
+            records=[tb for tb in positions.group_by_tenant_name(positions=post_list, 
+                                                                 threshold=threshold)],
+            )
+        save_path = self.tenbal_save_path / Path('tenantbals_' + str(datetime.now().strftime('%m-%d-%Y')) + '.docx')
         document.save(save_path)
         print(f'look for output in {save_path}')
-
-        return document, save_path
 
     def format_balance_letters(self, document=None, parameters=None, records=None):
         
         # add boiler plate
         # read doc from command line
-        # add lookback
         # add threshold
         # reformat addresses
         # move closed month to rent_sheet_fs
         
         
-        for record in records:
+        for record in records: 
             self.insert_header(document)
             paragraph = document.add_paragraph(' ', style='No Spacing')
             paragraph = document.add_paragraph(
@@ -625,10 +622,6 @@ class DocxWriter(Letters):
             paragraph = document.add_paragraph(
                 f'Date: {unit}', style='No Spacing')
             
-            if records[0][0] == record[0]:
-                print(record[0], records[0][0])
-            else:
-                print(record[0], current_record)
             table = document.add_table(1, 6)
             table.style = 'TableGrid'
 
