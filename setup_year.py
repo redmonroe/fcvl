@@ -42,7 +42,7 @@ class YearSheet:
         if mode == 'testing':
             self.service = test_service
         else:
-            self.service = oauth(my_scopes, 'sheet')
+            self.service = oauth(Config.my_scopes, 'sheet')
 
         self.source_id = None
 
@@ -73,9 +73,31 @@ class YearSheet:
             self.calls.api_duplicate_sheet(
                 self.service, self.full_sheet, source_id=self.source_id, insert_index=insert_index, title=name)
 
+    def formatting_runner_for_presentation(self, 
+                                           full_sheet=None, 
+                                           service=None, 
+                                           sheet=None):
+        self.calls.format_row(
+            service, full_sheet, f'{sheet}!A1:M1', 'ROWS', self.HEADER_NAMES)
+
+        self.calls.write_formula_column(
+            service, full_sheet, self.G_SUM_STARTBAL, f'{sheet}!D69:D69')
+        self.calls.write_formula_column(
+            service, full_sheet, self.G_SUM_KRENT, f'{sheet}!E69:E69')
+        self.calls.write_formula_column(
+            service, full_sheet, self.G_SUM_ACTSUBSIDY, f'{sheet}!F69:F69')
+        self.calls.write_formula_column(
+            service, full_sheet, self.G_SUM_ACTRENT, f'{sheet}!H69:H69')
+        self.calls.write_formula_column(
+            service, full_sheet, self.G_SUM_CHARGES, f'{sheet}!J69:D69')
+        self.calls.write_formula_column(
+            service, full_sheet, self.G_PAYMENT_MADE, f'{sheet}!K69:K69')
+        self.calls.write_formula_column(
+            service, full_sheet, self.G_CURBAL, f'{sheet}!L69:L69')
+
     def formatting_runner(self, title_dict=None):
         '''writes the sum formulas in a row'''
-        for sheet, sheet_id in title_dict.items():            
+        for sheet, sheet_id in title_dict.items():
             self.calls.write_formula_column(
                 self.service, self.full_sheet, self.G_SUM_KRENT, f'{sheet}!E69:E69')
             self.calls.write_formula_column(

@@ -377,7 +377,7 @@ class FinalMonth(BaseModel):
 
 class FinalMonthLog(BaseModel):
     month = DateField(null=True)
-    status = CharField(null='not closed')
+    # status = CharField(null='not closed')
 
 
 class QueryHC(Reconciler):

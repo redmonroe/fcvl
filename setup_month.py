@@ -490,7 +490,6 @@ class MonthSheet(YearSheet):
         return df
 
     def get_move_ins(self, date):
-        #
         query = QueryHC()
         first_dt, last_dt = query.make_first_and_last_dates(date_str=date)
         move_ins = query.get_move_ins_by_period_less_first_day(
@@ -528,7 +527,6 @@ class MonthSheet(YearSheet):
                 gc.del_one_sheet(args[0], args[1], id2)
                 
     def close_one_month(self, *args, **kwargs):
-        gc = GoogleApiCalls()
         titles_dict = {name: id2 for name,
                        id2 in Utils.get_existing_sheets(args[0], args[1]).items() if name != 'intake'}
         
@@ -539,7 +537,7 @@ class MonthSheet(YearSheet):
         path = Utils.show_files_as_choices(titles_dict, 
                                            interactive=True, 
                                            start=len(closed_dates)+1)
-        values = gc.broad_get(service=self.service, 
+        values = self.gc.broad_get(service=self.service, 
                               spreadsheet_id=args[1], 
                               range=f'{path[0]}!A2:L68')
         df = pd.DataFrame(values, columns=['unit', 
@@ -564,13 +562,12 @@ class MonthSheet(YearSheet):
         fml.save()
 
     def move_to_final(self, *args, **kwargs):
-        gc = GoogleApiCalls()
         closed_dates = {date.month: date.month for date in FinalMonthLog.select()}
         path = Utils.show_files_as_choices(closed_dates, 
                                            interactive=True, 
                                         #    start=len(closed_dates)+1
                                            )
-        values = gc.broad_get(service=self.service, 
+        values = self.gc.broad_get(service=self.service, 
                               spreadsheet_id=args[1], 
                               range=f'{path[0]}!A2:L68'
                               )
@@ -594,9 +591,14 @@ class MonthSheet(YearSheet):
         #                   sheet_title=path[0]
         #                   )
         
+        
+        self.formatting_runner_for_presentation(service=self.service, 
+                                                full_sheet='1OErbU9WoYBS3fF0DD0XhhfqRRrKzNIZqTmR9nPH08TY',
+                                                sheet=path[0])
+        breakpoint()
         count = 2
         for row in df: 
-            gc.simple_batch_update(service=self.service,
+            self.gc.simple_batch_update(service=self.service,
                                 sheet_id='1OErbU9WoYBS3fF0DD0XhhfqRRrKzNIZqTmR9nPH08TY',
                                 wrange=f'{path[0]}!A{count}:L{count}',
                                 data=row,
@@ -605,7 +607,8 @@ class MonthSheet(YearSheet):
             count += 1
             
         
-        
+        # row sum is not aligned
+        # row sum does not work on strings
         # need to drop fml table to add new col.status
         # should update finalmonthlog if we have written sheet
 
