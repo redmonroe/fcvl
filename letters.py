@@ -49,10 +49,10 @@ class Letters():
         name = name.split(',')
         name = [n.rstrip().lstrip().capitalize() for n in name]
         return (' ').join(name[::-1])
-    
+
     def fix_name3(self, unit, address_bp=None):
         unit_wo_prefix = unit.split('-')[1]
-        return (' ').join([address_bp[0] , f'Unit #{unit_wo_prefix}', address_bp[1], address_bp[2]])
+        return (' ').join([address_bp[0], f'Unit #{unit_wo_prefix}', address_bp[1], address_bp[2]])
 
     def get_addresses(self):
         from backend import Unit  # import error work around
@@ -302,11 +302,10 @@ class Letters():
         return since, till
 
     def rent_receipts_plus_balance(self):
-        
         """THIS IS NOT ACTIVELY BEING DEVELOPED AND SHOULD BE DELETED
         ONCE WE ARE SURE NONE OF THIS FUNCTIONALITY IS APPROPRIATE FOR
         NEW BALANCE LETTER MODEL"""
-        
+
         from backend import QueryHC
         print('rent receipts plus balance table')
         query = QueryHC()
@@ -341,7 +340,6 @@ class Letters():
 
         for count, tup in enumerate(all_payments, 1):
             print(count, tup[0])
-
 
     def check_rs_status(self):
         titles_dict = Utils.get_existing_sheets(
@@ -575,7 +573,7 @@ class DocxWriter(Letters):
         document.save(save_path)
 
         return document, save_path, sum_for_test
-    
+
     def export_history_to_docx(self, lookback=None, threshold=None, startm=None, endm=None):
         print('export balance history to docx')
         from backend import Position
@@ -583,36 +581,29 @@ class DocxWriter(Letters):
             lb_tup = ('2022-01', '2022-06')
         else:
             lb_tup = (startm, endm)
-            
+
         positions = Position()
-        post_list = positions.create_list(lookback=lb_tup)     
-        
+        post_list = positions.create_list(lookback=lb_tup)
+
         document = self.format_balance_letters(
-            document=Document(), 
-            parameters={'current_date': datetime.now().strftime('%m-%d-%Y')}, 
-            records=[tb for tb in positions.group_by_tenant_name(positions=post_list, 
+            document=Document(),
+            parameters={'current_date': datetime.now().strftime('%m-%d-%Y')},
+            records=[tb for tb in positions.group_by_tenant_name(positions=post_list,
                                                                  threshold=threshold)],
-            )
-        save_path = self.tenbal_save_path / Path('tenantbals_' + str(datetime.now().strftime('%m-%d-%Y')) + '.docx')
+        )
+        save_path = self.tenbal_save_path / \
+            Path('tenantbals_' + str(datetime.now().strftime('%m-%d-%Y')) + '.docx')
         document.save(save_path)
         print(f'look for output in {save_path}')
 
     def format_balance_letters(self, document=None, parameters=None, records=None):
-        
-        # add boiler plate
-        # read doc from command line
-        # move closed month to rent_sheet_fs
-        # use prior month closed month bal in end_bal for production of next month staging!!!!
-        #THIS IS THE FUCKING ANSWER
-        
-        
-        for record in records: 
+        for record in records:
             self.insert_header(document)
             paragraph = document.add_paragraph(' ', style='No Spacing')
             paragraph = document.add_paragraph(' ', style='No Spacing')
             paragraph = document.add_paragraph(
                 f'Name: {record[0]}', style='No Spacing')
-            
+
             unit = record[1][0].unit
             if unit.split('-')[0] == 'CD':
                 unit = self.fix_name3(unit, address_bp=Config.ADDRESS_CD)
@@ -620,7 +611,7 @@ class DocxWriter(Letters):
                 unit = self.fix_name3(unit, address_bp=Config.ADDRESS_PT)
             paragraph = document.add_paragraph(
                 f'Address: {unit}', style='No Spacing')
-            
+
             paragraph = document.add_paragraph(' ', style='No Spacing')
             paragraph = document.add_paragraph(' ', style='No Spacing')
             table = document.add_table(1, 6)
@@ -635,7 +626,8 @@ class DocxWriter(Letters):
             heading_cells[5].text = 'Ending'
             print(record[0])
             for item in record[1]:
-                print(item.date, item.start_bal, item.t_rent, item.ch_amount, item.payment, item.end_bal)
+                print(item.date, item.start_bal, item.t_rent,
+                      item.ch_amount, item.payment, item.end_bal)
                 cells = table.add_row().cells
                 cells[0].text = item.date
                 cells[1].text = item.start_bal
@@ -643,12 +635,12 @@ class DocxWriter(Letters):
                 cells[3].text = item.ch_amount
                 cells[4].text = item.payment
                 cells[5].text = item.end_bal
-            
+
             current_record = item.name
             paragraph = document.add_paragraph(
                 'Generated: ' + parameters['current_date'], style='No Spacing')
             document.add_page_break()
-            
+
             '''
             paragraph = document.add_paragraph(
                 f'Date: {record[0]}', style='No Spacing')
@@ -683,5 +675,3 @@ class DocxWriter(Letters):
 
             '''
         return document
-    
-

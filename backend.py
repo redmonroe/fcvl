@@ -377,6 +377,7 @@ class FinalMonth(BaseModel):
 
 class FinalMonthLog(BaseModel):
     month = DateField(null=True)
+    status = CharField(null='not closed')
 
 
 class QueryHC(Reconciler):
@@ -841,10 +842,14 @@ class Position(QueryHC):
 
         positions = []
         for row in df.to_dict('records'):
+            try:
+                start_bal = float(row['start_bal']) * -1
+            except ValueError:
+                start_bal = 0
             position = Position(name=row['name'],
                                 unit=row['unit'],
                                 date=datetime.strftime(row['month'], '%Y-%m'),
-                                start_bal=str(float(row['start_bal']) * -1),
+                                start_bal=str(start_bal),
                                 t_rent=row['t_rent'],
                                 ch_amount=row['ch_amount'],
                                 payment=row['payment'],

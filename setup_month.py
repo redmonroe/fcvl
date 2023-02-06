@@ -514,6 +514,8 @@ class MonthSheet(YearSheet):
         for name, id2, in current_sheets.items():
             if name != 'intake':
                 gc.del_one_sheet(self.service, self.full_sheet, id2)
+                
+
 
     def delete_one_month_sheet(self, *args, **kwargs):
         gc = GoogleApiCalls()
@@ -561,4 +563,49 @@ class MonthSheet(YearSheet):
         fml = FinalMonthLog(month=path[0])
         fml.save()
 
+    def move_to_final(self, *args, **kwargs):
+        gc = GoogleApiCalls()
+        closed_dates = {date.month: date.month for date in FinalMonthLog.select()}
+        path = Utils.show_files_as_choices(closed_dates, 
+                                           interactive=True, 
+                                        #    start=len(closed_dates)+1
+                                           )
+        values = gc.broad_get(service=self.service, 
+                              spreadsheet_id=args[1], 
+                              range=f'{path[0]}!A2:L68'
+                              )
+        df = pd.DataFrame(values, columns=['unit', 
+                                           'name', 
+                                           'notes', 
+                                           'start_bal', 
+                                           'c_rent', 
+                                           'subsidy', 
+                                           'hap_received', 
+                                           't_rent', 
+                                           'ch_type', 
+                                           'ch_amount', 
+                                           'payment', 
+                                           'end_bal', 
+                                           ])
+        
+        df = df.values.tolist()
+        # gc.make_one_sheet(service=self.service, 
+        #                   spreadsheet_id='1OErbU9WoYBS3fF0DD0XhhfqRRrKzNIZqTmR9nPH08TY',
+        #                   sheet_title=path[0]
+        #                   )
+        
+        count = 2
+        for row in df: 
+            gc.simple_batch_update(service=self.service,
+                                sheet_id='1OErbU9WoYBS3fF0DD0XhhfqRRrKzNIZqTmR9nPH08TY',
+                                wrange=f'{path[0]}!A{count}:L{count}',
+                                data=row,
+                                dim='ROWS'
+                                )
+            count += 1
+            
+        
+        
+        # need to drop fml table to add new col.status
+        # should update finalmonthlog if we have written sheet
 

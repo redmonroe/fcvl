@@ -106,12 +106,20 @@ def write(production=False):
 @click.command()
 @click.option('-p', '--production',
               default=False, help='reset db?')
-def close_sheet(production=False):
+@click.option('-m', '--move_to_final',
+              default=False, help='write month to final presentation sheet for peg')
+def close_sheet(production=False, move_to_final=False):
     if production:
         click.echo('PRODUCTION: close_sheet')
         figure = Figuration(mode='production')
         print('no production branch of close_sheet')
         # path, full_sheet, build, service, ms = figure.return_configuration()
+    elif move_to_final:
+        click.echo('TEST: move closed month to final presentation sheet')
+        figure = Figuration()
+        path, full_sheet, build, service, ms = figure.return_configuration()
+        ms.move_to_final(service, full_sheet, db=build)
+        
     else:
         click.echo('TEST: close_sheet')
         figure = Figuration()
@@ -181,12 +189,26 @@ def balanceletters():
     path, full_sheet, build, service, ms = figure.return_configuration()
     docx = DocxWriter(db=build.main_db, service=service)
     docx.export_history_to_docx(
-        threshold=100, startm='2022-02', endm='2022-04')
+        threshold=100, startm='2022-01', endm='2022-12')
+    
+      
+    # add boiler plate
+    # read doc from command line
+    # move closed month to rent_sheet_fs
+    # use prior month closed month bal in end_bal for production of next month staging!!!!
+    #THIS IS THE FUCKING ANSWER
+    
+    
+    
+    # should do a filter of 
+        # - get most recent closed month
+        # - get rent roll as of that period
+        # - do look back from most recent closed month
 
     import subprocess
     subprocess.run('''
     # This for loop syntax is Bash only
-    pandoc -f docx -t asciidoc /mnt/c/Users/joewa/Google\ Drive/fall\ creek\ village\ I/fcvl/tenbal_output/tenantbals_02-04-2023.docx
+    pandoc -f docx -t asciidoc /mnt/c/Users/joewa/Google\ Drive/fall\ creek\ village\ I/fcvl/tenbal_output/tenantbals_02-05-2023.docx
     ''',
                    shell=True, check=True,
                    executable='/bin/bash')
