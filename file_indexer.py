@@ -269,9 +269,9 @@ class FileIndexer(Utils, Scrape, Reconciler):
                     df = df.groupby(df['dep_type']).sum(numeric_only=True)
                     df = df.to_dict('dict')
                 if genus == 'opcash' and path[0] is True:
-                    self.op_cash_list.append(path[1][0])
-                    opcash_dry_run = self.rename_by_content_pdf(
-                        bypass_write_to_db=True)
+                    self.op_cash_list.append(path[1])
+                    # opcash_dry_run = self.rename_by_content_pdf(
+                        # bypass_write_to_db=True)
                 if genus == 'deposits' and path[0] is True:
                     deposits_dry_run = self.survey_deposits_report_for_dry_run(
                         path[1])
@@ -475,6 +475,9 @@ class FileIndexer(Utils, Scrape, Reconciler):
     def get_df_from_path_list(self, path):
         # TODO: THIS SHOULD BE COMBINED INTO CLASS IN BACKEND
         import xlrd
+        if isinstance(path, list) == False:
+            path = [path]
+        
         for possible_path in path:
             try:
                 wb = xlrd.open_workbook(

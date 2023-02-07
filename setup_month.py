@@ -562,11 +562,12 @@ class MonthSheet(YearSheet):
         fml.save()
 
     def move_to_final(self, *args, **kwargs):
+        presentation_sheet = '1OErbU9WoYBS3fF0DD0XhhfqRRrKzNIZqTmR9nPH08TY'
         closed_dates = {date.month: date.month for date in FinalMonthLog.select()}
         path = Utils.show_files_as_choices(closed_dates, 
                                            interactive=True, 
-                                        #    start=len(closed_dates)+1
                                            )
+        
         values = self.gc.broad_get(service=self.service, 
                               spreadsheet_id=args[1], 
                               range=f'{path[0]}!A2:L68'
@@ -586,26 +587,32 @@ class MonthSheet(YearSheet):
                                            ])
         
         df = df.values.tolist()
-        # gc.make_one_sheet(service=self.service, 
-        #                   spreadsheet_id='1OErbU9WoYBS3fF0DD0XhhfqRRrKzNIZqTmR9nPH08TY',
-        #                   sheet_title=path[0]
-        #                   )
+        self.gc.make_one_sheet(service=self.service, 
+                          spreadsheet_id=presentation_sheet,
+                          sheet_title=path[0]
+                          )
         
         
         self.formatting_runner_for_presentation(service=self.service, 
-                                                full_sheet='1OErbU9WoYBS3fF0DD0XhhfqRRrKzNIZqTmR9nPH08TY',
+                                                full_sheet=presentation_sheet,
                                                 sheet=path[0])
-        breakpoint()
+        # breakpoint()
         count = 2
         for row in df: 
             self.gc.simple_batch_update(service=self.service,
-                                sheet_id='1OErbU9WoYBS3fF0DD0XhhfqRRrKzNIZqTmR9nPH08TY',
+                                sheet_id=presentation_sheet,
                                 wrange=f'{path[0]}!A{count}:L{count}',
                                 data=row,
                                 dim='ROWS'
                                 )
             count += 1
             
+        breakpoint()
+        # NEED SHEET_ID IF i WANT TO DO FREEZING AND BOLDING
+        # i can get sheet name back from here
+        titles_dict = {name: id2 for name,
+                       id2 in Utils.get_existing_sheets(args[0], args[1]).items() if name != 'intake'}
+        # can just agg on dataframe for row balances
         
         # row sum is not aligned
         # row sum does not work on strings

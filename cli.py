@@ -128,8 +128,8 @@ def close_sheet(production=False, move_to_final=False):
 
         # implement a drop functionality
         # db.drop_tables([FinalMonth])
-
         # implement a way to finalize a series of months
+        # figure out formatting of sheets
 
 
 @click.command()

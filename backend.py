@@ -1290,6 +1290,9 @@ class DryRunRentRoll(AfterInitLoad):
          self.computed_mis) = self._rent_roll_loop_internals(self.date, self.path)
 
     def _pick_correct_file(self, path=None):
+        if isinstance(path, list) == False:
+            path = [path]
+            
         for possible_path in path:
             try:
                 wb = xlrd.open_workbook(

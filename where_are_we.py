@@ -124,15 +124,19 @@ class WhereAreWe(ProcessingLayer):
         )
 
         target_month, currently_availables, first_pw_incomplete_month = self.what_do_we_have(
-            first_incomplete_month=self.first_incomplete_month, allow_print=False)
-
+                                            first_incomplete_month=self.first_incomplete_month, 
+                                            allow_print=False)
+        
         count = self.print_helper_for_availables(
-            target_month=target_month, first_pw_incomplete_month=first_pw_incomplete_month, currently_availables=currently_availables)
+            target_month=target_month, 
+            first_pw_incomplete_month=first_pw_incomplete_month, 
+            currently_availables=currently_availables)
 
         if count == 3:
             print(self.path)
             dry_run_iter = self.iter.dry_run(
-                currently_availables=currently_availables, target_month=target_month)
+                currently_availables=currently_availables, 
+                target_month=target_month)
         else:
             print('you dont have enough files to do a dry run')
             breakpoint()
@@ -235,12 +239,14 @@ class WhereAreWe(ProcessingLayer):
         print(
             f'target month {kwargs["target_month"]} is over? {kwargs["first_pw_incomplete_month"]}.')
         print('*' * 45)
+        # breakpoint()
         for item in kwargs["currently_availables"]:
             for genus, available in item.items():
+                # breakpoint()
                 if available[0] is False:
                     path = 'no item available'
                 else:
-                    path = str(available[1][0]).split("/")[-1]
+                    path = str(available[1]).split("/")[-1]
                 print(f'\t{genus}: {available[0]} |  path: {path}')
                 if available[0] == True:
                     count += 1
