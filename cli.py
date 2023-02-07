@@ -78,14 +78,17 @@ def load_db(production=False, last_month=None):
         path, full_sheet, build, service, ms = figure.return_configuration()
         ms.auto_control(source='cli.py', mode='clean_build')
     else:
-        click.echo('TEST: loading all available files in path to db')
         figure = Figuration(method='not_iter')
         path, full_sheet, build, service, ms = figure.return_configuration()
         if last_month:
-            print(last_month)
+            print(f'passing explicit command to load information for: {last_month} only')
+            breakpoint()
             build.build_db_from_scratch(last_range_month=last_month)
         else:
-            build.build_db_from_scratch()
+            choice = input('ARE YOU ABSOLUTELY SURE YOU WANT TO DROP DB AND START OVER? \n enter "qwqz" to continue: ')
+            if choice == 'qwqz':
+                click.echo('TEST: loading all available files in path to db')
+                build.build_db_from_scratch()
 
 
 @click.command()
@@ -119,7 +122,7 @@ def close_sheet(production=False, move_to_final=False):
         figure = Figuration()
         path, full_sheet, build, service, ms = figure.return_configuration()
         ms.move_to_final(service, full_sheet, db=build)
-        
+
     else:
         click.echo('TEST: close_sheet')
         figure = Figuration()
@@ -190,20 +193,17 @@ def balanceletters():
     docx = DocxWriter(db=build.main_db, service=service)
     docx.export_history_to_docx(
         threshold=100, startm='2022-01', endm='2022-12')
-    
-      
+
     # add boiler plate
     # read doc from command line
     # move closed month to rent_sheet_fs
     # use prior month closed month bal in end_bal for production of next month staging!!!!
-    #THIS IS THE FUCKING ANSWER
-    
-    
-    
-    # should do a filter of 
-        # - get most recent closed month
-        # - get rent roll as of that period
-        # - do look back from most recent closed month
+    # THIS IS THE FUCKING ANSWER
+
+    # should do a filter of
+    # - get most recent closed month
+    # - get rent roll as of that period
+    # - do look back from most recent closed month
 
     import subprocess
     subprocess.run('''

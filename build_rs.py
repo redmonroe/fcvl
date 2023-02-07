@@ -33,13 +33,17 @@ class BuildRS(MonthSheet):
         self.target_bal_load_file = Config.beg_bal_xlsx
         self.ms = MonthSheet(full_sheet=self.full_sheet, path=self.path)
         self.findex = FileIndexer(path=self.path, db=self.main_db)
-        self.populate = self._setup_tables(mode='drop_and_create')
+        self.populate = self._setup_tables(mode='create_only')
 
     def __repr__(self):
         return f'{self.__class__.__name__} | {self.path} | {self.full_sheet}'
+    
+    def build_explicit_month(self, month=None, mode=None):
+        breakpoint()
 
     def build_db_from_scratch(self, **kw):
         print('building db from scratch')
+        self.populate = self._setup_tables(mode='drop_and_create')
         player = ProcessingLayer(service=self.service,
                                  full_sheet=self.full_sheet, ms=self.ms)
         self.start = time.time()
