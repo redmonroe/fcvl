@@ -4,6 +4,7 @@ class Persistent:
         {'greiner, richard': (146, '2022-10-01', 'ur sept_oct')},
         {'greiner, richard': (48, '2022-11-01', 'nov')},
         {'greiner, richard': (48, '2022-12-01', 'dec')},
+        {'greiner, richard': (48, '2023-01-01', 'dec')},
     ]
 
     changes = [{'obj_type': 'Payment', 'action': 'delete', 'col_name1': ('tenant_id', 'newcomb, benny'), 'col_name2': ('amount', '476.0'), 'col_name3': ('date_posted', '2022-02-08')},

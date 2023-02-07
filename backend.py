@@ -240,17 +240,19 @@ class Damages(BaseModel):
         return new_damages
 
     @staticmethod
-    def load_damages(explicit_month_to_load=None):
+    def load_damages(explicit_month_to_load=None, commit_to_db=None):
         print('\napplying all historical damages from Config')
         damages = Config.damages
         damages = Damages.filter_damages_by_date(damages, explicit_month_to_load=explicit_month_to_load)
-        breakpoint()
         for item in damages:
             for name, packet in item.items():
                 dam = Damages(
                     tenant=name, dam_amount=packet[0],
                     dam_date=packet[1], dam_type=packet[2])
-                dam.save()
+                if commit_to_db:
+                    dam.save()
+                else:
+                    print(f'flag in effect: not saving {dam}')
 
 
 class Payment(BaseModel):
