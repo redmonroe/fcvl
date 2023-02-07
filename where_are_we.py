@@ -163,7 +163,7 @@ class WhereAreWe(ProcessingLayer):
             print(f'deposits report for {target_month} via opcash.')
             bank_deposits = self.opcash_printer(target_month=target_month,
                                                 dry_run_iter=dry_run_iter)
-            deposits_discrepancy = bank_deposits - \
+            deposits_discrepancy = float(bank_deposits) - \
                 round(float(report_deposits), 2)
         else:
             print(f'deposits report for {target_month} via scrape.')
@@ -187,13 +187,13 @@ class WhereAreWe(ProcessingLayer):
         print('\n')
         print(f'opcash summary for {target_month}.')
         print('*' * 45)
-        print(f'\tdeposits {target_month}: {dry_run_iter["opcash"]["dep"]}')
+        print(f'\tdeposits {target_month}: {dry_run_iter["opcash"]["depsum"]}')
         print(f'\thap {target_month}: {dry_run_iter["opcash"]["hap"]}')
-        print(f'\trr {target_month}: {dry_run_iter["opcash"]["rr"]}')
+        print(f'\trr {target_month}: {dry_run_iter["opcash"]["r4r"]}')
         print(
             f'\tdeposit corrections on opcash side: {dry_run_iter["opcash"]["corr_sum"]}')
         print('*' * 45)
-        return dry_run_iter["opcash"]["dep"]
+        return dry_run_iter["opcash"]["depsum"]
 
     def print_rows(self, date=None, **kwargs):
         print(f'selected month: {date}\n')

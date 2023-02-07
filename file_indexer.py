@@ -270,8 +270,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
                     df = df.to_dict('dict')
                 if genus == 'opcash' and path[0] is True:
                     self.op_cash_list.append(path[1])
-                    # opcash_dry_run = self.rename_by_content_pdf(
-                        # bypass_write_to_db=True)
+                    opcash_dry_run = self.pdf_to_df_to_db(bypass_write_to_db=True)
                 if genus == 'deposits' and path[0] is True:
                     deposits_dry_run = self.survey_deposits_report_for_dry_run(
                         path[1])
@@ -281,7 +280,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
 
         return {'opcash': opcash_dry_run, 'deposits': deposits_dry_run, 'rent': rent_dry_run, 'damages': damages, 'scrape': df}
 
-    def pdf_to_df_to_db(self):
+    def pdf_to_df_to_db(self, bypass_write_to_db=None):
         # TODO fix corr_sum & chargeback logic
         # TODO could do a faster query insert here
         target_list = ['Incoming Wire', 'QUADEL',
@@ -310,41 +309,26 @@ class FileIndexer(Utils, Scrape, Reconciler):
 
             r4r = df[df['type'].str.contains('rr')]
             r4r = r4r.groupby(r4r['period']).sum(numeric_only=True)
-
-            opcash_records = [(item.fn, item.doc_id) for item in Findexer().
-                              select().
-                              where(Findexer.path == path).
-                              namedtuples()]
-
-            find_change = Findexer.get(Findexer.doc_id == opcash_records[0][1])
-
-            find_change.status = self.status_str.processed
-            find_change.period = stmt_date
-
-
+            
             if depsum.empty:
                 depsum = '0'
             else:
                 depsum = str(depsum.iloc[0].values[0])
-            find_change.depsum = depsum
 
             if r4r.empty:
                 r4r = '0'
             else:
                 r4r = str(r4r.iloc[0].values[0])
-            find_change.rr = r4r
 
             if hap.empty:
                 hap = '0'
             else:
                 hap = str(hap.iloc[0].values[0])
-            find_change.hap = hap
 
             if chargeback.empty:
                 chargeback = '0'
             else:
                 chargeback = str(chargeback.iloc[0].values[0])
-            find_change.chargeback = chargeback
             
             if correction.empty:
                 corr_sum = '0'
@@ -353,14 +337,29 @@ class FileIndexer(Utils, Scrape, Reconciler):
                 
             # chargeback is currently added to corr_sum!!                
             corr_sum = float(corr_sum) + float(chargeback)            
-            find_change.corr_sum = str(round(corr_sum, 2)) 
 
-            if deplist:
-                find_change.deplist = json.dumps(deplist)
+                
+            if bypass_write_to_db is None:
+                find_change.save()
+                opcash_records = [(item.fn, item.doc_id) for item in Findexer().
+                                select().
+                                where(Findexer.path == path).
+                                namedtuples()]
+                find_change = Findexer.get(Findexer.doc_id == opcash_records[0][1])
+
+                find_change.status = self.status_str.processed
+                find_change.period = stmt_date
+                find_change.depsum = depsum
+                find_change.hap = hap
+                find_change.rr = r4r
+                find_change.chargeback = chargeback
+                find_change.corr_sum = str(round(corr_sum, 2)) 
+                if deplist:
+                    find_change.deplist = json.dumps(deplist)
+                else:
+                    find_change.deplist = '0'
             else:
-                find_change.deplist = '0'
-
-            find_change.save()
+                return {'depsum': depsum, 'deplist': deplist, 'hap': hap, 'r4r': r4r, 'corr_sum': corr_sum}
 
     def build_index_runner(self):
         """this function is just a list of the funcs one would run to create the index from a fresh start"""
