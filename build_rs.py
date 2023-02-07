@@ -38,7 +38,12 @@ class BuildRS(MonthSheet):
     def __repr__(self):
         return f'{self.__class__.__name__} | {self.path} | {self.full_sheet}'
     
-    def build_explicit_month(self, month=None, mode=None):
+    def build_explicit_month(self, explicit_month_to_load=None, mode=None):
+        # (new_files, 
+        #  unfinalized_months, 
+        #  final_not_written) = self.findex.incremental_filer(explicit_month_to_load=explicit_month_to_load)
+        
+        Damages.load_damages(explicit_month_to_load=explicit_month_to_load)
         breakpoint()
 
     def build_db_from_scratch(self, **kw):

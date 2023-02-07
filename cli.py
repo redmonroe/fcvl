@@ -82,8 +82,7 @@ def load_db(production=False, last_month=None):
         path, full_sheet, build, service, ms = figure.return_configuration()
         if last_month:
             print(f'passing explicit command to load information for: {last_month} only')
-            breakpoint()
-            build.build_db_from_scratch(last_range_month=last_month)
+            build.build_explicit_month(explicit_month_to_load=last_month)
         else:
             choice = input('ARE YOU ABSOLUTELY SURE YOU WANT TO DROP DB AND START OVER? \n enter "qwqz" to continue: ')
             if choice == 'qwqz':

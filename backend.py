@@ -224,12 +224,28 @@ class Damages(BaseModel):
     dam_amount = CharField()
     dam_date = DateField()
     dam_type = CharField()
+    
+    def filter_damages_by_date(damages, explicit_month_to_load=None):
+        dt_obj = datetime.strptime(explicit_month_to_load, '%Y-%m')
+        dt_obj_first = dt_obj.replace(day=1)
+        dt_obj_last = dt_obj.replace(
+            day=calendar.monthrange(dt_obj.year, dt_obj.month)[1])
+        
+        new_damages = []
+        for entry in damages:
+            damage_date = datetime.strptime(list(entry.values())[0][1], '%Y-%m-%d')
+            if dt_obj_first <= damage_date <= dt_obj_last:
+                new_damages.append(entry) 
+        
+        return new_damages
 
     @staticmethod
-    def load_damages():
+    def load_damages(explicit_month_to_load=None):
         print('\napplying all historical damages from Config')
-        damages_2022 = Config.damages_2022
-        for item in damages_2022:
+        damages = Config.damages
+        damages = Damages.filter_damages_by_date(damages, explicit_month_to_load=explicit_month_to_load)
+        breakpoint()
+        for item in damages:
             for name, packet in item.items():
                 dam = Damages(
                     tenant=name, dam_amount=packet[0],

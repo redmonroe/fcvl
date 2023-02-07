@@ -192,7 +192,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
         self.pdf = StructDataExtract()
         self.scrape_path = Config.TEST_PATH
 
-    def incremental_filer(self, pytest=False):
+    def incremental_filer(self, explicit_month_to_load=None, pytest=False):
         print('incremental_filer(), FileIndexer method from file_indexer.py')
         print('\n')
         self.connect_to_db()
@@ -203,7 +203,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
             1 OPCASH processed 
             2 DEPOSITS + ADJUSTMENTS == TENANT_PAY + NTP"""
 
-        months_ytd, unfin_month, final_not_written = self.test_for_unfinalized_months()
+        months_ytd, unfin_month, final_not_written = self.test_for_unfinalized_months(explicit_month_to_load=explicit_month_to_load)
 
         for item in unfin_month:
             print(item)
@@ -395,8 +395,9 @@ class FileIndexer(Utils, Scrape, Reconciler):
         self.type_opcashes()
         self.pdf_to_df_to_db()
 
-    def test_for_unfinalized_months(self):
-        months_ytd = Utils.months_in_ytd(Config.current_year)
+    def test_for_unfinalized_months(self, explicit_month_to_load=None):
+        months_ytd = Utils.months_in_ytd(Config.dynamic_current_year, 
+                                         last_range_month=explicit_month_to_load)
 
         # get fully finalized months
         finalized_months = [rec.month for rec in StatusObject().select().where(
