@@ -96,26 +96,13 @@ class Persistent:
                 'col_name3': ('date_posted', '2022-12-02'), 
                 'col_name4': ('genus', 'other')
                 },
-               
                ]
     """Interface can handle 3 or 4 columns for constructing the query"""    
 
     units = ['CD-A', 'CD-B', 'CD-101', 'CD-102', 'CD-104', 'CD-105', 'CD-106', 'CD-107', 'CD-108',
              'CD-109', 'CD-110', 'CD-111', 'CD-112', 'CD-114', 'CD-115', 'CD-201', 'CD-202',
-             'CD-203',
-             'CD-204',
-             'CD-205',
-             'CD-206',
-             'CD-207',
-             'CD-208',
-             'CD-209',
-             'CD-210',
-             'CD-211',
-             'CD-212',
-             'CD-214',
-             'CD-215',
-             'CD-301',
-             'CD-302',
+             'CD-203', 'CD-204', 'CD-205', 'CD-206', 'CD-207', 'CD-208', 'CD-209', 'CD-210',
+             'CD-211', 'CD-212', 'CD-214', 'CD-215', 'CD-301', 'CD-302',
              'CD-303',
              'CD-304',
              'CD-305',

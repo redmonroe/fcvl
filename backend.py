@@ -243,7 +243,9 @@ class Damages(BaseModel):
     def load_damages(explicit_month_to_load=None, commit_to_db=None):
         print('\napplying all historical damages from Config')
         damages = Config.damages
-        damages = Damages.filter_damages_by_date(damages, explicit_month_to_load=explicit_month_to_load)
+        if explicit_month_to_load:
+            damages = Damages.filter_damages_by_date(damages, explicit_month_to_load=explicit_month_to_load)
+        
         for item in damages:
             for name, packet in item.items():
                 dam = Damages(
@@ -1117,7 +1119,7 @@ class PopulateTable(QueryHC):
         move_outs = list(start_set - end_set)  # catches move out
         return move_ins, move_outs
 
-    def transfer_opcash_from_findex_to_opcash_and_detail(self):
+    def transfer_opcash_from_findex_to_opcash_and_detail(self, explicit_month_to_load=None, commit_to_db=None):
         """this function is responsible for moving information unpacked into findexer table into OpCash and OpCashDetail tables"""
 
         """
@@ -1127,15 +1129,29 @@ class PopulateTable(QueryHC):
 
         COULD MERGE WITH SCRAPEDETAIL
         """
-        file_list = [(item.fn, item.period, item.path, item.hap, item.rr, item.depsum, item.deplist, item.corr_sum) for item in Findexer().select().
-                     where(Findexer.doc_type == 'opcash').
-                     where(Findexer.status == 'processed').
-                     namedtuples()]
+        if explicit_month_to_load:
+            file_list = [(item.fn, item.period, item.path, item.hap, item.rr, item.depsum, item.deplist, item.corr_sum) for item in Findexer().select().
+                        where(Findexer.doc_type == 'opcash').
+                        where(Findexer.status == 'processed').
+                        where(Findexer.period == explicit_month_to_load).
+                        namedtuples()]
 
-        file_list = [(item.fn, item.period, item.path, item.hap, item.rr, item.depsum, item.deplist, item.corr_sum) for item in Findexer().select().
-                     where(Findexer.doc_type == 'opcash').
-                     where(Findexer.status == 'processed').
-                     namedtuples()]
+            file_list = [(item.fn, item.period, item.path, item.hap, item.rr, item.depsum, item.deplist, item.corr_sum) for item in Findexer().select().
+                        where(Findexer.doc_type == 'opcash').
+                        where(Findexer.status == 'processed').
+                        where(Findexer.period == explicit_month_to_load).
+                        namedtuples()]
+        else:
+            file_list = [(item.fn, item.period, item.path, item.hap, item.rr, item.depsum, item.deplist, item.corr_sum) for item in Findexer().select().
+                        where(Findexer.doc_type == 'opcash').
+                        where(Findexer.status == 'processed').
+                        namedtuples()]
+
+            file_list = [(item.fn, item.period, item.path, item.hap, item.rr, item.depsum, item.deplist, item.corr_sum) for item in Findexer().select().
+                        where(Findexer.doc_type == 'opcash').
+                        where(Findexer.status == 'processed').
+                        namedtuples()]
+        # breakpoint()
 
         for item in file_list:
             try:
@@ -1437,30 +1453,29 @@ class ProcessingLayer(StatusRS):
         query = StatusRS.create(current_date=date1)
         query.save()
 
-    def get_most_recent_status(self):
-        populate = PopulateTable()
-        most_recent_status = [item for item in StatusRS().select(
-        ).order_by(-StatusRS.status_id).namedtuples()][0]  # note: - = descending order syntax in peewee
-        return most_recent_status
-
-    def write_manual_entries_from_config(self):
+    def write_manual_entries_from_config(self, explicit_month_to_load=None):
         from manual_entry import ManualEntry  # circular import workaround
         manentry = ManualEntry(db=db)
-        manentry.apply_persisted_changes()
+        manentry.apply_persisted_changes(explicit_month_to_load=explicit_month_to_load)
 
     def write_to_statusrs_wrapper(self, **kwargs):
-        populate = PopulateTable()
-        self.set_current_date()
-        most_recent_status = self.get_most_recent_status()
+        if kwargs.get('commit_to_db') == False:
+            print('bypassing write to statusrs')
+        else:
+            self.set_current_date()
+
         if kwargs.get('last_range_month'):
             all_months_ytd = Utils.months_in_ytd(
                 Config.current_year, last_range_month=kwargs['last_range_month'])
         else:
             all_months_ytd = Utils.months_in_ytd(Config.current_year)
-
-        report_list = populate.get_processed_by_month(
-            month_list=all_months_ytd)
-        return all_months_ytd, report_list, most_recent_status
+       
+        return (all_months_ytd, 
+               self.populate.get_processed_by_month(
+            month_list=all_months_ytd), 
+               [item for item in StatusRS().select().
+                order_by(-StatusRS.status_id).namedtuples()][0]  # note: - = descending order syntax in peewee
+               )
 
     def display_most_recent_status(self, mr_status=None, months_ytd=None):
         print(f'\n\n***************************** welcome!********************')
@@ -1615,6 +1630,7 @@ class ProcessingLayer(StatusRS):
             '''probably need to add the concept of "adjustments" in here'''
             sum_from_payments = Reconciler.master_sum_from_payments_totaler(
                 ten_payments=ten_payments, non_ten_pay=ntp, period=month)
+            # breakpoint()
 
             if sum_from_payments == 0:
                 print(f'no tenant deposit report available for {month}\n')

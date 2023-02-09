@@ -48,10 +48,10 @@ class ManualEntry:
         elif choice == 'Z':
             modified_item = self.delete_ui(selected_item=selected_item)
 
-    def apply_persisted_changes(self):
+    def apply_persisted_changes(self, explicit_month_to_load=None):
         print('\napplying persistent changes')
         self.connect_to_db()
-        self.find_persisted_changes_from_config()
+        self.find_persisted_changes_from_config(explicit_month_to_load=explicit_month_to_load)
 
     def delete_ui(self, selected_item=None, obj_str=None):
         print('delete ui')
@@ -185,7 +185,14 @@ class ManualEntry:
                                                     genus=kwargs['genus'],)
         new_model_row.save()
 
-    def find_persisted_changes_from_config(self):
+    def find_persisted_changes_from_config(self, explicit_month_to_load=None):
+        if explicit_month_to_load:
+            first_dt, last_dt = self.populate.make_first_and_last_dates(date_str=explicit_month_to_load)
+            self.persisted_changes = [item for item in self.persisted_changes if dt.strptime(
+                item['col_name3'][1], '%Y-%m-%d') >= first_dt and dt.strptime(
+                item['col_name3'][1], '%Y-%m-%d') <= last_dt]
+        
+                
         for item in self.persisted_changes:
             item = self._print_persisted_item(item=item)
 

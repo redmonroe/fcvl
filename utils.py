@@ -43,7 +43,8 @@ class Utils:
             current_year = int(current_year)
             range_month = int(range_month)
         else:
-            range_month = datetime.now().strftime('%m')
+            current_year = int(current_year)
+            range_month = int(datetime.now().strftime('%m'))
 
         date_info = monthrange(current_year, range_month)
         last_day = date_info[1]
@@ -325,7 +326,7 @@ class Utils:
         choice = []
         files = []
         choice_file = {}
-        
+
         for count, (k, v) in enumerate(list1.items(), start):
             print(count, "****", k, '****', v)
             choice.append(count)

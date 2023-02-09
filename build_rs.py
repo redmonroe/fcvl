@@ -34,19 +34,42 @@ class BuildRS(MonthSheet):
         self.ms = MonthSheet(full_sheet=self.full_sheet, path=self.path)
         self.findex = FileIndexer(path=self.path, db=self.main_db)
         self.populate = self._setup_tables(mode='create_only')
+        self.player = ProcessingLayer(service=self.service,
+                                 full_sheet=self.full_sheet, ms=self.ms)
 
     def __repr__(self):
         return f'{self.__class__.__name__} | {self.path} | {self.full_sheet}'
     
     def build_explicit_month(self, explicit_month_to_load=None, mode=None):
         commit_to_db = False
-        # (new_files, 
-        #  unfinalized_months, 
-        #  final_not_written) = self.findex.incremental_filer(explicit_month_to_load=explicit_month_to_load)
+        
+        (new_files, 
+         unfinalized_months, 
+         final_not_written) = self.findex.incremental_filer(explicit_month_to_load=explicit_month_to_load)
+        
+        breakpoint()
+        # after_initial = AfterInitLoad(rentrolls=self.proc_rentrolls,
+        #                               deposits=self.proc_dates_and_paths)
+        
+        
         
         Damages.load_damages(explicit_month_to_load=explicit_month_to_load,
                              commit_to_db=commit_to_db,
                              )
+        
+        # self.populate.transfer_opcash_from_findex_to_opcash_and_detail(explicit_month_to_load=explicit_month_to_load,
+                            #  commit_to_db=commit_to_db,)
+                            
+        all_months_ytd, report_list, most_recent_status = self.player.write_to_statusrs_wrapper(
+                last_range_month=explicit_month_to_load, 
+                commit_to_db=commit_to_db,
+                )
+        
+        self.player.write_manual_entries_from_config(explicit_month_to_load=explicit_month_to_load)
+        self.player.reconcile_and_inscribe_state(
+            month_list=[explicit_month_to_load],
+            ref_rec=most_recent_status,
+            source='build')
         breakpoint()
 
     def build_db_from_scratch(self, **kw):
@@ -106,11 +129,7 @@ class BuildRS(MonthSheet):
 
         '''BUILD ADDRESSES HERE; MOVE IT OUT OF LETTERS'''
 
-        if kw.get('last_range_month') is not None:
-            all_months_ytd, report_list, most_recent_status = player.write_to_statusrs_wrapper(
-                last_range_month=kw['last_range_month'])
-        else:
-            all_months_ytd, report_list, most_recent_status = player.write_to_statusrs_wrapper()
+        all_months_ytd, report_list, most_recent_status = player.write_to_statusrs_wrapper()
 
         damages_txn_status_rstime1 = time.time() - damages_txn_status_rstime1
 

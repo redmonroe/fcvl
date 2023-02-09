@@ -340,7 +340,6 @@ class FileIndexer(Utils, Scrape, Reconciler):
 
                 
             if bypass_write_to_db is None:
-                find_change.save()
                 opcash_records = [(item.fn, item.doc_id) for item in Findexer().
                                 select().
                                 where(Findexer.path == path).
@@ -358,6 +357,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
                     find_change.deplist = json.dumps(deplist)
                 else:
                     find_change.deplist = '0'
+                find_change.save()
             else:
                 return {'depsum': depsum, 'deplist': deplist, 'hap': hap, 'r4r': r4r, 'corr_sum': corr_sum}
 
