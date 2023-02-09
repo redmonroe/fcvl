@@ -69,25 +69,39 @@ def reset_db(production=False):
 @click.command()
 @click.option('-p', '--production',
               default=False, help='reset db?')
-@click.option('-l', '--last_month', type=str, help='pass an explicit final month to db builder (ie "2022-12")')
-def load_db(production=False, last_month=None):
+@click.option('-e', '--explicit_month', 
+              type=str, 
+              help='pass an explicit final month to db builder (ie "2022-12")')
+@click.option('-l', '--last_month', 
+              type=str, 
+              help='pass an explicit final month to db builder (ie "2022-12")')
+def load_db(production=False, last_month=None, explicit_month=None):
     if production:
         # TODO: last month no supported in this branche
         click.echo('PRODUCTION: loading all available files in path to db')
         figure = Figuration(mode='production')
         path, full_sheet, build, service, ms = figure.return_configuration()
         ms.auto_control(source='cli.py', mode='clean_build')
+    elif explicit_month:
+        print(f'passing explicit command to load information for: {explicit_month} only')
+        figure = Figuration(method='not_iter')
+        path, full_sheet, build, service, ms = figure.return_configuration()
+        build.build_explicit_month(explicit_month_to_load=explicit_month)
+    elif last_month:
+        figure = Figuration(method='not_iter')
+        path, full_sheet, build, service, ms = figure.return_configuration()
+        choice = input('ARE YOU ABSOLUTELY SURE YOU WANT TO DROP DB AND START OVER? \n enter "qwqz" to continue: ')
+        if choice == 'qwqz':
+            click.echo('TEST: loading all available files in path to db')
+            build.build_db_from_scratch(last_range_month=last_month)
     else:
         figure = Figuration(method='not_iter')
         path, full_sheet, build, service, ms = figure.return_configuration()
-        if last_month:
-            print(f'passing explicit command to load information for: {last_month} only')
-            build.build_explicit_month(explicit_month_to_load=last_month)
-        else:
-            choice = input('ARE YOU ABSOLUTELY SURE YOU WANT TO DROP DB AND START OVER? \n enter "qwqz" to continue: ')
-            if choice == 'qwqz':
-                click.echo('TEST: loading all available files in path to db')
-                build.build_db_from_scratch()
+        build.build_explicit_month(explicit_month_to_load=last_month)
+        choice = input('ARE YOU ABSOLUTELY SURE YOU WANT TO DROP DB AND START OVER? \n enter "qwqz" to continue: ')
+        if choice == 'qwqz':
+            click.echo('TEST: loading all available files in path to db')
+            build.build_db_from_scratch()
 
 
 @click.command()

@@ -1141,7 +1141,6 @@ class PopulateTable(QueryHC):
                         where(Findexer.status == 'processed').
                         where(Findexer.period == explicit_month_to_load).
                         namedtuples()]
-            breakpoint()
         else:
             file_list = [(item.fn, item.period, item.path, item.hap, item.rr, item.depsum, item.deplist, item.corr_sum) for item in Findexer().select().
                         where(Findexer.doc_type == 'opcash').
@@ -1466,8 +1465,11 @@ class ProcessingLayer(StatusRS):
             self.set_current_date()
 
         if kwargs.get('last_range_month'):
-            all_months_ytd = Utils.months_in_ytd(
-                Config.current_year, last_range_month=kwargs['last_range_month'])
+            all_months_ytd = Utils.months_in_ytd(Config.current_year,
+                last_range_month=kwargs['last_range_month'])
+        elif kwargs.get('explicit_month_to_load'):
+            all_months_ytd = Utils.months_in_ytd(Config.current_year,
+                explicit_month_to_load=kwargs['explicit_month_to_load'])
         else:
             all_months_ytd = Utils.months_in_ytd(Config.current_year)
        

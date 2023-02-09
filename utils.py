@@ -35,24 +35,24 @@ class Utils:
     def months_in_ytd(current_year,
                       style=None,
                       show_choices=None,
+                      explicit_month_to_load=None,
                       last_range_month=None):
 
         if last_range_month:
-            current_year = int(last_range_month.split('-')[0])
-            range_month = int(last_range_month.split('-')[1])
-            current_year = int(current_year)
-            range_month = int(range_month)
+            month_list = pd.date_range('2022-01', 
+                                       f'{last_range_month.split("-")[0]}-{last_range_month.split("-")[1]}', 
+                                        freq='MS').strftime("%Y-%m").tolist()
+        elif explicit_month_to_load:
+            return explicit_month_to_load
         else:
-            current_year = int(current_year)
+            current_year = int(datetime.now().strftime('%Y'))
             range_month = int(datetime.now().strftime('%m'))
-
-        date_info = monthrange(current_year, range_month)
-        last_day = date_info[1]
-
-        month_list = pd.date_range(f'{current_year}-01-01',
-                                   f'{current_year}-{range_month}-{last_day}',
-                                   freq='MS').strftime("%Y-%m").tolist()
-        month_list = [item for item in month_list]
+            date_info = monthrange(current_year, range_month)
+            last_day = date_info[1]
+            month_list = pd.date_range(f'{current_year}-01-01',
+                                    f'{current_year}-{range_month}-{last_day}',
+                                    freq='MS').strftime("%Y-%m").tolist()
+            month_list = [item for item in month_list]
 
         if show_choices:
             for count, item in enumerate(month_list, 1):

@@ -23,6 +23,7 @@ class BuildRS(MonthSheet):
         self.full_sheet = full_sheet
         self.path = path
         self.pytest = False
+        self.commit_to_db = True
         try:
             self.service = oauth(Config.my_scopes, 'sheet')
         except (FileNotFoundError, NameError) as e:
@@ -34,46 +35,46 @@ class BuildRS(MonthSheet):
         self.findex = FileIndexer(path=self.path, db=self.main_db)
         self.populate = self._setup_tables(mode='create_only')
         self.player = ProcessingLayer(service=self.service,
-                                 full_sheet=self.full_sheet, ms=self.ms)
+                                      full_sheet=self.full_sheet, ms=self.ms)
 
     def __repr__(self):
         return f'{self.__class__.__name__} | {self.path} | {self.full_sheet}'
-    
-    def build_explicit_month(self, explicit_month_to_load=None, mode=None):
-        commit_to_db = True
-        
-        (new_files, 
-         unfinalized_months, 
-         final_not_written) = self.findex.incremental_filer(explicit_month_to_load=explicit_month_to_load)
-        
-        self.proc_rentrolls = [(item[1], item[0]) for item in new_files if item[2] == 'rent']
-        self.proc_dates_and_paths = [(item[1], item[0]) for item in new_files if item[2] == 'deposits']
-        after_initial = AfterInitLoad(rentrolls=self.proc_rentrolls,
-                                      deposits=self.proc_dates_and_paths)
-        
-        
+
+    def build_explicit_month(self, explicit_month_to_load=None):
+        (new_files,
+         _,
+         _) = self.findex.incremental_filer(explicit_month_to_load=explicit_month_to_load)
+
+        self.proc_rentrolls = [(item[1], item[0])
+                               for item in new_files if item[2] == 'rent']
+        self.proc_dates_and_paths = [(item[1], item[0])
+                                     for item in new_files if item[2] == 'deposits']
+        _ = AfterInitLoad(rentrolls=self.proc_rentrolls,
+                          deposits=self.proc_dates_and_paths)
+
         Damages.load_damages(explicit_month_to_load=explicit_month_to_load,
-                             commit_to_db=commit_to_db,
+                             commit_to_db=self.commit_to_db,
                              )
-        
+
         self.populate.transfer_opcash_from_findex_to_opcash_and_detail(explicit_month_to_load=explicit_month_to_load,
-                             commit_to_db=commit_to_db,)
-                            
+                                                                       commit_to_db=self.commit_to_db,)
+
         all_months_ytd, report_list, most_recent_status = self.player.write_to_statusrs_wrapper(
-                last_range_month=explicit_month_to_load, 
-                commit_to_db=commit_to_db,
-                )
-        
-        self.player.write_manual_entries_from_config(explicit_month_to_load=explicit_month_to_load)
+            explicit_month_to_load=explicit_month_to_load,
+            commit_to_db=self.commit_to_db,
+        )
+
+        self.player.write_manual_entries_from_config(
+            explicit_month_to_load=explicit_month_to_load)
         self.player.reconcile_and_inscribe_state(
             month_list=[explicit_month_to_load],
             ref_rec=most_recent_status,
             source='build')
-        
-        self.player.display_most_recent_status(mr_status=most_recent_status, 
+
+        self.player.display_most_recent_status(mr_status=most_recent_status,
                                                months_ytd=all_months_ytd)
 
-        breakpoint()
+        self.main_db.close()
 
     def build_db_from_scratch(self, **kw):
         print('building db from scratch')
@@ -117,10 +118,9 @@ class BuildRS(MonthSheet):
 
         init_load_time = time.time() - init_load_time
 
-        # TODO: can't we just pass a list of months
         after_init_load_time = time.time()
         _ = AfterInitLoad(rentrolls=self.proc_rentrolls,
-                                      deposits=self.proc_dates_and_paths)
+                          deposits=self.proc_dates_and_paths)
 
         after_init_load_time = time.time() - after_init_load_time
 
@@ -131,8 +131,11 @@ class BuildRS(MonthSheet):
         self.populate.transfer_opcash_from_findex_to_opcash_and_detail()
 
         '''BUILD ADDRESSES HERE; MOVE IT OUT OF LETTERS'''
-
-        all_months_ytd, report_list, most_recent_status = player.write_to_statusrs_wrapper()
+        if kw.get('last_range_month') is not None:
+            all_months_ytd, report_list, most_recent_status = player.write_to_statusrs_wrapper(
+                last_range_month=kw['last_range_month'])
+        else:
+            all_months_ytd, report_list, most_recent_status = player.write_to_statusrs_wrapper()
 
         damages_txn_status_rstime1 = time.time() - damages_txn_status_rstime1
 
@@ -142,6 +145,7 @@ class BuildRS(MonthSheet):
 
         reconcile_time = time.time()
         """this is the critical control function"""
+
         player.reconcile_and_inscribe_state(
             month_list=all_months_ytd,
             ref_rec=most_recent_status,
@@ -184,5 +188,3 @@ class BuildRS(MonthSheet):
             self.main_db.drop_tables(models=self.create_tables_list1)
             self.main_db.create_tables(self.create_tables_list1)
         return populate
-
-
