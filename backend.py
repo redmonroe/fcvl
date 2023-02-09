@@ -1141,6 +1141,7 @@ class PopulateTable(QueryHC):
                         where(Findexer.status == 'processed').
                         where(Findexer.period == explicit_month_to_load).
                         namedtuples()]
+            breakpoint()
         else:
             file_list = [(item.fn, item.period, item.path, item.hap, item.rr, item.depsum, item.deplist, item.corr_sum) for item in Findexer().select().
                         where(Findexer.doc_type == 'opcash').
@@ -1630,7 +1631,6 @@ class ProcessingLayer(StatusRS):
             '''probably need to add the concept of "adjustments" in here'''
             sum_from_payments = Reconciler.master_sum_from_payments_totaler(
                 ten_payments=ten_payments, non_ten_pay=ntp, period=month)
-            # breakpoint()
 
             if sum_from_payments == 0:
                 print(f'no tenant deposit report available for {month}\n')
@@ -1639,12 +1639,9 @@ class ProcessingLayer(StatusRS):
                 bank_deposits = float(opcash[0][4])
                 deposit_corrections = float(opcash[0][5])
 
-                # if kwargs['source'] == 'iter':
                 bank_deposits = Reconciler.adjust_bank_deposits(
                     bank_deposits=bank_deposits, deposit_corrections=deposit_corrections)
 
-                # if kwargs['source'] == 'iter' and month == '2022-02':
-                #     breakpoint()
                 result = Reconciler.backend_processing_layer_assert_bank_deposits_tenant_deposits(
                     bank_deposits=bank_deposits, sum_from_payments_report=sum_from_payments, period=month, genus='opcash', source=kwargs['source'])
 

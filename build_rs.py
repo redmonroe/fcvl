@@ -12,7 +12,6 @@ from setup_month import MonthSheet
 class BuildRS(MonthSheet):
     def __init__(self, sleep=None, full_sheet=None, path=None,
                  mode=None, test_service=None, pytest=None, **kw):
-
         self.main_db = db  # connects backend.db to Config
         if mode == 'testing':
             db_path = Config.TEST_DB.database
@@ -41,24 +40,24 @@ class BuildRS(MonthSheet):
         return f'{self.__class__.__name__} | {self.path} | {self.full_sheet}'
     
     def build_explicit_month(self, explicit_month_to_load=None, mode=None):
-        commit_to_db = False
+        commit_to_db = True
         
         (new_files, 
          unfinalized_months, 
          final_not_written) = self.findex.incremental_filer(explicit_month_to_load=explicit_month_to_load)
         
-        breakpoint()
-        # after_initial = AfterInitLoad(rentrolls=self.proc_rentrolls,
-        #                               deposits=self.proc_dates_and_paths)
-        
+        self.proc_rentrolls = [(item[1], item[0]) for item in new_files if item[2] == 'rent']
+        self.proc_dates_and_paths = [(item[1], item[0]) for item in new_files if item[2] == 'deposits']
+        after_initial = AfterInitLoad(rentrolls=self.proc_rentrolls,
+                                      deposits=self.proc_dates_and_paths)
         
         
         Damages.load_damages(explicit_month_to_load=explicit_month_to_load,
                              commit_to_db=commit_to_db,
                              )
         
-        # self.populate.transfer_opcash_from_findex_to_opcash_and_detail(explicit_month_to_load=explicit_month_to_load,
-                            #  commit_to_db=commit_to_db,)
+        self.populate.transfer_opcash_from_findex_to_opcash_and_detail(explicit_month_to_load=explicit_month_to_load,
+                             commit_to_db=commit_to_db,)
                             
         all_months_ytd, report_list, most_recent_status = self.player.write_to_statusrs_wrapper(
                 last_range_month=explicit_month_to_load, 
@@ -116,7 +115,7 @@ class BuildRS(MonthSheet):
 
         # TODO: can't we just pass a list of months
         after_init_load_time = time.time()
-        after_initial = AfterInitLoad(rentrolls=self.proc_rentrolls,
+        _ = AfterInitLoad(rentrolls=self.proc_rentrolls,
                                       deposits=self.proc_dates_and_paths)
 
         after_init_load_time = time.time() - after_init_load_time

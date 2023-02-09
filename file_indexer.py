@@ -228,20 +228,23 @@ class FileIndexer(Utils, Scrape, Reconciler):
                     'running findexer now would input the above file(s)?  press 1 to proceed ... '))
             else:
                 choice1 = 1
+            
+            self.index_dict = self.sort_directory_by_extension2()
+            self.load_what_is_in_dir_as_indexed(dict1=self.index_dict_iter)
 
             if choice1 == 1:
                 print('YES, I WANT TO ADD THIS FILE FINDEXER DB')
-                self.index_dict = self.sort_directory_by_extension2()
-                self.load_what_is_in_dir_as_indexed(dict1=self.index_dict_iter)
                 self.runner_internals()
                 new_files = self.get_report_type_from_xls_name(
                     records=self.index_dict)
                 new_files = self.get_date_from_file_name(records=new_files)
                 self.findex_reconcile_onesite_deposits_to_scrape_or_oc()
-                return new_files, self.unfinalized_months, final_not_written
             else:
-                print('exiting program from incremental_filer()')
-                exit
+                new_files = self.get_report_type_from_xls_name(
+                    records=self.index_dict)
+                new_files = self.get_date_from_file_name(records=new_files)
+                
+            return new_files, self.unfinalized_months, final_not_written
 
     def incremental_filer_sub_1_for_dry_run(self, *args, **kwargs):
         # TODO: missing scrape report from nbofi flow
@@ -598,8 +601,8 @@ class FileIndexer(Utils, Scrape, Reconciler):
                                         [0].split('_')[2:][::-1])
                     date_object = datetime.strptime(date_str, '%m-%Y')
                     date_str = date_object.strftime('%Y-%m')
-                dict1 = {typ: (date_str, data[0])}
-                records1.append(dict1)
+                tup1 = (data[0], date_str, typ)
+                records1.append(tup1)
         return records1
 
     def drop_findex_table(self):
