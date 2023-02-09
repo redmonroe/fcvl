@@ -69,6 +69,10 @@ class BuildRS(MonthSheet):
             month_list=[explicit_month_to_load],
             ref_rec=most_recent_status,
             source='build')
+        
+        self.player.display_most_recent_status(mr_status=most_recent_status, 
+                                               months_ytd=all_months_ytd)
+
         breakpoint()
 
     def build_db_from_scratch(self, **kw):
@@ -181,55 +185,4 @@ class BuildRS(MonthSheet):
             self.main_db.create_tables(self.create_tables_list1)
         return populate
 
-    def iterate_over_remaining_months_incremental(self, list1=None):
-        """rent has to go first;
-        otherwise if you have a move-in during t
-        he month there is no reference for the fk for a payment"""
-        populate = PopulateTable()
 
-        for item in list1:
-            for typ, data in item.items():
-                first_dt, last_dt = populate.make_first_and_last_dates(
-                    date_str=data[0])
-                if typ == 'rent':
-                    cleaned_nt_list, total_tenant_charges, cleaned_mos = populate.after_jan_load(
-                        filename=data[1], date=data[0])
-
-        for item in list1:
-            for typ, data in item.items():
-                first_dt, last_dt = populate.make_first_and_last_dates(
-                    date_str=data[0])
-                if typ == 'deposits':
-                    grand_total, ntp, tenant_payment_df = populate.payment_load_full(
-                        filename=data[1])
-
-        '''
-        for item in list1:
-            for typ, data in item.items():
-                first_dt, last_dt = populate.make_first_and_last_dates(date_str=data[0])
-                if typ == 'op':
-                    print('process op_cash')
-                    # breakpoint(c
-                    # )
-                    # grand_total, ntp, tenant_payment_df = populate.payment_load_full(filename=data[1])
-        '''
-
-        findex = FileIndexer()
-        for item in list1:
-            for typ, data in item.items():
-                first_dt, last_dt = populate.make_first_and_last_dates(
-                    date_str=data[0])
-                if typ == 'scrape':
-                    scrape_txn_list = findex.load_directed_scrape(
-                        path_to_scrape=data[1], target_date=data[0])
-                    scrape_deposit_sum = sum(
-                        [float(item['amount']) for item in scrape_txn_list if item['dep_type'] == 'deposit'])
-
-                    """this really needs to be combined"""
-
-                    Reconciler.iter_build_assert_scrape_total_match_deposits(
-                        scrape_deposit_sum=scrape_deposit_sum, grand_total_from_deposits=grand_total, period=data[0], genus='reconcile scrape to deposits in iterative build')
-
-                    month = data[0]
-
-                    return True, month

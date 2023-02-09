@@ -42,20 +42,6 @@ class IterRS(BuildRS):
         return f'{self.__class__.__name__} object path: {self.path} write sheet: {self.full_sheet} service:{self.service}'
     
     def task_list(self, *args, **kwargs):   
-        scrape_bool, month = self.iterate_over_remaining_months_incremental(list1=kwargs['new_files'])
-        Damages.load_damages()
-        self.player.write_manual_entries_from_config()
-
-        self.populate.transfer_opcash_from_findex_to_opcash_and_detail()
-
-        all_months_ytd, report_list, most_recent_status = self.player.write_to_statusrs_wrapper()
-
-        """this is the critical control function"""
-        self.player.reconcile_and_inscribe_state(month_list=all_months_ytd, ref_rec=most_recent_status, source='iter')
-
-        self.player.display_most_recent_status(mr_status=most_recent_status, months_ytd=all_months_ytd)
-
-        
         write1 = kwargs.get('write')
 
         if write1 == True:
@@ -87,42 +73,4 @@ class IterRS(BuildRS):
     def dry_run(self, *args, **kwargs):
         return self.findex.incremental_filer_sub_1_for_dry_run(currently_availables=kwargs['currently_availables'], target_month=kwargs['target_month'])
 
-    def incremental_load(self, **kw):
-        print('...attempting incremental load')
-
-        """
-        NEXT UP: 
-            - WHAT IF SCRAPE IS BEFORE OPCASH
-            - WHAT IF DEPOSITS ONLY?
-            - WHAT IF RR ONLY?
-            - WHAT IF OPCASH ONLY?
-            - DAMAGES, MANUAL ENTRY (but I think this is working ok?)
-        
-        
-        """
-        status = StatusRS()
-
-        populate = self.setup_tables(mode='create_only')
-        new_files, unfinalized_months, final_not_written = self.findex.incremental_filer(pytest=self.pytest)
-        breakpoint()
-
-        if kw.get('write') == True:
-
-            """this needs to be moved down: should still process for db if write=False"""
-            if final_not_written != []:
-                """this branch is in case db is up-to-date but we have not written the month"""
-                print('writing remaining months to rs & marking to statusobject table')
-                self.player.find_complete_pw_months_and_iter_write( writeable_months=final_not_written)
-            else:
-                print('there are no finalized months waiting to be written to sheets.')
-        else:
-            print('you have chosen not to pass write=True so nothing is written to sheets')
-
-        # if kw.get('write') == True:
-        """we need both new files and SOME unfinalized months to do anything"""
-        if new_files != [] and unfinalized_months != []:
-            self.task_list(new_files=new_files, write=kw.get('write'))
-        else:
-            print('there are no new files, but some months are still unfinalized')
-            print('exiting iter_build')
        
