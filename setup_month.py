@@ -72,12 +72,10 @@ class MonthSheet(YearSheet):
             self.remove_base_sheet()
             status_list = self.to_google_sheets(month_list=month_list)
         elif mode == 'single_sheet':
-            # TODO last_range_month needs explicit option in cli.py
             # TODO THIS ONLY FORMATS? DOESN'T RUN?
             month_list = Utils.months_in_ytd(
                 Config.current_year, explicit_month_to_load=explicit_month_to_load, show_choices=True)
-            print(
-                f'MAKE SINGLE RENT SHEET FOR {month_list} | DO NOT RESET FULL SHEET.')
+            print(f'MAKE SINGLE RENT SHEET FOR {month_list} | DO NOT RESET FULL SHEET.')
             titles_dict = self.make_single_sheet(single_month_list=month_list)
             self.formatting_runner(title_dict=titles_dict)
             status_list = self.to_google_sheets(month_list=month_list, 
@@ -89,6 +87,59 @@ class MonthSheet(YearSheet):
             # TODO: writing status back to StatusObject is not supported in any of these flows
         self.report_status(month_list=month_list,
                            status=status_list, wrange=wrange)
+        
+    def to_google_sheets(self, 
+                         month_list=None, 
+                         make_one_sheet=None):
+        status_list = []
+        count = 0
+        for date in month_list:
+            df, contract_rent, subsidy, unit, tenant_names, beg_bal, end_bal, charge_month, pay_month, dam_month = self.get_rs_col(date)
+            
+            # make one sheet branch
+            if len(month_list) == 1 & make_one_sheet == True:   
+                last_dt_of_prior_month = Utils.make_last_date_of_last_month(self,
+                    date_str=date)         
+                prior_month = ('-').join(last_dt_of_prior_month.split('-')[:2])
+                count = 1
+    
+                
+            if count == 0:
+                    prior_month = self.write_rs_col_EXPERIMENTAL(date,  contract_rent=contract_rent, 
+                    subsidy=subsidy, 
+                    unit=unit, 
+                    tenant_names=tenant_names,
+                    beg_bal=beg_bal,
+                    endbal=end_bal,
+                    charge_month=charge_month,
+                    pay_month=pay_month, 
+                    dam_month=dam_month)
+            else:                
+                prior_month = self.write_rs_col_EXPERIMENTAL(date, prior_month,
+                contract_rent=contract_rent, 
+                subsidy=subsidy, 
+                unit=unit, 
+                tenant_names=tenant_names,
+                beg_bal=beg_bal,
+                endbal=end_bal,
+                charge_month=charge_month,
+                pay_month=pay_month, 
+                dam_month=dam_month )
+            count =+ 1
+
+            reconciliation_type = self.scrape_or_opcash(date=date)
+    
+            self.write_deposit_detail_to_gs(date, genus=reconciliation_type)
+            ntp = self.get_ntp_wrapper(date)
+            sum_laundry, other_list = self.split_ntp(ntp)
+            sum_mi_payments = self.get_move_ins(date)
+            self.write_move_in_box(date)
+            self.write_ntp(date, [sum_laundry], start_row=71)
+            self.write_ntp(date, other_list, start_row=72)
+            self.write_sum_mi_payments(date, sum_mi_payments)
+            status = self.check_totals_reconcile(date)
+            status_list.append(status)
+        return status_list
 
     def to_excel(self, month_list=None):
         print(f'sending {month_list} to excel')
@@ -181,59 +232,6 @@ class MonthSheet(YearSheet):
         """deposit corrections"""
         writer.save()
 
-        return status_list
-
-    def to_google_sheets(self, 
-                         month_list=None, 
-                         make_one_sheet=None):
-        status_list = []
-        count = 0
-        for date in month_list:
-            df, contract_rent, subsidy, unit, tenant_names, beg_bal, end_bal, charge_month, pay_month, dam_month = self.get_rs_col(date)
-            
-            # make one sheet branch
-            if len(month_list) == 1 & make_one_sheet == True:   
-                last_dt_of_prior_month = Utils.make_last_date_of_last_month(self,
-                    date_str=date)         
-                prior_month = ('-').join(last_dt_of_prior_month.split('-')[:2])
-                count = 1
-    
-                
-            if count == 0:
-                    prior_month = self.write_rs_col_EXPERIMENTAL(date,  contract_rent=contract_rent, 
-                    subsidy=subsidy, 
-                    unit=unit, 
-                    tenant_names=tenant_names,
-                    beg_bal=beg_bal,
-                    endbal=end_bal,
-                    charge_month=charge_month,
-                    pay_month=pay_month, 
-                    dam_month=dam_month)
-            else:                
-                prior_month = self.write_rs_col_EXPERIMENTAL(date, prior_month,
-                contract_rent=contract_rent, 
-                subsidy=subsidy, 
-                unit=unit, 
-                tenant_names=tenant_names,
-                beg_bal=beg_bal,
-                endbal=end_bal,
-                charge_month=charge_month,
-                pay_month=pay_month, 
-                dam_month=dam_month )
-            count =+ 1
-
-            reconciliation_type = self.scrape_or_opcash(date=date)
-
-            self.write_deposit_detail_to_gs(date, genus=reconciliation_type)
-            ntp = self.get_ntp_wrapper(date)
-            sum_laundry, other_list = self.split_ntp(ntp)
-            sum_mi_payments = self.get_move_ins(date)
-            self.write_move_in_box(date)
-            self.write_ntp(date, [sum_laundry], start_row=71)
-            self.write_ntp(date, other_list, start_row=72)
-            self.write_sum_mi_payments(date, sum_mi_payments)
-            status = self.check_totals_reconcile(date)
-            status_list.append(status)
         return status_list
 
     def report_status(self, month_list=None, status=None, wrange=None):
@@ -419,8 +417,6 @@ class MonthSheet(YearSheet):
         return hap, corr_sum, rr_sum, dep_detail
 
     def write_deposit_detail_to_excel(self, date, genus=None):
-        populate = PopulateTable()
-        first_dt, last_dt = populate.make_first_and_last_dates(date_str=date)
         if genus == True:
             hap, corr_sum, rr_sum, dep_detail = self.scrape_dep_detail_func_list(
                 date=date)

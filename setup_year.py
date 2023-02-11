@@ -77,6 +77,8 @@ class YearSheet:
                                            full_sheet=None, 
                                            service=None, 
                                            sheet=None):
+        '''this handles the formatting for the presentation layer; currently missing some
+            formatting'''
         self.calls.format_row(
             service, full_sheet, f'{sheet}!A1:M1', 'ROWS', self.HEADER_NAMES)
 
@@ -112,7 +114,7 @@ class YearSheet:
             self.calls.write_formula_column(
                 self.service, self.full_sheet, self.G_SUM_STARTBAL, f'{sheet}!D69:D69')
             self.calls.write_formula_column(
-                self.service, self.full_sheet, self.G_SUM_CHARGES, f'{sheet}!J69:D69')
+                self.service, self.full_sheet, self.G_SUM_CHARGES, f'{sheet}!J69:J69')
             self.calls.write_formula_column(
                 self.service, self.full_sheet, self.MF_SUM_FORMULA, f'{sheet}!K86:K86')
             self.calls.write_formula_column(

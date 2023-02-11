@@ -178,7 +178,7 @@ class MoveOut(BaseModel):
         # TODO manual interface for implied move outs
         last_dt_of_prior_month = Utils.make_last_date_of_last_month(
             self, date_str=date)
-
+        print(date, self.combined_move_outs)
         for move_out in self.combined_move_outs:
             if move_out.type1 == 'explicit':
                 tenant = self.deactivate_tenant(
@@ -191,6 +191,7 @@ class MoveOut(BaseModel):
             tenant.save()
             unit = self.deactivate_unit(self, name=move_out.name)
             unit.save()
+    
 
     def make_last_date_of_last_month(self, date_str=None):
         dt_obj = datetime.strptime(date_str, '%Y-%m')
@@ -199,7 +200,10 @@ class MoveOut(BaseModel):
         return last_dt_of_last_month.strftime("%Y-%m-%d")
 
     def deactivate_unit(self, name=None):
-        unit = Unit.get(Unit.tenant == name)
+        try:
+            unit = Unit.get(Unit.tenant == name)
+        except backend.Unit.DoesNotExist:
+            breakpoint()
         unit.status = 'vacant'
         unit.tenant = 'vacant'
 
@@ -1204,7 +1208,7 @@ class AfterInitLoad(PopulateTable):
         self._loop_over_deposits()
 
     def _loop_over_deposits(self):
-        for date, path in self.deposits:
+        for _, path in self.deposits:
             grand_total, ntp, tenant_payment_df = self.payment_load_full(
                 filename=path)
 

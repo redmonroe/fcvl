@@ -97,7 +97,6 @@ def load_db(production=False, last_month=None, explicit_month=None):
     else:
         figure = Figuration(method='not_iter')
         path, full_sheet, build, service, ms = figure.return_configuration()
-        build.build_explicit_month(explicit_month_to_load=last_month)
         choice = input('ARE YOU ABSOLUTELY SURE YOU WANT TO DROP DB AND START OVER? \n enter "qwqz" to continue: ')
         if choice == 'qwqz':
             click.echo('TEST: loading all available files in path to db')
@@ -207,8 +206,11 @@ def balanceletters():
     path, full_sheet, build, service, ms = figure.return_configuration()
     docx = DocxWriter(db=build.main_db, service=service)
     docx.export_history_to_docx(
-        threshold=100, startm='2022-01', endm='2022-12')
+        threshold=100, startm='2022-07', endm='2023-01')
 
+
+    # have to fix how we are loading unit; something got fucked up
+    
     # add boiler plate
     # read doc from command line
     # move closed month to rent_sheet_fs
