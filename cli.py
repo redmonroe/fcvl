@@ -101,6 +101,8 @@ def load_db(production=False, last_month=None, explicit_month=None):
         choice = input('ARE YOU ABSOLUTELY SURE YOU WANT TO DROP DB AND START OVER? \n enter "qwqz" to continue: ')
         if choice == 'qwqz':
             click.echo('TEST: loading all available files in path to db')
+            # just make the current month
+            
             build.build_db_from_scratch()
 
 
@@ -265,11 +267,18 @@ def delete_one_sheet():
 
 
 @click.command()
-def make_one_sheet():
+@click.option('-e', '--explicit_month', 
+              type=str, 
+              help='pass an explicit month to generate rent sheet')
+def make_one_sheet(explicit_month=None):
     click.echo('making one sheet')
     figure = Figuration()
     path, full_sheet, build, service, ms = figure.return_configuration()
-    ms.auto_control(mode='single_sheet')
+    if explicit_month:
+        ms.auto_control(mode='single_sheet',
+                        explicit_month_to_load=explicit_month)
+    else:
+        print('must pass explicit month to make')
 
 
 @click.command()

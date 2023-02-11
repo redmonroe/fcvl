@@ -49,7 +49,11 @@ class MonthSheet(YearSheet):
         self.dam_month = '!J2:J68'
         self.db = db
 
-    def auto_control(self, source=None, mode='clean_build', month_list=None):
+    def auto_control(self, 
+                     source=None, mode='clean_build', 
+                     month_list=None, 
+                     explicit_month_to_load=None
+                     ):
 
         month_list, wrange = self.what_is_month_list(
             source=source, month_list=month_list)
@@ -71,12 +75,14 @@ class MonthSheet(YearSheet):
             # TODO last_range_month needs explicit option in cli.py
             # TODO THIS ONLY FORMATS? DOESN'T RUN?
             month_list = Utils.months_in_ytd(
-                Config.current_year, last_range_month='2022-12', show_choices=True)
+                Config.current_year, explicit_month_to_load=explicit_month_to_load, show_choices=True)
             print(
-                f'MAKE SINGLE RENT SHEET FOR {month_list} | DO NOT RESET SHEET.')
+                f'MAKE SINGLE RENT SHEET FOR {month_list} | DO NOT RESET FULL SHEET.')
             titles_dict = self.make_single_sheet(single_month_list=month_list)
             self.formatting_runner(title_dict=titles_dict)
-            status_list = self.to_google_sheets(month_list=month_list)
+            status_list = self.to_google_sheets(month_list=month_list, 
+                                                make_one_sheet=True
+                                                )
             status_list = []
         elif mode == 'to_excel':
             status_list = self.to_excel(month_list=month_list)
@@ -177,33 +183,43 @@ class MonthSheet(YearSheet):
 
         return status_list
 
-    def to_google_sheets(self, month_list=None):
+    def to_google_sheets(self, 
+                         month_list=None, 
+                         make_one_sheet=None):
         status_list = []
         count = 0
         for date in month_list:
-            df, contract_rent, subsidy, unit, tenant_names, beg_bal, end_bal, charge_month, pay_month, dam_month = self.get_rs_col(
-                date)
+            df, contract_rent, subsidy, unit, tenant_names, beg_bal, end_bal, charge_month, pay_month, dam_month = self.get_rs_col(date)
+            
+            # make one sheet branch
+            if len(month_list) == 1 & make_one_sheet == True:   
+                last_dt_of_prior_month = Utils.make_last_date_of_last_month(self,
+                    date_str=date)         
+                prior_month = ('-').join(last_dt_of_prior_month.split('-')[:2])
+                count = 1
+    
+                
             if count == 0:
-                prior_month = self.write_rs_col_EXPERIMENTAL(date, contract_rent=contract_rent, 
-                                                             subsidy=subsidy, 
-                                                             unit=unit, 
-                                                             tenant_names=tenant_names,
-                                                             beg_bal=beg_bal,
-                                                             endbal=end_bal,
-                                                             charge_month=charge_month,
-                                                             pay_month=pay_month, 
-                                                             dam_month=dam_month)
+                    prior_month = self.write_rs_col_EXPERIMENTAL(date,  contract_rent=contract_rent, 
+                    subsidy=subsidy, 
+                    unit=unit, 
+                    tenant_names=tenant_names,
+                    beg_bal=beg_bal,
+                    endbal=end_bal,
+                    charge_month=charge_month,
+                    pay_month=pay_month, 
+                    dam_month=dam_month)
             else:                
                 prior_month = self.write_rs_col_EXPERIMENTAL(date, prior_month,
-                                                             contract_rent=contract_rent, 
-                                                             subsidy=subsidy, 
-                                                             unit=unit, 
-                                                             tenant_names=tenant_names,
-                                                             beg_bal=beg_bal,
-                                                             endbal=end_bal,
-                                                             charge_month=charge_month,
-                                                             pay_month=pay_month, 
-                                                             dam_month=dam_month )
+                contract_rent=contract_rent, 
+                subsidy=subsidy, 
+                unit=unit, 
+                tenant_names=tenant_names,
+                beg_bal=beg_bal,
+                endbal=end_bal,
+                charge_month=charge_month,
+                pay_month=pay_month, 
+                dam_month=dam_month )
             count =+ 1
 
             reconciliation_type = self.scrape_or_opcash(date=date)
@@ -256,6 +272,9 @@ class MonthSheet(YearSheet):
 
         np, cumsum = self.query.full_month_position_tenant_by_month(
             first_dt=first_dt, last_dt=last_dt)
+        
+        # CAN i JUST WRITE THE DF
+        # GET ENDBAL FROM WHERE EXACTLY?
 
         df = self.index_np_with_df(np)
         unit = df['unit'].tolist()
@@ -286,8 +305,8 @@ class MonthSheet(YearSheet):
         else:
             if prior_month:
                 print(prior_month)
-            self.BEG_BAL = [f"='{prior_month}'!L{num}" for num in range(2, 68)]
-            
+            self.BEG_BAL = [f"='{prior_month}'!L{num}" for num in range(2, 69)]
+            # breakpoint()
             self.calls.format_row(self.service, self.full_sheet,
                                     f'{date}!D2:D68', 'COLUMNS', self.BEG_BAL)
         
@@ -302,25 +321,25 @@ class MonthSheet(YearSheet):
                            kwargs.get('dam_month'), f'{date}' + self.dam_month, value_input_option='USER_ENTERED')
         return date
     
-    def write_rs_col(self, date, *args):
-        self.gc.update_int(self.service, self.full_sheet,
-                           args[0], f'{date}' + self.contract_rent, value_input_option='USER_ENTERED')
-        self.gc.update_int(self.service, self.full_sheet,
-                           args[1], f'{date}' + self.subsidy, value_input_option='USER_ENTERED')
-        self.gc.update(self.service, self.full_sheet,
-                       args[2], f'{date}' + self.unit)
-        self.gc.update(self.service, self.full_sheet,
-                       args[3], f'{date}' + self.tenant_names)
-        self.gc.update_int(self.service, self.full_sheet,
-                           args[4], f'{date}' + self.beg_bal, value_input_option='USER_ENTERED')
-        self.gc.update_int(self.service, self.full_sheet,
-                           args[5], f'{date}' + self.end_bal, value_input_option='USER_ENTERED')
-        self.gc.update_int(self.service, self.full_sheet,
-                           args[6], f'{date}' + self.charge_month, value_input_option='USER_ENTERED')
-        self.gc.update_int(self.service, self.full_sheet,
-                           args[7], f'{date}' + self.pay_month, value_input_option='USER_ENTERED')
-        self.gc.update_int(self.service, self.full_sheet,
-                           args[8], f'{date}' + self.dam_month, value_input_option='USER_ENTERED')
+    # def write_rs_col(self, date, *args):
+    #     self.gc.update_int(self.service, self.full_sheet,
+    #                        args[0], f'{date}' + self.contract_rent, value_input_option='USER_ENTERED')
+    #     self.gc.update_int(self.service, self.full_sheet,
+    #                        args[1], f'{date}' + self.subsidy, value_input_option='USER_ENTERED')
+    #     self.gc.update(self.service, self.full_sheet,
+    #                    args[2], f'{date}' + self.unit)
+    #     self.gc.update(self.service, self.full_sheet,
+    #                    args[3], f'{date}' + self.tenant_names)
+    #     self.gc.update_int(self.service, self.full_sheet,
+    #                        args[4], f'{date}' + self.beg_bal, value_input_option='USER_ENTERED')
+    #     self.gc.update_int(self.service, self.full_sheet,
+    #                        args[5], f'{date}' + self.end_bal, value_input_option='USER_ENTERED')
+    #     self.gc.update_int(self.service, self.full_sheet,
+    #                        args[6], f'{date}' + self.charge_month, value_input_option='USER_ENTERED')
+    #     self.gc.update_int(self.service, self.full_sheet,
+    #                        args[7], f'{date}' + self.pay_month, value_input_option='USER_ENTERED')
+    #     self.gc.update_int(self.service, self.full_sheet,
+    #                        args[8], f'{date}' + self.dam_month, value_input_option='USER_ENTERED')
 
     def get_ntp_wrapper(self, date):
         populate = PopulateTable()
@@ -336,13 +355,20 @@ class MonthSheet(YearSheet):
         return sum_laundry, other_list
 
     def write_sum_mi_payments(self, date, data):
-        self.gc.update_int(self.service, self.full_sheet, [
-                           data], f'{date}' + f'{self.wrange_sum_mi_payments}', value_input_option='USER_ENTERED')
+        self.gc.update_int(self.service, 
+                           self.full_sheet, 
+                           [data], 
+                           f'{date}' + f'{self.wrange_sum_mi_payments}', value_input_option='USER_ENTERED'
+                           )
 
     def write_ntp(self, date, data, start_row=None):
         gc = GoogleApiCalls()
-        self.write_list_to_col(func=gc.update_int, start_row=start_row,
-                               list1=data, col_letter='K', gc=gc, date=date)
+        self.write_list_to_col(func=gc.update_int, 
+                               start_row=start_row,
+                               list1=data, 
+                               col_letter='K', 
+                               gc=gc, 
+                               date=date)
 
     def write_move_in_box(self, date):
         populate = PopulateTable()

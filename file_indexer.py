@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 import time
 from datetime import datetime
 from pathlib import Path
@@ -243,6 +244,8 @@ class FileIndexer(Utils, Scrape, Reconciler):
                 new_files = self.get_report_type_from_xls_name(
                     records=self.index_dict)
                 new_files = self.get_date_from_file_name(records=new_files)
+                print('no new files to add in file_indexer.py; exiting')
+                sys.exit()
                 
             return new_files, self.unfinalized_months, final_not_written
 

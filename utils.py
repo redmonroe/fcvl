@@ -1,7 +1,7 @@
 
 import os.path
 from calendar import monthrange
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
 
@@ -30,6 +30,13 @@ class Utils:
         dt_obj = datetime.strptime(target_month, '%Y-%m')
         last_day = dt_obj.replace(day=monthrange(dt_obj.year, dt_obj.month)[1])
         return datetime.now() > last_day
+    
+    @staticmethod
+    def make_last_date_of_last_month(self, date_str=None):
+        dt_obj = datetime.strptime(date_str, '%Y-%m')
+        first = dt_obj.replace(day=1)
+        last_dt_of_last_month = first - timedelta(days=1)
+        return last_dt_of_last_month.strftime("%Y-%m-%d")
 
     @staticmethod
     def months_in_ytd(current_year,
@@ -43,7 +50,7 @@ class Utils:
                                        f'{last_range_month.split("-")[0]}-{last_range_month.split("-")[1]}', 
                                         freq='MS').strftime("%Y-%m").tolist()
         elif explicit_month_to_load:
-            return explicit_month_to_load
+            return [explicit_month_to_load]
         else:
             current_year = int(datetime.now().strftime('%Y'))
             range_month = int(datetime.now().strftime('%m'))

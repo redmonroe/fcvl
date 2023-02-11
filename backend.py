@@ -176,7 +176,7 @@ class MoveOut(BaseModel):
     @classmethod
     def deactivate_move_outs(self, date, move_outs=None):
         # TODO manual interface for implied move outs
-        last_dt_of_prior_month = self.make_last_date_of_last_month(
+        last_dt_of_prior_month = Utils.make_last_date_of_last_month(
             self, date_str=date)
 
         for move_out in self.combined_move_outs:
@@ -735,6 +735,7 @@ class QueryHC(Reconciler):
             positions_list1 = self.record_type_loader(
                 position_list1, 'lp_endbal', alltime_beg_bal, 1)
         else:
+            # breakpoint()
             last_endbal_by_tenant = self.tenant_last_endbal_this_period(
                 first_dt=first_dt, last_dt=last_dt)
             position_list1 = self.record_type_loader(

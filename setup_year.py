@@ -89,7 +89,7 @@ class YearSheet:
         self.calls.write_formula_column(
             service, full_sheet, self.G_SUM_ACTRENT, f'{sheet}!H69:H69')
         self.calls.write_formula_column(
-            service, full_sheet, self.G_SUM_CHARGES, f'{sheet}!J69:D69')
+            service, full_sheet, self.G_SUM_CHARGES, f'{sheet}!J69:J69')
         self.calls.write_formula_column(
             service, full_sheet, self.G_PAYMENT_MADE, f'{sheet}!K69:K69')
         self.calls.write_formula_column(
