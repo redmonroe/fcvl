@@ -100,8 +100,6 @@ def load_db(production=False, last_month=None, explicit_month=None):
         choice = input('ARE YOU ABSOLUTELY SURE YOU WANT TO DROP DB AND START OVER? \n enter "qwqz" to continue: ')
         if choice == 'qwqz':
             click.echo('TEST: loading all available files in path to db')
-            # just make the current month
-            
             build.build_db_from_scratch()
 
 

@@ -89,11 +89,13 @@ class BuildRS(MonthSheet):
                         where(Findexer.doc_type == 'rent').
                         where(Findexer.status == 'processed').
                         where(Findexer.period != '2022-01').
+                        order_by(Findexer.period).
                         namedtuples()]
         self.file_list = [(item.fn, item.period, item.path)
                           for item in Findexer().select().
                           where(Findexer.doc_type == 'deposits').
                           where(Findexer.status == 'processed').
+                          order_by(Findexer.period).
                           namedtuples()]
         self.proc_rentrolls = [(item[1], item[2])
                                for item in self.rr_list]
@@ -106,7 +108,6 @@ class BuildRS(MonthSheet):
         initial = InitLoad(
             path=self.path,
             custom_load_file=self.target_bal_load_file)
-
         (tenant_rows,
          tot_ten_ch,
          ex_moveouts,

@@ -147,11 +147,13 @@ class MoveOut(BaseModel):
 
     def __init__(self, mo_date=None, name=None, type1=None, **kwargs):
         super().__init__(**kwargs)
-        self.greeting = kwargs.get('greeting')
         self.mo_date = mo_date
         self.name = name
         self.type1 = type1
         self.combined_move_outs = []
+        
+    def __repr__(self):
+        return f'{self.__class__.__name__} | {self.name} | {self.type1} | {self.mo_date}'
 
     @classmethod
     def classify_move_outs(self, explicit_move_outs=None, implied_move_outs=None, date=None):
@@ -178,7 +180,6 @@ class MoveOut(BaseModel):
         # TODO manual interface for implied move outs
         last_dt_of_prior_month = Utils.make_last_date_of_last_month(
             self, date_str=date)
-        print(date, self.combined_move_outs)
         for move_out in self.combined_move_outs:
             if move_out.type1 == 'explicit':
                 tenant = self.deactivate_tenant(
@@ -200,12 +201,13 @@ class MoveOut(BaseModel):
         return last_dt_of_last_month.strftime("%Y-%m-%d")
 
     def deactivate_unit(self, name=None):
-        try:
-            unit = Unit.get(Unit.tenant == name)
-        except backend.Unit.DoesNotExist:
-            breakpoint()
+        # try:
+        unit = Unit.get(Unit.tenant == name)
         unit.status = 'vacant'
         unit.tenant = 'vacant'
+        # except DNE:
+            # print(f'{name} already deactivated, I think!')
+            # breakpoint()
 
         return unit
 
@@ -1256,7 +1258,6 @@ class AfterInitLoad(PopulateTable):
 
             MoveIn.insert_move_ins(move_ins=self.computed_mis,
                                    date=date, filename=filename)
-
             MoveOut.deactivate_move_outs(date, move_outs=self.cleaned_mos)
 
             ''' now we have an updated list of active tenants
