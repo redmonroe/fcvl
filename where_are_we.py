@@ -47,6 +47,8 @@ class WhereAreWe(ProcessingLayer):
         # beginning month rent roll and vacancy
         tenants_at_1, vacants, tenants_at_2 = self.populate.get_rent_roll_by_month_at_first_of_month(
             first_dt=self.first_dt, last_dt=self.last_dt)
+        
+        occupied_units_at_beg_month = [name for name, _ in tenants_at_1 if name != 'vacant']
 
         # opcash
         opcash = [row.dep_sum for row in self.query.ur_query(model_str='OpCash', query_tup=[(
@@ -110,7 +112,7 @@ class WhereAreWe(ProcessingLayer):
 
         self.print_rows(
             date=self.date,
-            beg_tenants=tenants_at_1,
+            beg_tenants=occupied_units_at_beg_month,
             opcash=opcash, reconcile_status=did_opcash_or_scrape_reconcile_with_deposit_report,
             replacement_reserve=replacement_reserve,
             hap=hap,
@@ -175,6 +177,7 @@ class WhereAreWe(ProcessingLayer):
         print('negative number means bank shows higher amount than report')
 
         # TODO
+        # vacants
         # what can we reconcile?
         # THEN LOOP BACK TO RECONCILIATION AND THEN IF ALL IS WELL WE CAN TRY TO RECONCILE
 
@@ -209,17 +212,20 @@ class WhereAreWe(ProcessingLayer):
             f'\t excel sheet reconciled: {kwargs["reconcile_status"][0].excel_reconciled}')
         print(
             f'\t balance letters produced: {kwargs["reconcile_status"][0].bal_letters}')
+        print('*' * 45)
         print(f'occupieds at first of month: {len(kwargs["beg_tenants"])}')
         print('*' * 45)
-        print(f'MI/MOS')
-        # breakpoint()
+        
+        print(f'MI/MOS for {date}')
         if kwargs['mis'] != []:
             for k, v in [(k, v) for x in kwargs["mis"] for (k, v) in x.items()]:
                 print(f'\tname: {v}, date: {k} ')
-
-        for rec in kwargs['mi_payments']:
-            print(f'\tname: {rec[0]}, payments: {rec[1]}')
-        print(f'\tno of move_ins: {len(kwargs["mis"])}')
+            for rec in kwargs['mi_payments']:
+                print(f'\tname: {rec[0]}, payments: {rec[1]}')
+            print(f'\tno of move_ins: {len(kwargs["mis"])}')
+        else:
+            print(f'no move ins during {date}')
+            
         print('*' * 45)
         print(f'subcategories for {date}')
         print(f'\t replacement reserve: {kwargs["replacement_reserve"][0]}')
