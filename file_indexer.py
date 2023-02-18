@@ -267,6 +267,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
         for entry in kwargs['currently_availables']:
             for genus, path in entry.items():
                 if genus == 'scrape' and path[0] is True:
+                    breakpoint()
                     scrape = Scrape()
                     df = scrape.get_df_of_scrape(path=path[1])
                     scrape_txn_list = scrape.get_targeted_rows_for_scrape(

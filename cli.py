@@ -33,11 +33,21 @@ def where_are_we(most_recent_good):
     path, full_sheet, build, service, ms = figure.return_configuration()
     # TODO: NEED TO FIX MONTH CHOICE WHEN WE ARE DEALING WITH YEAR OVERLAPS
     if most_recent_good:
-        where = WhereAreWe(date=True, path=path, full_sheet=full_sheet,
-                           build=build, service=service, ms=ms)
+        where = WhereAreWe(date=True, 
+                           path=path, 
+                           full_sheet=full_sheet,
+                           build=build, 
+                           service=service, 
+                           ms=ms, 
+                           suppress_scrape=True)
     else:
-        where = WhereAreWe(path=path, full_sheet=full_sheet,
-                           build=build, service=service, ms=ms)
+        where = WhereAreWe(path=path, 
+                           full_sheet=full_sheet,
+                           build=build, 
+                           service=service, 
+                           ms=ms, 
+                           suppress_scrape=True
+                           )
 
 
 @click.command()

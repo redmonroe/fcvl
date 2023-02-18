@@ -62,7 +62,8 @@ class IterRS(BuildRS):
             dir_cont = [(item, item.name) for item in dir_cont]   
             filename = dir_cont[0][1]                       
         else:
-            dir_cont = [(item, item.name) for item in self.path.iterdir() if item.name not in self.findex.excluded_file_names]
+            dir_cont = [(item, item.name) for item in self.path.iterdir() 
+                        if item.name not in self.findex.excluded_file_names]
         
         try:
             record = [{genus: (True, entry[0])} for entry in dir_cont if entry[1] in filename][0]
