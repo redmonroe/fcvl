@@ -98,7 +98,7 @@ class WhereAreWe(ProcessingLayer):
         # MIs
         mi_payments = []
         if [row for row in self.query.ur_query(model_str='MoveIn', query_tup=[('mi_date', self.first_dt), ('mi_date', self.last_dt)], operators_list=['>=', '<=']).namedtuples()] == []:
-            mis = {'none': 'none'}
+            mis = []
         else:
             mis = [{row.name: str(row.mi_date)} for row in self.query.ur_query(model_str='MoveIn', query_tup=[
                 ('mi_date', self.first_dt), ('mi_date', self.last_dt)], operators_list=['>=', '<=']).namedtuples()]
@@ -139,7 +139,6 @@ class WhereAreWe(ProcessingLayer):
                 target_month=target_month)
         else:
             print('you dont have enough files to do a dry run')
-            breakpoint()
             sys.exit(0)
 
         report_deposits = dry_run_iter["deposits"]
@@ -213,8 +212,10 @@ class WhereAreWe(ProcessingLayer):
         print(f'occupieds at first of month: {len(kwargs["beg_tenants"])}')
         print('*' * 45)
         print(f'MI/MOS')
-        for k, v in [(k, v) for x in kwargs["mis"] for (k, v) in x.items()]:
-            print(f'\tname: {v}, date: {k} ')
+        # breakpoint()
+        if kwargs['mis'] != []:
+            for k, v in [(k, v) for x in kwargs["mis"] for (k, v) in x.items()]:
+                print(f'\tname: {v}, date: {k} ')
 
         for rec in kwargs['mi_payments']:
             print(f'\tname: {rec[0]}, payments: {rec[1]}')
