@@ -587,7 +587,9 @@ class DocxWriter(Letters):
 
         document = self.format_balance_letters(
             document=Document(),
-            parameters={'current_date': datetime.now().strftime('%m-%d-%Y')},
+            parameters={'current_date': datetime.now().strftime('%m-%d-%Y'), 
+                        'last_close_date': '/'.join(lb_tup[1].split('-')[::-1])
+                        },
             records=[tb for tb in positions.group_by_tenant_name(positions=post_list,
                                                                  threshold=threshold)],
         )
@@ -611,9 +613,14 @@ class DocxWriter(Letters):
                 unit = self.fix_name3(unit, address_bp=Config.ADDRESS_PT)
             paragraph = document.add_paragraph(
                 f'Address: {unit}', style='No Spacing')
-
+            
             paragraph = document.add_paragraph(' ', style='No Spacing')
             paragraph = document.add_paragraph(' ', style='No Spacing')
+            
+            paragraph = document.add_paragraph(f'The following shows your rent account at the end of {parameters["last_close_date"]}.' 
+                                               , style='No Spacing')
+            paragraph = document.add_paragraph(' ', style='No Spacing')
+            
             table = document.add_table(1, 6)
             table.style = 'TableGrid'
 
@@ -625,6 +632,7 @@ class DocxWriter(Letters):
             heading_cells[4].text = 'Payment'
             heading_cells[5].text = 'Ending'
             print(record[0])
+            endbals = []
             for item in record[1]:
                 print(item.date, item.start_bal, item.t_rent,
                       item.ch_amount, item.payment, item.end_bal)
@@ -635,43 +643,25 @@ class DocxWriter(Letters):
                 cells[3].text = item.ch_amount
                 cells[4].text = item.payment
                 cells[5].text = item.end_bal
-
+                endbals.append(item.end_bal)
+            
             current_record = item.name
+            
+            paragraph = document.add_paragraph(' ', style='No Spacing')
+            paragraph = document.add_paragraph(f"You have a balance due of $ {endbals[-1]}.  Please pay this amount along with next month\'s rent or make arrangements with the office to setup a repayment plan." 
+                                               , style='No Spacing')
+            paragraph = document.add_paragraph(' ', style='No Spacing')
+            paragraph = document.add_paragraph('If you have any questions, have already made a payment, or this amount does not match your records, please contact the office at 317-925-5558.' 
+                                               , style='No Spacing')
+            paragraph = document.add_paragraph(' ', style='No Spacing')
+            paragraph = document.add_paragraph(' ', style='No Spacing')
+            paragraph = document.add_paragraph(' ', style='No Spacing')
+            paragraph = document.add_paragraph(' ', style='No Spacing')
+            
+            paragraph = document.add_paragraph(
+                '_______________________________', style='No Spacing')
             paragraph = document.add_paragraph(
                 'Generated: ' + parameters['current_date'], style='No Spacing')
             document.add_page_break()
 
-            '''
-            paragraph = document.add_paragraph(
-                f'Date: {record[0]}', style='No Spacing')
-            paragraph = document.add_paragraph(' ', style='No Spacing')
-            paragraph = document.add_paragraph(
-                f'Location: {record[2]}', style='No Spacing')
-            paragraph = document.add_paragraph(
-                f'Work Requested: {record[3]}', style='No Spacing')
-            paragraph = document.add_paragraph(' ', style='No Spacing')
-            paragraph = document.add_paragraph(
-                f'Work Status: {record[5]}', style='No Spacing')
-            paragraph = document.add_paragraph(' ', style='No Spacing')
-            paragraph = document.add_paragraph(
-                f'Notes: {record[4]}', style='No Spacing')
-            paragraph = document.add_paragraph(
-                f'Assigned to/Completed by: {record[7]}', style='No Spacing')
-            paragraph = document.add_paragraph(' ', style='No Spacing')
-            paragraph = document.add_paragraph(' ', style='No Spacing')
-            paragraph = document.add_paragraph(' ', style='No Spacing')
-            paragraph = document.add_paragraph(' ', style='No Spacing')
-            paragraph = document.add_paragraph(' ', style='No Spacing')
-            paragraph = document.add_paragraph(' ', style='No Spacing')
-            paragraph = document.add_paragraph(' ', style='No Spacing')
-            paragraph = document.add_paragraph(
-                f'Date Completed: {record[6]}', style='No Spacing')
-            paragraph = document.add_paragraph(
-                'Verified by: JW', style='No Spacing')
-            paragraph = document.add_picture(
-                Config.image_path, width=Inches(.75), height=Inches(.5))
-            paragraph = document.add_paragraph(
-                '_______________________________', style='No Spacing')
-
-            '''
         return document

@@ -76,6 +76,9 @@ def reset_db(production=False):
               type=str, 
               help='pass an explicit final month to db builder (ie "2022-12")')
 def load_db(production=False, last_month=None, explicit_month=None):
+    figure = Figuration(method='not_iter')
+    _, _, build, _, ms = figure.return_configuration()
+    
     if production:
         # TODO: last month no supported in this branche
         click.echo('PRODUCTION: loading all available files in path to db')
@@ -84,19 +87,13 @@ def load_db(production=False, last_month=None, explicit_month=None):
         ms.auto_control(source='cli.py', mode='clean_build')
     elif explicit_month:
         print(f'passing explicit command to load information for: {explicit_month} only')
-        figure = Figuration(method='not_iter')
-        path, full_sheet, build, service, ms = figure.return_configuration()
         build.build_explicit_month(explicit_month_to_load=explicit_month)
     elif last_month:
-        figure = Figuration(method='not_iter')
-        path, full_sheet, build, service, ms = figure.return_configuration()
         choice = input('ARE YOU ABSOLUTELY SURE YOU WANT TO DROP DB AND START OVER? \n enter "qwqz" to continue: ')
         if choice == 'qwqz':
             click.echo('TEST: loading all available files in path to db')
             build.build_db_from_scratch(last_range_month=last_month)
     else:
-        figure = Figuration(method='not_iter')
-        path, full_sheet, build, service, ms = figure.return_configuration()
         choice = input('ARE YOU ABSOLUTELY SURE YOU WANT TO DROP DB AND START OVER? \n enter "qwqz" to continue: ')
         if choice == 'qwqz':
             click.echo('TEST: loading all available files in path to db')
@@ -124,6 +121,8 @@ def write(production=False):
 @click.option('-m', '--move_to_final',
               default=False, help='write month to final presentation sheet for peg')
 def close_sheet(production=False, move_to_final=False):
+    figure = Figuration()
+    path, full_sheet, build, service, ms = figure.return_configuration()
     if production:
         click.echo('PRODUCTION: close_sheet')
         figure = Figuration(mode='production')
@@ -131,14 +130,11 @@ def close_sheet(production=False, move_to_final=False):
         # path, full_sheet, build, service, ms = figure.return_configuration()
     elif move_to_final:
         click.echo('TEST: move closed month to final presentation sheet')
-        figure = Figuration()
-        path, full_sheet, build, service, ms = figure.return_configuration()
         ms.move_to_final(service, full_sheet, db=build)
 
     else:
         click.echo('TEST: close_sheet')
-        figure = Figuration()
-        path, full_sheet, build, service, ms = figure.return_configuration()
+        full_sheet = '1t7KFE-WbfZ0dR9PuqlDE5EepCG3o3acZXzhbVRFW-Gc'
         ms.close_one_month(service, full_sheet, db=build)
 
         # implement a drop functionality
