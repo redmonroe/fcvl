@@ -48,8 +48,8 @@ class WhereAreWe(ProcessingLayer):
         tenants_at_1, vacants, tenants_at_2 = self.populate.get_rent_roll_by_month_at_first_of_month(
             first_dt=self.first_dt, last_dt=self.last_dt)
         
-        occupied_units_at_beg_month = [name for name, _ in tenants_at_1 if name != 'vacant']
-
+        occupied_units_at_beg_month = 67 - len(vacants)
+        
         # opcash
         opcash = [row.dep_sum for row in self.query.ur_query(model_str='OpCash', query_tup=[(
             'date', self.first_dt), ('date', self.last_dt)], operators_list=['>=', '<=']).namedtuples()]
@@ -109,10 +109,13 @@ class WhereAreWe(ProcessingLayer):
                 mi_tp = self.query.get_single_ten_pay_by_period(
                     first_dt=self.first_dt, last_dt=self.last_dt, name=name)
                 mi_payments.append(mi_tp)
-
+        presentation_layer_url= 'https://docs.google.com/spreadsheets/d/' + self.full_sheet
+        
         self.print_rows(
             date=self.date,
+            presentation_layer_url=presentation_layer_url, 
             beg_tenants=occupied_units_at_beg_month,
+            vacants=vacants,
             opcash=opcash, reconcile_status=did_opcash_or_scrape_reconcile_with_deposit_report,
             replacement_reserve=replacement_reserve,
             hap=hap,
@@ -177,7 +180,7 @@ class WhereAreWe(ProcessingLayer):
         print('negative number means bank shows higher amount than report')
 
         # TODO
-        # vacants
+        # suprress attempt to scrape
         # what can we reconcile?
         # THEN LOOP BACK TO RECONCILIATION AND THEN IF ALL IS WELL WE CAN TRY TO RECONCILE
 
@@ -198,8 +201,9 @@ class WhereAreWe(ProcessingLayer):
         return dry_run_iter["opcash"]["depsum"]
 
     def print_rows(self, date=None, **kwargs):
-        print(f'selected month: {date}\n')
-
+        print('*' * 45)
+        print(f'SELECTED MONTH: {date}\n')
+        print(f'working presentation layer url: {kwargs["presentation_layer_url"]}')
         print(
             f'\t opcash and deposit sheet reconcile: {kwargs["reconcile_status"][0].tenant_reconciled}')
         print(
@@ -213,7 +217,8 @@ class WhereAreWe(ProcessingLayer):
         print(
             f'\t balance letters produced: {kwargs["reconcile_status"][0].bal_letters}')
         print('*' * 45)
-        print(f'occupieds at first of month: {len(kwargs["beg_tenants"])}')
+        print(f'occupieds at first of {date}: {kwargs["beg_tenants"]}')
+        print(f'vacants at first of {date}: {len(kwargs["vacants"])}')
         print('*' * 45)
         
         print(f'MI/MOS for {date}')
@@ -236,6 +241,8 @@ class WhereAreWe(ProcessingLayer):
         print(f'\t other(ntp): {kwargs["other"]}')
         print('*' * 45)
         print(f'last reconciled month: {kwargs["last_reconciled_month"]}')
+        print('*' * 45)
+        print('*' * 45)
 
     def print_helper_for_availables(self, **kwargs):
         count = 0
