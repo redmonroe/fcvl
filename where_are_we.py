@@ -275,9 +275,12 @@ class WhereAreWe(ProcessingLayer):
                 round(float(report_deposits), 2)
         else:
             print(f'deposits report for {target_month} via scrape.')
+            breakpoint()
             for item in dry_run_iter['scrape']['amount'].items():
                 print(f'\t{item[0]}: {item[1]}')
+                
             print('no discrepancy finder supported for scrapes')
+            deposits_discrepancy = 'unknown'
 
         print('*' * 45)
         print(f'DEPOSITS DISCREPANCY = ${deposits_discrepancy}')

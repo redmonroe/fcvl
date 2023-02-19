@@ -118,22 +118,38 @@ class Scrape:
     def get_targeted_rows_for_scrape(self, scrape_df=None):
         deposit_list = []
         corr_count = 0
-        for index, row in scrape_df.iterrows():
-            if row['Description'] == 'DEPOSIT':
+        
+        if 'Posted Date' in scrape_df.columns:
+            # from nbofi business side (NEW)
+            date_row = 'Posted Date'
+            deposit_match = 'Deposit'
+            corr_match = 'Correction'
+        elif 'Processed Date' in scrape_df.columns:
+            # from nbofi client side (should be deprecated)
+            date_row = 'Processed Date'
+            deposit_match = 'DEPOSIT'
+            corr_match = 'CORRECTION'
+        
+        for _, row in scrape_df.iterrows():
+            if row['Description'] == deposit_match:
                 dict1 = {}
                 dict1 = {'date': self.adjust_deposit_date(
-                    row['Processed Date']), 'amount': row['Amount'], 'dep_type': 'deposit'}
+                                        row[date_row]), 
+                                        'amount': row['Amount'], 
+                                        'dep_type': 'deposit'}
                 deposit_list.append(dict1)
             if 'INCOMING' in row['Description']:
                 dict1 = {}
-                dict1 = {'date': row['Processed Date'],
-                         'amount': row['Amount'], 'dep_type': 'rr'}
+                dict1 = {'date': row[date_row],
+                         'amount': row['Amount'], 
+                         'dep_type': 'rr'}
                 deposit_list.append(dict1)
 
             if 'QUADEL' in row['Description']:
                 dict1 = {}
-                dict1 = {'date': row['Processed Date'],
-                         'amount': row['Amount'], 'dep_type': 'hap'}
+                dict1 = {'date': row[date_row],
+                         'amount': row['Amount'], 
+                         'dep_type': 'hap'}
                 deposit_list.append(dict1)
 
             '''following branches are for finding corrections'''
@@ -142,20 +158,23 @@ class Scrape:
                 if 'FEE' not in row['Description']:
                     corr_count += 1
                     dict1 = {}
-                    dict1 = {'date': row['Processed Date'],
-                             'amount': row['Amount'], 'dep_type': 'corr'}
+                    dict1 = {'date': row[date_row],
+                             'amount': row['Amount'], 
+                             'dep_type': 'corr'}
                     deposit_list.append(dict1)
 
-            if 'CORRECTION' in row['Description']:
+            if corr_match in row['Description']:
                 corr_count += 1
                 dict1 = {}
-                dict1 = {'date': row['Processed Date'],
-                         'amount': row['Amount'], 'dep_type': 'corr'}
+                dict1 = {'date': row[date_row],
+                         'amount': row['Amount'], 
+                         'dep_type': 'corr'}
                 deposit_list.append(dict1)
 
         if corr_count == 0:
-            dict1 = {'date': row['Processed Date'],
-                     'amount': 0, 'dep_type': 'corr'}
+            dict1 = {'date': row[date_row],
+                     'amount': 0, 
+                     'dep_type': 'corr'}
             deposit_list.append(dict1)
         else:
             print('Warning: deposit correction has been processed')
@@ -267,14 +286,15 @@ class FileIndexer(Utils, Scrape, Reconciler):
         for entry in kwargs['currently_availables']:
             for genus, path in entry.items():
                 if genus == 'scrape' and path[0] is True:
-                    breakpoint()
                     scrape = Scrape()
                     df = scrape.get_df_of_scrape(path=path[1])
                     scrape_txn_list = scrape.get_targeted_rows_for_scrape(
                         scrape_df=df)
                     df = pd.DataFrame(scrape_txn_list)
                     df = df.groupby(df['dep_type']).sum(numeric_only=True)
+                    breakpoint()
                     df = df.to_dict('dict')
+                    
                 if genus == 'opcash' and path[0] is True:
                     self.op_cash_list.append(path[1])
                     opcash_dry_run = self.pdf_to_df_to_db(bypass_write_to_db=True)
@@ -285,7 +305,11 @@ class FileIndexer(Utils, Scrape, Reconciler):
                     rent_dry_run = self.survey_rent_report_for_dry_run(
                         path[1], target_month=target_month)
 
-        return {'opcash': opcash_dry_run, 'deposits': deposits_dry_run, 'rent': rent_dry_run, 'damages': damages, 'scrape': df}
+        return {'opcash': opcash_dry_run, 
+                'deposits': deposits_dry_run, 
+                'rent': rent_dry_run, 
+                'damages': damages, 
+                'scrape': df}
 
     def pdf_to_df_to_db(self, bypass_write_to_db=None):
         # TODO fix corr_sum & chargeback logic

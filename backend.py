@@ -93,6 +93,9 @@ class MoveIn(BaseModel):
         self.name = name
         self.unit = unit
         self.combined_move_ins = []
+        
+    def __repr__(self):
+        return f'{self.__class__.__name__} | {self.name} | {self.unit} | {self.mi_date.year}-{self.mi_date.month}-{self.mi_date.day}'
 
     @classmethod
     def load_move_ins(self, move_ins=None):
@@ -153,7 +156,7 @@ class MoveOut(BaseModel):
         self.combined_move_outs = []
         
     def __repr__(self):
-        return f'{self.__class__.__name__} | {self.name} | {self.type1} | {self.mo_date}'
+        return f'{self.__class__.__name__} | {self.name} | {self.type1} | {self.mo_date.year}-{self.mo_date.month}-{self.mo_date.day}'
 
     @classmethod
     def classify_move_outs(self, explicit_move_outs=None, implied_move_outs=None, date=None):

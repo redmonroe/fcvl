@@ -72,6 +72,7 @@ class IterRS(BuildRS):
             return {genus: (False, 'is_file_available(): file not scraped and not found in path')}
    
     def dry_run(self, *args, **kwargs):
-        return self.findex.incremental_filer_sub_1_for_dry_run(currently_availables=kwargs['currently_availables'], target_month=kwargs['target_month'])
+        return self.findex.incremental_filer_sub_1_for_dry_run(currently_availables=kwargs['currently_availables'], 
+                                                               target_month=kwargs['target_month'])
 
        
