@@ -292,9 +292,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
                         scrape_df=df)
                     df = pd.DataFrame(scrape_txn_list)
                     df = df.groupby(df['dep_type']).sum(numeric_only=True)
-                    breakpoint()
-                    df = df.to_dict('dict')
-                    
+                    scrapes = df.to_dict('dict')
                 if genus == 'opcash' and path[0] is True:
                     self.op_cash_list.append(path[1])
                     opcash_dry_run = self.pdf_to_df_to_db(bypass_write_to_db=True)
@@ -309,7 +307,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
                 'deposits': deposits_dry_run, 
                 'rent': rent_dry_run, 
                 'damages': damages, 
-                'scrape': df}
+                'scrape': scrapes}
 
     def pdf_to_df_to_db(self, bypass_write_to_db=None):
         # TODO fix corr_sum & chargeback logic

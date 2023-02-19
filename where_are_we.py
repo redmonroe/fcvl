@@ -271,16 +271,26 @@ class WhereAreWe(ProcessingLayer):
             print(f'deposits report for {target_month} via opcash.')
             bank_deposits = self.opcash_printer(target_month=target_month,
                                                 dry_run_iter=dry_run_iter)
-            deposits_discrepancy = float(bank_deposits) - \
-                round(float(report_deposits), 2)
         else:
             print(f'deposits report for {target_month} via scrape.')
-            breakpoint()
+            corrections = 0
             for item in dry_run_iter['scrape']['amount'].items():
-                print(f'\t{item[0]}: {item[1]}')
-                
-            print('no discrepancy finder supported for scrapes')
-            deposits_discrepancy = 'unknown'
+                if item[0] == 'corr' and item[1] >= 0:
+                    print(f'\tcorrections: +{item[1]}')
+                    corrections = item[1]
+                elif item[0] == 'corr' and item[1] <= 0:
+                    print(f'\tcorrections: -{item[1]}')
+                    corrections = item[1]
+                elif item[0] == 'deposit':
+                    print(f'\traw deposits: {item[1]}')
+                    bank_deposits = item[1]
+                else:
+                    print(f'\t{item[0]}: {item[1]}')
+            
+            bank_deposits = bank_deposits + corrections
+            print(f'\tadj deposits: {bank_deposits}')
+            deposits_discrepancy = float(bank_deposits) - \
+                round(float(report_deposits), 2)
 
         print('*' * 45)
         print(f'DEPOSITS DISCREPANCY = ${deposits_discrepancy}')
