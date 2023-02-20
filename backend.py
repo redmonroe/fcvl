@@ -93,7 +93,7 @@ class MoveIn(BaseModel):
         self.name = name
         self.unit = unit
         self.combined_move_ins = []
-        
+
     def __repr__(self):
         return f'{self.__class__.__name__} | {self.name} | {self.unit} | {self.mi_date.year}-{self.mi_date.month}-{self.mi_date.day}'
 
@@ -154,7 +154,7 @@ class MoveOut(BaseModel):
         self.name = name
         self.type1 = type1
         self.combined_move_outs = []
-        
+
     def __repr__(self):
         return f'{self.__class__.__name__} | {self.name} | {self.type1} | {self.mo_date.year}-{self.mo_date.month}-{self.mo_date.day}'
 
@@ -195,7 +195,6 @@ class MoveOut(BaseModel):
             tenant.save()
             unit = self.deactivate_unit(self, name=move_out.name)
             unit.save()
-    
 
     def make_last_date_of_last_month(self, date_str=None):
         dt_obj = datetime.strptime(date_str, '%Y-%m')
@@ -209,8 +208,8 @@ class MoveOut(BaseModel):
         unit.status = 'vacant'
         unit.tenant = 'vacant'
         # except DNE:
-            # print(f'{name} already deactivated, I think!')
-            # breakpoint()
+        # print(f'{name} already deactivated, I think!')
+        # breakpoint()
 
         return unit
 
@@ -233,19 +232,20 @@ class Damages(BaseModel):
     dam_amount = CharField()
     dam_date = DateField()
     dam_type = CharField()
-    
+
     def filter_damages_by_date(damages, explicit_month_to_load=None):
         dt_obj = datetime.strptime(explicit_month_to_load, '%Y-%m')
         dt_obj_first = dt_obj.replace(day=1)
         dt_obj_last = dt_obj.replace(
             day=calendar.monthrange(dt_obj.year, dt_obj.month)[1])
-        
+
         new_damages = []
         for entry in damages:
-            damage_date = datetime.strptime(list(entry.values())[0][1], '%Y-%m-%d')
+            damage_date = datetime.strptime(
+                list(entry.values())[0][1], '%Y-%m-%d')
             if dt_obj_first <= damage_date <= dt_obj_last:
-                new_damages.append(entry) 
-        
+                new_damages.append(entry)
+
         return new_damages
 
     @staticmethod
@@ -253,8 +253,9 @@ class Damages(BaseModel):
         print('\napplying all historical damages from Config')
         damages = Config.damages
         if explicit_month_to_load:
-            damages = Damages.filter_damages_by_date(damages, explicit_month_to_load=explicit_month_to_load)
-        
+            damages = Damages.filter_damages_by_date(
+                damages, explicit_month_to_load=explicit_month_to_load)
+
         for item in damages:
             for name, packet in item.items():
                 dam = Damages(
@@ -402,11 +403,12 @@ class FinalMonth(BaseModel):
     ch_amount = CharField()
     payment = CharField()
     end_bal = CharField()
+    source = CharField()
 
 
 class FinalMonthLog(BaseModel):
     month = DateField(null=True)
-    # status = CharField(null='not closed')
+    source = CharField()
 
 
 class QueryHC(Reconciler):
@@ -901,14 +903,14 @@ class Position(QueryHC):
             if item[0] not in seen:
                 bal_letter_list_by_tenant.append(item)
                 seen.append(item[0])
-                
+
         if threshold:
             threshold_list = []
             for name in bal_letter_list_by_tenant:
                 if abs(float(name[1][-1].end_bal)) > abs(float(threshold)):
                     threshold_list.append(name)
                     print(name[0], name[1][-1].end_bal)
-            return threshold_list      
+            return threshold_list
         else:
             return bal_letter_list_by_tenant
 
@@ -1141,26 +1143,26 @@ class PopulateTable(QueryHC):
         """
         if explicit_month_to_load:
             file_list = [(item.fn, item.period, item.path, item.hap, item.rr, item.depsum, item.deplist, item.corr_sum) for item in Findexer().select().
-                        where(Findexer.doc_type == 'opcash').
-                        where(Findexer.status == 'processed').
-                        where(Findexer.period == explicit_month_to_load).
-                        namedtuples()]
+                         where(Findexer.doc_type == 'opcash').
+                         where(Findexer.status == 'processed').
+                         where(Findexer.period == explicit_month_to_load).
+                         namedtuples()]
 
             file_list = [(item.fn, item.period, item.path, item.hap, item.rr, item.depsum, item.deplist, item.corr_sum) for item in Findexer().select().
-                        where(Findexer.doc_type == 'opcash').
-                        where(Findexer.status == 'processed').
-                        where(Findexer.period == explicit_month_to_load).
-                        namedtuples()]
+                         where(Findexer.doc_type == 'opcash').
+                         where(Findexer.status == 'processed').
+                         where(Findexer.period == explicit_month_to_load).
+                         namedtuples()]
         else:
             file_list = [(item.fn, item.period, item.path, item.hap, item.rr, item.depsum, item.deplist, item.corr_sum) for item in Findexer().select().
-                        where(Findexer.doc_type == 'opcash').
-                        where(Findexer.status == 'processed').
-                        namedtuples()]
+                         where(Findexer.doc_type == 'opcash').
+                         where(Findexer.status == 'processed').
+                         namedtuples()]
 
             file_list = [(item.fn, item.period, item.path, item.hap, item.rr, item.depsum, item.deplist, item.corr_sum) for item in Findexer().select().
-                        where(Findexer.doc_type == 'opcash').
-                        where(Findexer.status == 'processed').
-                        namedtuples()]
+                         where(Findexer.doc_type == 'opcash').
+                         where(Findexer.status == 'processed').
+                         namedtuples()]
         # breakpoint()
 
         for item in file_list:
@@ -1335,7 +1337,7 @@ class DryRunRentRoll(AfterInitLoad):
     def _pick_correct_file(self, path=None):
         if isinstance(path, list) == False:
             path = [path]
-            
+
         for possible_path in path:
             try:
                 wb = xlrd.open_workbook(
@@ -1465,7 +1467,8 @@ class ProcessingLayer(StatusRS):
     def write_manual_entries_from_config(self, explicit_month_to_load=None):
         from manual_entry import ManualEntry  # circular import workaround
         manentry = ManualEntry(db=db)
-        manentry.apply_persisted_changes(explicit_month_to_load=explicit_month_to_load)
+        manentry.apply_persisted_changes(
+            explicit_month_to_load=explicit_month_to_load)
 
     def write_to_statusrs_wrapper(self, **kwargs):
         if kwargs.get('commit_to_db') == False:
@@ -1475,19 +1478,19 @@ class ProcessingLayer(StatusRS):
 
         if kwargs.get('last_range_month'):
             all_months_ytd = Utils.months_in_ytd(Config.current_year,
-                last_range_month=kwargs['last_range_month'])
+                                                 last_range_month=kwargs['last_range_month'])
         elif kwargs.get('explicit_month_to_load'):
             all_months_ytd = Utils.months_in_ytd(Config.current_year,
-                explicit_month_to_load=kwargs['explicit_month_to_load'])
+                                                 explicit_month_to_load=kwargs['explicit_month_to_load'])
         else:
             all_months_ytd = Utils.months_in_ytd(Config.current_year)
-       
-        return (all_months_ytd, 
-               self.populate.get_processed_by_month(
-            month_list=all_months_ytd), 
-               [item for item in StatusRS().select().
-                order_by(-StatusRS.status_id).namedtuples()][0]  # note: - = descending order syntax in peewee
-               )
+
+        return (all_months_ytd,
+                self.populate.get_processed_by_month(
+                    month_list=all_months_ytd),
+                [item for item in StatusRS().select().
+                 order_by(-StatusRS.status_id).namedtuples()][0]  # note: - = descending order syntax in peewee
+                )
 
     def display_most_recent_status(self, mr_status=None, months_ytd=None):
         print(f'\n\n***************************** welcome!********************')

@@ -4,7 +4,7 @@ import click
 import pytest
 
 from annual_financials import AnnFin
-from backend import ProcessingLayer, db
+from backend import ProcessingLayer, db, FinalMonth, FinalMonthLog
 from config import Config
 from db_utils import DBUtils
 from figuration import Figuration
@@ -136,30 +136,49 @@ def write(production=False):
 
 @click.command()
 @click.option('-p', '--production',
-              default=False, help='reset db?')
+              default=False,
+              help='reset db?')
 @click.option('-m', '--move_to_final',
-              default=False, help='write month to final presentation sheet for peg')
-def close_sheet(production=False, move_to_final=False):
+              default=False,
+              help='write month to final presentation sheet for peg')
+@click.option('-d', '--drop_final',
+              default=False,
+              help='drop FinalMonth and FinalMonthLog tables only')
+@click.option('-c', '--create_final',
+              default=False,
+              help='create FinalMonth and FinalMonthLog tables only')
+@click.option('-x', '--close_one_month',
+              default=False,
+              help='close a month selected from a list of months')
+def close_sheet(production=False,
+                move_to_final=False,
+                drop_final=False,
+                create_final=False,
+                close_one_month=False):
     figure = Figuration()
-    path, full_sheet, build, service, ms = figure.return_configuration()
+    path, staging_layer, close_layer, build, service, ms = figure.return_configuration()
+    if drop_final:
+        build.main_db.drop_tables(models=[FinalMonth, FinalMonthLog])
+    if create_final:
+        build.main_db.create_tables(models=[FinalMonth, FinalMonthLog])
+    
+    if move_to_final:
+        click.echo('TEST: move closed month to final presentation sheet')
+        # is this the write layer?
+        # ms.move_to_final(service, staging_layer, db=build)
+    
+    if close_one_month:
+        click.echo('TEST: close_sheet')
+        full_sheet = '1t7KFE-WbfZ0dR9PuqlDE5EepCG3o3acZXzhbVRFW-Gc'
+        ms.close_one_month(service, staging_layer, db=build)
+
+        # implement a way to finalize a series of months
+        # figure out formatting of sheets
     if production:
         click.echo('PRODUCTION: close_sheet')
         figure = Figuration(mode='production')
         print('no production branch of close_sheet')
-        # path, full_sheet, build, service, ms = figure.return_configuration()
-    elif move_to_final:
-        click.echo('TEST: move closed month to final presentation sheet')
-        ms.move_to_final(service, full_sheet, db=build)
-
-    else:
-        click.echo('TEST: close_sheet')
-        full_sheet = '1t7KFE-WbfZ0dR9PuqlDE5EepCG3o3acZXzhbVRFW-Gc'
-        ms.close_one_month(service, full_sheet, db=build)
-
-        # implement a drop functionality
-        # db.drop_tables([FinalMonth])
-        # implement a way to finalize a series of months
-        # figure out formatting of sheets
+        path, full_sheet, build, service, ms = figure.return_configuration()
 
 
 @click.command()

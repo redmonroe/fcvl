@@ -577,7 +577,7 @@ class MonthSheet(YearSheet):
                                            ])
         df['month'] = [dt.strptime(path[0], '%Y-%m') for n in enumerate(values)]
         df = df.to_dict('records')
-      
+        breakpoint()
         db.create_tables([FinalMonth, FinalMonthLog])
         FinalMonth.insert_many(df).execute()
         fml = FinalMonthLog(month=path[0])
