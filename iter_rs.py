@@ -13,7 +13,7 @@ from setup_month import MonthSheet
 
 class IterRS(BuildRS):
 
-    def __init__(self, full_sheet=None, path=None, mode=None, test_service=None, pytest=None):
+    def __init__(self, presentation_layer=None, path=None, mode=None, test_service=None, pytest=None):
 
         self.main_db = db # connects backend.db to Config
         if mode == 'testing':
@@ -23,7 +23,7 @@ class IterRS(BuildRS):
             db_path = Config.PROD_DB.database
             self.main_db.init(db_path)
 
-        self.full_sheet = full_sheet
+        self.full_sheet = presentation_layer
         self.path = path
         try:
             self.service = oauth(Config.my_scopes, 'sheet')
@@ -33,7 +33,7 @@ class IterRS(BuildRS):
         self.create_tables_list1 = None
         self.target_bal_load_file = Config.beg_bal_xlsx
         self.populate = PopulateTable()
-        self.ms = MonthSheet(full_sheet=self.full_sheet, path=self.path)
+        self.ms = MonthSheet(presentation_layer=self.full_sheet, path=self.path)
         self.findex = FileIndexer(path=self.path, db=self.main_db)
         self.player = ProcessingLayer(service=self.service, full_sheet=self.full_sheet, ms=self.ms)
         self.pytest = pytest

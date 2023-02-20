@@ -1,8 +1,7 @@
 import sys
 
-from backend import PopulateTable, ProcessingLayer, StatusObject, UrQuery, DryRunRentRoll
+from backend import PopulateTable, ProcessingLayer, UrQuery
 from config import Config
-from errors import Errors
 from iter_rs import IterRS
 from scrape import PWScrape
 from utils import Utils
@@ -13,7 +12,8 @@ class WhereAreWe(ProcessingLayer):
     def __init__(self, date=None, **kwargs):
         self.build = kwargs['build']
         self.path = kwargs['path']
-        self.full_sheet = kwargs['full_sheet']
+        self.full_sheet = kwargs['presentation_layer']
+        self.close_layer = kwargs['close_layer']
         self.suppress_scrape_attempt = kwargs['suppress_scrape']
         self.download_path = Config.SCRAPE_TESTING_SAVE_PATH
         self.db = self.build.main_db
@@ -22,7 +22,7 @@ class WhereAreWe(ProcessingLayer):
         self.query = UrQuery()
         self.testing = True
         self.times = 0
-        self.iter = IterRS(full_sheet=self.full_sheet, path=self.path,
+        self.iter = IterRS(presentation_layer=self.full_sheet, path=self.path,
                            mode='testing', test_service=None, pytest=None)
         self.most_recent_good_month, self.good_months = self.player.get_mr_good_month()
         self.ur_query = UrQuery()
@@ -156,7 +156,6 @@ class WhereAreWe(ProcessingLayer):
                                  )
 
         # TODO
-        # suprress attempt to scrape
         # what can we reconcile?
         # THEN LOOP BACK TO RECONCILIATION AND THEN IF ALL IS WELL WE CAN TRY TO RECONCILE
 
@@ -252,7 +251,6 @@ class WhereAreWe(ProcessingLayer):
                             report_deposits=None,
                             first_pw_incomplete_month=None,
                             ):
-
         print('*' * 45)
         print('\n')
         print(f'DRY RUN FOR {target_month}: rent roll')
@@ -262,17 +260,15 @@ class WhereAreWe(ProcessingLayer):
         print(
             f'\ttenant charges {target_month}: {dry_run_iter["rent"]["tenant_charges"]}')
         print('*' * 45)
-        print(f'\tdeposits for {target_month}: {report_deposits}')
-        print(
-            f'\tdamage charges/credits for {target_month}: {dry_run_iter["damages"]} ')
         print(f'DRY RUN FOR {target_month}: opcash/scrape from ban')
         print('*' * 45)
+        print(f'deposits report for {target_month} via scrape.')
+        
         if first_pw_incomplete_month:
             print(f'deposits report for {target_month} via opcash.')
             bank_deposits = self.opcash_printer(target_month=target_month,
                                                 dry_run_iter=dry_run_iter)
         else:
-            print(f'deposits report for {target_month} via scrape.')
             corrections = 0
             for item in dry_run_iter['scrape']['amount'].items():
                 if item[0] == 'corr' and item[1] >= 0:
@@ -288,10 +284,13 @@ class WhereAreWe(ProcessingLayer):
                     print(f'\t{item[0]}: {item[1]}')
             
             bank_deposits = bank_deposits + corrections
-            print(f'\tadj deposits: {bank_deposits}')
+            print(f'\tadj deposits w/corr: {bank_deposits}')
             deposits_discrepancy = float(bank_deposits) - \
                 round(float(report_deposits), 2)
 
+        print(f'\tonesite-side deposits: {report_deposits}')
+        print(
+            f'\tdamage charges/credits for {target_month}: {dry_run_iter["damages"]} ')
         print('*' * 45)
         print(f'DEPOSITS DISCREPANCY = ${deposits_discrepancy}')
         print('negative number means bank shows higher amount than report')

@@ -14,8 +14,11 @@ from pdf import StructDataExtract
 from where_are_we import WhereAreWe
 
 '''
-cli.add_command(nbofi)
-cli.add_command(consume_and_backup_invoices)
+MIDMONTH flow
+- after books are closed, download rentroll and deposits from onesite
+- download scrape from NBOFI "from last statement date"
+
+- use where_are_we
 '''
 
 
@@ -30,22 +33,25 @@ def cli():
 def where_are_we(most_recent_good):
     click.echo('TEST: where_are_we')
     figure = Figuration()
-    path, full_sheet, build, service, ms = figure.return_configuration()
+    path, presentation_layer, close_layer, build, service, ms = figure.return_configuration()
     # TODO: NEED TO FIX MONTH CHOICE WHEN WE ARE DEALING WITH YEAR OVERLAPS
+    # breakpoint()
     if most_recent_good:
-        where = WhereAreWe(date=True, 
-                           path=path, 
-                           full_sheet=full_sheet,
-                           build=build, 
-                           service=service, 
-                           ms=ms, 
+        where = WhereAreWe(date=True,
+                           path=path,
+                           presentation_layer=presentation_layer,
+                           close_layer=close_layer,
+                           build=build,
+                           service=service,
+                           ms=ms,
                            suppress_scrape=True)
     else:
-        where = WhereAreWe(path=path, 
-                           full_sheet=full_sheet,
-                           build=build, 
-                           service=service, 
-                           ms=ms, 
+        where = WhereAreWe(path=path,
+                           presentation_layer=presentation_layer,
+                           close_layer=close_layer,
+                           build=build,
+                           service=service,
+                           ms=ms,
                            suppress_scrape=True
                            )
 
@@ -79,16 +85,16 @@ def reset_db(production=False):
 @click.command()
 @click.option('-p', '--production',
               default=False, help='reset db?')
-@click.option('-e', '--explicit_month', 
-              type=str, 
+@click.option('-e', '--explicit_month',
+              type=str,
               help='pass an explicit final month to db builder (ie "2022-12")')
-@click.option('-l', '--last_month', 
-              type=str, 
+@click.option('-l', '--last_month',
+              type=str,
               help='pass an explicit final month to db builder (ie "2022-12")')
 def load_db(production=False, last_month=None, explicit_month=None):
     figure = Figuration(method='not_iter')
     _, _, build, _, ms = figure.return_configuration()
-    
+
     if production:
         # TODO: last month no supported in this branche
         click.echo('PRODUCTION: loading all available files in path to db')
@@ -96,15 +102,18 @@ def load_db(production=False, last_month=None, explicit_month=None):
         path, full_sheet, build, service, ms = figure.return_configuration()
         ms.auto_control(source='cli.py', mode='clean_build')
     elif explicit_month:
-        print(f'passing explicit command to load information for: {explicit_month} only')
+        print(
+            f'passing explicit command to load information for: {explicit_month} only')
         build.build_explicit_month(explicit_month_to_load=explicit_month)
     elif last_month:
-        choice = input('ARE YOU ABSOLUTELY SURE YOU WANT TO DROP DB AND START OVER? \n enter "qwqz" to continue: ')
+        choice = input(
+            'ARE YOU ABSOLUTELY SURE YOU WANT TO DROP DB AND START OVER? \n enter "qwqz" to continue: ')
         if choice == 'qwqz':
             click.echo('TEST: loading all available files in path to db')
             build.build_db_from_scratch(last_range_month=last_month)
     else:
-        choice = input('ARE YOU ABSOLUTELY SURE YOU WANT TO DROP DB AND START OVER? \n enter "qwqz" to continue: ')
+        choice = input(
+            'ARE YOU ABSOLUTELY SURE YOU WANT TO DROP DB AND START OVER? \n enter "qwqz" to continue: ')
         if choice == 'qwqz':
             click.echo('TEST: loading all available files in path to db')
             build.build_db_from_scratch()
@@ -212,9 +221,8 @@ def balanceletters():
     docx.export_history_to_docx(
         threshold=100, startm='2022-07', endm='2023-01')
 
-
     # have to fix how we are loading unit; something got fucked up
-    
+
     # add boiler plate
     # read doc from command line
     # move closed month to rent_sheet_fs
@@ -273,8 +281,8 @@ def delete_one_sheet():
 
 
 @click.command()
-@click.option('-e', '--explicit_month', 
-              type=str, 
+@click.option('-e', '--explicit_month',
+              type=str,
               help='pass an explicit month to generate rent sheet')
 def make_one_sheet(explicit_month=None):
     click.echo('making one sheet')
