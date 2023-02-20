@@ -150,10 +150,13 @@ def write(production=False):
 @click.option('-x', '--close_one_month',
               default=False,
               help='close a month selected from a list of months')
+@click.option('-r', '--close_range',
+              help='close up to passed month (2022-12)')
 def close_sheet(production=False,
                 move_to_final=False,
                 drop_final=False,
                 create_final=False,
+                close_range=False,
                 close_one_month=False):
     figure = Figuration()
     path, staging_layer, close_layer, build, service, ms = figure.return_configuration()
@@ -167,13 +170,21 @@ def close_sheet(production=False,
         # is this the write layer?
         # ms.move_to_final(service, staging_layer, db=build)
     
-    if close_one_month:
-        click.echo('TEST: close_sheet')
-        full_sheet = '1t7KFE-WbfZ0dR9PuqlDE5EepCG3o3acZXzhbVRFW-Gc'
-        ms.close_one_month(service, staging_layer, db=build)
-
+    if close_range:
+        staging_layer = '1t7KFE-WbfZ0dR9PuqlDE5EepCG3o3acZXzhbVRFW-Gc'
+        ms.close_range(last_date=close_range, service=service, staging=staging_layer, db=build)
         # implement a way to finalize a series of months
         # figure out formatting of sheets
+        
+    
+    if close_one_month:
+        staging_layer = '1t7KFE-WbfZ0dR9PuqlDE5EepCG3o3acZXzhbVRFW-Gc'
+        '''
+        closes all months up to passed end date
+        '''
+        
+        ms.close_one_month(service, staging_layer, db=build)
+
     if production:
         click.echo('PRODUCTION: close_sheet')
         figure = Figuration(mode='production')

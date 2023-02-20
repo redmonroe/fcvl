@@ -559,9 +559,22 @@ class MonthSheet(YearSheet):
         path = Utils.show_files_as_choices(titles_dict, 
                                            interactive=True, 
                                            start=len(closed_dates)+1)
+        self.load_final_rs_from_sheet(staging_layer=args[1], sheet_name=path[0])
+        
+        
+    def close_range(self, last_date=None, service=None, staging=None, db=None, **kwargs):
+        months = Utils.months_in_ytd(last_range_month=last_date)
+        closed_dates = [date.month for date in FinalMonthLog.select()]
+        months = set(months) - set(closed_dates)
+        months = sorted(months)
+        for month in months:
+            self.load_final_rs_from_sheet(staging_layer=staging, sheet_name=month)
+
+    def load_final_rs_from_sheet(self, staging_layer=None, sheet_name=None):
+        
         values = self.gc.broad_get(service=self.service, 
-                              spreadsheet_id=args[1], 
-                              range=f'{path[0]}!A2:L68')
+                              spreadsheet_id=staging_layer, 
+                              range=f'{sheet_name}!A2:L68')
         df = pd.DataFrame(values, columns=['unit', 
                                            'name', 
                                            'notes', 
@@ -575,14 +588,15 @@ class MonthSheet(YearSheet):
                                            'payment', 
                                            'end_bal', 
                                            ])
-        df['month'] = [dt.strptime(path[0], '%Y-%m') for n in enumerate(values)]
+        
+        source_url = 'https://docs.google.com/spreadsheets/d/' + staging_layer 
+        df['month'] = [dt.strptime(sheet_name, '%Y-%m') for n in enumerate(values)]
+        df['source'] = [source_url for n in enumerate(values)]
         df = df.to_dict('records')
-        breakpoint()
-        db.create_tables([FinalMonth, FinalMonthLog])
         FinalMonth.insert_many(df).execute()
-        fml = FinalMonthLog(month=path[0])
+        fml = FinalMonthLog(month=sheet_name, source=source_url)
         fml.save()
-
+        
     def move_to_final(self, *args, **kwargs):
         presentation_sheet = '1OErbU9WoYBS3fF0DD0XhhfqRRrKzNIZqTmR9nPH08TY'
         closed_dates = {date.month: date.month for date in FinalMonthLog.select()}

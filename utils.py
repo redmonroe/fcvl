@@ -39,7 +39,7 @@ class Utils:
         return last_dt_of_last_month.strftime("%Y-%m-%d")
 
     @staticmethod
-    def months_in_ytd(current_year,
+    def months_in_ytd(current_year=None,
                       style=None,
                       show_choices=None,
                       explicit_month_to_load=None,
