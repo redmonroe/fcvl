@@ -179,8 +179,8 @@ def close_sheet(production=False,
     
     if move_to_final:
         click.echo('TEST: move closed month to final presentation sheet')
-        # is this the write layer?
-        # ms.move_to_final(service, staging_layer, db=build)
+        staging_layer = '1t7KFE-WbfZ0dR9PuqlDE5EepCG3o3acZXzhbVRFW-Gc'
+        ms.move_to_final(close_layer, service, staging_layer, db=build)
         # figure out formatting of sheets
     
     if close_range:

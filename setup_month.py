@@ -600,13 +600,15 @@ class MonthSheet(YearSheet):
         fml = FinalMonthLog(month=sheet_name, source=source_url)
         fml.save()
         
-    def move_to_final(self, *args, **kwargs):
-        presentation_sheet = '1OErbU9WoYBS3fF0DD0XhhfqRRrKzNIZqTmR9nPH08TY'
+    def move_to_final(self, 
+                      close_layer,
+                      *args, 
+                      **kwargs):
         closed_dates = {date.month: date.month for date in FinalMonthLog.select()}
         path = Utils.show_files_as_choices(closed_dates, 
                                            interactive=True, 
                                            )
-        
+    
         values = self.gc.broad_get(service=self.service, 
                               spreadsheet_id=args[1], 
                               range=f'{path[0]}!A2:L68'
@@ -624,22 +626,30 @@ class MonthSheet(YearSheet):
                                            'payment', 
                                            'end_bal', 
                                            ])
+        df.fillna(0, inplace=True)
+        df['start_bal'] = pd.to_numeric(df['start_bal'], errors='coerce')
+        df['c_rent'] = pd.to_numeric(df['c_rent'], errors='coerce')
+        df['subsidy'] = pd.to_numeric(df['subsidy'], errors='coerce')
+        df['t_rent'] = pd.to_numeric(df['t_rent'], errors='coerce')
+        df['ch_amount'] = pd.to_numeric(df['ch_amount'], errors='coerce')
+        df['payment'] = pd.to_numeric(df['payment'], errors='coerce')
+        df['end_bal'] = pd.to_numeric(df['end_bal'], errors='coerce')
         
         df = df.values.tolist()
         self.gc.make_one_sheet(service=self.service, 
-                          spreadsheet_id=presentation_sheet,
+                          spreadsheet_id=close_layer,
                           sheet_title=path[0]
                           )
         
         
         self.formatting_runner_for_presentation(service=self.service, 
-                                                full_sheet=presentation_sheet,
+                                                full_sheet=close_layer,
                                                 sheet=path[0])
         # breakpoint()
         count = 2
         for row in df: 
             self.gc.simple_batch_update(service=self.service,
-                                sheet_id=presentation_sheet,
+                                sheet_id=close_layer,
                                 wrange=f'{path[0]}!A{count}:L{count}',
                                 data=row,
                                 dim='ROWS'
@@ -651,10 +661,9 @@ class MonthSheet(YearSheet):
         # i can get sheet name back from here
         titles_dict = {name: id2 for name,
                        id2 in Utils.get_existing_sheets(args[0], args[1]).items() if name != 'intake'}
-        # can just agg on dataframe for row balances
         
         # row sum is not aligned
-        # row sum does not work on strings
+        
         # need to drop fml table to add new col.status
         # should update finalmonthlog if we have written sheet
 
