@@ -556,10 +556,13 @@ class MonthSheet(YearSheet):
         for dates in closed_dates:
             closed_titles = titles_dict.pop(dates)
         
-        path = Utils.show_files_as_choices(titles_dict, 
+        if titles_dict == {}:
+            print('alll months are closed')
+        else:
+            path = Utils.show_files_as_choices(titles_dict, 
                                            interactive=True, 
                                            start=len(closed_dates)+1)
-        self.load_final_rs_from_sheet(staging_layer=args[1], sheet_name=path[0])
+            self.load_final_rs_from_sheet(staging_layer=args[1], sheet_name=path[0])
         
         
     def close_range(self, last_date=None, service=None, staging=None, db=None, **kwargs):

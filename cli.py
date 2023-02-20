@@ -152,14 +152,26 @@ def write(production=False):
               help='close a month selected from a list of months')
 @click.option('-r', '--close_range',
               help='close up to passed month (2022-12)')
+@click.option('-i', '--interrogate_log',
+              default=False,
+              help='what is closed in finalmonthlog table')
 def close_sheet(production=False,
                 move_to_final=False,
                 drop_final=False,
                 create_final=False,
                 close_range=False,
-                close_one_month=False):
+                close_one_month=False, 
+                interrogate_log=False,
+                ):
     figure = Figuration()
     path, staging_layer, close_layer, build, service, ms = figure.return_configuration()
+    
+    if interrogate_log:
+        closed_dates = [(date.month, date.source) for date in FinalMonthLog.select()]
+        print('source: ', closed_dates[0][1])
+        print('closed months: ', [date[1][0] for date in enumerate(closed_dates, 1)])
+    
+    
     if drop_final:
         build.main_db.drop_tables(models=[FinalMonth, FinalMonthLog])
     if create_final:
@@ -169,20 +181,21 @@ def close_sheet(production=False,
         click.echo('TEST: move closed month to final presentation sheet')
         # is this the write layer?
         # ms.move_to_final(service, staging_layer, db=build)
+        # figure out formatting of sheets
     
     if close_range:
+        '''
+        closes all months up to passed end date
+        '''
         staging_layer = '1t7KFE-WbfZ0dR9PuqlDE5EepCG3o3acZXzhbVRFW-Gc'
-        ms.close_range(last_date=close_range, service=service, staging=staging_layer, db=build)
-        # implement a way to finalize a series of months
-        # figure out formatting of sheets
+        ms.close_range(last_date=close_range, 
+                       service=service, 
+                       staging=staging_layer, 
+                       db=build)
         
     
     if close_one_month:
         staging_layer = '1t7KFE-WbfZ0dR9PuqlDE5EepCG3o3acZXzhbVRFW-Gc'
-        '''
-        closes all months up to passed end date
-        '''
-        
         ms.close_one_month(service, staging_layer, db=build)
 
     if production:
