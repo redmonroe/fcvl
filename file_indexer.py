@@ -279,7 +279,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
                 if match_date == target_month:
                     dict1 = {name: (values[0], values[1], values[2])}
                     damages.append(dict1)
-        breakpoint()
+
         df = pd.DataFrame()
         opcash_dry_run = {
             'dep': 0, 'hap': 0, 'rr': 0, 'corr_sum': 0}

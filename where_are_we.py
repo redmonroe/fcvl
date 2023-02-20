@@ -12,7 +12,8 @@ class WhereAreWe(ProcessingLayer):
     def __init__(self, date=None, **kwargs):
         self.build = kwargs['build']
         self.path = kwargs['path']
-        self.full_sheet = kwargs['presentation_layer']
+        self.staging_layer = kwargs['staging_layer']
+        self.staging_layer_url = 'https://docs.google.com/spreadsheets/d/' + self.staging_layer
         self.close_layer = kwargs['close_layer']
         self.suppress_scrape_attempt = kwargs['suppress_scrape']
         self.download_path = Config.SCRAPE_TESTING_SAVE_PATH
@@ -22,7 +23,7 @@ class WhereAreWe(ProcessingLayer):
         self.query = UrQuery()
         self.testing = True
         self.times = 0
-        self.iter = IterRS(presentation_layer=self.full_sheet, path=self.path,
+        self.iter = IterRS(staging_layer=self.staging_layer, path=self.path,
                            mode='testing', test_service=None, pytest=None)
         self.most_recent_good_month, self.good_months = self.player.get_mr_good_month()
         self.ur_query = UrQuery()
@@ -110,12 +111,10 @@ class WhereAreWe(ProcessingLayer):
                 mi_tp = self.query.get_single_ten_pay_by_period(
                     first_dt=self.first_dt, last_dt=self.last_dt, name=name)
                 mi_payments.append(mi_tp)
-        
-        presentation_layer_url = 'https://docs.google.com/spreadsheets/d/' + self.full_sheet
 
         self.print_rows(
             date=self.date,
-            presentation_layer_url=presentation_layer_url,
+            staging_layer_url=self.staging_layer_url,
             beg_tenants=occupied_units_at_beg_month,
             vacants=vacants,
             opcash=opcash, reconcile_status=did_opcash_or_scrape_reconcile_with_deposit_report,
@@ -179,7 +178,7 @@ class WhereAreWe(ProcessingLayer):
         print('*' * 45)
         print(f'SELECTED MONTH: {date}\n')
         print(
-            f'working presentation layer url: {kwargs["presentation_layer_url"]}')
+            f'working staging layer url: {kwargs["staging_layer_url"]}')
         print(
             f'\t opcash and deposit sheet reconcile: {kwargs["reconcile_status"][0].tenant_reconciled}')
         print(
@@ -294,6 +293,10 @@ class WhereAreWe(ProcessingLayer):
         print('*' * 45)
         print(f'DEPOSITS DISCREPANCY = ${deposits_discrepancy}')
         print('negative number means bank shows higher amount than report')
+        print('*' * 45)
+        print(f'staging layer url: https://docs.google.com/spreadsheets/d/' + self.staging_layer)
+        print(f'close layer url: https://docs.google.com/spreadsheets/d/' + self.close_layer)
+        print(f'current finalized numbers through end of jan 2023 is https://docs.google.com/spreadsheets/d/1t7KFE-WbfZ0dR9PuqlDE5EepCG3o3acZXzhbVRFW-Gc')
 
     def user_input_loop(self):
         try:

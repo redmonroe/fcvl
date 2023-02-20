@@ -27,8 +27,8 @@ class MonthSheet(YearSheet):
     wrange_ntp = '!K71:K71'
     wrange_sum_mi_payments = '!K76:K76'
 
-    def __init__(self, presentation_layer, path, mode=None, test_service=None, db=None):
-        self.full_sheet = presentation_layer
+    def __init__(self, staging_layer, path, mode=None, test_service=None, db=None):
+        self.full_sheet = staging_layer
         self.file_input_path = path
         if mode == 'testing':
             self.service = test_service

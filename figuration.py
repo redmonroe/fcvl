@@ -12,7 +12,7 @@ class Figuration:
                  mode='testing', 
                  method='iter', 
                  path=None, 
-                 presentation_layer=None, 
+                 staging_layer=None, 
                  close_layer=None,
                  pytest=None):
         '''default to iterative, testing config, sheet, path'''
@@ -23,10 +23,10 @@ class Figuration:
         else:
             self.path = Config.TEST_PATH
 
-        if presentation_layer:
-            self.presentation_layer = presentation_layer 
+        if staging_layer:
+            self.staging_layer = staging_layer 
         else:
-            self.presentation_layer = Config.TEST_RS
+            self.staging_layer = Config.TEST_RS
             
         if close_layer:
             self.close_layer = close_layer
@@ -48,30 +48,30 @@ class Figuration:
         if self.mode == 'testing':
             self.build = self.method(
                 path=self.path, 
-                presentation_layer=self.presentation_layer, 
+                staging_layer=self.staging_layer, 
                 mode=self.mode, 
                 pytest=self.pytest)
             self.service = oauth(Config.my_scopes, 
                                  'sheet', 
                                  mode=self.mode)
-            self.ms = MonthSheet(presentation_layer=self.presentation_layer, 
+            self.ms = MonthSheet(staging_layer=self.staging_layer, 
                                  path=self.path,
                                  mode=self.mode, 
                                  test_service=self.service)
         if self.mode == 'production':
             self.path = Config.PROD_PATH
-            self.presentation_layer = Config.PROD_RS
+            self.staging_layer = Config.PROD_RS
             self.build = self.method(path=self.path, 
-                                     presentation_layer=self.presentation_layer)
+                                     staging_layer=self.staging_layer)
             self.service = oauth(Config.my_scopes, 'sheet')
-            self.ms = MonthSheet(presentation_layer=self.presentation_layer, 
+            self.ms = MonthSheet(staging_layer=self.staging_layer, 
                                  path=self.path)
 
     def annfin_test_configuration(self):
-        return Config.TEST_ANNFIN_PATH, Config.TEST_ANNFIN_OUTPUT, Config.TEST_DB, self.service, self.presentation_layer
+        return Config.TEST_ANNFIN_PATH, Config.TEST_ANNFIN_OUTPUT, Config.TEST_DB, self.service, self.staging_layer
 
     def return_configuration(self):
-        return self.path, self.presentation_layer, self.close_layer, self.build, self.service, self.ms
+        return self.path, self.staging_layer, self.close_layer, self.build, self.service, self.ms
 
     def reset_db(self):
         populate = PopulateTable()

@@ -33,13 +33,13 @@ def cli():
 def where_are_we(most_recent_good):
     click.echo('TEST: where_are_we')
     figure = Figuration()
-    path, presentation_layer, close_layer, build, service, ms = figure.return_configuration()
+    path, staging_layer, close_layer, build, service, ms = figure.return_configuration()
     # TODO: NEED TO FIX MONTH CHOICE WHEN WE ARE DEALING WITH YEAR OVERLAPS
     # breakpoint()
     if most_recent_good:
         where = WhereAreWe(date=True,
                            path=path,
-                           presentation_layer=presentation_layer,
+                           staging_layer=staging_layer,
                            close_layer=close_layer,
                            build=build,
                            service=service,
@@ -47,7 +47,7 @@ def where_are_we(most_recent_good):
                            suppress_scrape=True)
     else:
         where = WhereAreWe(path=path,
-                           presentation_layer=presentation_layer,
+                           staging_layer=staging_layer,
                            close_layer=close_layer,
                            build=build,
                            service=service,
