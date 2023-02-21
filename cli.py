@@ -12,6 +12,7 @@ from letters import AddressWriter, DocxWriter, Letters
 from manual_entry import ManualEntry
 from pdf import StructDataExtract
 from where_are_we import WhereAreWe
+from analysis import Analysis
 
 '''
 MIDMONTH flow
@@ -347,6 +348,15 @@ def db_to_excel():
     ms.auto_control(mode='to_excel')
 
 
+"""ANALYSIS"""
+@click.command()
+def analysis():
+    click.echo('analysis')
+    # figure = Figuration()
+    # path, output_path, db = figure.annfin_test_configuration()
+    # annfin = AnnFin(db=db)
+    # annfin.trial_balance_portal()
+
 """ANNUAL FINANCIALS"""
 
 
@@ -475,6 +485,8 @@ cli.add_command(workorders_to_db)
 cli.add_command(export_workorders_docx)
 cli.add_command(recvactuals)
 cli.add_command(manentry)
+"""ANALYSIS"""
+cli.add_command(analysis)
 """ANNUAL FINANCIALS"""
 cli.add_command(annfin)
 """TESTING COMMANDS"""
