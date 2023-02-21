@@ -2,13 +2,15 @@ from datetime import datetime as dt
 
 import pandas as pd
 import xlsxwriter
+from googleapiclient.errors import HttpError
 from numpy import nan
 from peewee import JOIN, fn
 
 from auth_work import oauth
-from backend import (Damages, Findexer, NTPayment, OpCash, OpCashDetail,
-                     Payment, PopulateTable, QueryHC, StatusObject, StatusRS,
-                     Tenant, TenantRent, Unit, UrQuery, db, FinalMonth, FinalMonthLog)
+from backend import (Damages, FinalMonth, FinalMonthLog, Findexer, NTPayment,
+                     OpCash, OpCashDetail, Payment, PopulateTable, QueryHC,
+                     StatusObject, StatusRS, Tenant, TenantRent, Unit, UrQuery,
+                     db)
 from config import Config
 from db_utils import DBUtils
 from errors import Errors
@@ -597,16 +599,24 @@ class MonthSheet(YearSheet):
         df['source'] = [source_url for n in enumerate(values)]
         df = df.to_dict('records')
         FinalMonth.insert_many(df).execute()
-        fml = FinalMonthLog(month=sheet_name, source=source_url)
+        fml = FinalMonthLog(month=sheet_name, source=source_url, moved_to_close='False')
         fml.save()
         
     def move_to_final(self, 
                       close_layer,
                       *args, 
                       **kwargs):
-        closed_dates = {date.month: date.month for date in FinalMonthLog.select()}
-        path = Utils.show_files_as_choices(closed_dates, 
+        
+        titles_dict = {name: id2 for name,
+                       id2 in Utils.get_existing_sheets(args[0], args[1]).items() if name != 'intake'}
+        
+        closed_dates = [date.month for date in FinalMonthLog.select() if date.moved_to_close == 'True']
+        for dates in closed_dates:
+            closed_titles = titles_dict.pop(dates)
+        
+        path = Utils.show_files_as_choices(titles_dict, 
                                            interactive=True, 
+                                           start=len(closed_dates)+1
                                            )
     
         values = self.gc.broad_get(service=self.service, 
@@ -636,18 +646,33 @@ class MonthSheet(YearSheet):
         df['end_bal'] = pd.to_numeric(df['end_bal'], errors='coerce')
         
         df = df.values.tolist()
-        self.gc.make_one_sheet(service=self.service, 
+    
+        
+        try:
+            self.gc.make_one_sheet(service=self.service, 
+                          spreadsheet_id=close_layer,
+                          sheet_title=path[0]
+                          )
+        except HttpError as e:
+            titles_dict = {name: id2 for name,
+                        id2 in Utils.get_existing_sheets(self.service, close_layer).items() if name != 'Sheet1'}
+            sheet_id = [sheet_id for sh_name, sheet_id in titles_dict.items() if sh_name == path[0]][0]
+            self.gc.del_one_sheet(service=self.service, 
+                          spreadsheet_id=close_layer,
+                          id=sheet_id
+                          )
+            self.gc.make_one_sheet(service=self.service, 
                           spreadsheet_id=close_layer,
                           sheet_title=path[0]
                           )
         
-        
         self.formatting_runner_for_presentation(service=self.service, 
                                                 full_sheet=close_layer,
                                                 sheet=path[0])
-        # breakpoint()
+        
+        '''BE CAREFUL IVE GOT A TIME SAVER SLICE RIGHT BELOW HERE'''
         count = 2
-        for row in df: 
+        for row in df[:10]: 
             self.gc.simple_batch_update(service=self.service,
                                 sheet_id=close_layer,
                                 wrange=f'{path[0]}!A{count}:L{count}',
@@ -655,15 +680,26 @@ class MonthSheet(YearSheet):
                                 dim='ROWS'
                                 )
             count += 1
-            
-        breakpoint()
-        # NEED SHEET_ID IF i WANT TO DO FREEZING AND BOLDING
-        # i can get sheet name back from here
+        
         titles_dict = {name: id2 for name,
-                       id2 in Utils.get_existing_sheets(args[0], args[1]).items() if name != 'intake'}
+                    id2 in Utils.get_existing_sheets(self.service, close_layer).items() if name != 'Sheet1'}
+        sheet_id = [sheet_id for sh_name, sheet_id in titles_dict.items() if sh_name == path[0]][0]
         
-        # row sum is not aligned
+        self.gc.date_stamp(self.service,
+                           close_layer, 
+                           f'{path[0]}!A70:A70')
+
+        self.gc.bold_freeze(self.service, 
+                            close_layer, 
+                            sheet_id, 1)
+        self.gc.bold_range(self.service, 
+                           close_layer, 
+                           sheet_id, 
+                           0, 100, 68, 69)
         
-        # need to drop fml table to add new col.status
-        # should update finalmonthlog if we have written sheet
+        fml = [FinalMonthLog.select().where(FinalMonthLog.month == path[0]).namedtuples()][0]
+        fml = FinalMonthLog.get(fml[0].id)
+        fml.moved_to_close = 'True'
+        fml.save()
+        
 

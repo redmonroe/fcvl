@@ -2,7 +2,6 @@ import time
 from functools import wraps
 
 from googleapiclient.errors import HttpError
-from playwright._impl._api_types import TimeoutError as PlaywrightTimeoutError
 
 # interesting link: https://stackoverflow.com/questions/50246304/using-python-decorators-to-retry-request
 

@@ -409,6 +409,7 @@ class FinalMonth(BaseModel):
 class FinalMonthLog(BaseModel):
     month = DateField(null=True)
     source = CharField()
+    moved_to_close = CharField()
 
 
 class QueryHC(Reconciler):
