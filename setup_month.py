@@ -661,6 +661,11 @@ class MonthSheet(YearSheet):
                           spreadsheet_id=close_layer,
                           id=sheet_id
                           )
+            fml = [FinalMonthLog.select().where(FinalMonthLog.month == path[0]).namedtuples()][0]
+            fml = FinalMonthLog.get(fml[0].id)
+            fml.moved_to_close = 'False'
+            fml.save()
+            print(f'unfinalizing {path[0]} and deleting sheet.')
             self.gc.make_one_sheet(service=self.service, 
                           spreadsheet_id=close_layer,
                           sheet_title=path[0]
@@ -670,9 +675,8 @@ class MonthSheet(YearSheet):
                                                 full_sheet=close_layer,
                                                 sheet=path[0])
         
-        '''BE CAREFUL IVE GOT A TIME SAVER SLICE RIGHT BELOW HERE'''
         count = 2
-        for row in df[:10]: 
+        for row in df: 
             self.gc.simple_batch_update(service=self.service,
                                 sheet_id=close_layer,
                                 wrange=f'{path[0]}!A{count}:L{count}',
@@ -701,5 +705,5 @@ class MonthSheet(YearSheet):
         fml = FinalMonthLog.get(fml[0].id)
         fml.moved_to_close = 'True'
         fml.save()
-        
+        print(f'finished moving {path[0]} to final')
 

@@ -340,7 +340,7 @@ class Utils:
             files.append(k)
 
         if interactive:
-            selection = int(input("Please select an item to work with:"))
+            selection = int(input("Please select an item to work with: "))
 
             choice_file = dict(zip(choice, files))
 

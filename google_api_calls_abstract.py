@@ -1,7 +1,7 @@
 from errors import retry_google_api
 
 times = 3
-sleep1 = 65
+sleep1 = 61
 exceptions = 429
 
 
