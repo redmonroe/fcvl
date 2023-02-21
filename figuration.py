@@ -66,6 +66,9 @@ class Figuration:
             self.service = oauth(Config.my_scopes, 'sheet')
             self.ms = MonthSheet(staging_layer=self.staging_layer, 
                                  path=self.path)
+            
+    def analysis_test_configuration(self):
+        return Config.TEST_DB
 
     def annfin_test_configuration(self):
         return Config.TEST_ANNFIN_PATH, Config.TEST_ANNFIN_OUTPUT, Config.TEST_DB, self.service, self.staging_layer

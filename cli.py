@@ -161,41 +161,41 @@ def close_sheet(production=False,
                 drop_final=False,
                 create_final=False,
                 close_range=False,
-                close_one_month=False, 
+                close_one_month=False,
                 interrogate_log=False,
                 ):
     figure = Figuration()
     path, staging_layer, close_layer, build, service, ms = figure.return_configuration()
-    
+
     if interrogate_log:
-        closed_dates = [(date.month, date.source) for date in FinalMonthLog.select()]
+        closed_dates = [(date.month, date.source)
+                        for date in FinalMonthLog.select()]
         print('source: ', closed_dates[0][1])
-        print('closed months: ', [date[1][0] for date in enumerate(closed_dates, 1)])
-    
-    
+        print('closed months: ', [date[1][0]
+              for date in enumerate(closed_dates, 1)])
+
     if drop_final:
         build.main_db.drop_tables(models=[FinalMonth, FinalMonthLog])
     if create_final:
         build.main_db.create_tables(models=[FinalMonth, FinalMonthLog])
-    
+
     if move_to_final:
         click.echo('TEST: move closed month to final presentation sheet')
         staging_layer = '1t7KFE-WbfZ0dR9PuqlDE5EepCG3o3acZXzhbVRFW-Gc'
         ms.move_to_final(close_layer, service, staging_layer, db=build)
-        
-        #TODO write audit funcs out of here
-    
+
+        # TODO write audit funcs out of here
+
     if close_range:
         '''
         closes all months up to passed end date
         '''
         staging_layer = '1t7KFE-WbfZ0dR9PuqlDE5EepCG3o3acZXzhbVRFW-Gc'
-        ms.close_range(last_date=close_range, 
-                       service=service, 
-                       staging=staging_layer, 
+        ms.close_range(last_date=close_range,
+                       service=service,
+                       staging=staging_layer,
                        db=build)
-        
-    
+
     if close_one_month:
         staging_layer = '1t7KFE-WbfZ0dR9PuqlDE5EepCG3o3acZXzhbVRFW-Gc'
         ms.close_one_month(service, staging_layer, db=build)
@@ -261,7 +261,7 @@ def addresses():
 def balanceletters():
     click.echo('balance letters')
     figure = Figuration()
-    path, full_sheet, build, service, ms = figure.return_configuration()
+    path, staging_layer, close_layer, build, service, ms = figure.return_configuration()
     docx = DocxWriter(db=build.main_db, service=service)
     docx.export_history_to_docx(
         threshold=100, startm='2022-07', endm='2023-01')
@@ -349,13 +349,22 @@ def db_to_excel():
 
 
 """ANALYSIS"""
+
+
 @click.command()
-def analysis():
+@click.argument('column', nargs=3)
+def analysis(column=None):
     click.echo('analysis')
-    # figure = Figuration()
-    # path, output_path, db = figure.annfin_test_configuration()
-    # annfin = AnnFin(db=db)
-    # annfin.trial_balance_portal()
+    figure = Figuration()
+    db, tables = figure.analysis_test_configuration()
+    analysis = Analysis(db=db,
+                        tables=[FinalMonth])
+    analysis.sum_over_range_by_type(column=column[0],
+                                    period_strt=column[1],
+                                    period_end=column[2],
+                                        )
+    analysis.print_df()
+
 
 """ANNUAL FINANCIALS"""
 
@@ -364,7 +373,7 @@ def analysis():
 def annfin():
     click.echo('annual financials')
     figure = Figuration()
-    path, output_path, db = figure.annfin_test_configuration()
+    path, output_path, db, staging_layer = figure.annfin_test_configuration()
     annfin = AnnFin(db=db)
     annfin.trial_balance_portal()
 
