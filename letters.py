@@ -670,13 +670,15 @@ class DocxWriter(Letters):
             current_record = item.name
             
             paragraph = document.add_paragraph(' ', style='No Spacing')
-            breakpoint()
-            paragraph = document.add_paragraph(f"You have a balance due of $ {endbals[-1]}.  Please pay this amount along with next month\'s rent or make arrangements, within five(5) business days of the date of this letter, to setup a repayment plan."
-                                                
+            balance = float(endbals[-1]) * -1
+            if balance > 0:
+                paragraph = document.add_paragraph(f"You have a balance due of $ {str(balance)}.  Please pay this amount along with next month\'s rent or make arrangements, within five(5) business days of the date of this letter, to setup a repayment plan."
+                                                    
+                                                , style='No Spacing')
+                paragraph = document.add_paragraph(' ', style='No Spacing')
+                paragraph = document.add_paragraph('If you have any questions, have already made a payment, or this amount does not match your records, please contact the office at 317-925-5558.' 
                                                , style='No Spacing')
-            paragraph = document.add_paragraph(' ', style='No Spacing')
-            paragraph = document.add_paragraph('If you have any questions, have already made a payment, or this amount does not match your records, please contact the office at 317-925-5558.' 
-                                               , style='No Spacing')
+            # breakpoint()
             paragraph = document.add_paragraph(' ', style='No Spacing')
             paragraph = document.add_paragraph(' ', style='No Spacing')
             paragraph = document.add_paragraph(' ', style='No Spacing')
