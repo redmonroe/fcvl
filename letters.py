@@ -670,7 +670,7 @@ class DocxWriter(Letters):
             current_record = item.name
             
             paragraph = document.add_paragraph(' ', style='No Spacing')
-            
+            breakpoint()
             paragraph = document.add_paragraph(f"You have a balance due of $ {endbals[-1]}.  Please pay this amount along with next month\'s rent or make arrangements, within five(5) business days of the date of this letter, to setup a repayment plan."
                                                 
                                                , style='No Spacing')
