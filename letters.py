@@ -597,23 +597,45 @@ class DocxWriter(Letters):
             Path('tenantbals_' + str(datetime.now().strftime('%m-%d-%Y')) + '.docx')
         document.save(save_path)
         print(f'look for output in {save_path}')
+        return save_path
 
     def format_balance_letters(self, document=None, parameters=None, records=None):
         for record in records:
             self.insert_header(document)
             paragraph = document.add_paragraph(' ', style='No Spacing')
             paragraph = document.add_paragraph(' ', style='No Spacing')
+            name = (' ').join(record[0].split(',')[::-1]).strip()
+            paragraph = document.add_paragraph(' ', style='No Spacing')
             paragraph = document.add_paragraph(
-                f'Name: {record[0]}', style='No Spacing')
-
+                'Date: ' + parameters['current_date'], style='No Spacing')
+            
+            paragraph = document.add_paragraph(' ', style='No Spacing')
+            paragraph = document.add_paragraph(
+                f'Name: {name}' , style='No Spacing')
+            
             unit = record[1][0].unit
             if unit.split('-')[0] == 'CD':
                 unit = self.fix_name3(unit, address_bp=Config.ADDRESS_CD)
             elif unit.split('-')[0] == 'PT':
                 unit = self.fix_name3(unit, address_bp=Config.ADDRESS_PT)
-            paragraph = document.add_paragraph(
-                f'Address: {unit}', style='No Spacing')
             
+            street = ' '.join(unit.split(' ')[:3])
+            unit_no = ' '.join(unit.split(' ')[4:6])
+            address = ' '.join(unit.split(' ')[6:9])
+          
+            paragraph = document.add_paragraph(
+                f'{street}', style='No Spacing')
+            paragraph = document.add_paragraph(
+                f'{unit_no}', style='No Spacing')
+            paragraph = document.add_paragraph(
+                f'{address}', style='No Spacing')
+            paragraph = document.add_paragraph(
+                '_______________________________', style='No Spacing')
+            paragraph = document.add_paragraph(' ', style='No Spacing')
+
+            
+            paragraph = document.add_paragraph(
+                f'Dear {name},' , style='No Spacing')
             paragraph = document.add_paragraph(' ', style='No Spacing')
             paragraph = document.add_paragraph(' ', style='No Spacing')
             
@@ -648,7 +670,9 @@ class DocxWriter(Letters):
             current_record = item.name
             
             paragraph = document.add_paragraph(' ', style='No Spacing')
-            paragraph = document.add_paragraph(f"You have a balance due of $ {endbals[-1]}.  Please pay this amount along with next month\'s rent or make arrangements with the office to setup a repayment plan." 
+            
+            paragraph = document.add_paragraph(f"You have a balance due of $ {endbals[-1]}.  Please pay this amount along with next month\'s rent or make arrangements, within five(5) business days of the date of this letter, to setup a repayment plan."
+                                                
                                                , style='No Spacing')
             paragraph = document.add_paragraph(' ', style='No Spacing')
             paragraph = document.add_paragraph('If you have any questions, have already made a payment, or this amount does not match your records, please contact the office at 317-925-5558.' 
@@ -660,8 +684,6 @@ class DocxWriter(Letters):
             
             paragraph = document.add_paragraph(
                 '_______________________________', style='No Spacing')
-            paragraph = document.add_paragraph(
-                'Generated: ' + parameters['current_date'], style='No Spacing')
             document.add_page_break()
 
         return document

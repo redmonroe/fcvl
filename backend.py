@@ -863,32 +863,19 @@ class Position(QueryHC):
     end_bal: str = '0'
 
     def create_list(self, lookback=None):
+        import string
         first_dt, _ = self.make_first_and_last_dates(date_str=lookback[0])
-        last_period_first_dt, last_dt = self.make_first_and_last_dates(date_str=lookback[1])
-
-        tenants_at_1, vacants, tenants_at_2 = self.get_rent_roll_by_month_at_first_of_month(
-            first_dt=last_period_first_dt, last_dt=last_dt)
+        _, last_dt = self.make_first_and_last_dates(date_str=lookback[1])
         
-        tenants_at_1 = [name.capitalize() for name, unit in tenants_at_1]
-        # what should be there? amsley, baker, brown, bussey, crombaugh, depp, dotson, foreman, grigley, hawkins, lateef, 
-        
-        # fix capitalization for matching!
-        
-        # remove gibbs, mack
-        
-        breakpoint()
         df = pd.DataFrame([row for row in FinalMonth.select().
                            where(FinalMonth.month >= first_dt).
                            where(FinalMonth.month <= last_dt).
-                           where(FinalMonth.name.in_(tenants_at_1)).namedtuples()
+                           where(FinalMonth.name.not_in([string.capwords(row.name) 
+                                                         for row in MoveOut.select().namedtuples()])).namedtuples()
                            ])
         
-
         df = df.sort_values(['name', 'month'])
-        assert "Gibbs, Cleveland" in df['name'].tolist()
         
-        
-        # if name does not have date of last_dt, then remove all name
         positions = []
         for row in df.to_dict('records'):
             try:

@@ -258,31 +258,30 @@ def addresses():
 
 
 @click.command()
-def balanceletters():
+@click.argument('dates', nargs=2)
+def balanceletters(dates=None):
     click.echo('balance letters')
+    click.echo('NOT READY TO USE CURRENT MONTH, AM I?')
     figure = Figuration()
     path, staging_layer, close_layer, build, service, ms = figure.return_configuration()
     docx = DocxWriter(db=build.main_db, service=service)
     docx.export_history_to_docx(
-        threshold=100, startm='2022-07', endm='2023-01')
+        threshold=100, startm=dates[0], endm=dates[1])
 
-    # have to fix how we are loading unit; something got fucked up
+    # different text if balance is bad: see grigley letter
+    # different text if balance is positive
 
-    # add boiler plate
-    # read doc from command line
-    # move closed month to rent_sheet_fs
-    # use prior month closed month bal in end_bal for production of next month staging!!!!
-    # THIS IS THE FUCKING ANSWER
 
     # should do a filter of
     # - get most recent closed month
     # - get rent roll as of that period
     # - do look back from most recent closed month
-
-    import subprocess
-    subprocess.run('''
+    
+    doc_path ='tenantbals_' + str(datetime.now().strftime('%m-%d-%Y')) + '.docx'
+    import subprocessgc
+    subprocess.run(f'''
     # This for loop syntax is Bash only
-    pandoc -f docx -t asciidoc /mnt/c/Users/joewa/Google\ Drive/fall\ creek\ village\ I/fcvl/tenbal_output/tenantbals_02-05-2023.docx
+    pandoc -f docx -t asciidoc /mnt/c/Users/joewa/Google\ Drive/fall\ creek\ village\ I/fcvl/tenbal_output/{doc_path}
     ''',
                    shell=True, check=True,
                    executable='/bin/bash')
