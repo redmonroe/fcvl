@@ -259,32 +259,18 @@ def addresses():
 
 @click.command()
 @click.argument('dates', nargs=2)
-def balanceletters(dates=None):
+@click.argument('threshold', nargs=1)
+def balanceletters(dates=None, threshold=None):
     click.echo('balance letters')
     click.echo('NOT READY TO USE CURRENT MONTH, AM I?')
+    click.echo('example: python cli.py balanceletters 2022-07 2023-01 100')
     figure = Figuration()
     path, staging_layer, close_layer, build, service, ms = figure.return_configuration()
     docx = DocxWriter(db=build.main_db, service=service)
     docx.export_history_to_docx(
-        threshold=100, startm=dates[0], endm=dates[1])
-
-    # different text if balance is bad: see grigley letter
-    # different text if balance is positive
-
-
-    # should do a filter of
-    # - get most recent closed month
-    # - get rent roll as of that period
-    # - do look back from most recent closed month
-    
-    doc_path ='tenantbals_' + str(datetime.now().strftime('%m-%d-%Y')) + '.docx'
-    import subprocess
-    subprocess.run(f'''
-    # This for loop syntax is Bash only
-    pandoc -f docx -t asciidoc /mnt/c/Users/joewa/Google\ Drive/fall\ creek\ village\ I/fcvl/tenbal_output/{doc_path}
-    ''',
-                   shell=True, check=True,
-                   executable='/bin/bash')
+        threshold=threshold, startm=dates[0], endm=dates[1])
+    click.echo('remember to update https://docs.google.com/document/d/1OWvvOYvmXh5h131jjGWBoVGTmdDttFaR1_kYktoLwZ0/edit')
+    click.echo('to reflect new deadlines created by letters.')
 
 
 @click.command()
