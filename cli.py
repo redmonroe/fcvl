@@ -131,8 +131,20 @@ def write(production=False):
     else:
         click.echo('TEST: write all db contents to rs . . .')
         figure = Figuration()
-        path, full_sheet, build, service, ms = figure.return_configuration()
+        path, full_sheet, close_layer, build, service, ms = figure.return_configuration()
         ms.auto_control(source='cli.py', mode='clean_build')
+        
+        # combine this with write_month_range with flags
+@click.command()
+def write_monthrange_test():
+    click.echo('TEST: write all db contents to rs: EXPRESS MONTHRANGE . . .')
+    figure = Figuration()
+    path, full_sheet, build, service, ms = figure.return_configuration()
+    # month_list = ['2022-01', '2022-02', '2022-03', '2022-04', '2022-05',
+    #   '2022-06', '2022-07', '2022-08', '2022-09', '2022-10',
+    #   '2022-11', '2022-12']
+    month_list = ['2022-01', '2022-02', '2022-03']
+    ms.auto_control(source='cli.py', mode='clean_build', month_list=month_list)
 
 
 @click.command()
@@ -144,10 +156,7 @@ def write(production=False):
               help='write month to final presentation sheet for peg')
 @click.option('-d', '--drop_final',
               default=False,
-              help='drop FinalMonth and FinalMonthLog tables only')
-@click.option('-c', '--create_final',
-              default=False,
-              help='create FinalMonth and FinalMonthLog tables only')
+              help='drop and RECREATE FinalMonth and FinalMonthLog tables only')
 @click.option('-x', '--close_one_month',
               default=False,
               help='close a month selected from a list of months')
@@ -159,7 +168,6 @@ def write(production=False):
 def close_sheet(production=False,
                 move_to_final=False,
                 drop_final=False,
-                create_final=False,
                 close_range=False,
                 close_one_month=False,
                 interrogate_log=False,
@@ -170,13 +178,15 @@ def close_sheet(production=False,
     if interrogate_log:
         closed_dates = [(date.month, date.source)
                         for date in FinalMonthLog.select()]
-        print('source: ', closed_dates[0][1])
-        print('closed months: ', [date[1][0]
+        if closed_dates != []:
+            print('source: ', closed_dates[0][1])
+            print('closed months: ', [date[1][0]
               for date in enumerate(closed_dates, 1)])
+        else:
+            print('no months are closed in FinalMonthLog')
 
     if drop_final:
         build.main_db.drop_tables(models=[FinalMonth, FinalMonthLog])
-    if create_final:
         build.main_db.create_tables(models=[FinalMonth, FinalMonthLog])
 
     if move_to_final:
@@ -184,7 +194,7 @@ def close_sheet(production=False,
         staging_layer = '1t7KFE-WbfZ0dR9PuqlDE5EepCG3o3acZXzhbVRFW-Gc'
         ms.move_to_final(close_layer, service, staging_layer, db=build)
 
-        # TODO write audit funcs out of here
+        # TODO audit funcs emanate from out of here
 
     if close_range:
         '''
@@ -207,16 +217,6 @@ def close_sheet(production=False,
         path, full_sheet, build, service, ms = figure.return_configuration()
 
 
-@click.command()
-def write_monthrange_test():
-    click.echo('TEST: write all db contents to rs: EXPRESS MONTHRANGE . . .')
-    figure = Figuration()
-    path, full_sheet, build, service, ms = figure.return_configuration()
-    # month_list = ['2022-01', '2022-02', '2022-03', '2022-04', '2022-05',
-    #   '2022-06', '2022-07', '2022-08', '2022-09', '2022-10',
-    #   '2022-11', '2022-12']
-    month_list = ['2022-01', '2022-02', '2022-03']
-    ms.auto_control(source='cli.py', mode='clean_build', month_list=month_list)
 
 
 @click.command()
@@ -271,6 +271,8 @@ def balanceletters(dates=None, threshold=None):
         threshold=threshold, startm=dates[0], endm=dates[1])
     click.echo('remember to update https://docs.google.com/document/d/1OWvvOYvmXh5h131jjGWBoVGTmdDttFaR1_kYktoLwZ0/edit')
     click.echo('to reflect new deadlines created by letters.')
+    
+    # exclude abandoned, sick, or payment plans
 
 
 @click.command()

@@ -48,6 +48,7 @@ class MonthSheet(YearSheet):
         self.charge_month = '!H2:H68'
         self.pay_month = '!K2:K68'
         self.dam_month = '!J2:J68'
+        self.status_effects = '!M2:M68'
         self.db = db
 
     def auto_control(self,
@@ -319,27 +320,9 @@ class MonthSheet(YearSheet):
                            kwargs.get('pay_month'), f'{date}' + self.pay_month, value_input_option='USER_ENTERED')
         self.gc.update_int(self.service, self.full_sheet,
                            kwargs.get('dam_month'), f'{date}' + self.dam_month, value_input_option='USER_ENTERED')
+        self.gc.update(self.service, self.full_sheet,
+                       kwargs.get('status_effects'), f'{date}' + self.status_effects)
         return date
-
-    # def write_rs_col(self, date, *args):
-    #     self.gc.update_int(self.service, self.full_sheet,
-    #                        args[0], f'{date}' + self.contract_rent, value_input_option='USER_ENTERED')
-    #     self.gc.update_int(self.service, self.full_sheet,
-    #                        args[1], f'{date}' + self.subsidy, value_input_option='USER_ENTERED')
-    #     self.gc.update(self.service, self.full_sheet,
-    #                    args[2], f'{date}' + self.unit)
-    #     self.gc.update(self.service, self.full_sheet,
-    #                    args[3], f'{date}' + self.tenant_names)
-    #     self.gc.update_int(self.service, self.full_sheet,
-    #                        args[4], f'{date}' + self.beg_bal, value_input_option='USER_ENTERED')
-    #     self.gc.update_int(self.service, self.full_sheet,
-    #                        args[5], f'{date}' + self.end_bal, value_input_option='USER_ENTERED')
-    #     self.gc.update_int(self.service, self.full_sheet,
-    #                        args[6], f'{date}' + self.charge_month, value_input_option='USER_ENTERED')
-    #     self.gc.update_int(self.service, self.full_sheet,
-    #                        args[7], f'{date}' + self.pay_month, value_input_option='USER_ENTERED')
-    #     self.gc.update_int(self.service, self.full_sheet,
-    #                        args[8], f'{date}' + self.dam_month, value_input_option='USER_ENTERED')
 
     def get_ntp_wrapper(self, date):
         populate = PopulateTable()
@@ -579,6 +562,8 @@ class MonthSheet(YearSheet):
         values = self.gc.broad_get(service=self.service,
                                    spreadsheet_id=staging_layer,
                                    range=f'{sheet_name}!A2:L68')
+
+        # breakpoint()
         df = pd.DataFrame(values, columns=['unit',
                                            'name',
                                            'notes',
@@ -591,12 +576,14 @@ class MonthSheet(YearSheet):
                                            'ch_amount',
                                            'payment',
                                            'end_bal',
+                                           #    'status_effect',
                                            ])
-
+        df = df.fillna(value='none')
         source_url = 'https://docs.google.com/spreadsheets/d/' + staging_layer
         df['month'] = [dt.strptime(sheet_name, '%Y-%m')
                        for n in enumerate(values)]
         df['source'] = [source_url for n in enumerate(values)]
+        df['status_effect'] = [source_url for n in enumerate(values)]
         df = df.to_dict('records')
         FinalMonth.insert_many(df).execute()
         fml = FinalMonthLog(

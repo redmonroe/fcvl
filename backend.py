@@ -403,6 +403,7 @@ class FinalMonth(BaseModel):
     ch_amount = CharField()
     payment = CharField()
     end_bal = CharField()
+    status_effect = CharField(default='none')
     source = CharField()
 
 
