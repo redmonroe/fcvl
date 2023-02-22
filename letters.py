@@ -602,8 +602,6 @@ class DocxWriter(Letters):
     def format_balance_letters(self, document=None, parameters=None, records=None):
         for record in records:
             self.insert_header(document)
-            paragraph = document.add_paragraph(' ', style='No Spacing')
-            paragraph = document.add_paragraph(' ', style='No Spacing')
             name = (' ').join(record[0].split(',')[::-1]).strip()
             paragraph = document.add_paragraph(' ', style='No Spacing')
             paragraph = document.add_paragraph(
@@ -611,7 +609,7 @@ class DocxWriter(Letters):
             
             paragraph = document.add_paragraph(' ', style='No Spacing')
             paragraph = document.add_paragraph(
-                f'Name: {name}' , style='No Spacing')
+                f'{name}' , style='No Spacing')
             
             unit = record[1][0].unit
             if unit.split('-')[0] == 'CD':
@@ -670,15 +668,20 @@ class DocxWriter(Letters):
             current_record = item.name
             
             paragraph = document.add_paragraph(' ', style='No Spacing')
-            balance = float(endbals[-1]) * -1
-            if balance > 0:
-                paragraph = document.add_paragraph(f"You have a balance due of $ {str(balance)}.  Please pay this amount along with next month\'s rent or make arrangements, within five(5) business days of the date of this letter, to setup a repayment plan."
+            if float(endbals[-1]) < 0:
+                balance = float(endbals[-1]) * -1
+                paragraph = document.add_paragraph(f"You have a BALANCE DUE of $ {str(balance)}.  Please pay this amount along with next month\'s rent or make arrangements, within five(5) business days of the date of this letter, to setup a repayment plan."
                                                     
                                                 , style='No Spacing')
                 paragraph = document.add_paragraph(' ', style='No Spacing')
                 paragraph = document.add_paragraph('If you have any questions, have already made a payment, or this amount does not match your records, please contact the office at 317-925-5558.' 
                                                , style='No Spacing')
-            # breakpoint()
+            else:
+                balance = float(endbals[-1])
+                paragraph = document.add_paragraph(f"You have CREDIT of $ {str(balance)}.  You may reduce your payment for next month\'s rent by this amount.")
+                paragraph = document.add_paragraph('If you have any questions or or this credit does not match your records, please contact the office at 317-925-5558.' 
+                                               , style='No Spacing')
+
             paragraph = document.add_paragraph(' ', style='No Spacing')
             paragraph = document.add_paragraph(' ', style='No Spacing')
             paragraph = document.add_paragraph(' ', style='No Spacing')
