@@ -27,7 +27,7 @@ class YearSheet:
     G_SUM_BALANCES = ['=IF(K79=D90, "balances", "does not balance")']
 
     HEADER_NAMES = ['Unit', 'Tenant Name', 'Notes', 'Balance Start', 'Contract Rent', 'Actual Subsidy',
-                    'Hap received', 'Tenant Rent', 'Charge Type', 'Charge Amount', 'Payment Made', 'Balance Current', 'Payment Plan/Action']
+                    'Hap received', 'Tenant Rent', 'Charge Type', 'Charge Amount', 'Payment Made', 'Balance Current', 'STATUS_EFFECTS']
     MI_HEADER = ['Move-Ins']
     DEPOSIT_BOX_VERTICAL = ['dc total', 'rr', 'hap', 'ten',
                             'ten', 'ten', 'ten', 'ten', 'ten', 'ten', 'ten']
@@ -77,7 +77,7 @@ class YearSheet:
                                            full_sheet=None, 
                                            service=None, 
                                            sheet=None):
-        '''this handles the formatting for the presentation layer; currently missing some
+        '''this handles the formatting for the CLOSE layer; currently missing some
             formatting'''
         self.calls.format_row(
             service, full_sheet, f'{sheet}!A1:M1', 'ROWS', self.HEADER_NAMES)
@@ -100,6 +100,9 @@ class YearSheet:
     def formatting_runner(self, title_dict=None):
         '''writes the sum formulas in a row'''
         for sheet, sheet_id in title_dict.items():
+            self.calls.format_row(self.service, self.full_sheet,
+                                  f'{sheet}!M2:M68', 'COLUMNS', ['no_current_status' for i in range(67)])
+           
             self.calls.write_formula_column(
                 self.service, self.full_sheet, self.G_SUM_KRENT, f'{sheet}!E69:E69')
             self.calls.write_formula_column(

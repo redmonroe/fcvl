@@ -94,13 +94,13 @@ def reset_db(production=False):
               help='pass an explicit final month to db builder (ie "2022-12")')
 def load_db(production=False, last_month=None, explicit_month=None):
     figure = Figuration(method='not_iter')
-    _, _, build, _, ms = figure.return_configuration()
+    _, _, _, build, _, ms = figure.return_configuration()
 
     if production:
         # TODO: last month no supported in this branche
         click.echo('PRODUCTION: loading all available files in path to db')
         figure = Figuration(mode='production')
-        path, full_sheet, build, service, ms = figure.return_configuration()
+        path, staging_layer, close_layer, build, service, ms = figure.return_configuration()
         ms.auto_control(source='cli.py', mode='clean_build')
     elif explicit_month:
         print(

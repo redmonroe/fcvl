@@ -59,7 +59,7 @@ class MonthSheet(YearSheet):
 
         month_list, wrange = self.what_is_month_list(
             source=source, month_list=month_list)
-
+    
         if mode == 'clean_build':
             self.reset_spreadsheet()
             titles_dict = self.make_base_sheet()
@@ -93,7 +93,7 @@ class MonthSheet(YearSheet):
 
     def to_google_sheets(self,
                          month_list=None,
-                         make_one_sheet=None):
+                         make_one_sheet=False):
         status_list = []
         count = 0
         for date in month_list:
@@ -106,6 +106,7 @@ class MonthSheet(YearSheet):
                                                                             date_str=date)
                 prior_month = ('-').join(last_dt_of_prior_month.split('-')[:2])
                 count = 1
+            
 
             if count == 0:
                 prior_month = self.write_rs_col_EXPERIMENTAL(date,  contract_rent=contract_rent,
@@ -320,8 +321,8 @@ class MonthSheet(YearSheet):
                            kwargs.get('pay_month'), f'{date}' + self.pay_month, value_input_option='USER_ENTERED')
         self.gc.update_int(self.service, self.full_sheet,
                            kwargs.get('dam_month'), f'{date}' + self.dam_month, value_input_option='USER_ENTERED')
-        self.gc.update(self.service, self.full_sheet,
-                       kwargs.get('status_effects'), f'{date}' + self.status_effects)
+        # self.gc.update(self.service, self.full_sheet,
+                    #    kwargs.get('status_effects'), f'{date}' + self.status_effects)
         return date
 
     def get_ntp_wrapper(self, date):

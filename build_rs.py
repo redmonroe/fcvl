@@ -31,7 +31,7 @@ class BuildRS(MonthSheet):
             self.service = oauth(Config.my_scopes, 'sheet', mode='testing')
         self.create_tables_list1 = None
         self.target_bal_load_file = Config.beg_bal_xlsx
-        self.ms = MonthSheet(full_sheet=self.full_sheet, path=self.path)
+        self.ms = MonthSheet(staging_layer=self.full_sheet, path=self.path)
         self.findex = FileIndexer(path=self.path, db=self.main_db)
         self.populate = self._setup_tables(mode='create_only')
         self.player = ProcessingLayer(service=self.service,
@@ -137,7 +137,7 @@ class BuildRS(MonthSheet):
                 last_range_month=kw['last_range_month'])
         else:
             all_months_ytd, report_list, most_recent_status = player.write_to_statusrs_wrapper()
-
+        
         damages_txn_status_rstime1 = time.time() - damages_txn_status_rstime1
 
         mentry_time = time.time()
