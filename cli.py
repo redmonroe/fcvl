@@ -278,7 +278,7 @@ def balanceletters(dates=None):
     # - do look back from most recent closed month
     
     doc_path ='tenantbals_' + str(datetime.now().strftime('%m-%d-%Y')) + '.docx'
-    import subprocessg
+    import subprocess
     subprocess.run(f'''
     # This for loop syntax is Bash only
     pandoc -f docx -t asciidoc /mnt/c/Users/joewa/Google\ Drive/fall\ creek\ village\ I/fcvl/tenbal_output/{doc_path}
