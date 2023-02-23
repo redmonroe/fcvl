@@ -3,7 +3,7 @@ import sys
 from datetime import datetime as dt
 from operator import attrgetter
 
-from backend import (Findexer, Mentry, NTPayment, Payment, PopulateTable,
+from backend import (Findexer, Mentry, NTPayment, Payment, PopulateTable, StatusEffect,
                      Subsidy, TenantRent, db)
 from config import Config
 from db_utils import DBUtils
@@ -48,10 +48,13 @@ class ManualEntry:
         elif choice == 'Z':
             modified_item = self.delete_ui(selected_item=selected_item)
 
-    def apply_persisted_changes(self, explicit_month_to_load=None):
+    def apply_persisted_changes(self, 
+                                explicit_month_to_load=None,
+                                last_range_month=None):
         print('\napplying persistent changes')
         self.connect_to_db()
-        self.find_persisted_changes_from_config(explicit_month_to_load=explicit_month_to_load)
+        self.find_persisted_changes_from_config(explicit_month_to_load=explicit_month_to_load,
+                                                last_range_month=last_range_month)
 
     def delete_ui(self, selected_item=None, obj_str=None):
         print('delete ui')
@@ -185,31 +188,37 @@ class ManualEntry:
                                                     genus=kwargs['genus'],)
         new_model_row.save()
 
-    def find_persisted_changes_from_config(self, explicit_month_to_load=None):
+    def find_persisted_changes_from_config(self, 
+                                           explicit_month_to_load=None, 
+                                           last_range_month=None,
+                                           ):
         if explicit_month_to_load:
             first_dt, last_dt = self.populate.make_first_and_last_dates(date_str=explicit_month_to_load)
             self.persisted_changes = [item for item in self.persisted_changes if dt.strptime(
                 item['col_name3'][1], '%Y-%m-%d') >= first_dt and dt.strptime(
                 item['col_name3'][1], '%Y-%m-%d') <= last_dt]
+            
+        if last_range_month:
+            _, last_dt = self.populate.make_first_and_last_dates(date_str=last_range_month)
+            first_dt, _ = self.populate.make_first_and_last_dates(date_str='2022-01')
+            self.persisted_changes = [item for item in self.persisted_changes if dt.strptime(
+                item['col_name3'][1], '%Y-%m-%d') >= first_dt and dt.strptime(
+                item['col_name3'][1], '%Y-%m-%d') <= last_dt]
         
-                
         for item in self.persisted_changes:
             item = self._print_persisted_item(item=item)
 
             obj_str, model_name = self._get_model_name(item=item)
-
-            col_name1 = item['col_name1'][0]
+            
+            col_name1, col_value1 = [item['col_name1'][0], item['col_name1'][1]]
             col_value1 = item['col_name1'][1]
             col_name2 = item['col_name2'][0]
             col_value2 = item['col_name2'][1]
             col_name3 = item['col_name3'][0]
             col_value3 = item['col_name3'][1]
-
-            try:
-                updated_amount_name = item['col_name4'][0]
-                updated_amount = item['col_name4'][1]
-            except KeyError as e:
-                pass
+            
+            if item['action'] not in ['delete', 'update_findexer', 'update_status_effect']:
+                updated_amount_name, updated_amount = [item['col_name4'][0], item['col_name4'][1]]
 
             if obj_str == 'Findexer':
                 new_data = {col_name2:
@@ -222,8 +231,16 @@ class ManualEntry:
                 self.record_entry_to_manentry(obj_type=obj_str, action=item[
                     'action'], selected_item=str(col_value1), txn_date=item['col_name3'][1])
                 # do I need to propagate changes to opcash or another table?
+            elif obj_str == 'StatusEffect':
+                data = {col_name1: col_value1,
+                        col_name2: col_value2,
+                        col_name3: col_value3,
+                        updated_amount_name: updated_amount,
+                        }
+                query = model_name.create(**data)
+                query.save()
+                break
             elif item['action'] == 'create':
-                # breakpoint()
                 self._handle_create_entry(model_name=model_name,
                                           obj_str=obj_str,
                                           payee=col_value1,
@@ -244,7 +261,6 @@ class ManualEntry:
                           where(attrgetter(col_name2)(model_name) == col_value2).
                           where(attrgetter(col_name3)(model_name) == col_value3).
                           namedtuples()]
-
             try:
                 result = result[0]
                 if item['action'] == 'delete':

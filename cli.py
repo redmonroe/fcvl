@@ -15,6 +15,15 @@ from where_are_we import WhereAreWe
 from analysis import Analysis
 
 '''
+END OF MONTH flow
+- download reports: x, y, x
+- load_db with -e flag for explicit month
+- write one sheet to staging sheet
+- make pro-rates, any other adjustments, move-ins and move-outs
+- upload back to finalmonth & finalmonth log with move_to_final() WHAT FLAGS???
+- write back to close layer for peg
+- generate and edit balanceletters() set threshold, start month, end month
+- (should formalize funcs to pull out income data for audit: )
 MIDMONTH flow
 - after books are closed, download rentroll and deposits from onesite
 - download scrape from NBOFI "from last statement date"
@@ -107,11 +116,11 @@ def load_db(production=False, last_month=None, explicit_month=None):
             f'passing explicit command to load information for: {explicit_month} only')
         build.build_explicit_month(explicit_month_to_load=explicit_month)
     elif last_month:
-        choice = input(
-            'ARE YOU ABSOLUTELY SURE YOU WANT TO DROP DB AND START OVER? \n enter "qwqz" to continue: ')
-        if choice == 'qwqz':
-            click.echo('TEST: loading all available files in path to db')
-            build.build_db_from_scratch(last_range_month=last_month)
+        # choice = input(
+        #     'ARE YOU ABSOLUTELY SURE YOU WANT TO DROP DB AND START OVER? \n enter "qwqz" to continue: ')
+        # if choice == 'qwqz':
+        click.echo('TEST: loading all available files in path to db')
+        build.build_db_from_scratch(last_range_month=last_month)
     else:
         choice = input(
             'ARE YOU ABSOLUTELY SURE YOU WANT TO DROP DB AND START OVER? \n enter "qwqz" to continue: ')

@@ -7,13 +7,25 @@ class Persistent:
         {'greiner, richard': (48, '2023-01-01', 'dec')},
     ]
 
-    changes = [{'obj_type': 'Payment', 'action': 'delete', 'col_name1': ('tenant_id', 'newcomb, benny'), 'col_name2': ('amount', '476.0'), 'col_name3': ('date_posted', '2022-02-08')},
+    changes = [{'obj_type': 'Payment', 
+                'action': 'delete', 
+                'col_name1': ('tenant_id', 'newcomb, benny'), 
+                'col_name2': ('amount', '476.0'),
+                'col_name3': ('date_posted', '2022-02-08')},
 
-               {'obj_type': 'Payment', 'action': 'update_amount', 'col_name1': ('tenant_id', 'perry, roxanne'), 'col_name2': (
-                   'amount', '123.00'), 'col_name3': ('date_posted', '2022-08-19'), 'col_name4': ('new_amount', '120.00')},
+               {'obj_type': 'Payment', 
+                'action': 'update_amount', 
+                'col_name1': ('tenant_id', 'perry, roxanne'), 
+                'col_name2': ('amount', '123.00'), 
+                'col_name3': ('date_posted', '2022-08-19'), 
+                'col_name4': ('new_amount', '120.00')},
 
-               {'obj_type': 'Payment', 'action': 'update_amount', 'col_name1': ('tenant_id', 'amsley, glen'), 'col_name2': (
-                   'amount', '350.00'), 'col_name3': ('date_posted', '2022-08-04'), 'col_name4': ('new_amount', '300.50')},
+               {'obj_type': 'Payment', 
+                'action': 'update_amount', 
+                'col_name1': ('tenant_id', 'amsley, glen'), 
+                'col_name2': ('amount', '350.00'), 
+                'col_name3': ('date_posted', '2022-08-04'), 
+                'col_name4': ('new_amount', '300.50')},
 
                {'obj_type': 'Payment', 
                 'action': 'delete', 
@@ -95,6 +107,14 @@ class Persistent:
                 'col_name2': ('amount', '414.56'), 
                 'col_name3': ('date_posted', '2022-12-02'), 
                 'col_name4': ('genus', 'other')
+                },
+               
+               {'obj_type': 'StatusEffect',
+                'action': 'create',
+                'col_name1': ('tenant', 'baker, jonathan'), 
+                'col_name2': ('amount_per_month', '50'), 
+                'col_name3': ('date', '2023-01-01'), 
+                'col_name4': ('genus', 'payment_plan')
                 },
                ]
     """Interface can handle 3 or 4 columns for constructing the query"""    

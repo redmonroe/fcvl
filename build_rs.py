@@ -141,7 +141,7 @@ class BuildRS(MonthSheet):
         damages_txn_status_rstime1 = time.time() - damages_txn_status_rstime1
 
         mentry_time = time.time()
-        player.write_manual_entries_from_config()
+        player.write_manual_entries_from_config(last_range_month=kw.get('last_range_month'))
         mentry_time = time.time() - mentry_time
 
         reconcile_time = time.time()

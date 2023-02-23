@@ -413,6 +413,13 @@ class FinalMonthLog(BaseModel):
     moved_to_close = CharField()
 
 
+class StatusEffect(BaseModel):
+    date = DateField(null=True)
+    tenant = CharField()
+    amount_per_month = CharField()
+    genus = CharField()
+
+
 class QueryHC(Reconciler):
 
     def return_tables_list(self):
@@ -438,7 +445,8 @@ class QueryHC(Reconciler):
                 MoveOut,
                 WorkOrder,
                 FinalMonth,
-                FinalMonthLog
+                FinalMonthLog, 
+                StatusEffect
                 ]
 
     def get_start_tenants(self, date):
@@ -867,16 +875,16 @@ class Position(QueryHC):
         import string
         first_dt, _ = self.make_first_and_last_dates(date_str=lookback[0])
         _, last_dt = self.make_first_and_last_dates(date_str=lookback[1])
-        
+
         df = pd.DataFrame([row for row in FinalMonth.select().
                            where(FinalMonth.month >= first_dt).
                            where(FinalMonth.month <= last_dt).
-                           where(FinalMonth.name.not_in([string.capwords(row.name) 
+                           where(FinalMonth.name.not_in([string.capwords(row.name)
                                                          for row in MoveOut.select().namedtuples()])).namedtuples()
                            ])
-        
+
         df = df.sort_values(['name', 'month'])
-        
+
         positions = []
         for row in df.to_dict('records'):
             try:
@@ -1469,11 +1477,16 @@ class ProcessingLayer(StatusRS):
         query = StatusRS.create(current_date=date1)
         query.save()
 
-    def write_manual_entries_from_config(self, explicit_month_to_load=None):
+    def write_manual_entries_from_config(self, 
+                                         explicit_month_to_load=None,
+                                         last_range_month=None,
+                                         ):
         from manual_entry import ManualEntry  # circular import workaround
         manentry = ManualEntry(db=db)
         manentry.apply_persisted_changes(
-            explicit_month_to_load=explicit_month_to_load)
+            explicit_month_to_load=explicit_month_to_load,
+            last_range_month=last_range_month)
+        
 
     def write_to_statusrs_wrapper(self, **kwargs):
         if kwargs.get('commit_to_db') == False:
