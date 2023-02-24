@@ -55,16 +55,13 @@ class MonthSheet(YearSheet):
                      source=None, 
                      mode='clean_build',
                      month_list=None,
-                     explicit_month_to_load=None
+                     explicit_month_to_load=None, 
+                     last_range_month=None,
                      ):
 
         month_list, wrange = self.month_list_getter_and_printer(
             source=source, month_list=month_list)
         
-        # months = Utils.months_in_ytd(last_range_month=last_date)
-        # closed_dates = [date.month for date in FinalMonthLog.select()]
-        # months = set(months) - set(closed_dates)
-        # months = sorted(months)
         
         if mode == 'clean_build':
             self.reset_spreadsheet()
@@ -74,11 +71,21 @@ class MonthSheet(YearSheet):
             self.remove_base_sheet()
             status_list = self.to_google_sheets(month_list=month_list)
         elif mode == 'iter_write':
-            breakpoint()
             titles_dict = self.make_base_sheet()
             self.formatting_runner(title_dict=titles_dict)
             self.duplicate_formatted_sheets(month_list=month_list)
             self.remove_base_sheet()
+            status_list = self.to_google_sheets(month_list=month_list)
+        elif mode == 'write_range':
+            month_list = Utils.months_in_ytd(last_range_month=last_range_month)
+            reconciled_dates = [date.month for date in FinalMonthLog.select()]
+            month_list = set(month_list) - set(reconciled_dates)
+            month_list = sorted(month_list)
+            print('attempting to write the following months:', month_list)           
+            self.reset_spreadsheet()
+            titles_dict = self.make_base_sheet()
+            self.formatting_runner(title_dict=titles_dict)
+            self.duplicate_formatted_sheets(month_list=month_list)
             status_list = self.to_google_sheets(month_list=month_list)
         elif mode == 'single_sheet':
             # TODO THIS ONLY FORMATS? DOESN'T RUN?

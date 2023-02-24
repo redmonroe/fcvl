@@ -148,14 +148,11 @@ def write(production=False,
         
         
     elif write_range:
-        mode = 'write_range'
+        last_month = '2022-02'
         ms = figure.return_write_configuration()
-        breakpoint()
-        ms.auto_control(source='cli.py', mode=mode)
-        # (last_date=close_range,
-        #                service=service,
-        #                staging=staging_layer,
-        #                db=build)
+        ms.auto_control(source='cli.py', 
+                        mode='write_range', 
+                        last_range_month=last_month)
         
     else:
         click.echo('TEST: write all db contents to rs . . .')
