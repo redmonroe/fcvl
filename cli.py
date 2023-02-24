@@ -83,12 +83,10 @@ def reset_db(production=False):
     if production:
         click.echo('dropping PRODUCTION db . . .')
         figure = Figuration(mode='production')
-        path, full_sheet, build, service, ms = figure.return_configuration()
+        # path, full_sheet, build, service, ms = figure.return_configuration()
         figure.reset_db()
     else:
         click.echo('TEST: dropping test db . . .')
-        figure = Figuration()
-        path, full_sheet, build, service, ms = figure.return_configuration()
         figure.reset_db()
 
 
@@ -116,11 +114,11 @@ def load_db(production=False, last_month=None, explicit_month=None):
             f'passing explicit command to load information for: {explicit_month} only')
         build.build_explicit_month(explicit_month_to_load=explicit_month)
     elif last_month:
-        # choice = input(
-        #     'ARE YOU ABSOLUTELY SURE YOU WANT TO DROP DB AND START OVER? \n enter "qwqz" to continue: ')
-        # if choice == 'qwqz':
-        click.echo('TEST: loading all available files in path to db')
-        build.build_db_from_scratch(last_range_month=last_month)
+        choice = input(
+            'ARE YOU ABSOLUTELY SURE YOU WANT TO DROP DB AND START OVER? \n enter "qwqz" to continue: ')
+        if choice == 'qwqz':
+            click.echo('TEST: loading all available files in path to db')
+            build.build_db_from_scratch(last_range_month=last_month)
     else:
         choice = input(
             'ARE YOU ABSOLUTELY SURE YOU WANT TO DROP DB AND START OVER? \n enter "qwqz" to continue: ')
@@ -132,18 +130,40 @@ def load_db(production=False, last_month=None, explicit_month=None):
 @click.command()
 @click.option('-p', '--production',
               default=False, help='reset db?')
-def write(production=False):
+@click.option('-x', '--write_one_month',
+              default=False,
+              help='close a month selected from a list of months')
+@click.option('-r', '--write_range',
+              help='close up to passed month (ie 2022-12)')
+def write(production=False, 
+          write_one_month=False,
+          write_range=False, 
+          ):
+    figure = Figuration()
+    
     if production:
         click.echo('PRODUCTION: write all db contents to rs . . .')
         figure = Figuration(mode='production')
-        path, full_sheet, build, service, ms = figure.return_configuration()
+        ms = figure.return_write_configuration()
+        
+        
+    elif write_range:
+        mode = 'write_range'
+        ms = figure.return_write_configuration()
+        breakpoint()
+        ms.auto_control(source='cli.py', mode=mode)
+        # (last_date=close_range,
+        #                service=service,
+        #                staging=staging_layer,
+        #                db=build)
+        
     else:
         click.echo('TEST: write all db contents to rs . . .')
-        figure = Figuration()
-        path, full_sheet, close_layer, build, service, ms = figure.return_configuration()
+        ms = figure.return_write_configuration()
         ms.auto_control(source='cli.py', mode='clean_build')
         
         # combine this with write_month_range with flags
+        
 @click.command()
 def write_monthrange_test():
     click.echo('TEST: write all db contents to rs: EXPRESS MONTHRANGE . . .')

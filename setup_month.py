@@ -52,14 +52,20 @@ class MonthSheet(YearSheet):
         self.db = db
 
     def auto_control(self,
-                     source=None, mode='clean_build',
+                     source=None, 
+                     mode='clean_build',
                      month_list=None,
                      explicit_month_to_load=None
                      ):
 
-        month_list, wrange = self.what_is_month_list(
+        month_list, wrange = self.month_list_getter_and_printer(
             source=source, month_list=month_list)
-    
+        
+        # months = Utils.months_in_ytd(last_range_month=last_date)
+        # closed_dates = [date.month for date in FinalMonthLog.select()]
+        # months = set(months) - set(closed_dates)
+        # months = sorted(months)
+        
         if mode == 'clean_build':
             self.reset_spreadsheet()
             titles_dict = self.make_base_sheet()
@@ -67,7 +73,8 @@ class MonthSheet(YearSheet):
             self.duplicate_formatted_sheets(month_list=month_list)
             self.remove_base_sheet()
             status_list = self.to_google_sheets(month_list=month_list)
-        elif mode == 'iter_build':
+        elif mode == 'iter_write':
+            breakpoint()
             titles_dict = self.make_base_sheet()
             self.formatting_runner(title_dict=titles_dict)
             self.duplicate_formatted_sheets(month_list=month_list)
@@ -252,11 +259,14 @@ class MonthSheet(YearSheet):
             raise
         return reconciliation_type
 
-    def what_is_month_list(self, source=None, month_list=None):
-        """depending on inputs determines whether express list of month's to write is used or function will generate its own lists of months fro StatusObject"""
+    def month_list_getter_and_printer(self, source=None, month_list=None):
+        """depending on inputs determines whether express list of month's 
+        to write is used or function will generate its own lists of months 
+        froM StatusObject"""
         if month_list != None:
             wrange = f'MonthSheet: This list has been expressly passed from {source}.'
             print(f'writing rent sheets for {month_list}. {wrange}')
+            # put month list generator here!
         else:
             wrange = 'MonthSheet: This list has been generated from reconciled scrapes or opcash.'
             print(
@@ -276,8 +286,8 @@ class MonthSheet(YearSheet):
 
         # CAN i JUST WRITE THE DF
         # GET ENDBAL FROM WHERE EXACTLY?
-
         df = self.index_np_with_df(np)
+        # breakpoint()
         unit = df['unit'].tolist()
         tenant_names = Utils.capitalize_name(tenant_list=df['name'].tolist())
         beg_bal = df['lp_endbal'].tolist()
@@ -288,7 +298,16 @@ class MonthSheet(YearSheet):
         contract_rent = df['contract_rent'].tolist()
         endbal = df['end_bal_m'].tolist()
 
-        return df, contract_rent, subsidy, unit, tenant_names, beg_bal, endbal, charge_month, pay_month, dam_month
+        return (df, 
+                contract_rent, 
+                subsidy, 
+                unit, 
+                tenant_names, 
+                beg_bal, 
+                endbal, 
+                charge_month, 
+                pay_month, 
+                dam_month)
 
     def write_rs_col_EXPERIMENTAL(self, date, prior_month=None, **kwargs):
         self.gc.update_int(self.service, self.full_sheet,
@@ -487,8 +506,20 @@ class MonthSheet(YearSheet):
         unit_index = tuple(zip(idx_list, final_list))
 
         ui_df = pd.DataFrame(unit_index, columns=['Rank', 'unit'])
-        df = pd.DataFrame(np, columns=['name', 'beg_bal_at', 'lp_endbal', 'pay_month', 'charge_month',
-                          'dam_month', 'end_bal_m', 'st_date', 'end_date',  'unit', 'subsidy', 'contract_rent'])
+        df = pd.DataFrame(np, columns=['name', 
+                                       'beg_bal_at', 
+                                       'lp_endbal', 
+                                       'pay_month', 
+                                       'charge_month',
+                                        'dam_month', 
+                                        'end_bal_m', 
+                                        'st_date', 
+                                        'end_date',  
+                                        'unit', 
+                                        'subsidy', 
+                                        'contract_rent', 
+                                        # 'status_effects',
+                                        ])
         df = df.set_index('unit')
 
         # merge indexes to order units in way we always have

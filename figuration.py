@@ -75,6 +75,9 @@ class Figuration:
 
     def return_configuration(self):
         return self.path, self.staging_layer, self.close_layer, self.build, self.service, self.ms
+    
+    def return_write_configuration(self):
+        return self.ms
 
     def reset_db(self):
         populate = PopulateTable()

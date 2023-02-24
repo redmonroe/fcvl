@@ -294,6 +294,13 @@ class ContractRent(BaseModel):
     date_posted = DateField()
 
 
+class StatusEffect(BaseModel):
+    tenant = ForeignKeyField(Tenant, backref='status_effect')
+    date = DateField()
+    amount_per_month = CharField()
+    genus = CharField()
+
+
 class OpCash(BaseModel):
     stmt_key = CharField(primary_key=True, unique=True)
     date = DateField()
@@ -413,13 +420,6 @@ class FinalMonthLog(BaseModel):
     moved_to_close = CharField()
 
 
-class StatusEffect(BaseModel):
-    date = DateField(null=True)
-    tenant = CharField()
-    amount_per_month = CharField()
-    genus = CharField()
-
-
 class QueryHC(Reconciler):
 
     def return_tables_list(self):
@@ -445,7 +445,7 @@ class QueryHC(Reconciler):
                 MoveOut,
                 WorkOrder,
                 FinalMonth,
-                FinalMonthLog, 
+                FinalMonthLog,
                 StatusEffect
                 ]
 
@@ -649,6 +649,13 @@ class QueryHC(Reconciler):
                 if item[0] == rec.name:
                     setattr(rec, func1, float(item[hash_no]))
         return rtype
+    
+    def record_type_string_loader(self, rtype, func1, list1, hash_no):
+        for rec in rtype:
+            for item in list1:
+                if item[0] == rec.name:
+                    setattr(rec, func1, item[hash_no])
+        return rtype
 
     def sum_lifetime_tenant_payments(self, dt_obj_last=None):
         '''ugly workaround hidden in here: yancy double pay fix, prevents real lifetime balance from getting through'''
@@ -730,6 +737,15 @@ class QueryHC(Reconciler):
             where(ContractRent.date_posted <= last_dt).
             join(ContractRent).namedtuples()]))
 
+    def status_effects_this_period(self, first_dt=None, last_dt=None):
+        status_effect = list(set([(rec.tenant_name, rec.genus) for rec in Tenant.select(Tenant.tenant_name).
+                                  join(StatusEffect, on=(Tenant.tenant_name == StatusEffect.tenant)).
+                                  where(StatusEffect.date >= first_dt).
+                                  where(StatusEffect.date <= last_dt).
+                                  namedtuples()]))
+    
+        return status_effect
+
     def sum_lifetime_tenant_damages(self, dt_obj_last=None):
         return [(rec.tenant_name, rec.total_damages) for rec in Tenant.select(
             Tenant.tenant_name,
@@ -740,7 +756,7 @@ class QueryHC(Reconciler):
 
     def full_month_position_tenant_by_month(self, first_dt=None, last_dt=None):
         Position = recordtype(
-            'Position', 'name alltime_beg_bal lp_endbal payment_total charges_total damages_total end_bal start_date end_date unit subsidy contract_rent', default=0)
+            'Position', 'name alltime_beg_bal lp_endbal payment_total charges_total damages_total end_bal start_date end_date unit subsidy contract_rent status_effect', default=0)
 
         rr, vacants, tenants = self.get_rent_roll_by_month_at_first_of_month(
             first_dt=first_dt, last_dt=last_dt)
@@ -788,6 +804,12 @@ class QueryHC(Reconciler):
         position_list1 = self.record_type_loader(
             position_list1, 'contract_rent', contract_by_tenant, 1)
 
+        # status_effect_by_tenant = self.status_effects_this_period(
+        #     first_dt=first_dt, last_dt=last_dt)
+
+        # position_list1 = self.record_type_string_loader(
+        #     position_list1, 'status_effect', status_effect_by_tenant, 1)
+
         '''this is the work right here: do I want to put output in a database?'''
         for row in position_list1:
             row.end_bal = row.lp_endbal + row.charges_total + \
@@ -800,7 +822,7 @@ class QueryHC(Reconciler):
         cumsum = 0
         for row in position_list1:
             cumsum += row.end_bal
-
+        # breakpoint()
         return position_list1, cumsum
 
     def net_position_by_tenant_by_month(self, first_dt=None, last_dt=None, after_first_month=None):
@@ -1477,7 +1499,7 @@ class ProcessingLayer(StatusRS):
         query = StatusRS.create(current_date=date1)
         query.save()
 
-    def write_manual_entries_from_config(self, 
+    def write_manual_entries_from_config(self,
                                          explicit_month_to_load=None,
                                          last_range_month=None,
                                          ):
@@ -1486,7 +1508,6 @@ class ProcessingLayer(StatusRS):
         manentry.apply_persisted_changes(
             explicit_month_to_load=explicit_month_to_load,
             last_range_month=last_range_month)
-        
 
     def write_to_statusrs_wrapper(self, **kwargs):
         if kwargs.get('commit_to_db') == False:
