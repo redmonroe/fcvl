@@ -231,13 +231,15 @@ class ManualEntry:
                 self.record_entry_to_manentry(obj_type=obj_str, action=item[
                     'action'], selected_item=str(col_value1), txn_date=item['col_name3'][1])
                 # do I need to propagate changes to opcash or another table?
+           
             elif obj_str == 'StatusEffect':
-                ending_bool, ending_time = [item['col_name5'][0], item['col_name5'][1]]
-                if ending_time == 'False':
+                closed, ending_time = [item['col_name5'][0], item['col_name5'][1]]
+
                 data = {col_name1: col_value1,
                         col_name2: col_value2,
                         col_name3: col_value3,
                         updated_amount_name: updated_amount,
+                        closed: ending_time,
                         }
                 query = model_name.create(**data)
                 query.save()

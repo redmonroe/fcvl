@@ -299,6 +299,7 @@ class StatusEffect(BaseModel):
     date = DateField()
     amount_per_month = CharField()
     genus = CharField()
+    closed = CharField()
 
 
 class OpCash(BaseModel):
@@ -737,15 +738,29 @@ class QueryHC(Reconciler):
             where(ContractRent.date_posted <= last_dt).
             join(ContractRent).namedtuples()]))
 
-    def status_effects_this_period(self, first_dt=None, last_dt=None):
-        status_effect = list(set([(rec.tenant_name, rec.genus) for rec in Tenant.select(Tenant.tenant_name,
-                                                                                        StatusEffect.genus).
+    def open_status_effects_this_period(self, first_dt=None, last_dt=None):
+        status_effect = list(set([(rec.tenant_name, 
+                                   rec.genus, rec.closed) for rec in Tenant.select(Tenant.tenant_name,
+                                                                    StatusEffect.genus,
+                                                                    StatusEffect.closed,
+                                                                    ).
                                   join(StatusEffect, on=(Tenant.tenant_name == StatusEffect.tenant)).
-                                  where(StatusEffect.date >= first_dt).
                                   where(StatusEffect.date <= last_dt).
                                   namedtuples()]))
-    
-        return status_effect
+        
+        
+        status_effects = []
+        for rec in status_effect:
+            if rec[2] == 'False':
+                status_effects.append(rec[:2])
+            elif rec[2][0] == '2':
+                close_date = datetime.strptime(rec[2], '%Y-%m-%d')
+                if close_date > last_dt:
+                    status_effects.append(rec[:2])
+        
+        return status_effects
+      
+      
 
     def sum_lifetime_tenant_damages(self, dt_obj_last=None):
         return [(rec.tenant_name, rec.total_damages) for rec in Tenant.select(
@@ -805,7 +820,7 @@ class QueryHC(Reconciler):
         position_list1 = self.record_type_loader(
             position_list1, 'contract_rent', contract_by_tenant, 1)
 
-        status_effect_by_tenant = self.status_effects_this_period(
+        status_effect_by_tenant = self.open_status_effects_this_period(
             first_dt=first_dt, last_dt=last_dt)
 
         position_list1 = self.record_type_string_loader(
