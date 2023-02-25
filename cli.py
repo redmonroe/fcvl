@@ -206,7 +206,7 @@ def close_sheet(production=False,
                 interrogate_log=False,
                 ):
     figure = Figuration()
-    path, staging_layer, close_layer, build, service, ms = figure.return_configuration()
+    _, staging_layer, close_layer, build, service, ms = figure.return_configuration()
 
     if interrogate_log:
         closed_dates = [(date.month, date.source)

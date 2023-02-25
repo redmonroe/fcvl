@@ -620,6 +620,8 @@ class MonthSheet(YearSheet):
         closed_dates = [date.month for date in FinalMonthLog.select()]
         months = set(months) - set(closed_dates)
         months = sorted(months)
+        if len(months) == 0:
+            print('all available months are closed')
         for month in months:
             self.load_final_rs_from_sheet(
                 staging_layer=staging, sheet_name=month)
@@ -630,7 +632,6 @@ class MonthSheet(YearSheet):
                                    spreadsheet_id=staging_layer,
                                    range=f'{sheet_name}!A2:M68')
 
-        # breakpoint()
         df = pd.DataFrame(values, columns=['unit',
                                            'name',
                                            'notes',
@@ -650,7 +651,6 @@ class MonthSheet(YearSheet):
         df['month'] = [dt.strptime(sheet_name, '%Y-%m')
                        for n in enumerate(values)]
         df['source'] = [source_url for n in enumerate(values)]
-        df['status_effect'] = [source_url for n in enumerate(values)]
         df = df.to_dict('records')
         FinalMonth.insert_many(df).execute()
         fml = FinalMonthLog(
