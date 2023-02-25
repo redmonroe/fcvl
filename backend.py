@@ -650,7 +650,7 @@ class QueryHC(Reconciler):
                 if item[0] == rec.name:
                     setattr(rec, func1, float(item[hash_no]))
         return rtype
-    
+
     def record_type_string_loader(self, rtype, func1, list1, hash_no):
         for rec in rtype:
             for item in list1:
@@ -739,16 +739,15 @@ class QueryHC(Reconciler):
             join(ContractRent).namedtuples()]))
 
     def open_status_effects_this_period(self, first_dt=None, last_dt=None):
-        status_effect = list(set([(rec.tenant_name, 
+        status_effect = list(set([(rec.tenant_name,
                                    rec.genus, rec.closed) for rec in Tenant.select(Tenant.tenant_name,
-                                                                    StatusEffect.genus,
-                                                                    StatusEffect.closed,
-                                                                    ).
+                                                                                   StatusEffect.genus,
+                                                                                   StatusEffect.closed,
+                                                                                   ).
                                   join(StatusEffect, on=(Tenant.tenant_name == StatusEffect.tenant)).
                                   where(StatusEffect.date <= last_dt).
                                   namedtuples()]))
-        
-        
+
         status_effects = []
         for rec in status_effect:
             if rec[2] == 'False':
@@ -757,10 +756,8 @@ class QueryHC(Reconciler):
                 close_date = datetime.strptime(rec[2], '%Y-%m-%d')
                 if close_date > last_dt:
                     status_effects.append(rec[:2])
-        
+
         return status_effects
-      
-      
 
     def sum_lifetime_tenant_damages(self, dt_obj_last=None):
         return [(rec.tenant_name, rec.total_damages) for rec in Tenant.select(
@@ -838,7 +835,7 @@ class QueryHC(Reconciler):
         cumsum = 0
         for row in position_list1:
             cumsum += row.end_bal
-            
+
         return position_list1, cumsum
 
     def net_position_by_tenant_by_month(self, first_dt=None, last_dt=None, after_first_month=None):
@@ -1533,13 +1530,13 @@ class ProcessingLayer(StatusRS):
 
         if kwargs.get('last_range_month'):
             target_months = Utils.months_in_ytd(Config.current_year,
-                                                 last_range_month=kwargs['last_range_month'])
+                                                last_range_month=kwargs['last_range_month'])
         elif kwargs.get('explicit_month_to_load'):
             target_months = Utils.months_in_ytd(Config.current_year,
-                                                 explicit_month_to_load=kwargs['explicit_month_to_load'])
+                                                explicit_month_to_load=kwargs['explicit_month_to_load'])
         else:
             target_months = Utils.months_in_ytd(Config.current_year)
-            
+
         return (target_months,
                 self.populate.get_processed_by_month(
                     month_list=target_months),

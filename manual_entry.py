@@ -243,8 +243,6 @@ class ManualEntry:
                         }
                 query = model_name.create(**data)
                 query.save()
-                # i used to use break here but removed it once I had multiple tenants with SE
-            
             
             elif item['action'] == 'create':
                 self._handle_create_entry(model_name=model_name,
