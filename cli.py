@@ -105,7 +105,7 @@ def load_db(production=False, last_month=None, explicit_month=None):
     _, _, _, build, _, ms = figure.return_configuration()
 
     if production:
-        # TODO: last month no supported in this branche
+        # TODO: last month not supported in this branche
         click.echo('PRODUCTION: loading all available files in path to db')
         figure = Figuration(mode='production')
         path, staging_layer, close_layer, build, service, ms = figure.return_configuration()
@@ -136,41 +136,49 @@ def load_db(production=False, last_month=None, explicit_month=None):
               help='close a month selected from a list of months')
 @click.option('-r', '--write_range',
               help='close up to passed month (ie 2022-12)')
-def write(production=False, 
+def write(production=False,
           write_one_month=False,
-          write_range=False, 
+          write_range=False,
           ):
     figure = Figuration()
-    
+
     if production:
         click.echo('PRODUCTION: write all db contents to rs . . .')
         figure = Figuration(mode='production')
         ms = figure.return_write_configuration()
-        
+
     elif write_range:
-        last_month = '2022-02'
+        """this does not work becasue status_object is not writing properly bc of yearspan issue!!!!"""
+
+        last_month = input(
+            'please enter last month in range to write (ie 2022-12): ')
         ms = figure.return_write_configuration()
-        ms.auto_control(source='cli.py', 
-                        mode='write_range', 
+        ms.auto_control(source='cli.py',
+                        mode='write_range',
                         last_range_month=last_month)
-        
+
+        # TODO: need explicit month flag: trick, but is it
+        # still after new startbal/endbal has cell formulas
+        '''
+        @click.command()
+        @click.option('-e', '--explicit_month',
+                    type=str,
+                    help='pass an explicit month to generate rent sheet')
+        def make_one_sheet(explicit_month=None):
+            click.echo('making one sheet')
+            figure = Figuration()
+            path, full_sheet, build, service, ms = figure.return_configuration()
+            if explicit_month:
+                ms.auto_control(mode='single_sheet',
+                                explicit_month_to_load=explicit_month)
+            else:
+                print('must pass explicit month to make')
+        '''
+
     else:
         click.echo('TEST: write all db contents to rs . . .')
         ms = figure.return_write_configuration()
         ms.auto_control(source='cli.py', mode='clean_build')
-        
-        # combine this with write_month_range with flags
-        
-@click.command()
-def write_monthrange_test():
-    click.echo('TEST: write all db contents to rs: EXPRESS MONTHRANGE . . .')
-    figure = Figuration()
-    path, full_sheet, build, service, ms = figure.return_configuration()
-    # month_list = ['2022-01', '2022-02', '2022-03', '2022-04', '2022-05',
-    #   '2022-06', '2022-07', '2022-08', '2022-09', '2022-10',
-    #   '2022-11', '2022-12']
-    month_list = ['2022-01', '2022-02', '2022-03']
-    ms.auto_control(source='cli.py', mode='clean_build', month_list=month_list)
 
 
 @click.command()
@@ -207,7 +215,7 @@ def close_sheet(production=False,
         if closed_dates != []:
             print('source: ', closed_dates[0][1])
             print('closed months: ', [date[1][0]
-              for date in enumerate(closed_dates, 1)])
+                                      for date in enumerate(closed_dates, 1)])
         else:
             print('no months are closed in FinalMonthLog')
 
@@ -241,8 +249,6 @@ def close_sheet(production=False,
         figure = Figuration(mode='production')
         print('no production branch of close_sheet')
         path, full_sheet, build, service, ms = figure.return_configuration()
-
-
 
 
 @click.command()
@@ -291,13 +297,14 @@ def balanceletters(dates=None, threshold=None):
     click.echo('NOT READY TO USE CURRENT MONTH, AM I?')
     click.echo('example: python cli.py balanceletters 2022-07 2023-01 100')
     figure = Figuration()
-    path, staging_layer, close_layer, build, service, ms = figure.return_configuration()
+    path, staging_layer, close_layer, build, service, _ = figure.return_configuration()
     docx = DocxWriter(db=build.main_db, service=service)
     docx.export_history_to_docx(
         threshold=threshold, startm=dates[0], endm=dates[1])
-    click.echo('remember to update https://docs.google.com/document/d/1OWvvOYvmXh5h131jjGWBoVGTmdDttFaR1_kYktoLwZ0/edit')
+    click.echo(
+        'remember to update https://docs.google.com/document/d/1OWvvOYvmXh5h131jjGWBoVGTmdDttFaR1_kYktoLwZ0/edit')
     click.echo('to reflect new deadlines created by letters.')
-    
+
     # exclude abandoned, sick, or payment plans
 
 
@@ -338,19 +345,6 @@ def delete_one_sheet():
     ms.delete_one_month_sheet(service, full_sheet)
 
 
-@click.command()
-@click.option('-e', '--explicit_month',
-              type=str,
-              help='pass an explicit month to generate rent sheet')
-def make_one_sheet(explicit_month=None):
-    click.echo('making one sheet')
-    figure = Figuration()
-    path, full_sheet, build, service, ms = figure.return_configuration()
-    if explicit_month:
-        ms.auto_control(mode='single_sheet',
-                        explicit_month_to_load=explicit_month)
-    else:
-        print('must pass explicit month to make')
 
 
 @click.command()
@@ -375,7 +369,7 @@ def analysis(column=None):
     analysis.sum_over_range_by_type(column=column[0],
                                     period_strt=column[1],
                                     period_end=column[2],
-                                        )
+                                    )
     analysis.print_df()
 
 
@@ -496,9 +490,7 @@ cli.add_command(write)
 cli.add_command(close_sheet)
 cli.add_command(load_db)
 cli.add_command(delete_one_sheet)
-cli.add_command(make_one_sheet)
 cli.add_command(db_to_excel)
-cli.add_command(write_monthrange_test)
 cli.add_command(sqlite_dump)
 cli.add_command(docx_letters)
 cli.add_command(balanceletters)

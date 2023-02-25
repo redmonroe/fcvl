@@ -45,21 +45,22 @@ class Utils:
                       explicit_month_to_load=None,
                       last_range_month=None):
 
+
+        start_month = '2022-01'
         if last_range_month:
-            month_list = pd.date_range('2022-01', 
+            month_list = pd.date_range(start_month,
                                        f'{last_range_month.split("-")[0]}-{last_range_month.split("-")[1]}', 
                                         freq='MS').strftime("%Y-%m").tolist()
         elif explicit_month_to_load:
             return [explicit_month_to_load]
         else:
+            '''get all months back to starting month of 2022-01'''
+            
             current_year = int(datetime.now().strftime('%Y'))
             range_month = int(datetime.now().strftime('%m'))
-            date_info = monthrange(current_year, range_month)
-            last_day = date_info[1]
-            month_list = pd.date_range(f'{current_year}-01-01',
-                                    f'{current_year}-{range_month}-{last_day}',
-                                    freq='MS').strftime("%Y-%m").tolist()
-            month_list = [item for item in month_list]
+            month_list = pd.date_range(start_month,
+                                       f'{current_year}-{range_month}', 
+                                        freq='MS').strftime("%Y-%m").tolist()
 
         if show_choices:
             for count, item in enumerate(month_list, 1):

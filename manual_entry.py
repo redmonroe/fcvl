@@ -217,9 +217,9 @@ class ManualEntry:
             col_name3 = item['col_name3'][0]
             col_value3 = item['col_name3'][1]
             
-            if item['action'] not in ['delete', 'update_findexer', 'update_status_effect']:
+            if item['action'] not in ['delete', 'update_findexer']:
                 updated_amount_name, updated_amount = [item['col_name4'][0], item['col_name4'][1]]
-
+            
             if obj_str == 'Findexer':
                 new_data = {col_name2:
                             col_value2,
@@ -232,6 +232,8 @@ class ManualEntry:
                     'action'], selected_item=str(col_value1), txn_date=item['col_name3'][1])
                 # do I need to propagate changes to opcash or another table?
             elif obj_str == 'StatusEffect':
+                ending_bool, ending_time = [item['col_name5'][0], item['col_name5'][1]]
+                if ending_time == 'False':
                 data = {col_name1: col_value1,
                         col_name2: col_value2,
                         col_name3: col_value3,
@@ -239,7 +241,9 @@ class ManualEntry:
                         }
                 query = model_name.create(**data)
                 query.save()
-                break
+                # i used to use break here but removed it once I had multiple tenants with SE
+            
+            
             elif item['action'] == 'create':
                 self._handle_create_entry(model_name=model_name,
                                           obj_str=obj_str,

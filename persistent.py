@@ -111,10 +111,29 @@ class Persistent:
                
                {'obj_type': 'StatusEffect',
                 'action': 'create',
+                'col_name1': ('tenant', 'lateef, achebe'), 
+                'col_name2': ('amount_per_month', '0'), 
+                'col_name3': ('date', '2022-02-01'), 
+                'col_name4': ('genus', 'sick'),
+                'col_name5': ('closed', 'False'),
+                },
+               
+               {'obj_type': 'StatusEffect',
+                'action': 'create',
                 'col_name1': ('tenant', 'baker, jonathan'), 
                 'col_name2': ('amount_per_month', '50'), 
-                'col_name3': ('date', '2022-02-01'), 
-                'col_name4': ('genus', 'payment_plan')
+                'col_name3': ('date', '2022-06-01'), 
+                'col_name4': ('genus', 'payment_plan'),
+                'col_name5': ('closed', 'False'),
+                },
+               
+               {'obj_type': 'StatusEffect',
+                'action': 'create',
+                'col_name1': ('tenant', 'martin, james'), 
+                'col_name2': ('amount_per_month', '0'), 
+                'col_name3': ('date', '2022-09-01'), 
+                'col_name4': ('genus', 'abandoned'),
+                'col_name5': ('closed', '2022-12-01'),
                 },
                ]
     """Interface can handle 3 or 4 columns for constructing the query"""    

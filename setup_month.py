@@ -283,7 +283,6 @@ class MonthSheet(YearSheet):
         print(f'\n\t\t{status}')
 
     def scrape_or_opcash(self, date=None):
-        breakpoint()
         try:
             reconciliation_type = [rec.scrape_reconciled for rec in StatusObject(
             ).select().where(StatusObject.month == date).namedtuples()][0]

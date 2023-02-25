@@ -1517,17 +1517,17 @@ class ProcessingLayer(StatusRS):
             self.set_current_date()
 
         if kwargs.get('last_range_month'):
-            all_months_ytd = Utils.months_in_ytd(Config.current_year,
+            target_months = Utils.months_in_ytd(Config.current_year,
                                                  last_range_month=kwargs['last_range_month'])
         elif kwargs.get('explicit_month_to_load'):
-            all_months_ytd = Utils.months_in_ytd(Config.current_year,
+            target_months = Utils.months_in_ytd(Config.current_year,
                                                  explicit_month_to_load=kwargs['explicit_month_to_load'])
         else:
-            all_months_ytd = Utils.months_in_ytd(Config.current_year)
-
-        return (all_months_ytd,
+            target_months = Utils.months_in_ytd(Config.current_year)
+            
+        return (target_months,
                 self.populate.get_processed_by_month(
-                    month_list=all_months_ytd),
+                    month_list=target_months),
                 [item for item in StatusRS().select().
                  order_by(-StatusRS.status_id).namedtuples()][0]  # note: - = descending order syntax in peewee
                 )
