@@ -148,17 +148,16 @@ def write(production=False,
         ms = figure.return_write_configuration()
 
     elif write_range:
-        """this does not work becasue status_object is not writing properly bc of yearspan issue!!!!"""
-
-        last_month = input(
-            'please enter last month in range to write (ie 2022-12): ')
         ms = figure.return_write_configuration()
         ms.auto_control(source='cli.py',
                         mode='write_range',
-                        last_range_month=last_month)
+                        last_range_month=write_range)
 
         # TODO: need explicit month flag: trick, but is it
         # still after new startbal/endbal has cell formulas
+
+        # TODO: james martin does not write status effect correction; need to 
+        # change logic in query function for full_position in setup_month
         '''
         @click.command()
         @click.option('-e', '--explicit_month',

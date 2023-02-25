@@ -109,6 +109,10 @@ class Persistent:
                 'col_name4': ('genus', 'other')
                 },
                
+               
+              # status effects close date means that THE PRIOR MONTH IS THE
+              # LAST DATE WITH THE STATUS EFFECT!
+               
                {'obj_type': 'StatusEffect',
                 'action': 'create',
                 'col_name1': ('tenant', 'lateef, achebe'), 
@@ -133,7 +137,7 @@ class Persistent:
                 'col_name2': ('amount_per_month', '0'), 
                 'col_name3': ('date', '2022-09-01'), 
                 'col_name4': ('genus', 'abandoned'),
-                'col_name5': ('closed', '2022-12-01'),
+                'col_name5': ('closed', '2023-03-01'),
                 },
                ]
     """Interface can handle 3 or 4 columns for constructing the query"""    

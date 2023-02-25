@@ -628,7 +628,7 @@ class MonthSheet(YearSheet):
 
         values = self.gc.broad_get(service=self.service,
                                    spreadsheet_id=staging_layer,
-                                   range=f'{sheet_name}!A2:L68')
+                                   range=f'{sheet_name}!A2:M68')
 
         # breakpoint()
         df = pd.DataFrame(values, columns=['unit',
@@ -643,7 +643,7 @@ class MonthSheet(YearSheet):
                                            'ch_amount',
                                            'payment',
                                            'end_bal',
-                                           #    'status_effect',
+                                            'status_effect',
                                            ])
         df = df.fillna(value='none')
         source_url = 'https://docs.google.com/spreadsheets/d/' + staging_layer
