@@ -154,14 +154,6 @@ class WhereAreWe(ProcessingLayer):
                                  first_pw_incomplete_month=first_pw_incomplete_month,
                                  )
 
-        # TODO
-        # what can we reconcile?
-        # THEN LOOP BACK TO RECONCILIATION AND THEN IF ALL IS WELL WE CAN TRY TO RECONCILE
-
-        # mi rent
-        # mi sd
-        # adjustments
-
     def opcash_printer(self, target_month=None, dry_run_iter=None):
         print('\n')
         print(f'opcash summary for {target_month}.')

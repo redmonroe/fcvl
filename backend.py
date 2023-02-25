@@ -738,7 +738,8 @@ class QueryHC(Reconciler):
             join(ContractRent).namedtuples()]))
 
     def status_effects_this_period(self, first_dt=None, last_dt=None):
-        status_effect = list(set([(rec.tenant_name, rec.genus) for rec in Tenant.select(Tenant.tenant_name).
+        status_effect = list(set([(rec.tenant_name, rec.genus) for rec in Tenant.select(Tenant.tenant_name,
+                                                                                        StatusEffect.genus).
                                   join(StatusEffect, on=(Tenant.tenant_name == StatusEffect.tenant)).
                                   where(StatusEffect.date >= first_dt).
                                   where(StatusEffect.date <= last_dt).
@@ -804,11 +805,11 @@ class QueryHC(Reconciler):
         position_list1 = self.record_type_loader(
             position_list1, 'contract_rent', contract_by_tenant, 1)
 
-        # status_effect_by_tenant = self.status_effects_this_period(
-        #     first_dt=first_dt, last_dt=last_dt)
+        status_effect_by_tenant = self.status_effects_this_period(
+            first_dt=first_dt, last_dt=last_dt)
 
-        # position_list1 = self.record_type_string_loader(
-        #     position_list1, 'status_effect', status_effect_by_tenant, 1)
+        position_list1 = self.record_type_string_loader(
+            position_list1, 'status_effect', status_effect_by_tenant, 1)
 
         '''this is the work right here: do I want to put output in a database?'''
         for row in position_list1:
@@ -822,7 +823,7 @@ class QueryHC(Reconciler):
         cumsum = 0
         for row in position_list1:
             cumsum += row.end_bal
-        # breakpoint()
+            
         return position_list1, cumsum
 
     def net_position_by_tenant_by_month(self, first_dt=None, last_dt=None, after_first_month=None):
@@ -1446,7 +1447,7 @@ class InitLoad(PopulateTable):
         self._balance_load_from_excel()
 
     def _update_units(self):
-        # TODO:WHAT DDOES THIS FUNCTION REALLY DO?
+        # TODO:WHcAT DDOES THIS FUNCTION REALLY DO?
         units = []
         for row in self.nt_list_w_vacants:
             if row.name == 'vacant':

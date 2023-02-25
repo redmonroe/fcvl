@@ -111,8 +111,18 @@ class MonthSheet(YearSheet):
         status_list = []
         count = 0
         for date in month_list:
-            df, contract_rent, subsidy, unit, tenant_names, beg_bal, end_bal, charge_month, pay_month, dam_month = self.get_rs_col(
+            (_, 
+             contract_rent, 
+             subsidy, unit, 
+             tenant_names, 
+             beg_bal, 
+             end_bal, 
+             charge_month, 
+             pay_month, 
+             dam_month, 
+             status_effects) = self.get_rs_col(
                 date)
+             
 
             # make one sheet branch
             if len(month_list) == 1 & make_one_sheet == True:
@@ -131,7 +141,9 @@ class MonthSheet(YearSheet):
                                                              endbal=end_bal,
                                                              charge_month=charge_month,
                                                              pay_month=pay_month,
-                                                             dam_month=dam_month)
+                                                             dam_month=dam_month,
+                                                             status_effects=status_effects,
+                                                             )
             else:
                 prior_month = self.write_rs_col_EXPERIMENTAL(date, prior_month,
                                                              contract_rent=contract_rent,
@@ -142,8 +154,12 @@ class MonthSheet(YearSheet):
                                                              endbal=end_bal,
                                                              charge_month=charge_month,
                                                              pay_month=pay_month,
-                                                             dam_month=dam_month)
+                                                             dam_month=dam_month,
+                                                             status_effects=status_effects,
+                                                             )
             count = + 1
+            
+            # TODO: status_object is not writing property; because of year spanning issue
 
             reconciliation_type = self.scrape_or_opcash(date=date)
 
@@ -174,7 +190,16 @@ class MonthSheet(YearSheet):
                 date_str=date)
             reconciliation_type = self.scrape_or_opcash(date=date)
 
-            df, contract_rent, subsidy, unit, tenant_names, beg_bal, endbal, charge_month, pay_month, dam_month = self.get_rs_col(
+            (df, 
+             contract_rent, 
+             subsidy, unit, 
+             tenant_names, 
+             beg_bal, 
+             end_bal, 
+             charge_month, 
+             pay_month, 
+             dam_month, 
+             status_effects) = self.get_rs_col(
                 date)
 
             df = df[['name', 'unit', 'lp_endbal', 'contract_rent', 'subsidy',
@@ -258,11 +283,13 @@ class MonthSheet(YearSheet):
         print(f'\n\t\t{status}')
 
     def scrape_or_opcash(self, date=None):
+        breakpoint()
         try:
             reconciliation_type = [rec.scrape_reconciled for rec in StatusObject(
             ).select().where(StatusObject.month == date).namedtuples()][0]
         except IndexError as e:
-            print(f'for {date} you have returned an empty list indicating that your db did not reconcile for that month for File_Indexer or StatusObject')
+            print(f'for {date} you have returned an empty list indicating that')
+            print(f'your db did not reconcile for that month for File_Indexer or StatusObject')
             raise
         return reconciliation_type
 
@@ -294,7 +321,7 @@ class MonthSheet(YearSheet):
         # CAN i JUST WRITE THE DF
         # GET ENDBAL FROM WHERE EXACTLY?
         df = self.index_np_with_df(np)
-        # breakpoint()
+     
         unit = df['unit'].tolist()
         tenant_names = Utils.capitalize_name(tenant_list=df['name'].tolist())
         beg_bal = df['lp_endbal'].tolist()
@@ -304,6 +331,7 @@ class MonthSheet(YearSheet):
         subsidy = df['subsidy'].tolist()
         contract_rent = df['contract_rent'].tolist()
         endbal = df['end_bal_m'].tolist()
+        status_effects = df['status_effects'].tolist()
 
         return (df, 
                 contract_rent, 
@@ -314,7 +342,8 @@ class MonthSheet(YearSheet):
                 endbal, 
                 charge_month, 
                 pay_month, 
-                dam_month)
+                dam_month,
+                status_effects,)
 
     def write_rs_col_EXPERIMENTAL(self, date, prior_month=None, **kwargs):
         self.gc.update_int(self.service, self.full_sheet,
@@ -347,8 +376,8 @@ class MonthSheet(YearSheet):
                            kwargs.get('pay_month'), f'{date}' + self.pay_month, value_input_option='USER_ENTERED')
         self.gc.update_int(self.service, self.full_sheet,
                            kwargs.get('dam_month'), f'{date}' + self.dam_month, value_input_option='USER_ENTERED')
-        # self.gc.update(self.service, self.full_sheet,
-                    #    kwargs.get('status_effects'), f'{date}' + self.status_effects)
+        self.gc.update(self.service, self.full_sheet,
+                       kwargs.get('status_effects'), f'{date}' + self.status_effects)
         return date
 
     def get_ntp_wrapper(self, date):
@@ -525,7 +554,7 @@ class MonthSheet(YearSheet):
                                         'unit', 
                                         'subsidy', 
                                         'contract_rent', 
-                                        # 'status_effects',
+                                        'status_effects',
                                         ])
         df = df.set_index('unit')
 

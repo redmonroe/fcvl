@@ -80,6 +80,7 @@ def status_findexer_test():
               default=False, help='reset db?')
 def reset_db(production=False):
     '''resets db, default=test db'''
+    figure = Figuration()
     if production:
         click.echo('dropping PRODUCTION db . . .')
         figure = Figuration(mode='production')
@@ -145,7 +146,6 @@ def write(production=False,
         click.echo('PRODUCTION: write all db contents to rs . . .')
         figure = Figuration(mode='production')
         ms = figure.return_write_configuration()
-        
         
     elif write_range:
         last_month = '2022-02'

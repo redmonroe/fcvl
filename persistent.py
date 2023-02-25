@@ -113,7 +113,7 @@ class Persistent:
                 'action': 'create',
                 'col_name1': ('tenant', 'baker, jonathan'), 
                 'col_name2': ('amount_per_month', '50'), 
-                'col_name3': ('date', '2023-01-01'), 
+                'col_name3': ('date', '2022-02-01'), 
                 'col_name4': ('genus', 'payment_plan')
                 },
                ]
