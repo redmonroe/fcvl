@@ -646,7 +646,7 @@ class MonthSheet(YearSheet):
                                            'end_bal',
                                             'status_effect',
                                            ])
-        df = df.fillna(value='none')
+        df = df.fillna(value='0')
         source_url = 'https://docs.google.com/spreadsheets/d/' + staging_layer
         df['month'] = [dt.strptime(sheet_name, '%Y-%m')
                        for n in enumerate(values)]

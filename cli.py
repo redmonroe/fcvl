@@ -22,11 +22,13 @@ END OF MONTH flow
 - make pro-rates, any other adjustments, move-ins and move-outs
 - upload back to finalmonth & finalmonth log with move_to_final() WHAT FLAGS???
 - write back to close layer for peg
+- update abandoned, sick, payment plan list in persistent.py
 - generate and edit balanceletters() set threshold, start month, end month
 - (should formalize funcs to pull out income data for audit: )
 MIDMONTH flow
 - after books are closed, download rentroll and deposits from onesite
 - download scrape from NBOFI "from last statement date"
+- update abandoned, sick, payment plan list in persistent.py
 
 - use where_are_we
 '''
@@ -296,7 +298,7 @@ def balanceletters(dates=None, threshold=None):
     click.echo('NOT READY TO USE CURRENT MONTH, AM I?')
     click.echo('example: python cli.py balanceletters 2022-07 2023-01 100')
     figure = Figuration()
-    path, staging_layer, close_layer, build, service, _ = figure.return_configuration()
+    _, _, _, build, service, _ = figure.return_configuration()
     docx = DocxWriter(db=build.main_db, service=service)
     docx.export_history_to_docx(
         threshold=threshold, startm=dates[0], endm=dates[1])

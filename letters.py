@@ -584,7 +584,7 @@ class DocxWriter(Letters):
 
         positions = Position()
         post_list = positions.create_list(lookback=lb_tup)
-
+    
         document = self.format_balance_letters(
             document=Document(),
             parameters={'current_date': datetime.now().strftime('%m-%d-%Y'), 

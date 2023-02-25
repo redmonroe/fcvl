@@ -905,6 +905,7 @@ class Position(QueryHC):
     ch_amount: str = '0'
     payment: str = '0'
     end_bal: str = '0'
+    status_effect: str = '0'
 
     def create_list(self, lookback=None):
         import string
@@ -917,7 +918,6 @@ class Position(QueryHC):
                            where(FinalMonth.name.not_in([string.capwords(row.name)
                                                          for row in MoveOut.select().namedtuples()])).namedtuples()
                            ])
-
         df = df.sort_values(['name', 'month'])
 
         positions = []
@@ -926,6 +926,7 @@ class Position(QueryHC):
                 start_bal = float(row['start_bal']) * -1
             except ValueError:
                 start_bal = 0
+
             position = Position(name=row['name'],
                                 unit=row['unit'],
                                 date=datetime.strftime(row['month'], '%Y-%m'),
@@ -934,8 +935,10 @@ class Position(QueryHC):
                                 ch_amount=row['ch_amount'],
                                 payment=row['payment'],
                                 end_bal=str(float(row['end_bal']) * -1),
+                                status_effect=row['status_effect'],
                                 )
             positions.append(position)
+
         return positions
 
     def group_by_tenant_name(self, positions=None, threshold=None):
@@ -951,6 +954,11 @@ class Position(QueryHC):
             if item[0] not in seen:
                 bal_letter_list_by_tenant.append(item)
                 seen.append(item[0])
+
+        for item in bal_letter_list_by_tenant:
+            if item[1][-1].status_effect != '0':
+                bal_letter_list_by_tenant.remove(item)
+                print(f'removing {item[0]} from bal_let due to status_effect')
 
         if threshold:
             threshold_list = []
