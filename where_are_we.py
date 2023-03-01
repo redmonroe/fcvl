@@ -1,8 +1,10 @@
 import sys
+from datetime import datetime
 
 from backend import PopulateTable, ProcessingLayer, UrQuery
 from config import Config
 from iter_rs import IterRS
+from persistent import Persistent
 from scrape import PWScrape
 from utils import Utils
 
@@ -131,7 +133,7 @@ class WhereAreWe(ProcessingLayer):
 
         target_month, currently_availables, first_pw_incomplete_month = self.what_do_we_have(
             first_incomplete_month=self.first_incomplete_month,
-            suppress_scrape_attempt=self.suppress_scrape_attempt, 
+            suppress_scrape_attempt=self.suppress_scrape_attempt,
             allow_print=False)
 
         count = self.print_helper_for_availables(
@@ -147,12 +149,60 @@ class WhereAreWe(ProcessingLayer):
         else:
             print('you dont have enough files to do a dry run')
             sys.exit(0)
-
+        report_deposits = dry_run_iter["deposits"]
         self.printer_for_dry_run(target_month=target_month,
                                  dry_run_iter=dry_run_iter,
-                                 report_deposits=dry_run_iter["deposits"],
-                                 first_pw_incomplete_month=first_pw_incomplete_month,
                                  )
+        
+        
+        # payment adjustments from persistent (will be applied to db on actual run)
+        tg_first_dt, tg_last_dt = self.query.make_first_and_last_dates(date_str=target_month)
+        payment_adjs = [row for row in Persistent.changes if row['obj_type'] == 'Payment' and len(row) == 6]
+        dry_run_payment_adjs = [row for row in payment_adjs if datetime.strptime(row['col_name3'][1], '%Y-%m-%d') >= tg_first_dt and datetime.strptime(row['col_name3'][1], '%Y-%m-%d') <= tg_last_dt]
+        
+        dry_run_payment_adjs = sum([float(adj['col_name4'][1]) - float(adj['col_name2'][1]) for adj in dry_run_payment_adjs])                                                    
+
+        if first_pw_incomplete_month:
+            print(f'deposits report for {target_month} via opcash.')
+            opcash_available = [list(item.values()) for item in currently_availables if list(
+                item.keys()) == ['opcash']][0][0][0]
+            if opcash_available:
+                bank_deposits = self.opcash_printer(target_month=target_month,
+                                                    dry_run_iter=dry_run_iter)
+        else:
+            corrections = 0
+        for item in dry_run_iter['scrape']['amount'].items():
+            if item[0] == 'corr' and item[1] >= 0:
+                print(f'\tstatement corrections: + {item[1]}')
+                corrections = item[1]
+            elif item[0] == 'corr' and item[1] <= 0:
+                print(f'\tstatement corrections: - {item[1]}')
+                corrections = item[1]
+            elif item[0] == 'deposit':
+                print(f'\traw deposits: {item[1]}')
+                bank_deposits = item[1]
+            else:
+                print(f'\t{item[0]}: {item[1]}')
+
+        bank_deposits = bank_deposits + corrections
+        print(f'\tadj deposits w/corr: {bank_deposits}')
+        deposits_discrepancy = float(bank_deposits) - \
+            round(float(report_deposits), 2)
+
+        print(f'\tpayment-side adj(from persistent.py): {dry_run_payment_adjs}')
+        print(f'\tonesite-side deposits: {report_deposits}')
+        print(
+            f'\tdamage charges/credits for {target_month}: {dry_run_iter["damages"]} ')
+        print('*' * 45)
+        print(f'DEPOSITS DISCREPANCY = ${deposits_discrepancy}')
+        print(f'ANTICIPATED DISCREPANCY AFTER ADJ APPLIED= ${float(deposits_discrepancy) - float(dry_run_payment_adjs)}')
+        print('negative number means bank shows higher amount than report')
+        print('*' * 45)
+        print(f'staging layer url: https://docs.google.com/spreadsheets/d/' +
+              self.staging_layer)
+        print(
+            f'close layer url: https://docs.google.com/spreadsheets/d/' + self.close_layer)
+        print(f'current finalized numbers through end of jan 2023 is https://docs.google.com/spreadsheets/d/1t7KFE-WbfZ0dR9PuqlDE5EepCG3o3acZXzhbVRFW-Gc')
 
     def opcash_printer(self, target_month=None, dry_run_iter=None):
         print('\n')
@@ -239,8 +289,6 @@ class WhereAreWe(ProcessingLayer):
     def printer_for_dry_run(self,
                             target_month=None,
                             dry_run_iter=None,
-                            report_deposits=None,
-                            first_pw_incomplete_month=None,
                             ):
         print('*' * 45)
         print('\n')
@@ -254,41 +302,6 @@ class WhereAreWe(ProcessingLayer):
         print(f'DRY RUN FOR {target_month}: opcash/scrape from ban')
         print('*' * 45)
         print(f'deposits report for {target_month} via scrape.')
-        
-        if first_pw_incomplete_month:
-            print(f'deposits report for {target_month} via opcash.')
-            bank_deposits = self.opcash_printer(target_month=target_month,
-                                                dry_run_iter=dry_run_iter)
-        else:
-            corrections = 0
-            for item in dry_run_iter['scrape']['amount'].items():
-                if item[0] == 'corr' and item[1] >= 0:
-                    print(f'\tcorrections: +{item[1]}')
-                    corrections = item[1]
-                elif item[0] == 'corr' and item[1] <= 0:
-                    print(f'\tcorrections: -{item[1]}')
-                    corrections = item[1]
-                elif item[0] == 'deposit':
-                    print(f'\traw deposits: {item[1]}')
-                    bank_deposits = item[1]
-                else:
-                    print(f'\t{item[0]}: {item[1]}')
-            
-            bank_deposits = bank_deposits + corrections
-            print(f'\tadj deposits w/corr: {bank_deposits}')
-            deposits_discrepancy = float(bank_deposits) - \
-                round(float(report_deposits), 2)
-
-        print(f'\tonesite-side deposits: {report_deposits}')
-        print(
-            f'\tdamage charges/credits for {target_month}: {dry_run_iter["damages"]} ')
-        print('*' * 45)
-        print(f'DEPOSITS DISCREPANCY = ${deposits_discrepancy}')
-        print('negative number means bank shows higher amount than report')
-        print('*' * 45)
-        print(f'staging layer url: https://docs.google.com/spreadsheets/d/' + self.staging_layer)
-        print(f'close layer url: https://docs.google.com/spreadsheets/d/' + self.close_layer)
-        print(f'current finalized numbers through end of jan 2023 is https://docs.google.com/spreadsheets/d/1t7KFE-WbfZ0dR9PuqlDE5EepCG3o3acZXzhbVRFW-Gc')
 
     def user_input_loop(self):
         try:
@@ -332,7 +345,7 @@ class WhereAreWe(ProcessingLayer):
                 print(f'scraping not implemented for {doc_type} currently.')
             result = 'playwright scraping error'
             is_available = {doc_type: (False, 'you went down wrong branch.')}
-            
+
         if result == 'playwright scraping error':
             if kwargs['allow_print']:
                 print('try to manually download {} for {} to {}'.format(
@@ -363,8 +376,8 @@ class WhereAreWe(ProcessingLayer):
         # TODO how to handle previous versus current, #truncate save file date
         # TODO need less fragile way to scrape
         scrape = PWScrape()
-        # check findex table, 
-        # if that fails try to scrape the website, 
+        # check findex table,
+        # if that fails try to scrape the website,
         # if that fails then try manual and restart
 
         filename = self.make_file_name(
@@ -375,15 +388,15 @@ class WhereAreWe(ProcessingLayer):
             is_available = {doc_type: (True, possible_file_locations)}
         else:
             if doc_type == 'deposits':
-                is_available = self.scrape_type_runner(target='deposits', 
-                                                       doc_type=doc_type, 
-                                                       filename=filename, 
+                is_available = self.scrape_type_runner(target='deposits',
+                                                       doc_type=doc_type,
+                                                       filename=filename,
                                                        scrape_func=scrape.pw_deposits,
                                                        suppress_scrape_attempt=kwargs['suppress_scrape_attempt'],
                                                        allow_print=kwargs['allow_print'], first_incomplete_month=kwargs["first_incomplete_month"])
-                self.just_longer_message(doc_type, 
+                self.just_longer_message(doc_type,
                                          first_incomplete_month=kwargs["first_incomplete_month"], allow_print=kwargs[
-                                         'allow_print'], 
+                                             'allow_print'],
                                          is_first_pw_incomplete_month_over=kwargs['is_first_pw_incomplete_month_over'])
 
             if doc_type == 'rent':
@@ -416,24 +429,23 @@ class WhereAreWe(ProcessingLayer):
     def what_do_we_have(self, first_incomplete_month=None, **kwargs):
         # check findexer; BUT I DO NOT WANT TO LOAD TO FINDEXER
         what_do_we_have_for_next_month = [row.doc_type for row in self.ur_query.ur_query(
-                                            model_str='Findexer', 
-                                            query_tup=[('period', first_incomplete_month)], 
-                                            operators_list=['==']).namedtuples()]
-        
+            model_str='Findexer',
+            query_tup=[('period', first_incomplete_month)],
+            operators_list=['==']).namedtuples()]
+
         is_first_pw_incomplete_month_over = Utils.is_target_month_over(
             target_month=first_incomplete_month)
-        
 
         currently_availables = [{}]
         for doc_type in self.support_doc_types_list:
             is_target_file_available = self.check_for_presence(doc_type=doc_type,
-                                                               what_do_we_have_for_next_month=what_do_we_have_for_next_month, 
+                                                               what_do_we_have_for_next_month=what_do_we_have_for_next_month,
                                                                first_incomplete_month=first_incomplete_month,
-                                                               is_first_pw_incomplete_month_over=is_first_pw_incomplete_month_over, 
+                                                               is_first_pw_incomplete_month_over=is_first_pw_incomplete_month_over,
                                                                suppress_scrape_attempt=kwargs['suppress_scrape_attempt'],
                                                                allow_print=kwargs['allow_print'])
             currently_availables.append(is_target_file_available)
-        
+
         return first_incomplete_month, currently_availables, is_first_pw_incomplete_month_over
 
     def show_status_table(self, **kw):

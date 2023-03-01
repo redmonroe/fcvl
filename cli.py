@@ -40,6 +40,11 @@ def cli():
 
 
 @click.command()
+def consume():
+    pass
+
+
+@click.command()
 @click.option('-m', '--most-recent-good',
               default=True, help='most recent good month versus select ui')
 def where_are_we(most_recent_good):
@@ -155,10 +160,10 @@ def write(production=False,
                         mode='write_range',
                         last_range_month=write_range)
 
-        # TODO: need explicit month flag: trick, but is it
+        # TODO: need explicit month flag: tricky, but is it
         # still after new startbal/endbal has cell formulas
 
-        # TODO: james martin does not write status effect correction; need to 
+        # TODO: james martin does not write status effect correction; need to
         # change logic in query function for full_position in setup_month
         '''
         @click.command()
@@ -346,8 +351,6 @@ def delete_one_sheet():
     ms.delete_one_month_sheet(service, full_sheet)
 
 
-
-
 @click.command()
 def db_to_excel():
     click.echo('write_db_to_excel')
@@ -483,6 +486,7 @@ def test_various(select):
             ['-s', '--write', 'True', 'tests/test_deplist.py', ])
 
 
+cli.add_command(consume)
 cli.add_command(escrow)
 cli.add_command(status_findexer_test)
 cli.add_command(where_are_we)

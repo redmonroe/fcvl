@@ -30,7 +30,7 @@ class Utils:
         dt_obj = datetime.strptime(target_month, '%Y-%m')
         last_day = dt_obj.replace(day=monthrange(dt_obj.year, dt_obj.month)[1])
         return datetime.now() > last_day
-    
+
     @staticmethod
     def make_last_date_of_last_month(self, date_str=None):
         dt_obj = datetime.strptime(date_str, '%Y-%m')
@@ -45,22 +45,21 @@ class Utils:
                       explicit_month_to_load=None,
                       last_range_month=None):
 
-
         start_month = '2022-01'
         if last_range_month:
             month_list = pd.date_range(start_month,
-                                       f'{last_range_month.split("-")[0]}-{last_range_month.split("-")[1]}', 
-                                        freq='MS').strftime("%Y-%m").tolist()
+                                       f'{last_range_month.split("-")[0]}-{last_range_month.split("-")[1]}',
+                                       freq='MS').strftime("%Y-%m").tolist()
         elif explicit_month_to_load:
             return [explicit_month_to_load]
         else:
             '''get all months back to starting month of 2022-01'''
-            
+
             current_year = int(datetime.now().strftime('%Y'))
             range_month = int(datetime.now().strftime('%m'))
             month_list = pd.date_range(start_month,
-                                       f'{current_year}-{range_month}', 
-                                        freq='MS').strftime("%Y-%m").tolist()
+                                       f'{current_year}-{range_month}',
+                                       freq='MS').strftime("%Y-%m").tolist()
 
         if show_choices:
             for count, item in enumerate(month_list, 1):
@@ -83,7 +82,7 @@ class Utils:
             filename = xlrd.open_workbook(filename,
                                           logfile=open(os.devnull, 'w'))
             df = pd.read_excel(filename, header=header)
-            
+
         return df
 
     @staticmethod
@@ -104,7 +103,7 @@ class Utils:
                 xls_name.append(file_name_no_ext)
 
         print(xls_list)
-        
+
     @staticmethod
     def convert_xlsx_to_xls(path):
         new_file_ext = '.xls'
@@ -116,7 +115,6 @@ class Utils:
     def find_last_modified(dir):
         time, file_path = max((file.stat().st_mtime, file)
                               for file in dir.iterdir())
-        # print(datetime.fromtimestamp(time), file_path.name)
         return file_path
 
     @staticmethod
@@ -224,7 +222,7 @@ class Utils:
         f_date = datetime.strptime(date_str, '%Y-%m-%d')
         f_date = f_date.strftime('%Y-%m')
         return f_date
-    
+
     @staticmethod
     def helper_fix_date_str4(date_str):
         try:

@@ -4,7 +4,7 @@ class Persistent:
         {'greiner, richard': (146, '2022-10-01', 'ur sept_oct')},
         {'greiner, richard': (48, '2022-11-01', 'nov')},
         {'greiner, richard': (48, '2022-12-01', 'dec')},
-        {'greiner, richard': (48, '2023-01-01', 'dec')},
+        {'greiner, richard': (48, '2023-01-01', 'jan')},
     ]
 
     changes = [{'obj_type': 'Payment', 
@@ -109,6 +109,13 @@ class Persistent:
                 'col_name4': ('genus', 'other')
                 },
                
+               {'obj_type': 'Payment',
+                'action': 'update_amount',
+                'col_name1': ('tenant_id', 'freeman, ronald'), 
+                'col_name2': ('amount', '204.00'), 
+                'col_name3': ('date_posted', '2023-02-06'),    
+                'col_name4': ('new_amount', '242.00')
+                },
                
               # status effects close date means that THE PRIOR MONTH IS THE
               # LAST DATE WITH THE STATUS EFFECT!
