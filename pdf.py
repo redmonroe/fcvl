@@ -149,15 +149,15 @@ class StructDataExtract:
             output_path, f'escrow/{start_string}.xlsx')
 
         result.to_excel(abs_file_path)
-        
+
     def open_pdf_and_return_one_str(self, path):
         with open(path, "rb") as f:
-            pdf = pdftotext.PDF(f)   
-            
+            pdf = pdftotext.PDF(f)
+
         f1 = "\n\n".join(pdf)
-                     
+
         f2 = io.StringIO(f1)
-            
+
         return f2
 
     def open_pdf_and_output_txt(self, path, txtfile=None):
@@ -165,7 +165,7 @@ class StructDataExtract:
             os.path.dirname(__file__), txtfile))
         with open(path, "rb") as f:
             pdf = pdftotext.PDF(f)
-        
+
         # Read all the text into one string
         with open(db_file, 'w') as f:
             f.write("\n\n".join(pdf))
@@ -197,13 +197,13 @@ class StructDataExtract:
         stmt_date = date2.strftime("%m %Y")
 
         return stmt_date
-    
+
     def nbofi_pdf_extract(self, path, style=None, target_list=None):
         file1 = self.open_pdf_and_return_one_str(path)
         index = [(count, line) for count, line in enumerate(file1)]
         stmt_date = self.get_stmt_date(index)
         stmt_year, stmt_month = stmt_date[-4:], stmt_date[:2]
-        
+
         dfs = []
         for target_str in target_list:
             lines = [line for count, line in index if target_str in line]
@@ -220,33 +220,44 @@ class StructDataExtract:
                     list1 = [list1[0], 'hap', list1[5]]
                 if list1[1] == 'Chargeback' and list1[2] != 'Fee':
                     list1 = [list1[0], 'chargeback', list1[3]]
-                if list1[2] == 'Correction': # debit corrections from bottom part of statement
+                if list1[2] == 'Correction':  # debit corrections from bottom part of statement
                     list1 = [list1[0], 'correction', list1[4]]
-                if list1[2] == 'Credit': # credit corrections from top part of statement
+                if list1[2] == 'Credit':  # credit corrections from top part of statement
                     # reverse sign so it is processed properly later
                     amount = -1 * float(list1[4])
-                    list1 = [list1[0], 'correction', amount]
+                    list1 = [list1[0], 'positive_correction', amount, stmt_year + ' ' + stmt_month, amount]
                 if list1[1] == 'Vault':
                     list1 = [list1[0], 'Deposit', list1[4]]
-                    
+
                 list1.append(stmt_year + ' ' + stmt_month)
-                    
+
                 linex.append(list1)
             df = pd.DataFrame(linex)
             dfs.append(df)
-                
+
         df = pd.concat(dfs)
-        df = df[df[1].str.contains('Deposits/Credits')==False]
-        if stmt_date == '02 2023':
-            breakpoint()
-        df = df[df[2].str.contains('Fee')==False]
+        df = df[df[1].str.contains('Deposits/Credits') == False]
+        df = df[df[1].str.contains('Chargeback') == False]
         df[2] = df[2].str.replace(r'\n', '', regex=True)
         df[2] = df[2].str.replace(',', '')
         df[2] = df[2].str.replace('-', '')
+        
+        cdf = df[df[1].str.contains( 'positive_correction') == True]
+        df = df[df[1].str.contains( 'positive_correction') == False]
+        
+        cdf = cdf.reindex(columns=[0, 1, 4, 3, 2])
+        cdf.rename(columns={0: 0, 
+                            1: 1, 
+                            4: 2,
+                            3: 3, 
+                            2: 4,
+                            }, inplace=True)
+        df = pd.concat([df, cdf], axis=0, ignore_index=True)
+        
+        df[1] = df[1].str.replace('positive_correction', 'correction')
         df[0] = pd.to_datetime(df[0], format='%m/%d/%Y')
-        df[2] = df[2].astype('float64') 
+        df[2] = pd.to_numeric(df[2], errors='coerce')
         df = df.drop(df.columns[[4, 5, 6]], axis=1)
-        df = df.rename({0: 'date', 1: 'type', 2: 'amount', 3: 'period'}, axis='columns')
+        df = df.rename({0: 'date', 1: 'type', 2: 'amount',
+                       3: 'period'}, axis='columns')
         return df, stmt_year + '-' + stmt_month
-
- 

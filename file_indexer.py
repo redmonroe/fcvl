@@ -312,8 +312,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
                 'scrape': scrapes}
 
     def pdf_to_df_to_db(self, bypass_write_to_db=None):
-        # TODO fix corr_sum & chargeback logic
-        # TODO could do a faster query insert here
+        # TODO fix corr_sum & chargeback logic; make a new column on findexer (what are dependencies?)
         target_list = ['Incoming Wire', 'QUADEL',
                        'Deposit', 'Correction', 'Chargeback']
         for path in self.op_cash_list:
@@ -390,7 +389,11 @@ class FileIndexer(Utils, Scrape, Reconciler):
                     find_change.deplist = '0'
                 find_change.save()
             else:
-                return {'depsum': depsum, 'deplist': deplist, 'hap': hap, 'r4r': r4r, 'corr_sum': corr_sum}
+                return {'depsum': depsum,
+                        'deplist': deplist,
+                        'hap': hap,
+                        'r4r': r4r,
+                        'corr_sum': corr_sum}
 
     def build_index_runner(self):
         """this function is just a list of the funcs one would run to create the index from a fresh start"""
