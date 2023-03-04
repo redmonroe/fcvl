@@ -118,7 +118,7 @@ class Scrape:
     def get_targeted_rows_for_scrape(self, scrape_df=None):
         deposit_list = []
         corr_count = 0
-        
+
         if 'Posted Date' in scrape_df.columns:
             # from nbofi business side (NEW)
             date_row = 'Posted Date'
@@ -129,26 +129,26 @@ class Scrape:
             date_row = 'Processed Date'
             deposit_match = 'DEPOSIT'
             corr_match = 'CORRECTION'
-        
+
         for _, row in scrape_df.iterrows():
             if row['Description'] == deposit_match:
                 dict1 = {}
                 dict1 = {'date': self.adjust_deposit_date(
-                                        row[date_row]), 
-                                        'amount': row['Amount'], 
-                                        'dep_type': 'deposit'}
+                    row[date_row]),
+                    'amount': row['Amount'],
+                    'dep_type': 'deposit'}
                 deposit_list.append(dict1)
             if 'INCOMING' in row['Description']:
                 dict1 = {}
                 dict1 = {'date': row[date_row],
-                         'amount': row['Amount'], 
+                         'amount': row['Amount'],
                          'dep_type': 'rr'}
                 deposit_list.append(dict1)
 
             if 'QUADEL' in row['Description']:
                 dict1 = {}
                 dict1 = {'date': row[date_row],
-                         'amount': row['Amount'], 
+                         'amount': row['Amount'],
                          'dep_type': 'hap'}
                 deposit_list.append(dict1)
 
@@ -159,7 +159,7 @@ class Scrape:
                     corr_count += 1
                     dict1 = {}
                     dict1 = {'date': row[date_row],
-                             'amount': row['Amount'], 
+                             'amount': row['Amount'],
                              'dep_type': 'corr'}
                     deposit_list.append(dict1)
 
@@ -167,13 +167,13 @@ class Scrape:
                 corr_count += 1
                 dict1 = {}
                 dict1 = {'date': row[date_row],
-                         'amount': row['Amount'], 
+                         'amount': row['Amount'],
                          'dep_type': 'corr'}
                 deposit_list.append(dict1)
 
         if corr_count == 0:
             dict1 = {'date': row[date_row],
-                     'amount': 0, 
+                     'amount': 0,
                      'dep_type': 'corr'}
             deposit_list.append(dict1)
         else:
@@ -223,7 +223,8 @@ class FileIndexer(Utils, Scrape, Reconciler):
             1 OPCASH processed 
             2 DEPOSITS + ADJUSTMENTS == TENANT_PAY + NTP"""
 
-        months_ytd, unfin_month, final_not_written = self.test_for_unfinalized_months(explicit_month_to_load=explicit_month_to_load)
+        months_ytd, unfin_month, final_not_written = self.test_for_unfinalized_months(
+            explicit_month_to_load=explicit_month_to_load)
 
         for item in unfin_month:
             print(item)
@@ -248,7 +249,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
                     'running findexer now would input the above file(s)?  press 1 to proceed ... '))
             else:
                 choice1 = 1
-            
+
             self.index_dict = self.sort_directory_by_extension2()
             self.load_what_is_in_dir_as_indexed(dict1=self.index_dict_iter)
 
@@ -265,7 +266,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
                 new_files = self.get_date_from_file_name(records=new_files)
                 print('no new files to add in file_indexer.py; exiting')
                 sys.exit()
-                
+
             return new_files, self.unfinalized_months, final_not_written
 
     def incremental_filer_sub_1_for_dry_run(self, *args, **kwargs):
@@ -295,7 +296,8 @@ class FileIndexer(Utils, Scrape, Reconciler):
                     scrapes = df.to_dict('dict')
                 if genus == 'opcash' and path[0] is True:
                     self.op_cash_list.append(path[1])
-                    opcash_dry_run = self.pdf_to_df_to_db(bypass_write_to_db=True)
+                    opcash_dry_run = self.pdf_to_df_to_db(
+                        bypass_write_to_db=True)
                 if genus == 'deposits' and path[0] is True:
                     deposits_dry_run = self.survey_deposits_report_for_dry_run(
                         path[1])
@@ -303,10 +305,10 @@ class FileIndexer(Utils, Scrape, Reconciler):
                     rent_dry_run = self.survey_rent_report_for_dry_run(
                         path[1], target_month=target_month)
 
-        return {'opcash': opcash_dry_run, 
-                'deposits': deposits_dry_run, 
-                'rent': rent_dry_run, 
-                'damages': damages, 
+        return {'opcash': opcash_dry_run,
+                'deposits': deposits_dry_run,
+                'rent': rent_dry_run,
+                'damages': damages,
                 'scrape': scrapes}
 
     def pdf_to_df_to_db(self, bypass_write_to_db=None):
@@ -338,7 +340,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
 
             r4r = df[df['type'].str.contains('rr')]
             r4r = r4r.groupby(r4r['period']).sum(numeric_only=True)
-            
+
             if depsum.empty:
                 depsum = '0'
             else:
@@ -358,22 +360,22 @@ class FileIndexer(Utils, Scrape, Reconciler):
                 chargeback = '0'
             else:
                 chargeback = str(chargeback.iloc[0].values[0])
-            
+
             if correction.empty:
                 corr_sum = '0'
             else:
                 corr_sum = str(correction.iloc[0].values[0])
-                
-            # chargeback is currently added to corr_sum!!                
-            corr_sum = float(corr_sum) + float(chargeback)            
 
-                
+            # chargeback is currently added to corr_sum!!
+            corr_sum = float(corr_sum) + float(chargeback)
+
             if bypass_write_to_db is None:
                 opcash_records = [(item.fn, item.doc_id) for item in Findexer().
-                                select().
-                                where(Findexer.path == path).
-                                namedtuples()]
-                find_change = Findexer.get(Findexer.doc_id == opcash_records[0][1])
+                                  select().
+                                  where(Findexer.path == path).
+                                  namedtuples()]
+                find_change = Findexer.get(
+                    Findexer.doc_id == opcash_records[0][1])
 
                 find_change.status = self.status_str.processed
                 find_change.period = stmt_date
@@ -381,7 +383,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
                 find_change.hap = hap
                 find_change.rr = r4r
                 find_change.chargeback = chargeback
-                find_change.corr_sum = str(round(corr_sum, 2)) 
+                find_change.corr_sum = str(round(corr_sum, 2))
                 if deplist:
                     find_change.deplist = json.dumps(deplist)
                 else:
@@ -425,7 +427,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
         self.pdf_to_df_to_db()
 
     def test_for_unfinalized_months(self, explicit_month_to_load=None):
-        months_ytd = Utils.months_in_ytd(Config.dynamic_current_year, 
+        months_ytd = Utils.months_in_ytd(Config.dynamic_current_year,
                                          last_range_month=explicit_month_to_load)
 
         # get fully finalized months
@@ -506,7 +508,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
         import xlrd
         if isinstance(path, list) == False:
             path = [path]
-        
+
         for possible_path in path:
             try:
                 wb = xlrd.open_workbook(

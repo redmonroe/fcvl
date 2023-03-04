@@ -149,18 +149,22 @@ class WhereAreWe(ProcessingLayer):
         else:
             print('you dont have enough files to do a dry run')
             sys.exit(0)
+            
         report_deposits = dry_run_iter["deposits"]
         self.printer_for_dry_run(target_month=target_month,
                                  dry_run_iter=dry_run_iter,
                                  )
-        
-        
+
         # payment adjustments from persistent (will be applied to db on actual run)
-        tg_first_dt, tg_last_dt = self.query.make_first_and_last_dates(date_str=target_month)
-        payment_adjs = [row for row in Persistent.changes if row['obj_type'] == 'Payment' and len(row) == 6]
-        dry_run_payment_adjs = [row for row in payment_adjs if datetime.strptime(row['col_name3'][1], '%Y-%m-%d') >= tg_first_dt and datetime.strptime(row['col_name3'][1], '%Y-%m-%d') <= tg_last_dt]
-        
-        dry_run_payment_adjs = sum([float(adj['col_name4'][1]) - float(adj['col_name2'][1]) for adj in dry_run_payment_adjs])                                                    
+        tg_first_dt, tg_last_dt = self.query.make_first_and_last_dates(
+            date_str=target_month)
+        payment_adjs = [
+            row for row in Persistent.changes if row['obj_type'] == 'Payment' and len(row) == 6]
+        dry_run_payment_adjs = [row for row in payment_adjs if datetime.strptime(
+            row['col_name3'][1], '%Y-%m-%d') >= tg_first_dt and datetime.strptime(row['col_name3'][1], '%Y-%m-%d') <= tg_last_dt]
+
+        dry_run_payment_adjs = sum([float(
+            adj['col_name4'][1]) - float(adj['col_name2'][1]) for adj in dry_run_payment_adjs])
 
         if first_pw_incomplete_month:
             print(f'deposits report for {target_month} via opcash.')
@@ -172,6 +176,9 @@ class WhereAreWe(ProcessingLayer):
         else:
             corrections = 0
         for item in dry_run_iter['scrape']['amount'].items():
+            hap = dry_run_iter['scrape']['amount']['hap']
+            all_deposits = dry_run_iter['scrape']['amount']['deposit'] # can't use this for management fee unfortunately
+            
             if item[0] == 'corr' and item[1] >= 0:
                 print(f'\tstatement corrections: + {item[1]}')
                 corrections = item[1]
@@ -189,13 +196,17 @@ class WhereAreWe(ProcessingLayer):
         deposits_discrepancy = float(bank_deposits) - \
             round(float(report_deposits), 2)
 
-        print(f'\tpayment-side adj(from persistent.py): {dry_run_payment_adjs}')
+        print(
+            f'\tpayment-side adj(from persistent.py): {dry_run_payment_adjs}')
         print(f'\tonesite-side deposits: {report_deposits}')
         print(
             f'\tdamage charges/credits for {target_month}: {dry_run_iter["damages"]} ')
+        breakpoint()
+        print(f'mf (after adjustments):')
         print('*' * 45)
         print(f'DEPOSITS DISCREPANCY = ${deposits_discrepancy}')
-        print(f'ANTICIPATED DISCREPANCY AFTER ADJ APPLIED= ${float(deposits_discrepancy) - float(dry_run_payment_adjs)}')
+        print(
+            f'ANTICIPATED DISCREPANCY AFTER ADJ APPLIED= ${float(deposits_discrepancy) - float(dry_run_payment_adjs)}')
         print('negative number means bank shows higher amount than report')
         print('*' * 45)
         print(f'staging layer url: https://docs.google.com/spreadsheets/d/' +

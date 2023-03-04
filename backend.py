@@ -1753,8 +1753,11 @@ class ProcessingLayer(StatusRS):
                     first_dt=first_dt, last_dt=last_dt)
 
                 scrape_deposits = sum([float(item) for item in scrape_dep])
-
-                if Reconciler.backend_processing_layer_assert_bank_deposits_tenant_deposits(bank_deposits=scrape_deposits, sum_from_payments_report=sum_from_payments, period=month, genus='scrape') and sum_from_payments != 0:
+                breakpoint()
+                if Reconciler.backend_processing_layer_assert_bank_deposits_tenant_deposits(bank_deposits=scrape_deposits, 
+                                                                                            sum_from_payments_report=sum_from_payments, 
+                                                                                            period=month, 
+                                                                                            genus='scrape') and sum_from_payments != 0:
                     print(
                         f'scrape asserted ok for {month} {Config.current_year}')
                     mr_status = StatusRS().get(StatusRS.status_id == ref_rec.status_id)

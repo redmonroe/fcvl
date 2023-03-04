@@ -199,11 +199,12 @@ class StructDataExtract:
         return stmt_date
     
     def nbofi_pdf_extract(self, path, style=None, target_list=None):
-        dfs = []
         file1 = self.open_pdf_and_return_one_str(path)
         index = [(count, line) for count, line in enumerate(file1)]
         stmt_date = self.get_stmt_date(index)
         stmt_year, stmt_month = stmt_date[-4:], stmt_date[:2]
+        
+        dfs = []
         for target_str in target_list:
             lines = [line for count, line in index if target_str in line]
             if target_str == 'Deposit':
@@ -219,8 +220,12 @@ class StructDataExtract:
                     list1 = [list1[0], 'hap', list1[5]]
                 if list1[1] == 'Chargeback' and list1[2] != 'Fee':
                     list1 = [list1[0], 'chargeback', list1[3]]
-                if list1[2] == 'Correction':
+                if list1[2] == 'Correction': # debit corrections from bottom part of statement
                     list1 = [list1[0], 'correction', list1[4]]
+                if list1[2] == 'Credit': # credit corrections from top part of statement
+                    # reverse sign so it is processed properly later
+                    amount = -1 * float(list1[4])
+                    list1 = [list1[0], 'correction', amount]
                 if list1[1] == 'Vault':
                     list1 = [list1[0], 'Deposit', list1[4]]
                     
@@ -232,6 +237,8 @@ class StructDataExtract:
                 
         df = pd.concat(dfs)
         df = df[df[1].str.contains('Deposits/Credits')==False]
+        if stmt_date == '02 2023':
+            breakpoint()
         df = df[df[2].str.contains('Fee')==False]
         df[2] = df[2].str.replace(r'\n', '', regex=True)
         df[2] = df[2].str.replace(',', '')

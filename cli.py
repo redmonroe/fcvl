@@ -128,11 +128,11 @@ def load_db(production=False, last_month=None, explicit_month=None):
             click.echo('TEST: loading all available files in path to db')
             build.build_db_from_scratch(last_range_month=last_month)
     else:
-        choice = input(
-            'ARE YOU ABSOLUTELY SURE YOU WANT TO DROP DB AND START OVER? \n enter "qwqz" to continue: ')
-        if choice == 'qwqz':
-            click.echo('TEST: loading all available files in path to db')
-            build.build_db_from_scratch()
+        # choice = input(
+        #     'ARE YOU ABSOLUTELY SURE YOU WANT TO DROP DB AND START OVER? \n enter "qwqz" to continue: ')
+        # if choice == 'qwqz':
+        click.echo('TEST: loading all available files in path to db')
+        build.build_db_from_scratch()
 
 
 @click.command()
@@ -141,10 +141,14 @@ def load_db(production=False, last_month=None, explicit_month=None):
 @click.option('-x', '--write_one_month',
               default=False,
               help='close a month selected from a list of months')
+@click.option('-e', '--explicit_month',
+              type=str,
+              help='pass an explicit final month to db builder (ie "2022-12")')
 @click.option('-r', '--write_range',
               help='close up to passed month (ie 2022-12)')
 def write(production=False,
           write_one_month=False,
+          explicit_month=False,
           write_range=False,
           ):
     figure = Figuration()
@@ -159,27 +163,19 @@ def write(production=False,
         ms.auto_control(source='cli.py',
                         mode='write_range',
                         last_range_month=write_range)
+        
+    elif explicit_month:
+        click.echo('making one sheet')
+        ms = figure.return_write_configuration()
+        breakpoint()
+        ms.auto_control(mode='single_sheet',
+                        explicit_month_to_load=explicit_month)
 
         # TODO: need explicit month flag: tricky, but is it
         # still after new startbal/endbal has cell formulas
 
         # TODO: james martin does not write status effect correction; need to
         # change logic in query function for full_position in setup_month
-        '''
-        @click.command()
-        @click.option('-e', '--explicit_month',
-                    type=str,
-                    help='pass an explicit month to generate rent sheet')
-        def make_one_sheet(explicit_month=None):
-            click.echo('making one sheet')
-            figure = Figuration()
-            path, full_sheet, build, service, ms = figure.return_configuration()
-            if explicit_month:
-                ms.auto_control(mode='single_sheet',
-                                explicit_month_to_load=explicit_month)
-            else:
-                print('must pass explicit month to make')
-        '''
 
     else:
         click.echo('TEST: write all db contents to rs . . .')
