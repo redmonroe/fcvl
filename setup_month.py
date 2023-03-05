@@ -52,17 +52,16 @@ class MonthSheet(YearSheet):
         self.db = db
 
     def auto_control(self,
-                     source=None, 
+                     source=None,
                      mode='clean_build',
                      month_list=None,
-                     explicit_month_to_load=None, 
+                     explicit_month_to_load=None,
                      last_range_month=None,
                      ):
 
         month_list, wrange = self.month_list_getter_and_printer(
             source=source, month_list=month_list)
-        
-        
+
         if mode == 'clean_build':
             self.reset_spreadsheet()
             titles_dict = self.make_base_sheet()
@@ -81,7 +80,7 @@ class MonthSheet(YearSheet):
             reconciled_dates = [date.month for date in FinalMonthLog.select()]
             month_list = set(month_list) - set(reconciled_dates)
             month_list = sorted(month_list)
-            print('attempting to write the following months:', month_list)           
+            print('attempting to write the following months:', month_list)
             self.reset_spreadsheet()
             titles_dict = self.make_base_sheet()
             self.formatting_runner(title_dict=titles_dict)
@@ -111,18 +110,17 @@ class MonthSheet(YearSheet):
         status_list = []
         count = 0
         for date in month_list:
-            (_, 
-             contract_rent, 
-             subsidy, unit, 
-             tenant_names, 
-             beg_bal, 
-             end_bal, 
-             charge_month, 
-             pay_month, 
-             dam_month, 
+            (_,
+             contract_rent,
+             subsidy, unit,
+             tenant_names,
+             beg_bal,
+             end_bal,
+             charge_month,
+             pay_month,
+             dam_month,
              status_effects) = self.get_rs_col(
                 date)
-             
 
             # make one sheet branch
             if len(month_list) == 1 & make_one_sheet == True:
@@ -130,7 +128,6 @@ class MonthSheet(YearSheet):
                                                                             date_str=date)
                 prior_month = ('-').join(last_dt_of_prior_month.split('-')[:2])
                 count = 1
-            
 
             if count == 0:
                 prior_month = self.write_rs_col_EXPERIMENTAL(date,  contract_rent=contract_rent,
@@ -158,7 +155,7 @@ class MonthSheet(YearSheet):
                                                              status_effects=status_effects,
                                                              )
             count = + 1
-            
+
             # TODO: status_object is not writing property; because of year spanning issue
 
             reconciliation_type = self.scrape_or_opcash(date=date)
@@ -190,15 +187,15 @@ class MonthSheet(YearSheet):
                 date_str=date)
             reconciliation_type = self.scrape_or_opcash(date=date)
 
-            (df, 
-             contract_rent, 
-             subsidy, unit, 
-             tenant_names, 
-             beg_bal, 
-             end_bal, 
-             charge_month, 
-             pay_month, 
-             dam_month, 
+            (df,
+             contract_rent,
+             subsidy, unit,
+             tenant_names,
+             beg_bal,
+             end_bal,
+             charge_month,
+             pay_month,
+             dam_month,
              status_effects) = self.get_rs_col(
                 date)
 
@@ -288,7 +285,8 @@ class MonthSheet(YearSheet):
             ).select().where(StatusObject.month == date).namedtuples()][0]
         except IndexError as e:
             print(f'for {date} you have returned an empty list indicating that')
-            print(f'your db did not reconcile for that month for File_Indexer or StatusObject')
+            print(
+                f'your db did not reconcile for that month for File_Indexer or StatusObject')
             raise
         return reconciliation_type
 
@@ -320,7 +318,7 @@ class MonthSheet(YearSheet):
         # CAN i JUST WRITE THE DF
         # GET ENDBAL FROM WHERE EXACTLY?
         df = self.index_np_with_df(np)
-     
+
         unit = df['unit'].tolist()
         tenant_names = Utils.capitalize_name(tenant_list=df['name'].tolist())
         beg_bal = df['lp_endbal'].tolist()
@@ -332,15 +330,15 @@ class MonthSheet(YearSheet):
         endbal = df['end_bal_m'].tolist()
         status_effects = df['status_effects'].tolist()
 
-        return (df, 
-                contract_rent, 
-                subsidy, 
-                unit, 
-                tenant_names, 
-                beg_bal, 
-                endbal, 
-                charge_month, 
-                pay_month, 
+        return (df,
+                contract_rent,
+                subsidy,
+                unit,
+                tenant_names,
+                beg_bal,
+                endbal,
+                charge_month,
+                pay_month,
                 dam_month,
                 status_effects,)
 
@@ -541,20 +539,20 @@ class MonthSheet(YearSheet):
         unit_index = tuple(zip(idx_list, final_list))
 
         ui_df = pd.DataFrame(unit_index, columns=['Rank', 'unit'])
-        df = pd.DataFrame(np, columns=['name', 
-                                       'beg_bal_at', 
-                                       'lp_endbal', 
-                                       'pay_month', 
+        df = pd.DataFrame(np, columns=['name',
+                                       'beg_bal_at',
+                                       'lp_endbal',
+                                       'pay_month',
                                        'charge_month',
-                                        'dam_month', 
-                                        'end_bal_m', 
-                                        'st_date', 
-                                        'end_date',  
-                                        'unit', 
-                                        'subsidy', 
-                                        'contract_rent', 
-                                        'status_effects',
-                                        ])
+                                       'dam_month',
+                                       'end_bal_m',
+                                       'st_date',
+                                       'end_date',
+                                       'unit',
+                                       'subsidy',
+                                       'contract_rent',
+                                       'status_effects',
+                                       ])
         df = df.set_index('unit')
 
         # merge indexes to order units in way we always have
@@ -644,7 +642,7 @@ class MonthSheet(YearSheet):
                                            'ch_amount',
                                            'payment',
                                            'end_bal',
-                                            'status_effect',
+                                           'status_effect',
                                            ])
         df = df.fillna(value='0')
         source_url = 'https://docs.google.com/spreadsheets/d/' + staging_layer
@@ -662,106 +660,118 @@ class MonthSheet(YearSheet):
                       *args,
                       **kwargs):
 
-        titles_dict = {name: id2 for name,
-                       id2 in Utils.get_existing_sheets(args[0], args[1]).items() if name != 'intake'}
-
         closed_dates = [date.month for date in FinalMonthLog.select(
         ) if date.moved_to_close == 'True']
+
+        titles_dict = {name: id2 for name,
+                        id2 in Utils.get_existing_sheets(args[0], args[1]).items() if name != 'intake'}
+        
         for dates in closed_dates:
             closed_titles = titles_dict.pop(dates)
+        
+        if kwargs.get('end_range'):
+            # must pad tuple coming out of the function
+            # paths = paths be
+            paths = Utils.months_in_ytd(last_range_month=kwargs.get('end_range'))
+            paths = set(paths) - set(closed_dates)
+            paths = sorted(paths)
+            paths = [(path, 'padding') for path in paths]
+        else:
+            paths = [Utils.show_files_as_choices(titles_dict,
+                                                interactive=True,
+                                                start=len(closed_dates)+1
+                                                )]
 
-        path = Utils.show_files_as_choices(titles_dict,
-                                           interactive=True,
-                                           start=len(closed_dates)+1
-                                           )
+        for path in paths:
+            values = self.gc.broad_get(service=self.service,
+                                    spreadsheet_id=args[1],
+                                    range=f'{path[0]}!A2:L68'
+                                    )
+            
+            df = pd.DataFrame(values, columns=['unit',
+                                            'name',
+                                            'notes',
+                                            'start_bal',
+                                            'c_rent',
+                                            'subsidy',
+                                            'hap_received',
+                                            't_rent',
+                                            'ch_type',
+                                            'ch_amount',
+                                            'payment',
+                                            'end_bal',
+                                            ])
+            df.fillna(0, inplace=True)
+            df['start_bal'] = pd.to_numeric(df['start_bal'], errors='coerce')
+            df['c_rent'] = pd.to_numeric(df['c_rent'], errors='coerce')
+            df['subsidy'] = pd.to_numeric(df['subsidy'], errors='coerce')
+            df['t_rent'] = pd.to_numeric(df['t_rent'], errors='coerce')
+            df['ch_amount'] = pd.to_numeric(df['ch_amount'], errors='coerce')
+            df['payment'] = pd.to_numeric(df['payment'], errors='coerce')
+            df['end_bal'] = pd.to_numeric(df['end_bal'], errors='coerce')
 
-        values = self.gc.broad_get(service=self.service,
-                                   spreadsheet_id=args[1],
-                                   range=f'{path[0]}!A2:L68'
-                                   )
-        df = pd.DataFrame(values, columns=['unit',
-                                           'name',
-                                           'notes',
-                                           'start_bal',
-                                           'c_rent',
-                                           'subsidy',
-                                           'hap_received',
-                                           't_rent',
-                                           'ch_type',
-                                           'ch_amount',
-                                           'payment',
-                                           'end_bal',
-                                           ])
-        df.fillna(0, inplace=True)
-        df['start_bal'] = pd.to_numeric(df['start_bal'], errors='coerce')
-        df['c_rent'] = pd.to_numeric(df['c_rent'], errors='coerce')
-        df['subsidy'] = pd.to_numeric(df['subsidy'], errors='coerce')
-        df['t_rent'] = pd.to_numeric(df['t_rent'], errors='coerce')
-        df['ch_amount'] = pd.to_numeric(df['ch_amount'], errors='coerce')
-        df['payment'] = pd.to_numeric(df['payment'], errors='coerce')
-        df['end_bal'] = pd.to_numeric(df['end_bal'], errors='coerce')
+            df = df.values.tolist()
 
-        df = df.values.tolist()
+            try:
+                self.gc.make_one_sheet(service=self.service,
+                                    spreadsheet_id=close_layer,
+                                    sheet_title=path[0]
+                                    )
+            except HttpError as e:
+                titles_dict = {name: id2 for name,
+                            id2 in Utils.get_existing_sheets(self.service, close_layer).items() if name != 'Sheet1'}
+                sheet_id = [sheet_id for sh_name,
+                            sheet_id in titles_dict.items() if sh_name == path[0]][0]
+                self.gc.del_one_sheet(service=self.service,
+                                    spreadsheet_id=close_layer,
+                                    id=sheet_id
+                                    )
+                fml = [FinalMonthLog.select().where(
+                    FinalMonthLog.month == path[0]).namedtuples()][0]
+                fml = FinalMonthLog.get(fml[0].id)
+                fml.moved_to_close = 'False'
+                fml.save()
+                print(f'unfinalizing {path[0]} and deleting sheet.')
+                self.gc.make_one_sheet(service=self.service,
+                                    spreadsheet_id=close_layer,
+                                    sheet_title=path[0]
+                                    )
 
-        try:
-            self.gc.make_one_sheet(service=self.service,
-                                   spreadsheet_id=close_layer,
-                                   sheet_title=path[0]
-                                   )
-        except HttpError as e:
+            count = 2
+            for row in df:
+                self.gc.simple_batch_update(service=self.service,
+                                            sheet_id=close_layer,
+                                            wrange=f'{path[0]}!A{count}:L{count}',
+                                            data=row,
+                                            dim='ROWS'
+                                            )
+                count += 1
+
+            self.formatting_runner_for_presentation(service=self.service,
+                                                    full_sheet=close_layer,
+                                                    sheet=path[0])
+
             titles_dict = {name: id2 for name,
-                           id2 in Utils.get_existing_sheets(self.service, close_layer).items() if name != 'Sheet1'}
+                        id2 in Utils.get_existing_sheets(self.service, close_layer).items() if name != 'Sheet1'}
+
             sheet_id = [sheet_id for sh_name,
                         sheet_id in titles_dict.items() if sh_name == path[0]][0]
-            self.gc.del_one_sheet(service=self.service,
-                                  spreadsheet_id=close_layer,
-                                  id=sheet_id
-                                  )
+
+            self.gc.date_stamp(self.service,
+                            close_layer,
+                            f'{path[0]}!A70:A70')
+
+            self.gc.bold_freeze(self.service,
+                                close_layer,
+                                sheet_id, 1)
+            self.gc.bold_range(self.service,
+                            close_layer,
+                            sheet_id,
+                            0, 100, 68, 69)
+
             fml = [FinalMonthLog.select().where(
                 FinalMonthLog.month == path[0]).namedtuples()][0]
             fml = FinalMonthLog.get(fml[0].id)
-            fml.moved_to_close = 'False'
+            fml.moved_to_close = 'True'
             fml.save()
-            print(f'unfinalizing {path[0]} and deleting sheet.')
-            self.gc.make_one_sheet(service=self.service,
-                                   spreadsheet_id=close_layer,
-                                   sheet_title=path[0]
-                                   )
-
-        count = 2
-        for row in df:
-            self.gc.simple_batch_update(service=self.service,
-                                        sheet_id=close_layer,
-                                        wrange=f'{path[0]}!A{count}:L{count}',
-                                        data=row,
-                                        dim='ROWS'
-                                        )
-            count += 1
-
-        self.formatting_runner_for_presentation(service=self.service,
-                                                full_sheet=close_layer,
-                                                sheet=path[0])
-
-        titles_dict = {name: id2 for name,
-                       id2 in Utils.get_existing_sheets(self.service, close_layer).items() if name != 'Sheet1'}
-        sheet_id = [sheet_id for sh_name,
-                    sheet_id in titles_dict.items() if sh_name == path[0]][0]
-
-        self.gc.date_stamp(self.service,
-                           close_layer,
-                           f'{path[0]}!A70:A70')
-
-        self.gc.bold_freeze(self.service,
-                            close_layer,
-                            sheet_id, 1)
-        self.gc.bold_range(self.service,
-                           close_layer,
-                           sheet_id,
-                           0, 100, 68, 69)
-
-        fml = [FinalMonthLog.select().where(
-            FinalMonthLog.month == path[0]).namedtuples()][0]
-        fml = FinalMonthLog.get(fml[0].id)
-        fml.moved_to_close = 'True'
-        fml.save()
-        print(f'finished moving {path[0]} to final')
+            print(f'finished moving {path[0]} to final')

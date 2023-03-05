@@ -163,7 +163,7 @@ def write(production=False,
         ms.auto_control(source='cli.py',
                         mode='write_range',
                         last_range_month=write_range)
-        
+
     elif explicit_month:
         click.echo('making one sheet')
         ms = figure.return_write_configuration()
@@ -190,6 +190,9 @@ def write(production=False,
 @click.option('-m', '--move_to_final',
               default=False,
               help='write month to final presentation sheet for peg')
+@click.option('-f', '--finalize_range',
+              type=str,
+              help='finalize and write up to last given range (2022-12)')
 @click.option('-d', '--drop_final',
               default=False,
               help='drop and RECREATE FinalMonth and FinalMonthLog tables only')
@@ -206,6 +209,7 @@ def close_sheet(production=False,
                 drop_final=False,
                 close_range=False,
                 close_one_month=False,
+                finalize_range=False,
                 interrogate_log=False,
                 ):
     figure = Figuration()
@@ -231,6 +235,10 @@ def close_sheet(production=False,
         ms.move_to_final(close_layer, service, staging_layer, db=build)
 
         # TODO audit funcs emanate from out of here
+        
+    if finalize_range:
+        staging_layer = '1t7KFE-WbfZ0dR9PuqlDE5EepCG3o3acZXzhbVRFW-Gc'
+        ms.move_to_final(close_layer, service, staging_layer, db=build, end_range=finalize_range)
 
     if close_range:
         '''
@@ -326,7 +334,8 @@ def workorders_to_db(drop_table=None):
         print('successfully dropped WorkOrder table')
     else:
         work_orders.get_all_archived_work_orders()
-        # TODO: cleanup logic for bulk insert and then atomic if bulk fails 
+        # TODO: cleanup logic for bulk insert and then atomic if bulk fails
+        # TODO: domestic location so that sorting on output works better
 
 
 @click.command()

@@ -444,9 +444,6 @@ class QueryHC(Reconciler):
                 ScrapeDetail,
                 MoveIn,
                 MoveOut,
-                WorkOrder,
-                FinalMonth,
-                FinalMonthLog,
                 StatusEffect
                 ]
 
