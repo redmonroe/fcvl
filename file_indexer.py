@@ -1,7 +1,6 @@
 import json
 import os
 import sys
-import time
 from datetime import datetime
 from pathlib import Path
 
@@ -20,7 +19,8 @@ from utils import Utils
 class Scrape:
 
     def get_period_from_scrape_fn_and_mark_in_findexer(self):
-        """this just provides row in findexer db & marks as processed; does not mark_scrape reconciled as True or file out hap, tenant, etc cols"""
+        """this just provides row in findexer db & marks as processed; 
+        does not mark_scrape reconciled as True or file out hap, tenant, etc cols"""
         for item, doc_id in self.indexed_list:
             scrape_file = Findexer.get(Findexer.doc_id == doc_id)
             date_str = [part.split('_') for part in item.split('/')][-1][-2]
@@ -31,8 +31,10 @@ class Scrape:
             scrape_file.save()
 
     def load_scrape_data_historical(self):
-        """this function gets scrape files and period via type=='scrape in Findexer table and updates row for various items(deposit sum, hap sum, replacement res. sum, corrections and chargebacks sum et al) and makes sure deposits assert before proceeding"""
-
+        """this function gets scrape files and period via type==
+        'scrape in Findexer table and updates row for various 
+        items(deposit sum, hap sum, replacement res. sum, corrections and 
+        chargebacks sum et al) and makes sure deposits assert before proceeding"""
         scrapes = [(row.path, row.period) for row in Findexer.select().where(
             Findexer.doc_type == 'scrape').namedtuples()]
 
@@ -75,7 +77,6 @@ class Scrape:
             scrape_to_update.save()
 
     def load_directed_scrape(self, path_to_scrape=None, target_date=None):
-
         populate = PopulateTable()
         df = self.get_df_of_scrape(path=path_to_scrape)
         scrape_txn_list = self.get_targeted_rows_for_scrape(scrape_df=df)
@@ -86,7 +87,9 @@ class Scrape:
 
     def load_mm_scrape(self, list1=None):
         """
-        This function runs through main file path and finds most recent scrape and select lines containing 'DEPOSIT', 'QUADEL', and 'CHARGEBACK to get tenant deposits, quadel, and deposit corrections
+        This function runs through main file path and finds most recent scrape 
+        and select lines containing 'DEPOSIT', 'QUADEL', and 'CHARGEBACK 
+        to get tenant deposits, quadel, and deposit corrections
 
         returns a list of dicts
         """
@@ -223,7 +226,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
             1 OPCASH processed 
             2 DEPOSITS + ADJUSTMENTS == TENANT_PAY + NTP"""
 
-        months_ytd, unfin_month, final_not_written = self.test_for_unfinalized_months(
+        _, unfin_month, final_not_written = self.test_for_unfinalized_months(
             explicit_month_to_load=explicit_month_to_load)
 
         for item in unfin_month:
@@ -232,7 +235,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
         """NEXT: is there anything to process?  ie are there new files in the path"""
 
         print('\n')
-        unproc_files, dir_contents = self.test_for_unprocessed_file()
+        unproc_files, _ = self.test_for_unprocessed_file()
 
         if unproc_files == []:
             print('no new files to add')
@@ -312,7 +315,8 @@ class FileIndexer(Utils, Scrape, Reconciler):
                 'scrape': scrapes}
 
     def pdf_to_df_to_db(self, bypass_write_to_db=None):
-        # TODO fix corr_sum & chargeback logic; make a new column on findexer (what are dependencies?)
+        # TODO fix corr_sum & chargeback logic; 
+        # make a new column on findexer (what are dependencies?)
         target_list = ['Incoming Wire', 'QUADEL',
                        'Deposit', 'Correction', 'Chargeback']
         for path in self.op_cash_list:
@@ -433,7 +437,6 @@ class FileIndexer(Utils, Scrape, Reconciler):
         months_ytd = Utils.months_in_ytd(Config.dynamic_current_year,
                                          last_range_month=explicit_month_to_load)
 
-        # get fully finalized months
         finalized_months = [rec.month for rec in StatusObject().select().where(
             (StatusObject.tenant_reconciled == 1) &
             ((StatusObject.opcash_processed == 1) |
@@ -453,16 +456,10 @@ class FileIndexer(Utils, Scrape, Reconciler):
 
     def test_for_unprocessed_file(self):
         print('searching for new files in path:')
-        processed_fn = [item.fn for item in Findexer().select().where(
-            Findexer.status == 'processed').namedtuples()]
+        self.unproc_files1 = list(set(self.articulate_directory2()) - set([item.fn for item in Findexer().select().where(
+            Findexer.status == 'processed').namedtuples()]))
 
-        directory_contents = self.articulate_directory2()
-
-        unproc_files = list(set(directory_contents) - set(processed_fn))
-
-        self.unproc_files1 = unproc_files
-
-        return self.unproc_files1, directory_contents
+        return self.unproc_files1, self.articulate_directory2()
 
     def connect_to_db(self, mode=None):
         if self.db.is_closed():
@@ -495,7 +492,8 @@ class FileIndexer(Utils, Scrape, Reconciler):
 
     def load_what_is_in_dir_as_indexed(self, dict1={}, autodrop=None, verbose=None):
         insert_dir_contents = [{'path': path, 'fn': name, 'c_date': path.lstat(
-        ).st_ctime, 'indexed': 'true', 'file_ext': suffix} for path, (suffix, name) in dict1.items()]
+        ).st_ctime, 'indexed': 'true', 'file_ext': suffix} 
+                               for path, (suffix, name) in dict1.items()]
         query = Findexer.insert_many(insert_dir_contents)
         query.execute()
 

@@ -188,7 +188,6 @@ class Letters():
         print('get_all_archived_work_orders')
         gc = GoogleApiCalls()
         from peewee import IntegrityError as PIE
-
         from backend import WorkOrder, db
 
         self.setup_tables(mode='create_only')

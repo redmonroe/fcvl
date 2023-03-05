@@ -78,6 +78,9 @@ class Figuration:
     
     def return_write_configuration(self):
         return self.ms
+    
+    def return_just_build_configuration(self):
+        return self.build
 
     def reset_db(self):
         populate = PopulateTable()

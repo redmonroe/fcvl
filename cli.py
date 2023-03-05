@@ -316,10 +316,10 @@ def balanceletters(dates=None, threshold=None):
 def workorders_to_db(drop_table=None):
     click.echo('work orders to db')
     figure = Figuration()
-    path, full_sheet, build, service, ms = figure.return_configuration()
+    build = figure.return_just_build_configuration()
     work_orders = Letters(db=build.main_db,
                           gsheet_id=Config.WORK_ORDER_SHEET,
-                          work_order_range='archived_wo_2022!A1:H350')
+                          work_order_range='archived_wo_2023!A1:H350')
     if drop_table is True:
         WorkOrder = work_orders.get_workorder_object()
         WorkOrder.drop_table()
