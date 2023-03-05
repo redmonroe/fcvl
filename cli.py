@@ -316,7 +316,7 @@ def balanceletters(dates=None, threshold=None):
 def workorders_to_db(drop_table=None):
     click.echo('work orders to db')
     figure = Figuration()
-    build = figure.return_just_build_configuration()
+    build, _ = figure.return_just_build_configuration()
     work_orders = Letters(db=build.main_db,
                           gsheet_id=Config.WORK_ORDER_SHEET,
                           work_order_range='archived_wo_2023!A1:H350')
@@ -332,10 +332,13 @@ def workorders_to_db(drop_table=None):
 def export_workorders_docx():
     click.echo('export work orders to docx')
     figure = Figuration()
-    path, full_sheet, build, service, ms = figure.return_configuration()
+    build, service = figure.return_just_build_configuration()
     docx = DocxWriter(db=build.main_db, service=service)
-    first_dt = datetime(2022, 1, 1)
-    last_dt = datetime(2022, 12, 31)
+    # TODO: WRITE UP PROCEDURE FOR WORK_ORDER PRODUCTION
+    # TODO: HOW TO HANDLE DATES
+    # TODO: HOW TO JUST APPEND AND NOT DELETE DB SO i CAN DO DEEPER STUDY
+    first_dt = datetime(2023, 1, 1)
+    last_dt = datetime(2023, 12, 31)
     docx.export_workorders_to_docx(first_dt=first_dt, last_dt=last_dt)
 
 

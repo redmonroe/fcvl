@@ -76,16 +76,13 @@ class Letters():
 
     def get_workorders(self, first_dt=None, last_dt=None):
         from backend import WorkOrder
+        from pprint import pprint
         workorders = [row for row in WorkOrder.select().
                       where(WorkOrder.init_date >= first_dt).
                       where(WorkOrder.init_date <= last_dt).
-                      order_by(WorkOrder.init_date).
+                      order_by(WorkOrder.location).
                       namedtuples()]
-
-        from pprint import pprint
-
-        # pprint(workorders)
-        # breakpoint()
+        pprint(workorders)
         return workorders
 
     def get_workorder_object(self):
