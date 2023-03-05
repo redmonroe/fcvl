@@ -326,6 +326,7 @@ def workorders_to_db(drop_table=None):
         print('successfully dropped WorkOrder table')
     else:
         work_orders.get_all_archived_work_orders()
+        # TODO: cleanup logic for bulk insert and then atomic if bulk fails 
 
 
 @click.command()

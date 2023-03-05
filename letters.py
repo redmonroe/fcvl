@@ -212,12 +212,12 @@ class Letters():
 
         } for work_order in work_dict]
 
-        try:
-            # try bulk insert
-            query = WorkOrder.insert_many(work_orders_insert_many)
-            query.execute()
-        except PIE as e:
-            print(e, 'BULK INSERT FAILED, attempting atomic inserts')
+        # try:
+        #     # try bulk insert
+        #     query = WorkOrder.insert_many(work_orders_insert_many)
+        #     query.execute()
+        # except PIE as e:
+        #     print(e, 'BULK INSERT FAILED, attempting atomic inserts')
 
         for item in work_orders_insert_many:
             try:
