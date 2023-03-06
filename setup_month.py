@@ -670,8 +670,6 @@ class MonthSheet(YearSheet):
             closed_titles = titles_dict.pop(dates)
         
         if kwargs.get('end_range'):
-            # must pad tuple coming out of the function
-            # paths = paths be
             paths = Utils.months_in_ytd(last_range_month=kwargs.get('end_range'))
             paths = set(paths) - set(closed_dates)
             paths = sorted(paths)
@@ -685,7 +683,7 @@ class MonthSheet(YearSheet):
         for path in paths:
             values = self.gc.broad_get(service=self.service,
                                     spreadsheet_id=args[1],
-                                    range=f'{path[0]}!A2:L68'
+                                    range=f'{path[0]}!A2:M68'
                                     )
             
             df = pd.DataFrame(values, columns=['unit',
@@ -700,8 +698,10 @@ class MonthSheet(YearSheet):
                                             'ch_amount',
                                             'payment',
                                             'end_bal',
+                                            'skip_bal_letter',
                                             ])
             df.fillna(0, inplace=True)
+            df['skip_bal_letter'] = ['no' if x == '0' else 'yes' for x in df['skip_bal_letter']]
             df['start_bal'] = pd.to_numeric(df['start_bal'], errors='coerce')
             df['c_rent'] = pd.to_numeric(df['c_rent'], errors='coerce')
             df['subsidy'] = pd.to_numeric(df['subsidy'], errors='coerce')
@@ -741,7 +741,7 @@ class MonthSheet(YearSheet):
             for row in df:
                 self.gc.simple_batch_update(service=self.service,
                                             sheet_id=close_layer,
-                                            wrange=f'{path[0]}!A{count}:L{count}',
+                                            wrange=f'{path[0]}!A{count}:M{count}',
                                             data=row,
                                             dim='ROWS'
                                             )
