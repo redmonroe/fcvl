@@ -41,6 +41,12 @@ def cli():
 
 @click.command()
 def consume():
+    click.echo('consume all files in target path')
+    ### can i make a legit midmonth emergency flow!    
+    ## send to EXCEL!!!
+    figure = Figuration()
+    path, build, consume = figure.return_consume_configuration()
+    breakpoint()
     pass
 
 

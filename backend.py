@@ -39,6 +39,15 @@ class BaseModel(Model):
         database = db
 
 
+class Consume(BaseModel):
+    id = AutoField()
+
+    def __repr__(self):
+        return f'{self.__class__.__name__} | {self.id}'
+
+    # | {self.unit} | {self.mi_date.year}-{self.mi_date.month}-{self.mi_date.day}'
+
+
 class Tenant(BaseModel):
     tenant_name = CharField(primary_key=True)  # removed unique = True
     active = CharField(default=True)
@@ -446,6 +455,9 @@ class QueryHC(Reconciler):
                 MoveOut,
                 StatusEffect
                 ]
+
+    def return_consume_table(self):
+        return [Consume]
 
     def get_start_tenants(self, date):
         return [(name.tenant_name, name.unit_name,
@@ -1751,9 +1763,9 @@ class ProcessingLayer(StatusRS):
 
                 scrape_deposits = sum([float(item) for item in scrape_dep])
                 breakpoint()
-                if Reconciler.backend_processing_layer_assert_bank_deposits_tenant_deposits(bank_deposits=scrape_deposits, 
-                                                                                            sum_from_payments_report=sum_from_payments, 
-                                                                                            period=month, 
+                if Reconciler.backend_processing_layer_assert_bank_deposits_tenant_deposits(bank_deposits=scrape_deposits,
+                                                                                            sum_from_payments_report=sum_from_payments,
+                                                                                            period=month,
                                                                                             genus='scrape') and sum_from_payments != 0:
                     print(
                         f'scrape asserted ok for {month} {Config.current_year}')

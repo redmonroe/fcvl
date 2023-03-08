@@ -1,5 +1,5 @@
 from auth_work import oauth
-from backend import PopulateTable
+from backend import PopulateTable, Consume
 from build_rs import BuildRS
 from config import Config
 from iter_rs import IterRS
@@ -14,7 +14,9 @@ class Figuration:
                  path=None, 
                  staging_layer=None, 
                  close_layer=None,
+                 consume_path=None,
                  pytest=None):
+        
         '''default to iterative, testing config, sheet, path'''
         self.mode = mode
 
@@ -22,6 +24,11 @@ class Figuration:
             self.path = path
         else:
             self.path = Config.TEST_PATH
+            
+        if consume_path:
+            self.consume_path = consume_path
+        else:
+            self.consume_path = Config.CONSUME_PATH 
 
         if staging_layer:
             self.staging_layer = staging_layer 
@@ -58,6 +65,7 @@ class Figuration:
                                  path=self.path,
                                  mode=self.mode, 
                                  test_service=self.service)
+        
         if self.mode == 'production':
             self.path = Config.PROD_PATH
             self.staging_layer = Config.PROD_RS
@@ -81,6 +89,18 @@ class Figuration:
     
     def return_just_build_configuration(self):
         return self.build, self.service
+    
+    def return_consume_configuration(self):
+        self.consume = Consume()
+        self.reset_consume()
+        return self.consume_path, self.build, self.consume
+    
+    def reset_consume(self):
+        populate = PopulateTable()
+        create_tables_list1 = populate.return_consume_table()
+        self.build.main_db.drop_tables(models=create_tables_list1)
+        if self.build.main_db.get_tables() == []:
+            print('db successfully dropped')
 
     def reset_db(self):
         populate = PopulateTable()
