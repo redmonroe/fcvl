@@ -40,18 +40,6 @@ class IterRS(BuildRS):
 
     def __repr__(self):
         return f'{self.__class__.__name__} object path: {self.path} write sheet: {self.full_sheet} service:{self.service}'
-    
-    def task_list(self, *args, **kwargs):   
-        write1 = kwargs.get('write')
-
-        if write1 == True:
-            writeable_months = self.player.final_check_writeable_months(month_list=all_months_ytd)
-            self.player.find_complete_pw_months_and_iter_write(writeable_months=writeable_months)
-        else:
-            print('you have passed the option not to write in iter_rs.')
-
-        """need to incrementally add opcash if new
-        RIGHT NOW THE OPCASH IS NOT ADDED TO OPCASH TABLE""" 
 
     def is_new_file_available(self, genus=None, filename=None):
         if genus == 'scrape':            

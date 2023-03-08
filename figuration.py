@@ -91,8 +91,11 @@ class Figuration:
         return self.build, self.service
     
     def return_consume_configuration(self):
-        self.consume = Consume()
         self.reset_consume()
+        self.consume = Consume()
+        populate = PopulateTable()
+        create_tables_list1 = populate.return_consume_table()
+        self.build.main_db.create_tables(create_tables_list1)
         return self.consume_path, self.build, self.consume
     
     def reset_consume(self):
