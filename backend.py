@@ -41,11 +41,66 @@ class BaseModel(Model):
 
 class Consume(BaseModel):
     id = AutoField()
+    period = CharField()
+    type1 = CharField()
+    path = CharField()
+    unit = CharField(null=True)
+    name = CharField(null=True)
+    amount = CharField(null=True)
+    txn_date = CharField(null=True)
+    batch_id = CharField(null=True)
 
     def __repr__(self):
-        return f'{self.__class__.__name__} | {self.id}'
+        return f'{self.__class__.__name__} | {self.id} {self.period} {self.path} {self.name} {self.amount} {self.txn_date} {self.batch_id}'
 
-    # | {self.unit} | {self.mi_date.year}-{self.mi_date.month}-{self.mi_date.day}'
+    def midmonth_emergency_from_midmonth_flow(self, path=None):
+        dir_contents = [item for item in path.iterdir()
+                        if item.name.endswith('.ini') == False and item.name.endswith('.txt') == False]
+        for item in dir_contents:
+            self.process_file(item=item)
+
+    def process_file(self, item=None):
+        supported_types = ['midmonth_deposits']
+        path = item
+        period = ('-').join(str(item.stem).split('_')[2:])
+        prototype = str(item.name).split('_')
+        if len(prototype) == 4:
+            final_type = ('_').join(prototype[0:2])
+
+        if final_type in supported_types:
+            self.wb = xlrd.open_workbook(path,
+                                         logfile=open(os.devnull, 'w'))
+
+            if final_type == 'midmonth_deposits':
+                df = pd.read_excel(self.wb, header=9)
+                df = df.reindex()
+                df = df[['Unit', 'Amount', 'Name', 'Date Posted', 'BDEPID']]
+                df = df.rename(columns={'Unit': 'unit',
+                                        'Amount': 'amount',
+                                        'Name': 'name',
+                                        'Date Posted': 'txn_date',
+                                        'BDEPID': 'batch_id'})
+
+                df = df.fillna(0)
+                df['period'] = [period for _ in range(len(df))]
+                df['path'] = [path for _ in range(len(df))]
+                df['type1'] = [final_type for _ in range(len(df))]
+                df = df.to_dict('records')
+                df = [dct for dct in df if dct['unit']
+                      != 0 and dct['name'] != 0]
+                Consume.insert_many(df).execute()
+
+    def get_unaudited_deposits_mtd(self, period, type1):
+        rec = [row for row in Consume.select().
+               where(Consume.period == period).
+               where(Consume.type1 == type1).
+               namedtuples()]
+
+        df = pd.DataFrame(rec)
+        df['amount'] = pd.to_numeric(df['amount'], errors='coerce')
+        sum1 = df['amount'].sum()
+        count1 = df['amount'].count()
+        return sum1, count1
 
 
 class Tenant(BaseModel):

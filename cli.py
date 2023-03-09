@@ -40,14 +40,30 @@ def cli():
 
 
 @click.command()
-def consume():
+@click.option('-date', default='current_month', show_default=True)
+@click.option('-action', show_default=True)
+def consume(date, action):
+    click.echo(f'date={date}')
+    click.echo(f'action={action}')
     click.echo('consume all files in target path')
-    ### can i make a legit midmonth emergency flow!    
-    ## send to EXCEL!!!
     figure = Figuration()
-    path, build, consume = figure.return_consume_configuration()
-    breakpoint()
-    pass
+    path, build, consume, reset_func = figure.return_consume_configuration()
+    # can i make action legit midmonth emergency flow!
+    # send to EXCEL!!!
+    # current_month = datetime.now().strftime('%Y-%m-%d')
+    if date == 'current_month' and action == 'sum':
+        current_month = '03-2023'
+        sum1, count1 = consume.get_unaudited_deposits_mtd(period=current_month,
+                                                          type1='midmonth_deposits')
+        print(f'mtd deposits from deposit report for {date}: {sum1}')
+        print(f'no. of mtd deposits from deposit report for {date}: {count1}')
+
+    if action == 'consume':
+        consume.midmonth_emergency_from_midmonth_flow(path=path)
+
+    if action == 'reset':
+        reset_func()
+        # breakpoint()
 
 
 @click.command()
@@ -241,10 +257,11 @@ def close_sheet(production=False,
         ms.move_to_final(close_layer, service, staging_layer, db=build)
 
         # TODO audit funcs emanate from out of here
-        
+
     if finalize_range:
         staging_layer = '1t7KFE-WbfZ0dR9PuqlDE5EepCG3o3acZXzhbVRFW-Gc'
-        ms.move_to_final(close_layer, service, staging_layer, db=build, end_range=finalize_range)
+        ms.move_to_final(close_layer, service, staging_layer,
+                         db=build, end_range=finalize_range)
 
     if close_range:
         '''
