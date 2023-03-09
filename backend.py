@@ -65,7 +65,8 @@ class Consume(BaseModel):
     def process_file(self, item=None):
         supported_types = ['midmonth_deposits']
         path = item
-        period = ('-').join(str(item.stem).split('_')[2:])
+        period = str(item.stem).split('_')[2:]
+        period = '-'.join(period[::-1])
         prototype = str(item.name).split('_')
         if len(prototype) == 4:
             final_type = ('_').join(prototype[0:2])
@@ -109,10 +110,18 @@ class Consume(BaseModel):
 
     def export_to_excel(self, period, type1):
         sum1, count1, df = self.get_unaudited_deposits_mtd(period, type1)
-        df = df.sort_values(by='unit', ascending=True)
-        df['amount'] = pd.to_numeric(df['amount'], errors='coerce')
+        df = df.sort_values(by='unit', 
+                            ascending=True)
+        df['amount'] = pd.to_numeric(df['amount'], 
+                                     errors='coerce')
         df = df.groupby(['name', 'unit']).sum(numeric_only=True).reset_index()
-
+        positions = Position()
+        df_endbal = pd.DataFrame(positions.create_list_last_month_endbal(
+                                lookback=Utils.make_last_date_of_last_month(
+                                self, date_str=period)[:7]))
+        #TODO: NOW WE NEED TO JOIN ON NAME; JUST NEED ENDBAL CALLUP
+        
+        breakpoint()
         writer = Errors.xlsx_permission_error(
             Config.TEST_EXCEL,
             pandas_object=pd)
@@ -989,10 +998,7 @@ class Position(QueryHC):
     end_bal: str = '0'
     status_effect: str = '0'
 
-    def create_list(self, lookback=None):
-        first_dt, _ = self.make_first_and_last_dates(date_str=lookback[0])
-        _, last_dt = self.make_first_and_last_dates(date_str=lookback[1])
-
+    def create_list_internals(self, first_dt=None, last_dt=None):
         df = pd.DataFrame([row for row in FinalMonth.select().
                            where(FinalMonth.month >= first_dt).
                            where(FinalMonth.month <= last_dt).
@@ -1019,8 +1025,16 @@ class Position(QueryHC):
                                 status_effect=row['status_effect'],
                                 )
             positions.append(position)
-
         return positions
+
+    def create_list(self, lookback=None):
+        first_dt, _ = self.make_first_and_last_dates(date_str=lookback[0])
+        _, last_dt = self.make_first_and_last_dates(date_str=lookback[1])
+        return self.create_list_internals(first_dt=first_dt, last_dt=last_dt)
+
+    def create_list_last_month_endbal(self, lookback=None):
+        first_dt, last_dt = self.make_first_and_last_dates(date_str=lookback)
+        return self.create_list_internals(first_dt=first_dt, last_dt=last_dt)
 
     def group_by_tenant_name(self, positions=None, threshold=None):
         temp_bal_letter_list_by_tenant = []

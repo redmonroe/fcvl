@@ -49,7 +49,7 @@ def consume(date, action):
     path, build, consume, reset_table_func = figure.return_consume_configuration()
     # can i make action legit midmonth emergency flow!
     # current_month = datetime.now().strftime('%Y-%m-%d')
-    current_month = '03-2023'
+    current_month = '2023-03'
     if date == 'current_month' and action == 'sum':
         sum1, count1, _ = consume.get_unaudited_deposits_mtd(period=current_month,
                                                           type1='midmonth_deposits')
