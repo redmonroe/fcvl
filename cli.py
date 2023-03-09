@@ -45,25 +45,28 @@ def cli():
 def consume(date, action):
     click.echo(f'date={date}')
     click.echo(f'action={action}')
-    click.echo('consume all files in target path')
     figure = Figuration()
-    path, build, consume, reset_func = figure.return_consume_configuration()
+    path, build, consume, reset_table_func = figure.return_consume_configuration()
     # can i make action legit midmonth emergency flow!
-    # send to EXCEL!!!
     # current_month = datetime.now().strftime('%Y-%m-%d')
+    current_month = '03-2023'
     if date == 'current_month' and action == 'sum':
-        current_month = '03-2023'
-        sum1, count1 = consume.get_unaudited_deposits_mtd(period=current_month,
+        sum1, count1, _ = consume.get_unaudited_deposits_mtd(period=current_month,
                                                           type1='midmonth_deposits')
         print(f'mtd deposits from deposit report for {date}: {sum1}')
         print(f'no. of mtd deposits from deposit report for {date}: {count1}')
 
     if action == 'consume':
+        click.echo('consume all files in target path')
         consume.midmonth_emergency_from_midmonth_flow(path=path)
+        
+    if action == 'to_excel':
+        consume.export_to_excel(period=current_month, 
+                                type1='midmonth_deposits')
 
     if action == 'reset':
-        reset_func()
-        # breakpoint()
+        click.echo(f'reset consume table in {build.main_db.database}')
+        reset_table_func()
 
 
 @click.command()

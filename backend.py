@@ -1,6 +1,7 @@
 import calendar
 import json
 import os
+import string
 import sys
 from collections import namedtuple
 from dataclasses import dataclass, field
@@ -21,6 +22,7 @@ from peewee import Model, SqliteDatabase, fn
 from recordtype import recordtype
 
 from config import Config
+from errors import Errors
 from letters import Letters
 from reconciler import Reconciler
 from utils import Utils
@@ -55,7 +57,8 @@ class Consume(BaseModel):
 
     def midmonth_emergency_from_midmonth_flow(self, path=None):
         dir_contents = [item for item in path.iterdir()
-                        if item.name.endswith('.ini') == False and item.name.endswith('.txt') == False]
+                        if item.name.endswith('.ini') == False
+                        and item.name.endswith('.txt') == False]
         for item in dir_contents:
             self.process_file(item=item)
 
@@ -85,6 +88,8 @@ class Consume(BaseModel):
                 df['period'] = [period for _ in range(len(df))]
                 df['path'] = [path for _ in range(len(df))]
                 df['type1'] = [final_type for _ in range(len(df))]
+                df['name'] = [string.capwords(
+                    name) if name != 0 else 0 for name in df['name'].tolist()]
                 df = df.to_dict('records')
                 df = [dct for dct in df if dct['unit']
                       != 0 and dct['name'] != 0]
@@ -100,7 +105,20 @@ class Consume(BaseModel):
         df['amount'] = pd.to_numeric(df['amount'], errors='coerce')
         sum1 = df['amount'].sum()
         count1 = df['amount'].count()
-        return sum1, count1
+        return sum1, count1, df
+
+    def export_to_excel(self, period, type1):
+        sum1, count1, df = self.get_unaudited_deposits_mtd(period, type1)
+        df = df.sort_values(by='unit', ascending=True)
+        df['amount'] = pd.to_numeric(df['amount'], errors='coerce')
+        df = df.groupby(['name', 'unit']).sum(numeric_only=True).reset_index()
+
+        writer = Errors.xlsx_permission_error(
+            Config.TEST_EXCEL,
+            pandas_object=pd)
+
+        df.to_excel(writer, sheet_name=period, header=True)
+        writer.close()
 
 
 class Tenant(BaseModel):
@@ -972,7 +990,6 @@ class Position(QueryHC):
     status_effect: str = '0'
 
     def create_list(self, lookback=None):
-        import string
         first_dt, _ = self.make_first_and_last_dates(date_str=lookback[0])
         _, last_dt = self.make_first_and_last_dates(date_str=lookback[1])
 
