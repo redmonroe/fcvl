@@ -702,6 +702,7 @@ class MonthSheet(YearSheet):
                                             ])
             df.fillna(0, inplace=True)
             df['skip_bal_letter'] = ['no' if x == '0' else 'yes' for x in df['skip_bal_letter']]
+
             df['start_bal'] = pd.to_numeric(df['start_bal'], errors='coerce')
             df['c_rent'] = pd.to_numeric(df['c_rent'], errors='coerce')
             df['subsidy'] = pd.to_numeric(df['subsidy'], errors='coerce')

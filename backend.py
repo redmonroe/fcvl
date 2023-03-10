@@ -51,6 +51,8 @@ class Consume(BaseModel):
     amount = CharField(null=True)
     txn_date = CharField(null=True)
     batch_id = CharField(null=True)
+    subsidy_charge = CharField(null=True)
+    rent_charge = CharField(null=True)
 
     def __repr__(self):
         return f'{self.__class__.__name__} | {self.id} {self.period} {self.path} {self.name} {self.amount} {self.txn_date} {self.batch_id}'
@@ -63,7 +65,7 @@ class Consume(BaseModel):
             self.process_file(item=item)
 
     def process_file(self, item=None):
-        supported_types = ['midmonth_deposits']
+        supported_types = ['midmonth_deposits', 'midmonth_rentroll']
         path = item
         period = str(item.stem).split('_')[2:]
         period = '-'.join(period[::-1])
@@ -74,6 +76,27 @@ class Consume(BaseModel):
         if final_type in supported_types:
             self.wb = xlrd.open_workbook(path,
                                          logfile=open(os.devnull, 'w'))
+            if final_type == 'midmonth_rentroll':
+                df = pd.read_excel(self.wb, header=16)
+                df = df.reindex()
+                df = df[['Unit', 'Actual Subsidy Charge',
+                         'Actual Rent Charge', 'Name']]
+                df = df.rename(columns={'Unit': 'unit',
+                                        'Name': 'name',
+                                        'Actual Subsidy Charge': 'subsidy_charge',
+                                        'Actual Rent Charge': 'rent_charge',
+                                        })
+
+                df = df.fillna(0)
+                df['period'] = [period for _ in range(len(df))]
+                df['path'] = [path for _ in range(len(df))]
+                df['type1'] = [final_type for _ in range(len(df))]
+                df['name'] = [string.capwords(
+                    name) if name != 0 else 0 for name in df['name'].tolist()]
+                df = df.to_dict('records')
+                df = [dct for dct in df if dct['unit']
+                      != 0 and dct['name'] != 0]
+                Consume.insert_many(df).execute()
 
             if final_type == 'midmonth_deposits':
                 df = pd.read_excel(self.wb, header=9)
@@ -97,35 +120,68 @@ class Consume(BaseModel):
                 Consume.insert_many(df).execute()
 
     def get_unaudited_deposits_mtd(self, period, type1):
-        rec = [row for row in Consume.select().
-               where(Consume.period == period).
-               where(Consume.type1 == type1).
-               namedtuples()]
-
-        df = pd.DataFrame(rec)
+        df = pd.DataFrame([row for row in Consume.select().
+                           where(Consume.period == period).
+                           where(Consume.type1 == type1).
+                           namedtuples()])
         df['amount'] = pd.to_numeric(df['amount'], errors='coerce')
-        sum1 = df['amount'].sum()
-        count1 = df['amount'].count()
-        return sum1, count1, df
+        return df['amount'].sum(), df['amount'].count(), df
+
+    def get_unaudited_rentroll_mtd(self, period, type1):
+        df = pd.DataFrame([row for row in Consume.select().
+                           where(Consume.period == period).
+                           where(Consume.type1 == type1).
+                           namedtuples()])
+        return df
+
+    def get_last_month_end_bal(self, period):
+        positions = Position()
+        df_endbal = pd.DataFrame(positions.create_list_last_month_endbal(
+            lookback=Utils.make_last_date_of_last_month(
+                self, date_str=period)[:7]))
+
+        df_endbal = df_endbal[['name', 'unit', 'date', 'end_bal']]
+        df_endbal = df_endbal.rename(columns={'end_bal': 'start_bal'})
+        return df_endbal
 
     def export_to_excel(self, period, type1):
         sum1, count1, df = self.get_unaudited_deposits_mtd(period, type1)
-        df = df.sort_values(by='unit', 
+        rentroll_df = self.get_unaudited_rentroll_mtd(
+            period, 'midmonth_rentroll')
+
+        df = df.sort_values(by='unit',
                             ascending=True)
-        df['amount'] = pd.to_numeric(df['amount'], 
+        df['amount'] = pd.to_numeric(df['amount'],
                                      errors='coerce')
         df = df.groupby(['name', 'unit']).sum(numeric_only=True).reset_index()
-        positions = Position()
-        df_endbal = pd.DataFrame(positions.create_list_last_month_endbal(
-                                lookback=Utils.make_last_date_of_last_month(
-                                self, date_str=period)[:7]))
-        #TODO: NOW WE NEED TO JOIN ON NAME; JUST NEED ENDBAL CALLUP
-        
-        breakpoint()
+
+        df_start_bal = self.get_last_month_end_bal(period=period)
+
+        merged_df = pd.merge(df_start_bal, rentroll_df, on='unit', how='outer')
+        merged_df = merged_df[['name_x', 'unit', 'date',
+                               'start_bal', 'name_y', 'rent_charge', 'subsidy_charge']]
+        merged_df = merged_df.rename(columns={'name_y': 'name'})
+
+        merged_df = merged_df.sort_values(by='unit',
+                                          ascending=True)
+
+        df = pd.merge(df, merged_df, on='name', how='outer')
+        df = df[['name', 'unit_y', 'start_bal', 'rent_charge', 'amount']]
+        df['amount'] = df['amount'].fillna(0)
+
+        df = df.rename(columns={'unit_y': 'unit'})
+        df['start_bal'] = pd.to_numeric(df['start_bal'], errors='coerce')
+        df['rent_charge'] = pd.to_numeric(df['rent_charge'], errors='coerce')
+        df['amount'] = pd.to_numeric(df['amount'], errors='coerce')
+        df['end_bal'] = df.apply(lambda row: row.start_bal -
+                                 row.rent_charge + row.amount, axis=1)
+        df = df.sort_values(by='end_bal', ascending=True)
+
         writer = Errors.xlsx_permission_error(
             Config.TEST_EXCEL,
             pandas_object=pd)
 
+    
         df.to_excel(writer, sheet_name=period, header=True)
         writer.close()
 
