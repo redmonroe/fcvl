@@ -177,21 +177,21 @@ class Consume(BaseModel):
                                  row.rent_charge + row.amount, axis=1)
         df = df.sort_values(by='end_bal', ascending=True)
 
+        path = Config.MIDMONTH_EXCEL / '{}_{}.xlsx'.format(period, type1)
         writer = Errors.xlsx_permission_error(
-            Config.MIDMONTH_EXCEL / '{}_{}.xlsx'.format(period, type1),
+            path,
             pandas_object=pd)
 
         df.to_excel(writer, sheet_name=period, header=True)
 
         worksheet = writer.sheets[period]
-        end_bal_cell = f'G{len(df)+2}'
-        start_bal_cell = f'D{len(df)+2}'
-        end_bal_str = f'=sum(G2:G{len(df)+1})'
-        start_bal_str = f'=sum(D2:D{len(df)+1})'
+        end_bal_cell, start_bal_cell = f'G{len(df)+2}', f'D{len(df)+2}'
+        end_bal_str, start_bal_str = f'=sum(G2:G{len(df)+1})', f'=sum(D2:D{len(df)+1})'
 
         worksheet.write_formula(end_bal_cell, end_bal_str)
         worksheet.write_formula(start_bal_cell, start_bal_str)
         writer.close()
+        print(f'Exported to {path}')
 
 
 class Tenant(BaseModel):
