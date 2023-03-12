@@ -178,11 +178,19 @@ class Consume(BaseModel):
         df = df.sort_values(by='end_bal', ascending=True)
 
         writer = Errors.xlsx_permission_error(
-            Config.TEST_EXCEL,
+            Config.MIDMONTH_EXCEL / '{}_{}.xlsx'.format(period, type1),
             pandas_object=pd)
 
-    
         df.to_excel(writer, sheet_name=period, header=True)
+
+        worksheet = writer.sheets[period]
+        end_bal_cell = f'G{len(df)+2}'
+        start_bal_cell = f'D{len(df)+2}'
+        end_bal_str = f'=sum(G2:G{len(df)+1})'
+        start_bal_str = f'=sum(D2:D{len(df)+1})'
+
+        worksheet.write_formula(end_bal_cell, end_bal_str)
+        worksheet.write_formula(start_bal_cell, start_bal_str)
         writer.close()
 
 
