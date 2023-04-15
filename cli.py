@@ -38,30 +38,45 @@ MIDMONTH flow
 def cli():
     pass
 
+@click.command()
+@click.option('--test1', nargs=2, type=click.Tuple([str, str]))
+def test(test1):
+    print(test1)
+
+
+
 
 @click.command()
-@click.option('-date', default='current_month', show_default=True)
-@click.option('-action', show_default=True)
-def consume(date, action):
-    click.echo(f'date={date}')
+@click.option('--action', '-a', multiple=True)
+def consume(action):
+    if len(action) == 1:
+        action = action[0]
+        date = 'no_date_needed'
+    elif len(action) == 2:
+        action, date = action
+        if date == 'current_month': # use current month to get current month str in YYYY-
+            date = datetime.now().strftime('%Y-%m')
+        else:
+            date = date
+        click.echo(f'date={date}')
     click.echo(f'action={action}')
+    
     figure = Figuration()
-    path, build, consume, reset_table_func = figure.return_consume_configuration()
-    # can i make action legit midmonth emergency flow!
-    # current_month = datetime.now().strftime('%Y-%m-%d')
-    current_month = '2023-03'
-    if date == 'current_month' and action == 'sum':
-        sum1, count1, _ = consume.get_unaudited_deposits_mtd(period=current_month,
+    path, build, consume, reset_table_func = figure.return_consume_configuration()    
+    
+    if date == datetime.now().strftime('%Y-%m') and action == 'sum':
+        sum1, count1, _ = consume.get_unaudited_deposits_mtd(period=date,
                                                           type1='midmonth_deposits')
         print(f'mtd deposits from deposit report for {date}: {sum1}')
         print(f'no. of mtd deposits from deposit report for {date}: {count1}')
+        # TODO: get date report was generated and output
 
     if action == 'consume':
         click.echo('consume all files in target path')
-        consume.midmonth_emergency_from_midmonth_flow(path=path)
+        consume.midmonth_emergency_from_midmonth_flow(path=path, )
         
     if action == 'to_excel':
-        consume.export_to_excel(period=current_month, 
+        consume.export_to_excel(period=date, 
                                 type1='midmonth_deposits')
 
     if action == 'reset':
@@ -521,6 +536,7 @@ def test_various(select):
             ['-s', '--write', 'True', 'tests/test_deplist.py', ])
 
 
+cli.add_command(test)
 cli.add_command(consume)
 cli.add_command(escrow)
 cli.add_command(status_findexer_test)

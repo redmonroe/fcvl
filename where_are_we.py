@@ -176,6 +176,7 @@ class WhereAreWe(ProcessingLayer):
         else:
             corrections = 0
         for item in dry_run_iter['scrape']['amount'].items():
+            corrections = 0
             hap = dry_run_iter['scrape']['amount']['hap']
             all_deposits = dry_run_iter['scrape']['amount']['deposit'] # can't use this for management fee unfortunately
             
@@ -201,7 +202,6 @@ class WhereAreWe(ProcessingLayer):
         print(f'\tonesite-side deposits: {report_deposits}')
         print(
             f'\tdamage charges/credits for {target_month}: {dry_run_iter["damages"]} ')
-        breakpoint()
         print(f'mf (after adjustments):')
         print('*' * 45)
         print(f'DEPOSITS DISCREPANCY = ${deposits_discrepancy}')

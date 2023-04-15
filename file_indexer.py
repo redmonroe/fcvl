@@ -289,6 +289,7 @@ class FileIndexer(Utils, Scrape, Reconciler):
             'dep': 0, 'hap': 0, 'rr': 0, 'corr_sum': 0}
         for entry in kwargs['currently_availables']:
             for genus, path in entry.items():
+                scrapes = {'amount': {'hap': 0, 'deposit': 0}}
                 if genus == 'scrape' and path[0] is True:
                     scrape = Scrape()
                     df = scrape.get_df_of_scrape(path=path[1])

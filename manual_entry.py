@@ -233,6 +233,7 @@ class ManualEntry:
                 # do I need to propagate changes to opcash or another table?
            
             elif obj_str == 'StatusEffect':
+                
                 closed, ending_time = [item['col_name5'][0], item['col_name5'][1]]
 
                 data = {col_name1: col_value1,

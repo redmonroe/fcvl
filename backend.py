@@ -72,7 +72,8 @@ class Consume(BaseModel):
         prototype = str(item.name).split('_')
         if len(prototype) == 4:
             final_type = ('_').join(prototype[0:2])
-
+        else:
+            final_type = 'not_supported'
         if final_type in supported_types:
             self.wb = xlrd.open_workbook(path,
                                          logfile=open(os.devnull, 'w'))
@@ -358,14 +359,12 @@ class MoveOut(BaseModel):
         return last_dt_of_last_month.strftime("%Y-%m-%d")
 
     def deactivate_unit(self, name=None):
-        # try:
-        unit = Unit.get(Unit.tenant == name)
-        unit.status = 'vacant'
-        unit.tenant = 'vacant'
-        # except DNE:
-        # print(f'{name} already deactivated, I think!')
-        # breakpoint()
-
+        try:
+            unit = Unit.get(Unit.tenant == name)
+            unit.status = 'vacant'
+            unit.tenant = 'vacant'
+        except DNE:
+            print(f'{name} already deactivated, I think!')      
         return unit
 
     def deactivate_tenant(self, name=None, date1=None):
